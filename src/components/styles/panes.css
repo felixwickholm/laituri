@@ -114,7 +114,7 @@
   grid-template-columns: minmax(420px, 1fr) 420px 400px;
   gap: 12px;
   min-height: 0;
-  padding: 12px;
+  padding: 12px 12px 0;
 }
 
 .pane {
@@ -123,8 +123,10 @@
   min-height: 0;
   min-width: 0;
   overflow: hidden;
-  border-radius: var(--r-xl);
+  /* Panes run to the bottom edge; their foot sits under the dock's fade, so no corner shows there. */
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
   border: 1px solid var(--pane-border);
+  border-bottom: 0;
   background: var(--surface-1);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
@@ -203,7 +205,7 @@
     margin: 8px 8px 0;
   }
   .panes {
-    padding: 8px;
+    padding: 8px 8px 0;
   }
   .topbar .scope,
   .topbar .chips .optional {

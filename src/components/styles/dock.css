@@ -13,6 +13,12 @@
   border-radius: 32px;
   transform: translateX(-50%);
   overflow: hidden;
+  transition: opacity 160ms var(--ease-out);
+}
+/* While a sheet is open the dock steps aside, so the sheet never cuts it. */
+body:has(.sheet) .dock {
+  opacity: 0;
+  pointer-events: none;
 }
 .dock .scenes {
   display: flex;

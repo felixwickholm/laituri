@@ -47,7 +47,23 @@ function checksOf(data: Data): { status?: string }[] {
 }
 
 function orderLine(order: Order): string {
-  return `${offerSubject(order.offer)} · ${eur(order.offer.totals.net.amount)} net`;
+  return `${offerSubject(order.offer)} · ${eur(order.offer.totals.net.amount)}${NBSP}net`;
+}
+
+const NBSP = "\u00a0";
+
+/**
+ * An offer that could not cover the request in full. Its own total would mislead next to the order
+ * that used an alternative, so say what was short and how many signed alternatives came with it.
+ */
+function partialOffer(summary: string, data: Data): string {
+  const alternatives = num(data.alternatives) ?? 0;
+  const tail = alternatives > 0 ? ` · ${alternatives} signed ${alternatives === 1 ? "alternative" : "alternatives"}` : "";
+  const shortOf = summary.match(/Only ([\d,]+) of ([\d,]+)/i);
+  if (shortOf) return `Only ${shortOf[1]} of ${shortOf[2]} in stock${tail}`;
+  const offered = summary.match(/offered ([\d,]+) x/i);
+  if (offered) return `Partial: ${offered[1]} in stock${tail}`;
+  return `Partial offer${tail}`;
 }
 
 /**
@@ -67,9 +83,10 @@ export function auditDetail(entry: Pick<AuditEntry, "event" | "actor" | "summary
       break;
     }
     case "offer.issued": {
+      if (data.fulfilment && data.fulfilment !== "full") return partialOffer(entry.summary, data);
       if (order) return orderLine(order);
       const net = netOf(data);
-      if (net !== undefined) return `${eur(net)} net${typeof data.deliveryDate === "string" ? ` · delivers ${day(data.deliveryDate)}` : ""}`;
+      if (net !== undefined) return `${eur(net)}${NBSP}net${typeof data.deliveryDate === "string" ? ` · delivers ${day(data.deliveryDate)}` : ""}`;
       break;
     }
     case "policy.evaluated": {

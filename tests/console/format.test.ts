@@ -28,8 +28,8 @@ describe("money", () => {
 describe("time", () => {
   it("uses Helsinki time and short day names", () => {
     expect(clock("2026-11-14T07:05:09.000Z")).toBe("09:05:09");
-    expect(day("2026-11-16")).toBe("Mon 16 Nov");
-    expect(day("2026-11-16T08:00:00.000Z")).toBe("Mon 16 Nov");
+    expect(day("2026-11-16")).toBe("Mon 16 Nov");
+    expect(day("2026-11-16T08:00:00.000Z")).toBe("Mon 16 Nov");
   });
 
   it("gives short ages", () => {
@@ -60,9 +60,9 @@ describe("reasons", () => {
 describe("request versus offer", () => {
   it("shows what was asked and what was offered", () => {
     const { offer } = pendingOrder();
-    expect(askedLine(offer)).toBe("Asked: 1,800 l lactose-free milk by Mon 16 Nov");
-    expect(offeredLine(offer)).toBe("Offered: 1,800 × Valio Arki Eila 1 l = 1,800 l, Mon 16 Nov");
-    expect(offeredShort(offer)).toBe("Offered: 1,800 × Arki Eila 1 l · Mon 16 Nov");
+    expect(askedLine(offer)).toBe("Asked: 1,800 l lactose-free milk by Mon 16 Nov");
+    expect(offeredLine(offer)).toBe("Offered: 1,800 × Valio Arki Eila 1 l = 1,800 l, Mon 16 Nov");
+    expect(offeredShort(offer)).toBe("Offered: 1,800 × Arki Eila 1 l · Mon 16 Nov");
   });
 
   it("marks each matched fact", () => {
@@ -73,7 +73,7 @@ describe("request versus offer", () => {
       ["Date", true],
       ["Price", true],
     ]);
-    expect(facts[3].detail).toBe("€1,818.00 net, fixed until 09:15");
+    expect(facts[3].detail).toBe("€1,818.00 net, fixed until 09:15");
   });
 
   it("flags a short delivery", () => {
@@ -108,6 +108,24 @@ describe("over the limit", () => {
 });
 
 describe("plain sentences", () => {
+  it("uses the multiplication sign and keeps numbers with their units", async () => {
+    const { plainSentence } = await import("@/lib/console/format/sentence");
+    expect(plainSentence("Ordered 200 x Arla milk, 1 l, for 220.00 EUR net.")).toBe("Ordered 200 × Arla milk, 1\u00a0l, for €220.00\u00a0net.");
+  });
+
+  it("describes a partial offer by what was short, not by its own total", async () => {
+    const { auditDetail } = await import("@/lib/console/format/audit");
+    const entry = {
+      event: "offer.issued" as const,
+      actor: { type: "supplier" as const, id: "v", name: "Valio Aimo" },
+      summary: "Valio Aimo offered 51 x Arla Milkdrink 1L for 131.07 EUR. Only 51 of 200 can be delivered. 2 alternatives were offered.",
+      refs: { offerId: "off_9" },
+      data: { fulfilment: "partial", alternatives: 2 },
+    };
+    expect(auditDetail(entry)).toBe("Only 51 of 200 in stock · 2 signed alternatives");
+    expect(auditDetail({ ...entry, summary: "Valio Aimo offered 51 x Arla Milkdrink 1L." })).toBe("Partial: 51 in stock · 2 signed alternatives");
+  });
+
   it("writes percentages without a space", async () => {
     const { plainSentence } = await import("@/lib/console/format/sentence");
     expect(plainSentence("Same product type from Valio, 57 % cheaper.")).toBe("Same product type from Valio, 57% cheaper.");
@@ -116,7 +134,7 @@ describe("plain sentences", () => {
   it("rewrites amounts and ISO dates", async () => {
     const { plainSentence } = await import("@/lib/console/format/sentence");
     expect(plainSentence("Delivery on 2026-11-16 meets the 2026-11-16 deadline, 1,010.00 EUR.")).toBe(
-      "Delivery on Mon 16 Nov meets the Mon 16 Nov deadline, €1,010.00.",
+      "Delivery on Mon 16 Nov meets the Mon 16 Nov deadline, €1,010.00.",
     );
   });
 

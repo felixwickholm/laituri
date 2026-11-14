@@ -81,7 +81,7 @@ describe.skipIf(!recorded)("demo scenes on recorded data", () => {
   it("break-mandate: all four attempts are stopped and nothing is confirmed", async () => {
     const { runId, done } = startRun({ scenario: "break-mandate" });
     await done;
-    expect(getRun(runId)?.summary).toBe("4 of 4 attempts to break the mandate were stopped.");
+    expect(getRun(runId)?.summary).toBe("5 of 5 attempts to break the mandate were stopped.");
     const orders = await gateway().listOrders();
     expect(orders.filter((o) => o.status === "confirmed")).toHaveLength(0);
     expect(orders.filter((o) => o.status === "blocked")).toHaveLength(3);

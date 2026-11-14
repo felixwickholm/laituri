@@ -65,9 +65,9 @@ describe("runs", () => {
     const [run] = buildRuns([note("Looking for milk."), tool("place_order", "Placed", { refs: { orderId: "ord_1" } })], [pendingOrder()]);
     const ctx = { orders: new Map([["ord_1", pendingOrder()]]), active: false, approver: "Maria Lind, Head of Purchasing" };
     expect(runTitle(run, ctx)).toBe("1,800 l lactose-free milk");
-    expect(runOutcome(run, ctx)).toEqual({ word: "Waiting for Maria Lind", detail: "€1,818.00 net", tone: "waiting" });
+    expect(runOutcome(run, ctx)).toEqual({ word: "Waiting for Maria Lind", detail: "€1,818.00 net", tone: "waiting" });
     const confirmed = pendingOrder({ status: "confirmed" });
-    expect(runOutcome(run, { ...ctx, orders: new Map([["ord_1", confirmed]]) }).detail).toBe("€1,818.00 net · Mon 16 Nov");
+    expect(runOutcome(run, { ...ctx, orders: new Map([["ord_1", confirmed]]) }).detail).toBe("€1,818.00 net · Mon 16 Nov");
   });
 
   it("reads scene 3 as four attempts and the rule that stopped each", () => {
@@ -96,7 +96,7 @@ describe("runs", () => {
 
   it("writes a tool call as one small line", () => {
     expect(toolLine({ tool: "search_catalog", title: "Searched", detail: "Full offer, 1,010.00 EUR net", durationMs: 4 })).toBe(
-      "search_catalog · Full offer, €1,010.00 net · 4 ms",
+      "search_catalog · Full offer, €1,010.00 net · 4 ms",
     );
   });
 });

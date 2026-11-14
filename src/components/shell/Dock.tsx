@@ -1,10 +1,9 @@
 "use client";
 
 import { ArrowUp, RotateCcw } from "lucide-react";
-import { useEffect, useRef, useState, type FormEvent, type MouseEvent } from "react";
+import { useEffect, useState, type FormEvent, type MouseEvent } from "react";
 import { consoleStore } from "@/lib/console/store";
 import type { DemoRun, Scenario } from "@/lib/console/types";
-import { tamperWithLog } from "../proof/ProofTools";
 import { withApprover } from "../session/gate";
 import { toast } from "../ui/toast";
 
@@ -23,24 +22,18 @@ interface DockProps {
 export function Dock({ run, fresh }: DockProps) {
   const [request, setRequest] = useState("");
   const [starting, setStarting] = useState<Scenario | "free" | null>(null);
-  const tamperAfter = useRef<string | null>(null);
   const running = run?.status === "running" || starting !== null;
   const active = starting && starting !== "free" ? starting : run?.scenario ?? null;
 
   useEffect(() => {
     if (!run || run.status === "running") return;
     if (run.status === "failed") toast(run.summary ?? "The agent stopped before it finished.", "danger");
-    if (tamperAfter.current === run.id) {
-      tamperAfter.current = null;
-      void tamperWithLog();
-    }
   }, [run]);
 
   async function start(body: { scenario?: Scenario; request?: string }, key: Scenario | "free") {
     setStarting(key);
     try {
       await consoleStore.startRun(body);
-      if (body.scenario === "break-mandate") tamperAfter.current = consoleStore.getSnapshot().run?.id ?? null;
     } catch (error) {
       toast(error instanceof Error ? error.message : "The scene could not start.", "danger");
     } finally {
@@ -62,7 +55,6 @@ export function Dock({ run, fresh }: DockProps) {
         return true;
       });
       if (!done) return;
-      tamperAfter.current = null;
       toast("Reset. The log is empty and verified again.", "neutral");
     } catch {
       toast("Reset did not reach the server.", "danger");

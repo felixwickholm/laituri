@@ -3,14 +3,14 @@ import { shortProductName, tidyProductText } from "@/lib/console/format/product"
 
 describe("shortProductName", () => {
   it.each([
-    ["Valio Hyvä suomalainen Arki® Eila® semi skimmed milk drink 1 l lactose free", "Arki Eila semi-skimmed lactose-free milk 1 l"],
-    ["Valio Eila® 3 % milk drink 1 l lactose free", "Eila 3 % lactose-free milk 1 l"],
-    ["Valio Eila®  Luomu™ semi skimmed milk drink 1 l lactose free, organic", "Eila semi-skimmed lactose-free organic milk 1 l"],
-    ["Arla Milkdrink 1L lactose free fat free UHT Suomesta", "Arla Milkdrink fat-free lactose-free UHT 1 l"],
-    ["Valio skimmed milk 1 l", "Valio skimmed milk 1 l"],
-    ["Valio Eila® butter 200 g lactose free", "Eila lactose-free butter 200 g"],
-    ["Oatly Oat Drink Organic 1L", "Oatly Oat organic Drink 1 l"],
-    ["Valio Viola® light 3,5 kg natural cream cheese lactose free", "Viola light natural cream lactose-free… 3,5 kg"],
+    ["Valio Hyvä suomalainen Arki® Eila® semi skimmed milk drink 1 l lactose free", "Arki Eila semi-skimmed lactose-free milk 1 l"],
+    ["Valio Eila® 3 % milk drink 1 l lactose free", "Eila 3 % lactose-free milk 1 l"],
+    ["Valio Eila®  Luomu™ semi skimmed milk drink 1 l lactose free, organic", "Eila semi-skimmed lactose-free organic milk 1 l"],
+    ["Arla Milkdrink 1L lactose free fat free UHT Suomesta", "Arla Milkdrink fat-free lactose-free UHT 1 l"],
+    ["Valio skimmed milk 1 l", "Valio skimmed milk 1 l"],
+    ["Valio Eila® butter 200 g lactose free", "Eila lactose-free butter 200 g"],
+    ["Oatly Oat Drink Organic 1L", "Oatly Oat organic Drink 1 l"],
+    ["Valio Viola® light 3,5 kg natural cream cheese lactose free", "Viola light natural cream lactose-free… 3,5 kg"],
   ])("%s", (name, short) => {
     const result = shortProductName(name);
     expect(result).toBe(short);

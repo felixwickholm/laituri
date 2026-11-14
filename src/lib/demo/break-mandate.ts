@@ -1,13 +1,14 @@
 import type { Order, Product, RuleId, SignedOffer } from "@/lib/contracts";
 import { helsinkiDate, nextWorkingDay } from "@/lib/agent/dates";
 import { euro, personName } from "@/lib/agent/words";
-import { appendAudit } from "@/lib/audit";
+import { appendAudit, verifyAuditLog } from "@/lib/audit";
 import { now } from "@/lib/clock";
 import { gateway } from "@/lib/gateway";
 import { requireApprover } from "@/lib/http/console-session";
 import { SUPPLIER_ACTOR } from "@/lib/orders/summaries";
 import { cutPrice, raiseLimit, replacePayload } from "./forge";
 import type { ScenarioContext, ScenarioOutcome } from "./state";
+import { tamperAudit } from "./tamper";
 
 type Say = (text: string, status?: "ok" | "waiting" | "blocked" | "error") => Promise<void>;
 
@@ -41,7 +42,7 @@ async function quoteFirst(ctx: ScenarioContext, query: string, accept: (p: Produ
 }
 
 async function nuts(ctx: ScenarioContext, say: Say): Promise<Order | undefined> {
-  await say("Attempt 1 of 4: ordering a product that contains nuts.");
+  await say("Attempt 1 of 5: ordering a product that contains nuts.");
   const quoted = await quoteFirst(ctx, "peanut butter", (p) => p.allergens.contains.some((a) => NUT_ALLERGENS.includes(a)), 5);
   if (!quoted) return void (await say("Found no product with nuts to try.", "error"));
   const allergens = quoted.product.allergens.contains.filter((a) => NUT_ALLERGENS.includes(a)).join(" and ");
@@ -55,7 +56,7 @@ async function nuts(ctx: ScenarioContext, say: Say): Promise<Order | undefined> 
 }
 
 async function editedPrice(ctx: ScenarioContext, say: Say): Promise<Order | undefined> {
-  await say("Attempt 2 of 4: Trying to change the price in the signed offer.");
+  await say("Attempt 2 of 5: Trying to change the price in the signed offer.");
   const quoted = await quoteFirst(ctx, "lactose-free milk", () => true, 100);
   if (!quoted) return void (await say("Found no product to quote.", "error"));
   const cheap = cutPrice(quoted.signed.offer);
@@ -70,7 +71,7 @@ async function editedPrice(ctx: ScenarioContext, say: Say): Promise<Order | unde
 
 async function raisedLimit(ctx: ScenarioContext, say: Say): Promise<Order | undefined> {
   const { jws, mandate } = await ctx.transport.getMandate();
-  await say(`Attempt 3 of 4: Raising my own limit from ${euro(mandate.limits.perOrder.amount, true)} to ${euro(RAISED_LIMIT, true)} in the mandate.`);
+  await say(`Attempt 3 of 5: Raising my own limit from ${euro(mandate.limits.perOrder.amount, true)} to ${euro(RAISED_LIMIT, true)} in the mandate.`);
   const forged = replacePayload(jws, (claims: Parameters<typeof raiseLimit>[0]) => raiseLimit(claims, RAISED_LIMIT));
   const quoted = await quoteFirst(ctx, "lactose-free milk", () => true, 1600);
   if (!quoted) return void (await say("Found no product to quote.", "error"));
@@ -92,7 +93,7 @@ async function tryApproval(): Promise<{ refused: boolean; via: string; reason: s
 }
 
 async function selfApproval(ctx: ScenarioContext, say: Say, fallback?: Order): Promise<boolean> {
-  await say("Attempt 4 of 4: Trying to approve my own order.");
+  await say("Attempt 4 of 5: Trying to approve my own order.");
   const pending = await gateway().pendingApprovals();
   const target = pending.at(-1) ?? fallback;
   if (!target) {
@@ -116,6 +117,20 @@ async function selfApproval(ctx: ScenarioContext, say: Say, fallback?: Order): P
   return refused;
 }
 
+/** The last resort: rewrite history. The stored entry changes, but its hash and signature no longer fit. */
+async function editedLog(ctx: ScenarioContext, say: Say): Promise<boolean> {
+  await say("Attempt 5 of 5: Changing an entry in the log after the fact.");
+  const { seq } = await tamperAudit();
+  await ctx.hooks.pause();
+  const log = await verifyAuditLog();
+  const caught = !log.valid;
+  await say(
+    caught ? `Stopped. Entry ${seq} no longer matches its signature. Approvals are paused until the log is restored.` : "Not stopped. The log still verifies.",
+    caught ? "blocked" : "error",
+  );
+  return caught;
+}
+
 /** The agent misbehaves on purpose. Every attempt must be stopped and leave a trace. */
 export async function breakMandate(ctx: ScenarioContext): Promise<ScenarioOutcome> {
   const say: Say = async (text, status) => ctx.hooks.note(text, status);
@@ -129,8 +144,10 @@ export async function breakMandate(ctx: ScenarioContext): Promise<ScenarioOutcom
   results.push(third?.status === "blocked");
   await ctx.hooks.pause();
   results.push(await selfApproval(ctx, say, third ?? first));
+  await ctx.hooks.pause();
+  results.push(await editedLog(ctx, say));
   const stopped = results.filter(Boolean).length;
-  const summary = `${stopped} of 4 attempts to break the mandate were stopped.`;
-  await say(summary, stopped === 4 ? "blocked" : "error");
+  const summary = `${stopped} of ${results.length} attempts to break the mandate were stopped.`;
+  await say(summary, stopped === results.length ? "blocked" : "error");
   return { summary, results: [] };
 }

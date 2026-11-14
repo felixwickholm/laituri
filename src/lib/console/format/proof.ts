@@ -12,7 +12,7 @@ const CLAIM_WORDS: Record<string, string> = {
 };
 
 export function contentText(line: OfferLine): string | undefined {
-  return line.content ? `${count(line.content.amount)} ${line.content.unit}` : undefined;
+  return line.content ? `${count(line.content.amount)}\u00a0${line.content.unit}` : undefined;
 }
 
 /** "1,000 × Valio Eila 1 l = 1,000 l" */
@@ -86,6 +86,6 @@ export function matchedFacts(order: Order): MatchedFact[] {
   if (claim) facts.push(claim);
   const onTime = Boolean(offer.deliveryDate && offer.deliveryDate <= offer.deliverBy);
   facts.push({ label: "Date", ok: onTime, detail: offer.deliveryDate ? day(offer.deliveryDate) : "No delivery date" });
-  facts.push({ label: "Price", ok: true, detail: `${eur(offer.totals.net.amount)} net, fixed until ${hourMinute(offer.expiresAt)}` });
+  facts.push({ label: "Price", ok: true, detail: `${eur(offer.totals.net.amount)}\u00a0net, fixed until ${hourMinute(offer.expiresAt)}` });
   return facts;
 }

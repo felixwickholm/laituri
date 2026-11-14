@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ALLERGEN_RULES, CATEGORY_LABELS, SUBSTITUTION_OPTIONS, allergenRule, categoryLabel, tiers } from "@/lib/console/format/mandate";
-import { applyDraft, changedFields, draftOf, parseAmount, patchOf, type MandateDraft } from "@/lib/console/format/mandate-patch";
+import { applyDraft, changedFields, draftOf, patchOf, type MandateDraft } from "@/lib/console/format/mandate-patch";
 import { eur, percentOf } from "@/lib/console/format/money";
 import { shortName } from "@/lib/console/format/rules";
 import { day } from "@/lib/console/format/time";
@@ -13,6 +13,7 @@ import { CopyButton } from "../ui/CopyButton";
 import { Sheet } from "../ui/Sheet";
 import { toast } from "../ui/toast";
 import { useNow } from "../ui/useNow";
+import { AmountInput } from "./AmountInput";
 import { ChipSet, Group, Row, Toggle } from "./fields";
 import { Tiers } from "./Tiers";
 
@@ -75,16 +76,10 @@ export function MandateSheet({ open, onClose }: { open: boolean; onClose: () => 
           <Tiers tiers={tiers(applyDraft(m, draft))} />
           <Group label="Spending" note={`${eur(spent)} of ${eur(draft.perWeek)} used this week.`}>
             <Row label="Per-order limit" hint="Larger orders ask a person" htmlFor="per-order">
-              <span className="money-field">
-                <span aria-hidden="true">€</span>
-                <input id="per-order" className="text-field num" type="number" min={0} step={50} inputMode="decimal" value={draft.perOrder} onChange={(event) => set("perOrder", parseAmount(event.target.value) ?? 0)} />
-              </span>
+              <AmountInput id="per-order" value={draft.perOrder} onChange={(value) => set("perOrder", value)} />
             </Row>
             <Row label="Weekly limit" htmlFor="per-week">
-              <span className="money-field">
-                <span aria-hidden="true">€</span>
-                <input id="per-week" className="text-field num" type="number" min={0} step={100} inputMode="decimal" value={draft.perWeek} onChange={(event) => set("perWeek", parseAmount(event.target.value) ?? 0)} />
-              </span>
+              <AmountInput id="per-week" value={draft.perWeek} onChange={(value) => set("perWeek", value)} />
             </Row>
             <div className="usage" role="meter" aria-label="Weekly limit used" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(used, 100)}>
               <span style={{ transform: `scaleX(${Math.min(used, 100) / 100})` }} data-high={used > 80} />

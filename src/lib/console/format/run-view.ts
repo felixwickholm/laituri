@@ -36,7 +36,7 @@ function capitalise(text: string): string {
 /** The block title: the buyer's request in their own words when it is known. */
 export function runTitle(run: RunBlock, ctx: RunContext): string {
   if (run.title) return run.title;
-  if (run.kind === "attempts") return "Try to break the mandate, four ways";
+  if (run.kind === "attempts") return "Try to break the rules";
   const intent = lastOrder(run, ctx.orders)?.offer.intent?.trim();
   if (intent) return capitalise(intent);
   if (ctx.active && ctx.activeRequest && !run.label) return capitalise(ctx.activeRequest);
@@ -51,10 +51,11 @@ export function runOutcome(run: RunBlock, ctx: RunContext): RunOutcome {
     const match = run.summary?.title.match(/^(\d+) of (\d+)/);
     if (match) {
       const all = match[1] === match[2];
-      return { word: all ? "Stopped" : "Got through", detail: `${match[1]} of ${match[2]} attempts stopped`, tone: all ? "danger" : "waiting" };
+      // Every attempt stopped is the good outcome: the rules held.
+      return { word: all ? "All caught" : "Got through", detail: `${match[1]} of ${match[2]} attempts stopped`, tone: all ? "success" : "danger" };
     }
     const n = run.attempts.length;
-    return { word: ctx.active ? "Working" : "Ended", detail: n ? `Attempt ${n} of 4` : undefined, tone: "neutral" };
+    return { word: ctx.active ? "Working" : "Ended", detail: n ? `Attempt ${n}` : undefined, tone: "neutral" };
   }
   const order = lastOrder(run, ctx.orders);
   if (order) {
@@ -62,17 +63,17 @@ export function runOutcome(run: RunBlock, ctx: RunContext): RunOutcome {
     switch (order.status) {
       case "confirmed": {
         const by = order.approval ? ` · approved by ${shortName(order.approval.decidedBy.name)}` : "";
-        return { word: "Confirmed", detail: `${eur(totals.net.amount)} net · ${day(deliveryDate)}${by}`, tone: "success" };
+        return { word: "Confirmed", detail: `${eur(totals.net.amount)}\u00a0net · ${day(deliveryDate)}${by}`, tone: "success" };
       }
       case "pending_approval":
-        return { word: `Waiting for ${shortName(ctx.approver ?? "a person")}`, detail: `${eur(totals.net.amount)} net`, tone: "waiting" };
+        return { word: `Waiting for ${shortName(ctx.approver ?? "a person")}`, detail: `${eur(totals.net.amount)}\u00a0net`, tone: "waiting" };
       case "blocked": {
         const block = order.decision.checks.find((check) => check.status === "block");
         return { word: "Stopped", detail: block ? blockSentence(block) : "Outside the mandate", tone: "danger" };
       }
       default:
         return order.approval
-          ? { word: `Rejected by ${shortName(order.approval.decidedBy.name)}`, detail: `${eur(totals.net.amount)} net`, tone: "neutral" }
+          ? { word: `Rejected by ${shortName(order.approval.decidedBy.name)}`, detail: `${eur(totals.net.amount)}\u00a0net`, tone: "neutral" }
           : { word: "Expired", detail: "The offer ran out before a decision", tone: "neutral" };
     }
   }

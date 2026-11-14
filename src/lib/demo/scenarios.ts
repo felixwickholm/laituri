@@ -12,7 +12,7 @@ export const SHORT_STOCK_REQUEST = "200 litres of Arla lactose-free UHT milk by 
  * Search would rightly steer to a product in stock, so the request names the product code to show the counter-offer.
  */
 const SHORT_STOCK_PRODUCT = "462775";
-export const BREAK_MANDATE_TITLE = "Try to break the mandate, four ways";
+export const BREAK_MANDATE_TITLE = "Try to break the rules, five ways";
 
 export interface Scenario {
   title: string;

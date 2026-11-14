@@ -19,7 +19,7 @@ export function ChainBadge({ chain, lastSeq }: { chain: ChainState; lastSeq: num
       return (
         <span className="chain-badge" data-state="broken" title={chain.reason}>
           <CircleX aria-hidden="true" />
-          {chain.brokenAt > lastSeq ? "Newest entries missing" : `Broken at entry ${chain.brokenAt}`}
+          {chain.brokenAt > lastSeq ? "Tampering caught · entries missing" : `Tampering caught · entry ${chain.brokenAt}`}
         </span>
       );
     case "checking":

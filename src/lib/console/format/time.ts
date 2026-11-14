@@ -22,6 +22,11 @@ const DAY_AND_TIME = new Intl.DateTimeFormat("en-GB", {
   hourCycle: "h23",
 });
 
+/** "Mon 16 Nov" with the day and month held together, so a line never breaks between them. */
+function joinDayMonth(text: string): string {
+  return text.replace(/(\d+) ([A-Z][a-z]{2})$/, "$1\u00a0$2");
+}
+
 function valid(date: Date): boolean {
   return !Number.isNaN(date.getTime());
 }
@@ -44,7 +49,7 @@ export function day(value: string | undefined): string {
   if (!value) return "–";
   if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     const date = new Date(`${value}T12:00:00Z`);
-    return valid(date) ? DAY.format(date).replace(",", "") : "–";
+    return valid(date) ? joinDayMonth(DAY.format(date).replace(",", "")) : "–";
   }
   const date = new Date(value);
   return valid(date) ? dayOf(date) : "–";
@@ -53,7 +58,7 @@ export function day(value: string | undefined): string {
 function dayOf(date: Date): string {
   const parts = DAY_AND_TIME.formatToParts(date);
   const pick = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? "";
-  return `${pick("weekday")} ${pick("day")} ${pick("month")}`;
+  return `${pick("weekday")} ${pick("day")}\u00a0${pick("month")}`;
 }
 
 /** "Mon 16 Nov, 09:14" */

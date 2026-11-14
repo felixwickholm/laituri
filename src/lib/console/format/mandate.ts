@@ -78,7 +78,7 @@ export function tiers(mandate: Mandate): Tiers {
   const delay = mandate.delivery.maxDelayDays;
   const never: string[] = [];
   if (allergens.length) never.push(`Buy ${allergens.join(" or ")}`);
-  never.push(`Accept delivery over ${delay} ${delay === 1 ? "day" : "days"} late`, "Use an altered or expired offer");
+  never.push(`Accept delivery over ${delay}\u00a0${delay === 1 ? "day" : "days"} late`, "Use an altered or expired offer");
   if (mandate.substitution.policy === "none") never.push("Substitute a product");
   return { alone, ask, never };
 }

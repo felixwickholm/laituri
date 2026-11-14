@@ -43,7 +43,7 @@ export function ProofHead({ audit, chain, latest, jwks, mandate, onOpenOrder }: 
       {chain.state === "verified" ? <p className="chain-note">Every step signed. Checked in your browser.</p> : null}
       {chain.state === "broken" ? (
         <p className="alarm" role="alert">
-          {chain.reason} Everything after it can no longer be trusted.
+          {chain.reason} Your browser caught it. Approvals are paused until the log is restored.
         </p>
       ) : latest && failed ? (
         <button type="button" className="proof-line tone-danger" onClick={() => onOpenOrder(latest.id)}>

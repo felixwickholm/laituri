@@ -12,6 +12,12 @@ interface AttemptsProps {
   lastRef: RefObject<HTMLLIElement | null>;
 }
 
+/** The rule that held. A changed log entry is caught by the signed log itself, not by a mandate rule. */
+function ruleLabel(attempt: Attempt): string | undefined {
+  if (/\blog\b/i.test(attempt.action)) return "Signed log";
+  return attempt.rule;
+}
+
 /** Scene 3 at a glance: each attempt, and the rule that stopped it. */
 export function Attempts({ attempts, showTools, onOpenOrder, lastRef }: AttemptsProps) {
   return (
@@ -29,7 +35,7 @@ export function Attempts({ attempts, showTools, onOpenOrder, lastRef }: Attempts
           </span>
           {attempt.stopped !== undefined ? (
             <span className="attempt-rule">
-              {attempt.rule ? <strong>{attempt.rule}.</strong> : null} {plainSentence(attempt.reason ?? "")}
+              {ruleLabel(attempt) ? <strong>{ruleLabel(attempt)}.</strong> : null} {plainSentence(attempt.reason ?? "")}
               {attempt.orderId ? (
                 <button type="button" className="text-link strong inline" onClick={() => onOpenOrder(attempt.orderId as string)}>
                   See the check

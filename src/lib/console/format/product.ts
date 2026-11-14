@@ -54,6 +54,6 @@ export function shortProductName(name: string): string {
   for (const [pattern, word] of PHRASES) text = text.replace(pattern, word);
   const words = squeeze(text).split(" ").filter(Boolean);
   if (claims.length) words.splice(Math.max(words.length - 1, 0), 0, ...claims);
-  const sized = size ? `${size[1]} ${size[2].toLowerCase()}` : "";
+  const sized = size ? `${size[1]}\u00a0${size[2].toLowerCase()}` : "";
   return cap(squeeze(words.join(" ")), sized);
 }

@@ -242,8 +242,14 @@
 
 /* Connect sheet. */
 .endpoint {
-  height: 44px;
+  min-height: 44px;
   font-size: 13px;
+}
+.endpoint .mono {
+  min-width: 0;
+  padding: 10px 0;
+  word-break: normal;
+  overflow-wrap: anywhere;
 }
 .connect-steps {
   margin: 14px 0 12px;
@@ -266,7 +272,9 @@
 }
 .code-well pre {
   margin: 0 48px 0 0;
-  padding: 12px 0 12px 14px;
+  padding: 12px 24px 12px 14px;
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
   overflow-x: auto;
   font-size: 12.5px;
   line-height: 20px;
