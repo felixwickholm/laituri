@@ -16,6 +16,7 @@ Public keys (JWKS): ${urls.jwks}
 ## Connect by MCP
 Streamable HTTP, stateless, JSON responses: ${urls.mcp}
 Header: Authorization: Bearer demo-agent-token (without it you act as an unidentified agent and orders are blocked).
+Clients that cannot send a header may put the demo key in the address: ${urls.mcp}?key=demo-agent-token
 Tools: search_catalog, get_product, request_quote, get_mandate, place_order, get_order, verify_audit.
 
 ## REST flow: "1,000 litres of lactose-free milk by Monday"

@@ -25,11 +25,22 @@ function withAcceptHeader(request: Request, body: string): Request {
   return new Request(request.url, { method: "POST", headers, body });
 }
 
+/**
+ * Chat apps take a server address but no custom header, so the demo accepts the agent's key in the address (?key=).
+ * A header wins when both are sent. Production uses OAuth instead.
+ */
+function withKeyFromAddress(request: Request): Headers {
+  const headers = new Headers(request.headers);
+  const key = new URL(request.url).searchParams.get("key");
+  if (key && !headers.has("authorization")) headers.set("authorization", `Bearer ${key}`);
+  return headers;
+}
+
 /** Handles one stateless MCP POST: a fresh server and transport per request, JSON responses, no sessions. */
 export async function handleMcpPost(request: Request): Promise<Response> {
   let agent;
   try {
-    agent = await resolveAgent(request.headers);
+    agent = await resolveAgent(withKeyFromAddress(request));
   } catch (error) {
     return withCors(errorResponse(error));
   }

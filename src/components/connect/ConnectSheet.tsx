@@ -7,10 +7,13 @@ import { CopyButton } from "../ui/CopyButton";
 
 type Client = "claude" | "chatgpt" | "curl";
 
+/** The demo agent's key. It names the agent in the mandate; without it a caller is an unidentified agent and its orders are blocked. */
+const DEMO_KEY = "demo-agent-token";
+
 const subscribe = () => () => undefined;
 
 function steps(client: Client, origin: string): { lines: string[]; code: string } {
-  const mcp = `${origin}/mcp`;
+  const mcp = `${origin}/mcp?key=${DEMO_KEY}`;
   switch (client) {
     case "claude":
       return {
@@ -25,7 +28,7 @@ function steps(client: Client, origin: string): { lines: string[]; code: string 
     default:
       return {
         lines: ["Search the catalogue with one POST.", "Ask for a quote, then place the order with the signed offer.", "The full contract is in the OpenAPI document."],
-        code: `curl -s ${origin}/api/v1/products/search \\\n  -H 'content-type: application/json' \\\n  -d '{"query":"lactose-free milk 1 l"}'`,
+        code: `curl -s ${origin}/api/v1/products/search \\\n  -H 'authorization: Bearer ${DEMO_KEY}' \\\n  -H 'content-type: application/json' \\\n  -d '{"query":"lactose-free milk 1 l"}'`,
       };
   }
 }
@@ -41,9 +44,9 @@ export function ConnectSheet({ open, onClose }: { open: boolean; onClose: () => 
   const origin = useSyncExternalStore(subscribe, () => window.location.origin, () => "");
   const [client, setClient] = useState<Client>("claude");
   const guide = steps(client, origin);
-  const mcp = `${origin}/mcp`;
+  const mcp = `${origin}/mcp?key=${DEMO_KEY}`;
   return (
-    <Sheet open={open} onClose={onClose} title="Connect an agent" lede="Any agent that speaks MCP or HTTP can buy here, inside the signed mandate.">
+    <Sheet open={open} onClose={onClose} title="Connect an agent" lede="Any agent that speaks MCP or HTTP can buy here, inside the signed mandate. The address carries the demo agent's key; production uses OAuth.">
       <section className="section">
         <h3>MCP server URL</h3>
         <div className="hash-well endpoint">

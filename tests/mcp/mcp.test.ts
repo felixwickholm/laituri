@@ -66,4 +66,11 @@ describe("MCP server", () => {
     expect((await GET()).status).toBe(405);
     expect((await DELETE()).status).toBe(405);
   });
+
+  it("takes the agent key from the address when no header is sent", async () => {
+    const call = (pathname: string) =>
+      POST(jsonRequest(pathname, { body: { jsonrpc: "2.0", id: nextId++, method: "tools/list", params: {} } }));
+    expect((await call(`/mcp?key=${AGENT_TOKEN}`)).status).toBe(200);
+    expect((await call("/mcp?key=not-a-key")).status).toBe(401);
+  });
 });
