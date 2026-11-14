@@ -13,7 +13,7 @@ import { ToolRows } from "./ToolRows";
 
 const TELLING = 4;
 /** Notes about an exception: short stock, a skipped product, a counter-offer, a limit. */
-const EXCEPTION = /(in stock|alternative|skipped|cut-off|over my limit|substitut)/i;
+const EXCEPTION = /(in stock|alternative|skipped|cut-off|over my limit|substitut|cannot be delivered)/i;
 
 /** The steps that tell the story of a finished run: where it started, anything that stopped or waited, how it ended. */
 export function tellingSteps(steps: RunStep[]): RunStep[] {

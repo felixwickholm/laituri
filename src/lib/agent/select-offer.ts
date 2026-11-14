@@ -65,6 +65,11 @@ async function fromPreviews(ctx: SelectContext): Promise<Plan | undefined> {
   const late = (r: (typeof ranked)[number]) => r.preview.availability.status === "available";
   const pick = ranked.find((r) => r.preview.orderable) ?? ranked.find(late) ?? ranked[0];
   const skipped = ranked.slice(0, ranked.indexOf(pick)).map((r) => fromHit(r.hit));
+  const notOrderable = ranked.filter((r) => !r.preview.orderable).length;
+  if (ranked.length > 1) {
+    const rest = notOrderable > 0 ? ` ${notOrderable} cannot be delivered in full on time.` : "";
+    await ctx.say(`Compared live prices for ${ranked.length} matches.${rest}`);
+  }
   await announce(ctx, skipped, fromHit(pick.hit).name, pick.price);
   const rest = ranked.filter((r) => r !== pick && r.preview.orderable).map((r) => r.hit.product.id);
   return { order: [pick.hit.product.id, ...rest], quotesUsed: 0 };
