@@ -77,6 +77,7 @@ export async function runModelPurchase(
       }
       if (effect.kind === "ask") return finish("needs_input", effect.question, "waiting");
       if (effect.kind === "stop") return finish("not_found", `${effect.reason} No order placed.`, "error");
+      if (effect.kind === "refused") return finish("needs_input", `${effect.sentence} No order placed.`, "blocked");
       if (effect.kind === "reply" && effect.note) await say(effect.note);
       results.push({ callId: call.id, name: call.name, content: effect.content, isError: effect.kind === "error" });
     }

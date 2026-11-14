@@ -11,6 +11,7 @@ import {
   guideFor,
   isLocalOrigin,
   mcpUrlWithKey,
+  oneLineCommand,
   vscodeConfig,
 } from "@/lib/connect/guides";
 import { PROMPT, nextMonday } from "@/lib/connect/requests";
@@ -21,29 +22,33 @@ import { PlaceOrderRequest, QuoteRequest, SearchRequest } from "@/lib/contracts"
 
 const ORIGIN = "https://laituri.example";
 const MONDAY = "2026-11-16";
+/** A sandbox key: random, so every visitor's commands reach only their own workspace. */
+const KEY = "lsk_Q7mxA1b2C3d4E5f6G7h8I9j0K1l2M3n4";
 
 describe("MCP setup lines", () => {
-  it("builds the Claude Code command with the bearer header", () => {
-    expect(claudeCodeCommand(ORIGIN)).toBe(
-      'claude mcp add --transport http laituri https://laituri.example/mcp --header "Authorization: Bearer demo-agent-token"',
+  it("builds the Claude Code command with the visitor's key in the bearer header", () => {
+    expect(claudeCodeCommand(ORIGIN, KEY)).toBe(
+      `claude mcp add --transport http laituri https://laituri.example/mcp --header "Authorization: Bearer ${KEY}"`,
     );
   });
 
-  it("puts the key in the address for chat apps", () => {
-    expect(mcpUrlWithKey(ORIGIN)).toBe("https://laituri.example/mcp?key=demo-agent-token");
+  it("puts the key in the address for chat apps and the landing page's one line", () => {
+    expect(mcpUrlWithKey(ORIGIN, KEY)).toBe(`https://laituri.example/mcp?key=${KEY}`);
+    expect(mcpUrlWithKey(ORIGIN, "a b&c")).toBe("https://laituri.example/mcp?key=a%20b%26c");
+    expect(oneLineCommand(ORIGIN, KEY)).toBe(`claude mcp add --transport http laituri https://laituri.example/mcp?key=${KEY}`);
   });
 
   it("writes each editor's config in its own shape", () => {
-    const headers = { Authorization: "Bearer demo-agent-token" };
-    expect(JSON.parse(cursorConfig(ORIGIN))).toEqual({ mcpServers: { laituri: { url: `${ORIGIN}/mcp`, headers } } });
-    expect(JSON.parse(vscodeConfig(ORIGIN))).toEqual({ servers: { laituri: { type: "http", url: `${ORIGIN}/mcp`, headers } } });
-    expect(JSON.parse(geminiConfig(ORIGIN))).toEqual({ mcpServers: { laituri: { httpUrl: `${ORIGIN}/mcp`, headers } } });
+    const headers = { Authorization: `Bearer ${KEY}` };
+    expect(JSON.parse(cursorConfig(ORIGIN, KEY))).toEqual({ mcpServers: { laituri: { url: `${ORIGIN}/mcp`, headers } } });
+    expect(JSON.parse(vscodeConfig(ORIGIN, KEY))).toEqual({ servers: { laituri: { type: "http", url: `${ORIGIN}/mcp`, headers } } });
+    expect(JSON.parse(geminiConfig(ORIGIN, KEY))).toEqual({ mcpServers: { laituri: { httpUrl: `${ORIGIN}/mcp`, headers } } });
   });
 
   it("gives every app numbered steps with something to copy, and ends agent apps with the prompt", () => {
     for (const tile of TILES) {
       for (const { id } of tile.guides) {
-        const { steps } = guideFor(id, ORIGIN, MONDAY);
+        const { steps } = guideFor(id, ORIGIN, KEY, MONDAY);
         expect(steps.length).toBeGreaterThanOrEqual(3);
         expect(steps.some((step) => step.code)).toBe(true);
         if (id !== "http") expect(steps.at(-1)?.code?.value).toBe(PROMPT);
@@ -51,10 +56,21 @@ describe("MCP setup lines", () => {
     }
   });
 
+  it("carries the given key, and never the shared one, in everything an app copies", () => {
+    for (const tile of TILES) {
+      for (const { id } of tile.guides) {
+        const copied = guideFor(id, ORIGIN, KEY, MONDAY).steps.flatMap((step) => (step.code && step.code.value !== PROMPT ? [step.code.value] : []));
+        expect(copied.length).toBeGreaterThan(0);
+        expect(copied.every((value) => value.includes(KEY))).toBe(true);
+        expect(copied.some((value) => value.includes("demo-agent-token"))).toBe(false);
+      }
+    }
+  });
+
   it("warns only chat connectors about a local address", () => {
-    expect(guideFor("claude", "http://localhost:3210", MONDAY).localNote).toBeDefined();
-    expect(guideFor("claude", ORIGIN, MONDAY).localNote).toBeUndefined();
-    expect(guideFor("claude-code", "http://localhost:3210", MONDAY).localNote).toBeUndefined();
+    expect(guideFor("claude", "http://localhost:3210", KEY, MONDAY).localNote).toBeDefined();
+    expect(guideFor("claude", ORIGIN, KEY, MONDAY).localNote).toBeUndefined();
+    expect(guideFor("claude-code", "http://localhost:3210", KEY, MONDAY).localNote).toBeUndefined();
     expect(isLocalOrigin("http://127.0.0.1:3000")).toBe(true);
   });
 });
@@ -63,13 +79,13 @@ describe("curl flow", () => {
   const body = (command: string) => JSON.parse(command.match(/-d '(.+)'/)![1]);
 
   it("sends bodies the API accepts", () => {
-    expect(SearchRequest.safeParse(body(curlSearch(ORIGIN, MONDAY))).success).toBe(true);
-    expect(QuoteRequest.safeParse(body(curlQuote(ORIGIN, MONDAY))).success).toBe(true);
+    expect(SearchRequest.safeParse(body(curlSearch(ORIGIN, KEY, MONDAY))).success).toBe(true);
+    expect(QuoteRequest.safeParse(body(curlQuote(ORIGIN, KEY, MONDAY))).success).toBe(true);
   });
 
   it("keeps the offer and mandate in shell variables and orders with a fresh key", () => {
-    expect(curlQuote(ORIGIN, MONDAY)).toMatch(/^OFFER=\$\(curl -s https:\/\/laituri\.example\/api\/v1\/quotes [\s\S]*\| jq -r \.primary\.jws\)$/);
-    const order = curlOrder(ORIGIN);
+    expect(curlQuote(ORIGIN, KEY, MONDAY)).toMatch(/^OFFER=\$\(curl -s https:\/\/laituri\.example\/api\/v1\/quotes [\s\S]*\| jq -r \.primary\.jws\)$/);
+    const order = curlOrder(ORIGIN, KEY);
     expect(order).toContain("MANDATE=$(curl -s https://laituri.example/api/v1/mandate");
     expect(order).toContain('-H "Idempotency-Key: milk-$(date +%s)"');
     expect(order).toContain('-d "{\\"offerJws\\":\\"$OFFER\\",\\"mandateJws\\":\\"$MANDATE\\"}"');
@@ -96,11 +112,11 @@ describe("tool table", () => {
 });
 
 describe("browser test flow", () => {
-  const state = { deliverBy: MONDAY, idempotencyKey: "connect-test-0001", offerJws: "a.b.c", mandateJws: "d.e.f" };
+  const state = { key: KEY, deliverBy: MONDAY, idempotencyKey: "connect-test-0001", offerJws: "a.b.c", mandateJws: "d.e.f" };
 
-  it("sends the documented requests with the demo key", () => {
-    expect(flowRequest("search", state)).toMatchObject({ method: "POST", path: "/api/v1/products/search" });
-    expect(flowRequest("mandate", state)).toEqual({ method: "GET", path: "/api/v1/mandate", headers: { Authorization: "Bearer demo-agent-token" } });
+  it("sends the documented requests with the visitor's key", () => {
+    expect(flowRequest("search", state)).toMatchObject({ method: "POST", path: "/api/v1/products/search", headers: { Authorization: `Bearer ${KEY}` } });
+    expect(flowRequest("mandate", state)).toEqual({ method: "GET", path: "/api/v1/mandate", headers: { Authorization: `Bearer ${KEY}` } });
     const order = flowRequest("order", state);
     expect(order.headers["Idempotency-Key"]).toBe("connect-test-0001");
     expect(PlaceOrderRequest.omit({ idempotencyKey: true }).safeParse(order.body).success).toBe(true);
@@ -109,7 +125,7 @@ describe("browser test flow", () => {
   it("buys a small quantity, so repeated tests stay inside the demo buyer's weekly limit", () => {
     expect(flowRequest("quote", state).body).toMatchObject({ lines: [{ quantity: { amount: 20, unit: "l" } }], intent: "20 litres of lactose-free milk by Monday" });
     expect(flowRequest("search", state).body).toMatchObject({ need: { amount: 20, unit: "l" } });
-    expect(curlQuote("https://x.test", MONDAY)).toContain('"amount":1000');
+    expect(curlQuote("https://x.test", KEY, MONDAY)).toContain('"amount":1000');
   });
 
   it("shortens only the signatures in the terminal preview", () => {
@@ -121,12 +137,25 @@ describe("browser test flow", () => {
   it("carries the signatures forward and reads outcomes in plain words", () => {
     expect(readStep("quote", 200, { primary: { jws: "x.y.z", offer: { totals: { net: { amount: 1010 } } } } })).toEqual({
       ok: true,
+      tone: "ok",
       summary: "Signed offer, 1,010.00 EUR net, valid 15 minutes.",
       carry: { offerJws: "x.y.z" },
     });
-    expect(readStep("order", 201, { id: "ord_1", status: "pending_approval" }).ok).toBe(true);
-    expect(readStep("order", 201, { id: "ord_1", status: "blocked" }).ok).toBe(false);
-    expect(readStep("search", 400, { detail: "Bad query." })).toEqual({ ok: false, summary: "Bad query." });
+    expect(readStep("search", 400, { detail: "Bad query." })).toEqual({ ok: false, tone: "error", summary: "Bad query." });
+  });
+
+  it("ends well on a confirmed order and on one waiting for a person, and stops on a blocked one", () => {
+    expect(readStep("order", 201, { id: "ord_1", status: "confirmed" })).toMatchObject({ ok: true, tone: "ok" });
+    expect(readStep("order", 202, { id: "ord_1", status: "pending_approval" })).toMatchObject({ ok: true, tone: "waiting" });
+    expect(readStep("order", 422, { code: "order_blocked", order: { id: "ord_1", status: "blocked", decision: { checks: [] } } })).toMatchObject({
+      ok: false,
+      tone: "blocked",
+    });
+  });
+
+  it("shows a quote refusal's own sentence, not a generic failure", () => {
+    const refused = { code: "quantity_implausible", status: 422, detail: "200,000 l of one product is more than one order line may ask for." };
+    expect(readStep("quote", 422, refused)).toEqual({ ok: false, tone: "error", summary: refused.detail });
   });
 });
 

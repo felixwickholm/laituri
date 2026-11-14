@@ -3,6 +3,7 @@ import type { AuditEntry } from "@/lib/contracts";
 import { verifyChain, type LogHead } from "@/lib/audit/verify";
 import { canonicalize, sha256Hex } from "@/lib/trust/canonical";
 import { verifyWithJwks } from "@/lib/trust/jws";
+import { TOKEN_TYPE, type TokenType } from "@/lib/trust/types";
 import type { ChainState, Jwks, PublicKey } from "./types";
 
 /** Who owns a key, in the words the console shows. */
@@ -15,6 +16,18 @@ export interface SignatureCheck {
   payload?: unknown;
 }
 
+/** The signed objects the console checks. */
+export type SignedKind = "audit" | "offer" | "approval" | "receipt" | "mandate";
+
+/** Who must have signed each kind, and the JWS type it must carry, so a token signed for one purpose never passes for another. */
+export const SIGNED_KIND: Record<SignedKind, { role: KeyRole; typ: TokenType }> = {
+  audit: { role: "supplier", typ: TOKEN_TYPE.audit },
+  offer: { role: "supplier", typ: TOKEN_TYPE.offer },
+  receipt: { role: "supplier", typ: TOKEN_TYPE.receipt },
+  mandate: { role: "buyer", typ: TOKEN_TYPE.mandate },
+  approval: { role: "approver", typ: TOKEN_TYPE.approval },
+};
+
 function asKeySet(jwks: Jwks): JSONWebKeySet {
   return jwks as unknown as JSONWebKeySet;
 }
@@ -23,14 +36,15 @@ export function roleOf(jwks: Jwks, kid: string | undefined): KeyRole | undefined
   return jwks.keys.find((key) => key.kid === kid)?.role;
 }
 
-/** Verifies one compact JWS against the public keys and reports which role signed it. */
-export async function checkSignature(jws: string | undefined, jwks: Jwks | undefined, expected?: KeyRole): Promise<SignatureCheck> {
+/** Verifies one compact JWS as the given kind of object: its token type, and the role whose key signed it. */
+export async function checkSignature(jws: string | undefined, jwks: Jwks | undefined, kind: SignedKind): Promise<SignatureCheck> {
   if (!jws) return { valid: false, reason: "No signature was recorded." };
   if (!jwks) return { valid: false, reason: "The public keys are not loaded yet." };
-  const result = await verifyWithJwks<unknown>(jws, asKeySet(jwks));
+  const expected = SIGNED_KIND[kind];
+  const result = await verifyWithJwks<unknown>(jws, asKeySet(jwks), expected.typ);
   const role = roleOf(jwks, result.keyId);
   if (!result.valid) return { valid: false, role, reason: result.reason };
-  if (expected && role && role !== expected) return { valid: false, role, reason: `signed with the ${role} key` };
+  if (role !== expected.role) return { valid: false, role, reason: role ? `signed with the ${role} key` : "signed with an unknown key" };
   return { valid: true, role, payload: result.payload };
 }
 
@@ -51,7 +65,7 @@ export async function checkChain(entries: AuditEntry[], jwks: Jwks | undefined):
   if (!jwks) return { state: "checking", entries: entries.length };
   const ordered = [...entries].sort((a, b) => a.seq - b.seq);
   const keys = asKeySet(jwks);
-  const result = await verifyChain(ordered, (jws) => verifyWithJwks(jws, keys), remembered);
+  const result = await verifyChain(ordered, (jws) => verifyWithJwks(jws, keys, TOKEN_TYPE.audit), remembered);
   if (result.valid) {
     if (result.head && (!remembered || result.entries >= remembered.size)) {
       remembered = { size: result.entries, head: result.head };

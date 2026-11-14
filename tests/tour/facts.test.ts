@@ -23,6 +23,7 @@ function order(id: string, createdAt: string, overrides: { status?: Order["statu
       lines: [
         {
           name: "Valio Eila semi-skimmed milk drink 1 l lactose free",
+          availability: { status: "available", requested: 200, deliveryDate: "2026-11-16" },
           substituteFor: overrides.substitute ? { productId: "462775", name: "Arla Milkdrink", reason: overrides.substitute, likeForLike: true, priceChangePct: -5 } : undefined,
         },
       ],
@@ -113,6 +114,7 @@ describe("step sentences", () => {
     expect(byId.offer.copy(empty).title).toContain("asks for a price");
     expect(byId.phone.copy(full).title).toContain("€116.00 over the limit");
     expect(byId.stock.copy(full).title).toContain("only 51 of the 200");
+    expect(byId.stock.copy(full).detail).toMatch(/^The signed alternative, .* in full on Monday\./);
     expect(byId.log.copy(full).detail).toContain("entry 7");
   });
 });

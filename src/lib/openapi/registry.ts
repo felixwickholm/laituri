@@ -141,7 +141,7 @@ export const OPERATIONS: Operation[] = [
     description: "The shared workspace is read-only for a browser unless it signs in with the passcode. The sandbox is kept meanwhile. Refused for agent credentials.",
     body: "WorkspaceViewRequest", response: "WorkspaceInfo", errors: [400, 403] },
   { operationId: "getHealth", method: "get", path: "/api/v1/health", tag: "System", audience: "public",
-    summary: "Service and upstream status", description: "Includes whether demo history was written at start-up and which engine runs free-text requests.",
+    summary: "Service and upstream status", description: "Includes whether demo history was written at start-up, which engine runs free-text requests, and how many sandboxes are active.",
     response: "Health", errors: [] },
   { operationId: "getVoice", method: "get", path: "/api/v1/voice", tag: "System", audience: "public",
     summary: "Which voice the console speaks with (console only)", description: "Refused for agent credentials.",

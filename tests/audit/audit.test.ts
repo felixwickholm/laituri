@@ -33,7 +33,7 @@ describe("audit chain", () => {
   it("verifies with the public JWKS only", async () => {
     const entries = await appendFive();
     const keys = await jwks("supplier");
-    const result = await verifyChain(entries, (jws) => verifyWithJwks(jws, keys));
+    const result = await verifyChain(entries, (jws) => verifyWithJwks(jws, keys, TOKEN_TYPE.audit));
     expect(result.valid).toBe(true);
   });
 

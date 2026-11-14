@@ -2,7 +2,7 @@ import type { AuditEntry, Offer, Order } from "@/lib/contracts";
 import { replacePayload } from "@/lib/demo/forge";
 import type { ReceiptPayload } from "@/lib/orders";
 import { store } from "@/lib/store";
-import { sha256Hex } from "@/lib/trust";
+import { TOKEN_TYPE, sha256Hex } from "@/lib/trust";
 import type { EvalCase, Suite } from "../harness";
 import { Checks } from "../support/checks";
 import { mandate, orderFrom, placeOrder } from "../support/flow";
@@ -30,7 +30,7 @@ function trustCase(id: string, name: string, expected: string, body: Body): Eval
 const middle = (entries: AuditEntry[]) => entries[Math.floor(entries.length / 2)];
 
 async function receiptChecks(order: Order, trail: Trail, checks: Checks): Promise<string> {
-  const result = await verifyAs<ReceiptPayload>(order.receiptJws ?? "", trail.jwks, "supplier");
+  const result = await verifyAs<ReceiptPayload>(order.receiptJws ?? "", trail.jwks, "supplier", TOKEN_TYPE.receipt);
   checks.expect(result.valid, `receipt of the ${order.approval ? "approved" : "auto"} order: ${result.reason}`);
   checks.expect(result.payload?.offerHash === (await sha256Hex(order.offer)), "receipt offerHash does not match the offer");
   const confirmed = trail.entries.find((entry) => entry.seq === result.payload?.auditSeq);
@@ -46,17 +46,17 @@ const CASES: EvalCase[] = [
     return `${jwks.keys.length} keys: ${roles.join(", ")}`;
   }),
   trustCase("T2", "Offer signature", "valid, supplier key", async ({ offer, jwks }, checks) => {
-    const result = await verifyAs<{ id: string }>(offer.jws, jwks, "supplier");
+    const result = await verifyAs<{ id: string }>(offer.jws, jwks, "supplier", TOKEN_TYPE.offer);
     checks.expect(result.valid && result.payload?.id === offer.offer.id, `offer: ${result.reason ?? "payload is another offer"}`);
     return `${result.role} ${result.typ}`;
   }),
   trustCase("T3", "Mandate signature", "valid, buyer key", async ({ mandateJws, jwks }, checks) => {
-    const result = await verifyAs<{ vct: string }>(mandateJws, jwks, "buyer");
+    const result = await verifyAs<{ vct: string }>(mandateJws, jwks, "buyer", TOKEN_TYPE.mandate);
     checks.expect(result.valid, `mandate: ${result.reason}`);
     return `${result.role} ${result.typ} ${result.payload?.vct}`;
   }),
   trustCase("T4", "Approval signature", "valid, approver key, bound to the offer", async ({ approved, jwks }, checks) => {
-    const result = await verifyAs<{ orderId: string; offerHash: string }>(approved.approval?.jws ?? "", jwks, "approver");
+    const result = await verifyAs<{ orderId: string; offerHash: string }>(approved.approval?.jws ?? "", jwks, "approver", TOKEN_TYPE.approval);
     checks.expect(result.valid, `approval: ${result.reason}`);
     checks.expect(result.payload?.orderId === approved.id, "approval names another order");
     checks.expect(result.payload?.offerHash === (await sha256Hex(approved.offer)), "approval offerHash does not match the offer");
@@ -68,21 +68,21 @@ const CASES: EvalCase[] = [
   trustCase("T6", "Every audit signature and the chain", "all valid with the JWKS; checkpoint signed", async ({ entries, jwks, head, checkpointJws }, checks) => {
     const verification = await verifyEntries(entries, jwks, head);
     checks.expect(verification.valid, `chain: ${verification.reason}`);
-    const signed = await Promise.all(entries.map((entry) => verifyAs(entry.signature, jwks, "supplier")));
+    const signed = await Promise.all(entries.map((entry) => verifyAs(entry.signature, jwks, "supplier", TOKEN_TYPE.audit)));
     checks.expect(signed.every((s) => s.valid), `${signed.filter((s) => !s.valid).length} audit signatures fail`);
-    checks.expect((await verifyAs(checkpointJws, jwks, "supplier")).valid, "checkpoint signature fails");
+    checks.expect((await verifyAs(checkpointJws, jwks, "supplier", TOKEN_TYPE.checkpoint)).valid, "checkpoint signature fails");
     return `${entries.length} entries verified, head matches checkpoint`;
   }),
   trustCase("T7", "One byte changed in an offer", "detected; ordering it is blocked", async ({ offer, jwks }, checks) => {
     const changed = changeOneByte(offer.jws);
-    const result = await verifyAs(changed, jwks, "supplier");
+    const result = await verifyAs(changed, jwks, "supplier", TOKEN_TYPE.offer);
     checks.expect(!result.valid, "changed offer still verifies");
     const reply = await placeOrder(changed, (await mandate()).jws, "eval-t7-changed");
     checks.expect(orderFrom(reply)?.status === "blocked" || reply.status === 400, `ordering it answered ${reply.status}`);
     return `${result.reason}; order ${orderFrom(reply)?.status ?? reply.status}`;
   }),
   trustCase("T8", "One byte changed in a receipt", "detected", async ({ auto, jwks }, checks) => {
-    const result = await verifyAs(changeOneByte(auto.receiptJws ?? ""), jwks, "supplier");
+    const result = await verifyAs(changeOneByte(auto.receiptJws ?? ""), jwks, "supplier", TOKEN_TYPE.receipt);
     checks.expect(!result.valid, "changed receipt still verifies");
     return result.reason ?? "verified";
   }),
@@ -129,7 +129,7 @@ const CASES: EvalCase[] = [
     const outcomes: string[] = [];
     for (const [what, edit] of edits) {
       const changed = replacePayload(offer.jws, (payload: Offer) => ({ ...payload, lines: payload.lines.map(edit) }));
-      const result = await verifyAs(changed, jwks, "supplier");
+      const result = await verifyAs(changed, jwks, "supplier", TOKEN_TYPE.offer);
       checks.expect(!result.valid, `an offer with a changed ${what} still verifies`);
       const order = orderFrom(await placeOrder(changed, mandateJws, `eval-t14-${what}`));
       const check = order?.decision.checks.find((c) => c.rule === "offer.signature");

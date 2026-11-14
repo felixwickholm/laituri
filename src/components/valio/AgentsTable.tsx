@@ -4,6 +4,7 @@ import { ago, orderCount } from "@/lib/supplier-console/format";
 import type { ControlAgent } from "@/lib/supplier-console/types";
 import { ClientChips, StatusMark } from "./bits";
 import { OutcomeBar } from "./OutcomeBar";
+import { agentName } from "@/lib/supplier-console/names";
 
 interface AgentsTableProps {
   agents: ControlAgent[];
@@ -44,9 +45,9 @@ export function AgentsTable({ agents, now, onOpen }: AgentsTableProps) {
               <tr key={agent.agent.id} data-status={agent.status}>
                 <td className="cell-agent">
                   <button type="button" className="row-open" onClick={() => onOpen(agent.agent.id)}>
-                    {agent.agent.name}
+                    {agentName(agent.agent)}
                   </button>
-                  <span className="sub">{agent.buyer?.name ?? "Unknown buyer"}</span>
+                  <span className="sub">{agent.buyer?.name ?? "No buyer named"}</span>
                 </td>
                 <td className="cell-apps">
                   <ClientChips clients={agent.clients} max={4} />
@@ -57,11 +58,11 @@ export function AgentsTable({ agents, now, onOpen }: AgentsTableProps) {
                 </td>
                 <td className="cell-calls num">
                   {count(agent.calls)}
-                  <span className="phone-unit"> calls</span>
+                  <span className="phone-unit"> {agent.calls === 1 ? "call" : "calls"}</span>
                 </td>
                 <td className="cell-quotes num">
                   {count(agent.quotes)}
-                  <span className="phone-unit"> quotes</span>
+                  <span className="phone-unit"> {agent.quotes === 1 ? "quote" : "quotes"}</span>
                 </td>
                 <td className="cell-orders">
                   <span className="orders-inline">

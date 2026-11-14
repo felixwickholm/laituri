@@ -6,9 +6,9 @@ import { guideFor, type AppId } from "@/lib/connect/guides";
 import { CodeBlock } from "./CodeBlock";
 
 /** Numbered steps for the chosen app. Claude has a second switch: the terminal or the chat apps. Keyed by tile. */
-export function SetupGuide({ tile, origin, deliverBy }: { tile: Tile; origin: string; deliverBy: string }) {
+export function SetupGuide({ tile, origin, agentKey, deliverBy }: { tile: Tile; origin: string; agentKey: string; deliverBy: string }) {
   const [app, setApp] = useState<AppId>(tile.guides[0].id);
-  const guide = guideFor(app, origin, deliverBy);
+  const guide = guideFor(app, origin, agentKey, deliverBy);
 
   return (
     <div className="cx-guide" id="cx-guide" role="tabpanel" aria-labelledby={`cx-tab-${tile.id}`}>

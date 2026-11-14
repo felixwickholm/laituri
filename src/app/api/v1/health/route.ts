@@ -6,6 +6,8 @@ import { catalogStatus } from "@/lib/http/health";
 import { seedStatus } from "@/lib/seed";
 import { storeStatus } from "@/lib/store";
 import { ping } from "@/lib/valio";
+import { sandboxes, templateStatus } from "@/lib/workspace";
+import { sandboxLimits } from "@/lib/workspace/limits";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -14,6 +16,7 @@ export const GET = route(async () => {
   const upstream = await ping();
   const catalog = catalogStatus();
   const saved = storeStatus();
+  const limits = sandboxLimits();
   const healthy = upstream.ok && catalog.ready && !saved.recovery && !saved.lastSaveError;
   return json({
     status: healthy ? "ok" : "degraded",
@@ -22,6 +25,12 @@ export const GET = route(async () => {
     catalog,
     seed: seedStatus(),
     agent: activeEngine(),
+    sandboxes: {
+      active: sandboxes().active(),
+      max: limits.max,
+      idleMinutes: limits.idleMs / 60_000,
+      template: await templateStatus(),
+    },
     store: saved,
     time: now().toISOString(),
   });

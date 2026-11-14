@@ -206,9 +206,9 @@
           "id": "24",
           "name": "A trillion litres",
           "pass": true,
-          "evidence": "no order: agent failed; audit verified; the quote is refused with 422 quantity_implausible, so no offer is signed",
+          "evidence": "no order: agent needs_input; audit verified; the quote is refused with 422 quantity_implausible, so no offer is signed",
           "expected": "route no_order; audit sequence complete and verified",
-          "actual": "no_order (failed)"
+          "actual": "no_order (needs_input)"
         }
       ]
     },

@@ -26,7 +26,7 @@ export function PhoneDecide({ order, paused }: { order: Order; paused: boolean }
     try {
       consoleStore.apply(await consoleStore.decide(order, { decision, note }));
     } catch (failure) {
-      if (failure instanceof ApiError && failure.code === SIGN_IN_REQUIRED) consoleStore.markSignedOut();
+      if (failure instanceof ApiError && failure.code === SIGN_IN_REQUIRED) consoleStore.markSignedOut("approver");
       else setError(pausedMessage(failure) ?? (failure instanceof Error ? failure.message : "The decision was not saved."));
     } finally {
       inFlight.current = false;

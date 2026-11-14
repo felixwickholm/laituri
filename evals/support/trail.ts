@@ -2,7 +2,7 @@ import type { JSONWebKeySet } from "jose";
 import { decodeProtectedHeader } from "jose";
 import type { AuditEntry, Order, SignedOffer } from "@/lib/contracts";
 import { verifyChain, type LogHead } from "@/lib/audit/verify";
-import { verifyWithJwks, type SignerRole } from "@/lib/trust";
+import { TOKEN_TYPE, verifyWithJwks, type SignerRole, type TokenType } from "@/lib/trust";
 import { approverCookie, mandate, orderLitres } from "./flow";
 import { pendingOrder } from "./hostile";
 import { AGENT_AUTH, get, ok, post } from "./router";
@@ -43,9 +43,9 @@ export interface RoleCheck<T> {
   reason?: string;
 }
 
-/** Verifies with the published JWKS only, and reports which role's key signed. */
-export async function verifyAs<T>(jws: string, jwks: JSONWebKeySet, role: SignerRole): Promise<RoleCheck<T>> {
-  const result = await verifyWithJwks<T>(jws, jwks);
+/** Verifies with the published JWKS only, as one token type, and reports which role's key signed. */
+export async function verifyAs<T>(jws: string, jwks: JSONWebKeySet, role: SignerRole, expected: TokenType): Promise<RoleCheck<T>> {
+  const result = await verifyWithJwks<T>(jws, jwks, expected);
   const key = jwks.keys.find((candidate) => candidate.kid === result.keyId) as { role?: string } | undefined;
   let typ: string | undefined;
   try {
@@ -59,5 +59,5 @@ export async function verifyAs<T>(jws: string, jwks: JSONWebKeySet, role: Signer
 
 /** The audit chain check with signatures verified against the JWKS. */
 export function verifyEntries(entries: AuditEntry[], jwks: JSONWebKeySet, head?: LogHead) {
-  return verifyChain(entries, (jws) => verifyWithJwks(jws, jwks), head);
+  return verifyChain(entries, (jws) => verifyWithJwks(jws, jwks, TOKEN_TYPE.audit), head);
 }

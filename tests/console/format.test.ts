@@ -62,7 +62,7 @@ describe("request versus offer", () => {
     const { offer } = pendingOrder();
     expect(askedLine(offer)).toBe("Asked: 1,800 l lactose-free milk by Mon 16 Nov");
     expect(offeredLine(offer)).toBe("Offered: 1,800 × Valio Arki Eila 1 l = 1,800 l, Mon 16 Nov");
-    expect(offeredShort(offer)).toBe("Offered: 1,800 × Arki Eila 1 l · Mon 16 Nov");
+    expect(offeredShort(offer)).toBe("Offered: 1,800 × Arki Eila 1\u00a0l = 1,800\u00a0l · Mon 16\u00a0Nov");
   });
 
   it("renders exactly the wholesaler's signed comparisons, with 'not checked' as its own mark", () => {

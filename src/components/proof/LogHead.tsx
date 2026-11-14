@@ -30,11 +30,11 @@ export type LogAudience = "buyer" | "wholesaler";
 const WORDS: Record<LogAudience, { checked: string; consequence: string }> = {
   buyer: {
     checked: "checked in your browser with Valio Aimo’s public keys",
-    consequence: "Every entry after it can no longer be trusted, and approvals are paused until the log is restored. Reset demo restores it.",
+    consequence: "Every entry after it can no longer be trusted. Approvals stay paused until the log is restored from the last signed checkpoint.",
   },
   wholesaler: {
     checked: "checked in this browser with Valio Aimo’s public keys",
-    consequence: "While the log does not verify, Valio Aimo treats later entries as untrusted. Reset demo restores it.",
+    consequence: "Valio Aimo treats every later entry as untrusted. Approvals stay paused until the log is restored from the last signed checkpoint.",
   },
 };
 
@@ -90,9 +90,9 @@ export function LogHead({ chain, lastSeq, audience = "buyer" }: LogHeadProps) {
         </p>
       ) : null}
       <div className="how">
-        <p>Each entry carries the hash of the one before it, so changing any entry breaks every link after it.</p>
+        <p>Each entry carries a fingerprint of the one before it, so changing any entry breaks every link after it.</p>
         <p>
-          Valio Aimo signs each entry. Your browser checks every hash and signature against the keys published at{" "}
+          Valio Aimo signs each entry. Your browser checks every fingerprint and signature against the keys published at{" "}
           <a href="/.well-known/jwks.json" target="_blank" rel="noreferrer">
             /.well-known/jwks.json
           </a>
@@ -100,7 +100,7 @@ export function LogHead({ chain, lastSeq, audience = "buyer" }: LogHeadProps) {
         </p>
         {chain.state === "verified" && chain.head ? (
           <p className="how-head">
-            Newest entry {lastSeq} · head <span className="mono">{shortHash(chain.head)}</span>
+            Newest entry {lastSeq} · fingerprint <span className="mono">{shortHash(chain.head)}</span>
           </p>
         ) : null}
       </div>

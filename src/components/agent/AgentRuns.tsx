@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import type { Order } from "@/lib/contracts";
 import { isSeeded } from "@/lib/console/format/orders";
-import { buildRuns, type RunBlock as Run } from "@/lib/console/runs";
+import { buildRuns, demoRunOf, type RunBlock as Run } from "@/lib/console/runs";
 import type { Activity, DemoRun } from "@/lib/console/types";
 import { useUi } from "../shell/ui-context";
 import { RunBlock } from "./RunBlock";
@@ -60,6 +60,7 @@ export function AgentRuns({ activity, orders, run, approver, ready }: AgentRunsP
               key={block.id}
               run={block}
               newest={index === 0}
+              demoRun={demoRunOf(block, run, index)}
               seeded={seededRun(block, orderMap, activityMap)}
               ctx={{ orders: orderMap, active: running && index === 0, activeRequest: activeRequest(run), approver }}
               onOpenOrder={ui.openOrder}

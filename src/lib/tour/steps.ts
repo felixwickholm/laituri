@@ -1,6 +1,8 @@
+import { substitutionChoice } from "@/lib/console/format/substitution";
 import type { ConditionId, StoryFacts } from "./facts";
 import { takenInstead } from "./facts";
 import type { PlanStep } from "./machine";
+import { runOf } from "./targets";
 
 /** What the tour does in the product itself. The runner in the browser carries each one out. */
 export type ActionId = "typeRequest" | "sendRequest" | "startOverLimit" | "approveOnPhone" | "tamperLog";
@@ -39,11 +41,7 @@ export interface TourStep extends PlanStep {
 
 /** Every Valio target falls back to the page's main region, so a page that is still changing never strands the tour. */
 export const MAIN_TARGET = "main#main";
-const RUNS = '[data-tour="runs"] .run:first-of-type';
-
-/** The agent's newest run while it works, else the newest run. */
-const NEWEST_RUN = ['[data-tour="runs"] .run[data-active="true"]', RUNS];
-const LIVE_AGENT = ['.live-agent'];
+const LIVE_AGENT = [".live-agent"];
 
 export const STEPS: readonly TourStep[] = [
   {
@@ -65,7 +63,7 @@ export const STEPS: readonly TourStep[] = [
   {
     id: "offer",
     route: "/buyer",
-    target: NEWEST_RUN,
+    target: [runOf("milk")],
     also: LIVE_AGENT,
     view: "spotlight",
     enter: "sendRequest",
@@ -135,7 +133,7 @@ export const STEPS: readonly TourStep[] = [
   {
     id: "stock",
     route: "/buyer",
-    target: [RUNS],
+    target: [runOf("over-limit")],
     view: "spotlight",
     until: "shortStockDone",
     timeoutMs: 20_000,
@@ -147,7 +145,7 @@ export const STEPS: readonly TourStep[] = [
           facts.shortAvailable !== undefined
             ? `Valio Aimo had only ${facts.shortAvailable} of the ${facts.shortRequested} the agent wanted. It offered a signed alternative, and the rules allowed it.`
             : "Valio Aimo had too little of one product. It offered a signed alternative, and the rules allowed it.",
-        detail: instead ? `The agent took ${instead} instead, without asking anyone.` : undefined,
+        detail: substitutionChoice(facts.shortStock) ?? (instead ? `The agent took ${instead} instead, without asking anyone.` : undefined),
       };
     },
     fallback: "The agent is still working on this one. Press Next to go on.",
@@ -194,7 +192,7 @@ export const STEPS: readonly TourStep[] = [
       title: "Every step is signed and chained. Change one entry and everyone can see where.",
       detail:
         facts.brokenAt !== undefined
-          ? `The tour just changed entry ${facts.brokenAt} on the server. Your browser caught it at once.`
+          ? `The tour changed entry ${facts.brokenAt} on the server and your browser caught it at once. Approvals stay paused until the log is restored from the last signed checkpoint.`
           : "The tour changes one stored entry on the server, the way an attacker would.",
     }),
     fallback: "The check is slow to finish. Press Next to go on.",

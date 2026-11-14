@@ -2,11 +2,10 @@
 
 import { LockKeyhole, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
-import { ApiError, WRONG_PASSCODE } from "@/lib/console/api";
 import { shortName } from "@/lib/console/format/rules";
-import { demoOffered } from "@/lib/console/session";
+import { demoOffered, passcodeOffered, signInError } from "@/lib/console/session";
 import { consoleStore, useConsole } from "@/lib/console/store";
-import type { SignInCredentials } from "@/lib/console/types";
+import type { SessionRole, SignInCredentials } from "@/lib/console/types";
 import { useDismiss } from "../ui/useDismiss";
 import { currentSignIn, subscribeSignIn, type SignInRequest } from "./gate";
 
@@ -23,9 +22,35 @@ function place(anchor: DOMRect): { left: number; top?: number; bottom?: number; 
   return { left, bottom: window.innerHeight - anchor.top + GAP, origin: `bottom ${side}` };
 }
 
+interface RoleCopy {
+  title: string;
+  lede: string;
+  demoNote: string;
+  passcodeLabel: string;
+}
+
+/** What the popover says for each role, given the approver's name. */
+function copyFor(role: SessionRole, approver: string): RoleCopy {
+  if (role === "operator") {
+    return {
+      title: "Only a Valio Aimo operator can do this",
+      lede: "Suspending or resuming an agent is signed as the Valio Aimo operator and written to the log.",
+      demoNote: "Demo access signs you in as the Valio Aimo operator, in your own copy of the demo. Every change is still signed and logged.",
+      passcodeLabel: "Operator passcode",
+    };
+  }
+  return {
+    title: "Only the approver can do this",
+    lede: `Approvals and mandate changes are signed with ${approver}’s approver key and written to the log.`,
+    demoNote: `Demo access signs you in as ${approver}, the demo approver. Every decision is still signed and logged.`,
+    passcodeLabel: "Approver passcode",
+  };
+}
+
 function Form({ request }: { request: SignInRequest }) {
   const { session, mandate } = useConsole();
   const demo = demoOffered(session);
+  const passcodeWay = passcodeOffered(session, request.role);
   const [passcodeMode, setPasscodeMode] = useState(request.start === "passcode" || !demo);
   const [passcode, setPasscode] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -34,6 +59,7 @@ function Form({ request }: { request: SignInRequest }) {
   const cancel = useCallback(() => request.resolve(false), [request]);
   useDismiss(root, true, cancel);
   const approver = shortName(session?.approver?.name ?? mandate?.mandate.approval.approver.name ?? "the approver");
+  const copy = copyFor(request.role, approver);
 
   useEffect(() => {
     root.current?.querySelector<HTMLElement>("input, .btn-primary")?.focus();
@@ -43,11 +69,11 @@ function Form({ request }: { request: SignInRequest }) {
     setBusy(true);
     setError(null);
     try {
-      await consoleStore.signIn(credentials);
+      await consoleStore.signIn({ ...credentials, role: request.role });
       request.resolve(true);
     } catch (failure) {
       setBusy(false);
-      setError(failure instanceof ApiError && failure.code === WRONG_PASSCODE ? "That passcode is not correct." : "Sign-in did not reach the server.");
+      setError(signInError(failure));
     }
   }
 
@@ -70,28 +96,28 @@ function Form({ request }: { request: SignInRequest }) {
       </button>
       <h3 id="signin-title">
         <LockKeyhole aria-hidden="true" />
-        Only the approver can do this
+        {copy.title}
       </h3>
-      <p>Approvals, mandate changes and reset are signed with {approver}&rsquo;s approver key and written to the log.</p>
+      <p>{copy.lede}</p>
       {demo && !passcodeMode ? (
         <div className="signin-actions">
           <button type="button" className="btn btn-primary wide" disabled={busy} onClick={() => signIn({ demo: true })}>
             {busy ? "Signing in…" : "Continue with demo access"}
           </button>
-          <p className="fine">Demo access signs you in as {approver}, the demo approver. Every decision is still signed and logged.</p>
-          {session?.mode === "passcode" ? (
+          <p className="fine">{copy.demoNote}</p>
+          {passcodeWay ? (
             <button type="button" className="text-link" onClick={() => setPasscodeMode(true)}>
-              Use the approver passcode instead
+              Use the passcode instead
             </button>
           ) : null}
         </div>
       ) : (
         <form className="signin-actions" onSubmit={submitPasscode}>
-          <label className="field-label" htmlFor="approver-passcode">
-            Approver passcode
+          <label className="field-label" htmlFor="signin-passcode">
+            {copy.passcodeLabel}
           </label>
           <input
-            id="approver-passcode"
+            id="signin-passcode"
             className="text-field"
             type="password"
             autoComplete="current-password"

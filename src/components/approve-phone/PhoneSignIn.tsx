@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { ApiError, WRONG_PASSCODE } from "@/lib/console/api";
-import { demoOffered } from "@/lib/console/session";
+import { demoOffered, passcodeOffered, signInError } from "@/lib/console/session";
 import { consoleStore } from "@/lib/console/store";
 import type { ConsoleSession, SignInCredentials } from "@/lib/console/types";
 
@@ -20,7 +19,7 @@ export function PhoneSignIn({ session, approver }: { session?: ConsoleSession; a
     try {
       await consoleStore.signIn(credentials);
     } catch (failure) {
-      setError(failure instanceof ApiError && failure.code === WRONG_PASSCODE ? "That passcode is not correct." : "Sign-in did not reach the server.");
+      setError(signInError(failure));
     } finally {
       setBusy(false);
     }
@@ -58,10 +57,10 @@ export function PhoneSignIn({ session, approver }: { session?: ConsoleSession; a
         </form>
       ) : (
         <>
-          <button type="button" className="ph-btn ph-primary" disabled={busy} onClick={() => void signIn({ demo: true })}>
+          <button type="button" className="ph-btn ph-primary" data-phone-demo disabled={busy} onClick={() => void signIn({ demo: true })}>
             {busy ? "Signing in…" : "Continue with demo access"}
           </button>
-          {session?.mode === "passcode" ? (
+          {passcodeOffered(session, "approver") ? (
             <button type="button" className="ph-link" onClick={() => setPasscodeMode(true)}>
               Use the approver passcode
             </button>

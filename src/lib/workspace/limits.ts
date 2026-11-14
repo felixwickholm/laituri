@@ -4,8 +4,8 @@ export interface SandboxLimits {
   idleMs: number;
 }
 
-/** Each sandbox holds a copy of the seeded week (well under a megabyte of JSON), so 50 fit easily in memory. */
-export const DEFAULT_SANDBOX_MAX = 50;
+/** Each sandbox holds a copy of the seeded week (well under a megabyte of JSON), so 300 fit easily in memory. */
+export const DEFAULT_SANDBOX_MAX = 300;
 export const DEFAULT_SANDBOX_IDLE_MINUTES = 60;
 
 function positiveInteger(raw: string | undefined, fallback: number): number {

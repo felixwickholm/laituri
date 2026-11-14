@@ -3,6 +3,7 @@
 import { ArrowUp, Mic, Square } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import type { Order } from "@/lib/contracts";
+import { engineLine } from "@/lib/console/format/engine";
 import { eur } from "@/lib/console/format/money";
 import { weekSpend } from "@/lib/console/format/week";
 import { orbStateFor } from "@/lib/console/orb-state";
@@ -51,9 +52,8 @@ export function LiveAgentPanel({ snapshot }: LiveAgentPanelProps) {
     setStarting(key);
     const startedAt = Date.now();
     try {
-      await consoleStore.startRun(body);
-      const id = consoleStore.getSnapshot().run?.id;
-      spokenRun.current = byVoice && id ? { id, startedAt } : null;
+      const id = await consoleStore.startRun(body);
+      spokenRun.current = byVoice ? { id, startedAt } : null;
       if (key === "free") setRequest("");
     } catch (error) {
       toast(error instanceof Error ? error.message : "The agent could not start.", "danger");
@@ -86,6 +86,7 @@ export function LiveAgentPanel({ snapshot }: LiveAgentPanelProps) {
   const terms = mandate?.mandate;
   const budgetLeft = terms ? terms.limits.perWeek.amount - weekSpend(orders, now) : undefined;
   const countdown = offerCountdown(orders, now);
+  const engine = engineLine(snapshot.health);
 
   return (
     <section className="live-agent" aria-label="Your agent, live" data-ready={snapshot.ready}>
@@ -146,6 +147,12 @@ export function LiveAgentPanel({ snapshot }: LiveAgentPanelProps) {
         </button>
       </form>
       {!voice.supported && <p className="composer-note">{VOICE_UNSUPPORTED}</p>}
+      {engine ? (
+        <p className="composer-note composer-engine" title={engine.model ? `Typed requests go to ${engine.model}` : "Typed requests are answered by the scripted agent"}>
+          {engine.text}
+          {engine.model ? <span className="mono"> · {engine.model}</span> : null}
+        </p>
+      ) : null}
 
       <div className="suggestions" role="group" aria-label="Try a scene">
         {SUGGESTIONS.map((item) => (

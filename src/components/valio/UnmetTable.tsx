@@ -3,6 +3,7 @@ import { day, hourMinute } from "@/lib/console/format/time";
 import { conceptLabel, quantityText, reasonLabel } from "@/lib/supplier-console/format";
 import type { UnmetRequest } from "@/lib/supplier-console/types";
 import { DemoTag } from "../ui/DemoTag";
+import { agentName, clientName } from "@/lib/supplier-console/names";
 
 /** Every unserved request: when, who, the buyer's own words, how much, by when, why, and what it was worth. */
 export function UnmetTable({ rows, filtered }: { rows: UnmetRequest[]; filtered: boolean }) {
@@ -37,9 +38,9 @@ export function UnmetTable({ rows, filtered }: { rows: UnmetRequest[]; filtered:
                   <span className="sub">{hourMinute(item.at)}</span>
                 </td>
                 <td className="cell-buyer">
-                  <span>{item.buyer?.name ?? "Unknown buyer"}</span>
+                  <span>{item.buyer?.name ?? "No buyer named"}</span>
                   <span className="sub">
-                    {item.agent.name} · {item.client}
+                    {agentName(item.agent)} · {clientName(item.client)}
                   </span>
                 </td>
                 <td className="cell-words">

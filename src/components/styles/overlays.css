@@ -193,3 +193,79 @@
     }
   }
 }
+
+/* Your demo workspace: a quiet line in the shell footer, a small panel on the connect page. */
+.ws-indicator {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 0 8px;
+}
+.ws-indicator[data-variant="panel"] {
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface-1);
+}
+.ws-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  color: var(--text-2);
+  font-size: 12px;
+  line-height: 17px;
+}
+.ws-line svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  margin-top: 1px;
+  color: var(--text-3);
+}
+.ws-line > span {
+  display: grid;
+  min-width: 0;
+}
+.ws-title {
+  color: var(--text-1);
+  font-weight: 600;
+}
+.ws-meta {
+  color: var(--text-3);
+  overflow-wrap: anywhere;
+}
+.ws-switch {
+  justify-self: start;
+  margin-left: 22px;
+  font-size: 12px;
+}
+.ws-indicator[data-shared="true"] .ws-line svg {
+  color: var(--warn);
+}
+
+/* Viewing the shared workspace: one plain banner on top of the page, with the way back. */
+.ws-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  border: 1px solid color-mix(in srgb, var(--warn) 30%, transparent);
+  border-radius: var(--r-lg);
+  background: var(--warn-tint);
+  color: var(--text-1);
+  font-size: 14px;
+  line-height: 20px;
+}
+.ws-banner > svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  color: var(--warn);
+}
+.ws-banner p {
+  flex: 1 1 260px;
+  margin: 0;
+}

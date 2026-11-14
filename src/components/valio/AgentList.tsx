@@ -4,6 +4,7 @@ import { count, eur } from "@/lib/console/format/money";
 import { ago } from "@/lib/supplier-console/format";
 import type { ControlAgent } from "@/lib/supplier-console/types";
 import { ClientChips, StatusMark } from "./bits";
+import { agentName } from "@/lib/supplier-console/names";
 
 /** The connected agents in brief: who they buy for, through which apps, how busy, and what they bought. */
 export function AgentList({ agents, now }: { agents: ControlAgent[]; now: number }) {
@@ -26,9 +27,9 @@ export function AgentList({ agents, now }: { agents: ControlAgent[]; now: number
             <li key={agent.agent.id} className="agent-line" data-status={agent.status}>
               <span className="agent-who">
                 <Link href={`/valio/agents?agent=${encodeURIComponent(agent.agent.id)}`} className="agent-name">
-                  {agent.agent.name}
+                  {agentName(agent.agent)}
                 </Link>
-                <span className="sub">{agent.buyer?.name ?? "Unknown buyer"}</span>
+                <span className="sub">{agent.buyer?.name ?? "No buyer named"}</span>
               </span>
               <span className="agent-apps">
                 <ClientChips clients={agent.clients} />

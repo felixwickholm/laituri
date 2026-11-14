@@ -6,6 +6,7 @@ import { useConsole } from "@/lib/console/store";
 import { CONDITIONS, storyFacts } from "@/lib/tour/facts";
 import { canGoNext, pressPending, type TourState } from "@/lib/tour/machine";
 import { STEPS } from "@/lib/tour/steps";
+import { resolveTargets } from "@/lib/tour/targets";
 import { prepareDemo } from "./actions";
 import { EndCard } from "./EndCard";
 import { IntroCard } from "./IntroCard";
@@ -49,8 +50,9 @@ export function TourLayer({ state }: { state: TourState }) {
   const step = state.status === "step" ? STEPS[state.index] : undefined;
   const outcome = step ? state.outcomes[step.id] : undefined;
   const phoneOrder = step?.view === "phone" ? facts.overLimit : undefined;
-  const selectors = step && !phoneOrder ? (outcome === "done" && step.doneTarget ? step.doneTarget : step.target) : null;
-  const groups = selectors ? (step?.also ? [selectors, step.also] : [selectors]) : null;
+  const selectors = step && !phoneOrder ? resolveTargets(outcome === "done" && step.doneTarget ? step.doneTarget : step.target, state.runs) : null;
+  // A run target is left out until the tour has started that run; an empty group would match nothing anyway.
+  const groups = selectors ? [selectors, step?.also ?? []].filter((group) => group.length > 0) : null;
   useSpotlight(groups, { dim, ring, card: cardRef }, step !== undefined && phoneOrder === undefined);
 
   const next = useCallback(() => tourStore.dispatch({ type: "next" }), []);

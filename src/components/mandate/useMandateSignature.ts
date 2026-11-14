@@ -14,7 +14,7 @@ export function useMandateSignature(mandate: SignedMandate | undefined, jwks: Jw
   useEffect(() => {
     if (!jws || !jwks) return;
     let live = true;
-    void checkSignature(jws, jwks, "buyer").then((check) => {
+    void checkSignature(jws, jwks, "mandate").then((check) => {
       if (live) setResult({ jws, state: check.valid ? "valid" : "invalid" });
     });
     return () => {

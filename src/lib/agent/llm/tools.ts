@@ -5,6 +5,7 @@ import { searchText } from "@/lib/mcp/summaries";
 import { describeCheck } from "@/lib/request";
 import { shortDay } from "../dates";
 import { offerSubject } from "../purchase";
+import { quoteRefusal } from "../refusal";
 import type { AgentTransport } from "../types";
 import { euro } from "../words";
 import type { ToolCall, ToolSpec } from "./types";
@@ -22,7 +23,9 @@ export type ToolEffect =
   | { kind: "error"; content: string }
   | { kind: "ordered"; order: Order; mandate: Mandate; offer: SignedOffer }
   | { kind: "ask"; question: string }
-  | { kind: "stop"; reason: string };
+  | { kind: "stop"; reason: string }
+  /** The wholesaler refused to quote the request as asked; the run ends, so the model cannot shrink the need itself. */
+  | { kind: "refused"; sentence: string };
 
 interface PurchaseTool<I extends z.ZodType> {
   name: string;
@@ -81,7 +84,12 @@ const TOOLS: AnyTool[] = [
       deliverBy: IsoDate.describe("Latest acceptable delivery date"),
     }),
     async run(input, session) {
-      const quote = await session.transport.requestQuote({ ...input, intent: session.request, matchConfidence: session.confidence });
+      const quote = await session.transport.requestQuote({ ...input, intent: session.request, matchConfidence: session.confidence }).catch((error: unknown) => {
+        const sentence = quoteRefusal(error, { quantity: input.lines.find((line) => line.quantity.amount > 0)?.quantity, deliverBy: input.deliverBy });
+        if (sentence) return { refused: sentence };
+        throw error;
+      });
+      if ("refused" in quote) return { kind: "refused", sentence: quote.refused };
       const all = [quote.primary, ...quote.alternatives.map((alternative) => alternative.signed)];
       for (const signed of all) session.offers.set(signed.offer.id, signed);
       const { offer } = quote.primary;

@@ -14,15 +14,15 @@ const VALUE_H = 18;
 const MIN_PLOT = 150;
 
 /**
- * Requests against orders per day for the last seven days: grey columns for what agents asked,
- * accent columns for the orders they placed. Confirmed value sits under each day as a label.
+ * Requests per day for the last seven days: grey columns for what agents asked, accent columns for the requests
+ * of that day that led to an order (never taller than the grey). Confirmed value sits under each day as a label.
  */
 export function DailyChart({ daily }: { daily: DailyPoint[] }) {
   const [ref, { width, height }] = useSize<HTMLDivElement>({ width: 640, height: 260 });
   const plotH = Math.max(MIN_PLOT, height - TOP - LABEL_H - VALUE_H);
   const chartH = TOP + plotH + LABEL_H + VALUE_H;
   const [hover, setHover] = useState<number | null>(null);
-  const ticks = niceTicks(Math.max(0, ...daily.map((point) => Math.max(point.requests, point.orders))));
+  const ticks = niceTicks(Math.max(0, ...daily.map((point) => point.requests)));
   const top = ticks[ticks.length - 1];
   const plotW = Math.max(120, width - AXIS_W);
   const slot = plotW / Math.max(1, daily.length);
@@ -32,7 +32,7 @@ export function DailyChart({ daily }: { daily: DailyPoint[] }) {
 
   return (
     <div className="daily-chart" ref={ref} onMouseLeave={() => setHover(null)}>
-      <svg width={width} height={chartH} role="img" aria-label="Requests and orders per day, last 7 days">
+      <svg width={width} height={chartH} role="img" aria-label="Requests per day and how many led to an order, last 7 days">
         {ticks.map((tick) => (
           <g key={tick}>
             <line className={tick === 0 ? "axis-base" : "grid"} x1={AXIS_W} x2={width} y1={y(tick)} y2={y(tick)} />
@@ -48,7 +48,7 @@ export function DailyChart({ daily }: { daily: DailyPoint[] }) {
             <g key={point.date} data-hover={hover === index} data-today={today}>
               <rect className="day-hover" x={cx - slot / 2 + 2} y={TOP} width={slot - 4} height={plotH} rx={6} />
               <rect className="col-requests" x={cx - bar - 1.5} y={y(point.requests)} width={bar} height={Math.max(0, TOP + plotH - y(point.requests))} />
-              <rect className="col-orders" x={cx + 1.5} y={y(point.orders)} width={bar} height={Math.max(0, TOP + plotH - y(point.orders))} />
+              <rect className="col-orders" x={cx + 1.5} y={y(point.ordered)} width={bar} height={Math.max(0, TOP + plotH - y(point.ordered))} />
               <text className="day-label" x={cx} y={TOP + plotH + 16} textAnchor="middle">
                 {today ? "Today" : weekday(point.date)}
               </text>
@@ -62,7 +62,7 @@ export function DailyChart({ daily }: { daily: DailyPoint[] }) {
                 width={slot}
                 height={chartH}
                 tabIndex={0}
-                aria-label={`${day(point.date)}: ${plural(point.requests, "request")}, ${plural(point.orders, "order")}, ${eur(point.confirmedNet)} confirmed`}
+                aria-label={`${day(point.date)}: ${plural(point.requests, "request")}, ${count(point.ordered)} led to an order, ${eur(point.confirmedNet)} confirmed`}
                 onMouseEnter={() => setHover(index)}
                 onFocus={() => setHover(index)}
                 onBlur={() => setHover(null)}
@@ -84,7 +84,7 @@ export function DailyChart({ daily }: { daily: DailyPoint[] }) {
           </span>
           <span>
             <span className="swatch" data-series="orders" aria-hidden="true" />
-            {count(active.orders)} orders
+            {count(active.ordered)} led to an order
           </span>
           <span>{eur(active.confirmedNet)} confirmed</span>
         </div>

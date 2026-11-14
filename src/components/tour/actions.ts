@@ -1,8 +1,9 @@
 "use client";
 
 import { consoleStore } from "@/lib/console/store";
-import type { Scenario } from "@/lib/console/types";
 import type { ActionId } from "@/lib/tour/steps";
+import type { TourScene } from "@/lib/tour/targets";
+import { tourStore } from "./tour-store";
 
 /** What the tour types into the agent's composer, word for word the milk scene's request. */
 export const MILK_REQUEST = "1,000 litres of lactose-free milk by Monday";
@@ -39,13 +40,24 @@ function setInputValue(input: HTMLInputElement, value: string): void {
   input.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
-/** Presses the panel's own scene button, or starts the scene directly when the panel is not on screen. */
-async function startScene(scenario: Scenario): Promise<void> {
+const runId = () => consoleStore.getSnapshot().run?.id;
+
+/**
+ * Presses the panel's own scene button, or starts the scene directly when the panel is not on screen, and records
+ * the id of the run that started, so every later step follows exactly that run.
+ */
+async function startScene(scenario: TourScene): Promise<void> {
   await until(idle, 20_000);
+  const before = runId();
   const button = await element<HTMLButtonElement>(`[data-tour-scene="${scenario}"]`, 3000);
   await until(() => !button?.disabled, 3000);
-  if (button && !button.disabled) button.click();
-  else await consoleStore.startRun({ scenario });
+  let started: string | undefined;
+  if (button && !button.disabled) {
+    button.click();
+    if (await until(() => runId() !== before, 5000)) started = runId();
+  }
+  started ??= await consoleStore.startRun({ scenario });
+  tourStore.dispatch({ type: "run", scene: scenario, id: started });
 }
 
 /** Types the request into the composer letter by letter and leaves it there, unsent, for the person to read. */
@@ -68,18 +80,29 @@ async function sendRequest(): Promise<void> {
   await startScene("milk");
 }
 
-/** Taps Approve inside the phone frame, as Maria would; signs the approval directly if the frame is not reachable. */
-async function approveOnPhone(): Promise<void> {
-  const frame = document.querySelector<HTMLIFrameElement>("[data-tour-phone] iframe");
-  const tap = () => {
-    const button = frame?.contentDocument?.querySelector<HTMLButtonElement>("[data-phone-approve]");
+/** Taps a button inside the phone frame once it is there and enabled. */
+function tapInPhone(selector: string): () => boolean {
+  return () => {
+    const frame = document.querySelector<HTMLIFrameElement>("[data-tour-phone] iframe");
+    const button = frame?.contentDocument?.querySelector<HTMLButtonElement>(selector);
     if (!button || button.disabled) return false;
     button.click();
     return true;
   };
-  if (await until(tap, 4000)) return;
+}
+
+/**
+ * Taps Approve inside the phone frame, as Maria would, after continuing with demo access on the phone when it asks.
+ * Signs in with demo access and signs the approval directly if the frame is not reachable.
+ */
+async function approveOnPhone(): Promise<void> {
+  const approve = tapInPhone("[data-phone-approve]");
+  if (!approve() && tapInPhone("[data-phone-demo]")()) await sleep(SETTLE_MS);
+  if (await until(approve, 4000)) return;
   const order = consoleStore.getSnapshot().orders.find((item) => item.status === "pending_approval" && !item.seeded);
-  if (order) consoleStore.apply(await consoleStore.decide(order, { decision: "approved" }));
+  if (!order) return;
+  if (!consoleStore.getSnapshot().session?.signedIn) await consoleStore.signIn({ demo: true });
+  consoleStore.apply(await consoleStore.decide(order, { decision: "approved" }));
 }
 
 /** Presses the log page's own tamper control; changes the entry directly if the control is missing. */
@@ -102,14 +125,10 @@ export const ACTIONS: Record<ActionId, () => Promise<void>> = {
   tamperLog,
 };
 
-/** Puts the changed log entry back, so approvals are not left paused after the tour. */
-export async function restoreLog(): Promise<void> {
-  await fetch("/api/v1/demo/tamper", { method: "DELETE", credentials: "same-origin" });
-  await consoleStore.tick();
-}
-
-/** Signs in with demo access and resets the demo, so the story always runs from the same state. */
+/**
+ * Resets this browser's own sandbox, so the story always runs from the same state. No sign-in is needed: the reset
+ * touches nobody else's copy. Approving on the phone signs in with demo access when the tour gets there.
+ */
 export async function prepareDemo(): Promise<void> {
-  await consoleStore.signIn({ demo: true });
   await consoleStore.reset();
 }

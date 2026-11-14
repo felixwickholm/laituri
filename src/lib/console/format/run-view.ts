@@ -3,7 +3,11 @@ import type { RunBlock } from "../runs";
 import { eur } from "./money";
 import { blockSentence, shortName } from "./rules";
 import { plainSentence } from "./sentence";
+import { substitutionReason } from "./substitution";
 import { day } from "./time";
+
+/** The scripted agent's last note when the wholesaler refused to quote: "Valio Aimo refused the quote: …". */
+const REFUSED = /^.*?\brefused the quote:\s*/i;
 
 export type OutcomeTone = "success" | "waiting" | "danger" | "neutral";
 
@@ -81,8 +85,19 @@ export function runOutcome(run: RunBlock, ctx: RunContext): RunOutcome {
   if (run.foundNothing) return { word: "Not in the assortment", tone: "neutral" };
   const last = run.steps[run.steps.length - 1];
   if (last?.status === "error") return { word: "Failed", detail: plainSentence(last.text), tone: "danger" };
+  if (last?.status === "blocked" && REFUSED.test(last.text)) {
+    return { word: "Refused", detail: plainSentence(last.text.replace(REFUSED, "")), tone: "danger" };
+  }
   if (last?.status === "blocked") return { word: "Stopped", detail: plainSentence(last.text), tone: "danger" };
+  if (last?.status === "waiting") return { word: "Asks you", detail: plainSentence(last.text), tone: "waiting" };
   return { word: "Done", tone: "neutral" };
+}
+
+/** Why the agent took a substitute instead of what was asked, when it did: shortfall, the alternative, the rule that allows it. */
+export function runReason(run: RunBlock, ctx: RunContext): string | undefined {
+  if (run.kind === "attempts") return undefined;
+  const reason = substitutionReason(lastOrder(run, ctx.orders));
+  return reason ? plainSentence(reason) : undefined;
 }
 
 /** "search_catalog · 20 products, best match … · 4 ms" */

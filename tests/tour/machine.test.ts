@@ -89,10 +89,19 @@ describe("tour machine", () => {
   });
 });
 
+describe("the tour's own runs", () => {
+  it("remembers the run each scene started, and forgets them when a new tour starts", () => {
+    const state = run([...started, { type: "run", scene: "milk", id: "run_1" }, { type: "run", scene: "over-limit", id: "run_2" }]);
+    expect(state.runs).toEqual({ milk: "run_1", "over-limit": "run_2" });
+    expect(run(started, state).runs).toEqual({});
+  });
+});
+
 describe("tour resume", () => {
   it("restores a saved state and rejects anything malformed", () => {
-    const saved = run([...started, { type: "outcome", step: "a", outcome: "done" }, { type: "next" }]);
+    const saved = run([...started, { type: "run", scene: "milk", id: "run_1" }, { type: "outcome", step: "a", outcome: "done" }, { type: "next" }]);
     expect(restore(PLAN, JSON.parse(JSON.stringify(saved)))).toEqual({ ...saved, error: undefined });
+    expect(restore(PLAN, { ...saved, runs: { milk: 7 } }).runs).toEqual({});
     expect(restore(PLAN, { status: "step", index: 9 })).toBe(CLOSED);
     expect(restore(PLAN, { status: "dancing", index: 0 })).toBe(CLOSED);
     expect(restore(PLAN, "nonsense")).toBe(CLOSED);

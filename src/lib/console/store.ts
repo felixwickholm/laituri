@@ -4,7 +4,9 @@ import { useSyncExternalStore } from "react";
 import type { ApprovalDecisionRequest, Order } from "@/lib/contracts";
 import type { MandatePatch } from "@/lib/orders/types";
 import { api } from "./api";
-import type { ChainState, ConsoleSession, ConsoleSnapshot, DemoRun, Scenario, SignInCredentials, SignedMandate } from "./types";
+import { withoutRole } from "./session";
+import { workspaceStore } from "./workspace-store";
+import type { ChainState, ConsoleSession, ConsoleSnapshot, DemoRun, Scenario, SessionRole, SignInCredentials, SignedMandate } from "./types";
 import { checkChain, forgetHead } from "./verify";
 
 const POLL_MS = 1000;
@@ -132,11 +134,13 @@ class ConsoleStore {
     return this.verify();
   }
 
-  async startRun(body: { scenario?: Scenario; request?: string }): Promise<void> {
+  /** Starts a run and returns its id, so a caller can follow exactly the run it started. */
+  async startRun(body: { scenario?: Scenario; request?: string }): Promise<string> {
     const { runId } = await api.startRun(body);
     const run: DemoRun = { id: runId, status: "running", request: body.request ?? "", scenario: body.scenario };
     this.set({ run });
     void this.tick();
+    return runId;
   }
 
   /** Sends a signed decision. The caller applies the result once its row has collapsed. */
@@ -162,14 +166,23 @@ class ConsoleStore {
     return session;
   }
 
-  async signOut(): Promise<void> {
-    const session = await api.signOut();
-    this.set({ session: { ...this.snapshot.session, ...session, signedIn: false, approver: undefined } });
+  /** Signs out one role, or both when none is named. */
+  async signOut(role?: SessionRole): Promise<void> {
+    await api.signOut(role);
+    this.markSignedOut(role);
   }
 
-  /** The server said the session is gone; show the person as signed out. */
-  markSignedOut(): void {
-    this.set({ session: { ...this.snapshot.session, signedIn: false, approver: undefined } });
+  /** The server said the session is gone; show the person as signed out for that role. */
+  markSignedOut(role?: SessionRole): void {
+    const { session } = this.snapshot;
+    if (session) this.set({ session: withoutRole(session, role) });
+  }
+
+  /** Looks at the shared workspace or back at this browser's sandbox, and reloads every slice from there. */
+  async setView(view: "shared" | "sandbox"): Promise<void> {
+    await workspaceStore.setView(view);
+    await this.reload();
+    this.set({ session: await api.session() });
   }
 
   async tamper(): Promise<number> {
@@ -178,8 +191,19 @@ class ConsoleStore {
     return seq;
   }
 
+  /** Puts the changed log entry back and checks the log again. */
+  async restoreLog(): Promise<void> {
+    await api.restoreLog();
+    await this.tick();
+  }
+
   async reset(): Promise<void> {
     await api.reset();
+    await this.reload();
+  }
+
+  /** Drops every slice and the remembered log head, then reads them all again. */
+  private async reload(): Promise<void> {
     forgetHead();
     this.texts = { activity: "", orders: "", audit: "" };
     this.verifyVersion++;

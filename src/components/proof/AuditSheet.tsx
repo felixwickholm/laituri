@@ -9,6 +9,7 @@ import { plainSentence } from "@/lib/console/format/sentence";
 import { dayAndTime } from "@/lib/console/format/time";
 import type { ChainState, Jwks } from "@/lib/console/types";
 import { checkSignature, type SignatureCheck } from "@/lib/console/verify";
+import { agentName } from "@/lib/supplier-console/names";
 import { CopyButton } from "../ui/CopyButton";
 import { Sheet } from "../ui/Sheet";
 
@@ -42,7 +43,7 @@ export function AuditSheet({ entry, open, chain, jwks, onClose, onOpenOrder }: A
 
   useEffect(() => {
     let live = true;
-    if (entry) void checkSignature(entry.signature, jwks).then((result) => live && setSignature(result));
+    if (entry) void checkSignature(entry.signature, jwks, "audit").then((result) => live && setSignature(result));
     return () => {
       live = false;
     };
@@ -81,7 +82,7 @@ export function AuditSheet({ entry, open, chain, jwks, onClose, onOpenOrder }: A
             <dd>{dayAndTime(entry.at)}</dd>
             <dt>Actor</dt>
             <dd>
-              {entry.actor.name} <span className="dim">· {entry.actor.type}</span>
+              {agentName(entry.actor)} <span className="dim">· {entry.actor.type}</span>
             </dd>
             <dt>Hash</dt>
             <dd>

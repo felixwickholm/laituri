@@ -1,6 +1,6 @@
 import type { Order } from "@/lib/contracts";
 import { ruleName } from "./format/rules";
-import type { Activity } from "./types";
+import type { Activity, DemoRun } from "./types";
 
 export interface RunStep {
   id: string;
@@ -164,4 +164,15 @@ export function buildRuns(activity: Activity[], orders: Order[] = []): RunBlock[
     }
   }
   return blocks.reverse();
+}
+
+/**
+ * The demo run this browser started that a run block belongs to, if any: the newest block while the run works,
+ * or any block holding an order the finished run placed.
+ */
+export function demoRunOf(block: RunBlock, run: DemoRun | undefined, index: number): string | undefined {
+  if (!run) return undefined;
+  if (run.status === "running" && index === 0) return run.id;
+  const placed = run.results?.some((result) => result.orderId !== undefined && block.orderIds.includes(result.orderId));
+  return placed ? run.id : undefined;
 }

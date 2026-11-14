@@ -94,7 +94,9 @@ describe("sandboxes", () => {
     expect(sandboxes.info(first)!.expiresAt).toBe(new Date(IDLE_MS).toISOString());
     clock.now = IDLE_MS - 1;
     expect(await sandboxes.forSecret(secret)).toBe(first);
+    expect(sandboxes.active()).toBe(1);
     clock.now = 2 * IDLE_MS;
+    expect(sandboxes.active()).toBe(0);
     expect(sandboxes.byAgentKey(key)).toBeUndefined();
     const fresh = await sandboxes.forSecret(secret);
     expect(fresh).not.toBe(first);

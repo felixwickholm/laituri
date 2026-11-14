@@ -1,6 +1,6 @@
 import type { ApprovalDecisionRequest, AuditEntry, Order, SignedOffer } from "@/lib/contracts";
 import type { MandatePatch } from "@/lib/orders/types";
-import type { Activity, ConsoleSession, DemoRun, Health, Jwks, Scenario, SignInCredentials, SignedMandate } from "./types";
+import type { Activity, ConsoleSession, DemoRun, Health, Jwks, Scenario, SessionRole, SignInCredentials, SignedMandate, WorkspaceInfo } from "./types";
 
 /** Thrown for any non-2xx answer. `detail` is the server's plain sentence and `code` its machine code. */
 export class ApiError extends Error {
@@ -14,6 +14,8 @@ export class ApiError extends Error {
 }
 
 export const SIGN_IN_REQUIRED = "approver_sign_in_required";
+export const OPERATOR_SIGN_IN_REQUIRED = "operator_sign_in_required";
+export const SHARED_READ_ONLY = "shared_read_only";
 export const WRONG_PASSCODE = "wrong_passcode";
 
 /** The one fetch every console call goes through. The approver session travels as a same-origin cookie. */
@@ -80,7 +82,12 @@ export const api = {
 
   session: () => getJson<ConsoleSession>("/api/v1/console/session"),
   signIn: (credentials: SignInCredentials) => send<ConsoleSession>("POST", "/api/v1/console/session", credentials),
-  signOut: () => send<ConsoleSession>("DELETE", "/api/v1/console/session"),
+  /** Signs out one role, or both when none is named. */
+  signOut: (role?: SessionRole) => send<{ signedIn: false }>("DELETE", `/api/v1/console/session${role ? `?role=${role}` : ""}`),
+
+  workspace: () => getJson<WorkspaceInfo>("/api/v1/workspace"),
+  /** Looks at the shared workspace, read-only, or back at this browser's own sandbox. */
+  setView: (view: "shared" | "sandbox") => send<WorkspaceInfo>("POST", "/api/v1/workspace/view", { view }),
 
   jwks: () => getJson<Jwks>("/.well-known/jwks.json"),
   health: () => getJson<Health>("/api/v1/health"),
@@ -88,5 +95,7 @@ export const api = {
   startRun: (body: { scenario?: Scenario; request?: string }) => send<{ runId: string }>("POST", "/api/v1/demo/runs", body),
   run: (id: string) => getJson<DemoRun>(`/api/v1/demo/runs/${encodeURIComponent(id)}`),
   tamper: () => send<{ seq: number }>("POST", "/api/v1/demo/tamper"),
+  /** Puts the changed entry back as it was signed; the rest of the workspace is untouched. */
+  restoreLog: () => send<{ restored: true }>("DELETE", "/api/v1/demo/tamper"),
   reset: () => send<unknown>("POST", "/api/v1/demo/reset"),
 };

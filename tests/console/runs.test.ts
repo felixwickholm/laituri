@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Activity } from "@/lib/console/types";
 import { runOutcome, runTitle, toolLine } from "@/lib/console/format/run-view";
-import { buildRuns } from "@/lib/console/runs";
+import { buildRuns, demoRunOf } from "@/lib/console/runs";
 import { blockedOrder, pendingOrder } from "./fixtures";
 
 const AGENT = { id: "agent:harbour-purchasing", name: "Harbour purchasing agent" };
@@ -134,5 +134,43 @@ describe("same-millisecond notes", () => {
     const runs = buildRuns([label, looking]);
     expect(runs).toHaveLength(1);
     expect(runs[0].steps.map((step) => step.text)).toEqual([looking.title]);
+  });
+});
+
+describe("demoRunOf", () => {
+  const block = (orderIds: string[]) => ({ ...buildRuns([note("Looking for milk, 10 litres, by Mon 16 Nov.")], [])[0], orderIds });
+
+  it("names the newest block while the run works", () => {
+    const run = { id: "run_x", status: "running" as const, request: "milk" };
+    expect(demoRunOf(block([]), run, 0)).toBe("run_x");
+    expect(demoRunOf(block([]), run, 1)).toBeUndefined();
+  });
+
+  it("names the blocks holding an order the finished run placed", () => {
+    const run = { id: "run_x", status: "done" as const, request: "milk", results: [{ orderId: "ord_1" }, {}] };
+    expect(demoRunOf(block(["ord_1"]), run, 3)).toBe("run_x");
+    expect(demoRunOf(block(["ord_2"]), run, 0)).toBeUndefined();
+    expect(demoRunOf(block(["ord_1"]), undefined, 0)).toBeUndefined();
+  });
+});
+
+describe("a refused quote", () => {
+  it("ends the run as refused, with the wholesaler's reason in plain words", () => {
+    const runs = buildRuns([
+      note("Looking for lactose-free milk, 1,000,000,000,000 litres, by Mon 16 Nov."),
+      note("Valio Aimo refused the quote: 1,000,000,000,000 litres is more than one order line can carry. No order placed.", "blocked"),
+    ]);
+    expect(runOutcome(runs[0], { orders: new Map(), active: false })).toEqual({
+      word: "Refused",
+      detail: "1,000,000,000,000 litres is more than one order line can carry. No order placed.",
+      tone: "danger",
+    });
+  });
+});
+
+describe("a question back to the buyer", () => {
+  it("ends the run as a question, not as done", () => {
+    const runs = buildRuns([note("Looking for milk, 5 litres, by Mon 16 Nov."), note("How much milk do you need?", "waiting")]);
+    expect(runOutcome(runs[0], { orders: new Map(), active: false })).toEqual({ word: "Asks you", detail: "How much milk do you need?", tone: "waiting" });
   });
 });

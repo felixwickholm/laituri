@@ -7,7 +7,7 @@ const ATTEMPTS = [
   { tried: "Lower the price inside a signed offer.", rule: "Offer signature", why: "The wholesaler's signature no longer matches." },
   { tried: "Raise its own limit in the mandate.", rule: "Mandate signature", why: "Maria's signature no longer matches." },
   { tried: "Approve its own order.", rule: "Only a person can approve", why: "Agents cannot approve orders. Only Maria can." },
-  { tried: "Rewrite a log entry afterwards.", rule: "Hash chain", why: "Entry 9 no longer matches its signature. Approvals pause." },
+  { tried: "Rewrite a log entry afterwards.", rule: "Signed, chained log", why: "Entry 9 no longer matches its signature. Approvals pause." },
 ];
 
 const CHAIN = ["a41f", "07c2", "e9b0", "5d13", "c8a7", "2f6e", "b170", "94dc", "6e05", "1ab9", "d3f4", "70e8"];

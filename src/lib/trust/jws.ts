@@ -29,12 +29,12 @@ export async function verifyCompact<T>(publicKey: CryptoKey, kid: string, jws: s
 
 /**
  * Verifies with a public JWKS only, so it runs in the browser as well as on the server. Never throws.
- * With `typ`, a token of another type is refused.
+ * A token of any other type than `typ` is refused.
  */
-export async function verifyWithJwks<T>(jws: string, jwks: JSONWebKeySet, typ?: TokenType): Promise<Verified<T>> {
+export async function verifyWithJwks<T>(jws: string, jwks: JSONWebKeySet, typ: TokenType): Promise<Verified<T>> {
   const header = readHeader(jws);
   if (!header) return { valid: false, reason: MALFORMED };
-  if (typ && header.typ !== typ) return { valid: false, keyId: header.kid, reason: WRONG_TYPE };
+  if (header.typ !== typ) return { valid: false, keyId: header.kid, reason: WRONG_TYPE };
   const jwk = jwks.keys.find((key) => key.kid === header.kid);
   if (!jwk) return { valid: false, keyId: header.kid, reason: UNKNOWN_KEY };
   let key: CryptoKey;

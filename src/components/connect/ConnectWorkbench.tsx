@@ -2,19 +2,31 @@
 
 import { useState } from "react";
 import { TILES, type TileId } from "@/lib/connect/apps";
-import { DEMO_KEY } from "@/lib/connect/requests";
 import { mcpUrl } from "@/lib/connect/guides";
+import { keyFor } from "@/lib/connect/keys";
+import { useWorkspace } from "@/lib/console/workspace-store";
+import { AgentKeyPanel } from "./AgentKeyPanel";
 import { AppPicker } from "./AppPicker";
 import { CodeBlock } from "./CodeBlock";
 import { LiveCalls } from "./LiveCalls";
 import { SetupGuide } from "./SetupGuide";
 import { useOrigin } from "./useOrigin";
 
-/** Pick an app, copy one line, and watch the call arrive next to it. */
-export function ConnectWorkbench({ serverOrigin, deliverBy }: { serverOrigin: string; deliverBy: string }) {
+interface Props {
+  serverOrigin: string;
+  deliverBy: string;
+  /** The buyer whose key is shown first. */
+  primaryBuyerId: string;
+}
+
+/** Pick an app, copy one line with this visitor's own key, and watch the call arrive next to it. */
+export function ConnectWorkbench({ serverOrigin, deliverBy, primaryBuyerId }: Props) {
   const origin = useOrigin(serverOrigin);
+  const info = useWorkspace();
+  const [buyerId, setBuyerId] = useState(primaryBuyerId);
   const [tileId, setTileId] = useState<TileId>("claude");
   const tile = TILES.find((item) => item.id === tileId) ?? TILES[0];
+  const key = keyFor(info, buyerId);
 
   return (
     <div className="cx-work">
@@ -26,12 +38,13 @@ export function ConnectWorkbench({ serverOrigin, deliverBy }: { serverOrigin: st
           <h3>MCP endpoint</h3>
           <CodeBlock code={{ value: mcpUrl(origin), label: "Copy MCP endpoint" }} />
           <p className="cx-sub">
-            Streamable HTTP. Send <code className="mono">Authorization: Bearer {DEMO_KEY}</code>, or add{" "}
-            <code className="mono">?key={DEMO_KEY}</code> to the address.
+            Streamable HTTP. Send the agent key below as <code className="mono">Authorization: Bearer</code>, or add{" "}
+            <code className="mono">?key=</code> and the key to the address.
           </p>
         </div>
+        <AgentKeyPanel info={info} primaryBuyerId={primaryBuyerId} buyerId={buyerId} onBuyer={setBuyerId} />
         <AppPicker value={tileId} onChange={setTileId} />
-        <SetupGuide key={tile.id} tile={tile} origin={origin} deliverBy={deliverBy} />
+        <SetupGuide key={tile.id} tile={tile} origin={origin} agentKey={key} deliverBy={deliverBy} />
       </section>
       <LiveCalls />
     </div>

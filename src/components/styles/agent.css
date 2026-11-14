@@ -94,6 +94,26 @@
 .run-body {
   padding: 0 20px 18px;
 }
+/* Why the agent took a substitute: read before the steps, so the choice is never a surprise. */
+.run-reason {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: var(--r-control);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--text-1);
+  font-size: 14px;
+  line-height: 20px;
+  text-wrap: pretty;
+}
+.run-reason-label {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+}
 
 /* Steps hang on a thin line; the dot carries the step's state. */
 .steps {

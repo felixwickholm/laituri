@@ -27,6 +27,8 @@ export interface TourState {
   settled: string[];
   /** The tour changed the log and has not restored it yet. */
   tampered: boolean;
+  /** The runs the tour itself started, by scene, so it spotlights those and never another run. */
+  runs: Partial<Record<string, string>>;
   error?: string;
 }
 
@@ -42,9 +44,10 @@ export type TourEvent =
   | { type: "performed"; step: string }
   | { type: "outcome"; step: string; outcome: Outcome }
   | { type: "settled"; step: string }
-  | { type: "tampered"; value: boolean };
+  | { type: "tampered"; value: boolean }
+  | { type: "run"; scene: string; id: string };
 
-export const CLOSED: TourState = { status: "closed", index: 0, outcomes: {}, performed: [], pressed: [], settled: [], tampered: false };
+export const CLOSED: TourState = { status: "closed", index: 0, outcomes: {}, performed: [], pressed: [], settled: [], tampered: false, runs: {} };
 
 function add(list: string[], id: string): string[] {
   return list.includes(id) ? list : [...list, id];
@@ -116,6 +119,8 @@ export function reduce(plan: readonly PlanStep[], state: TourState, event: TourE
       return { ...state, settled: add(state.settled, event.step) };
     case "tampered":
       return { ...state, tampered: event.value };
+    case "run":
+      return { ...state, runs: { ...state.runs, [event.scene]: event.id } };
   }
 }
 
@@ -123,6 +128,11 @@ const STATUSES: readonly TourStatus[] = ["closed", "intro", "starting", "step", 
 
 function strings(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+}
+
+function stringRecord(value: unknown): Partial<Record<string, string>> {
+  if (!value || typeof value !== "object") return {};
+  return Object.fromEntries(Object.entries(value as Record<string, unknown>).filter((entry): entry is [string, string] => typeof entry[1] === "string"));
 }
 
 /**
@@ -149,6 +159,7 @@ export function restore(plan: readonly PlanStep[], raw: unknown): TourState {
     pressed: strings(value.pressed),
     settled: strings(value.settled),
     tampered: value.tampered === true,
+    runs: stringRecord(value.runs),
   };
 }
 

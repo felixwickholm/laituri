@@ -320,6 +320,7 @@
 }
 .lines .qty {
   color: var(--text-3);
+  white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
 .lines .money {

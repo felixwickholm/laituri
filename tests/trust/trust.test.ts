@@ -53,9 +53,9 @@ describe("trust", () => {
 
   it("verifies with the public JWKS only", async () => {
     const jws = await trust().sign("supplier", { ok: true }, TOKEN_TYPE.offer);
-    expect((await verifyWithJwks(jws, await jwks("supplier"))).valid).toBe(true);
-    expect(await verifyWithJwks(jws, await jwks("buyer"))).toMatchObject({ valid: false, reason: "unknown key" });
-    expect((await verifyWithJwks(tamper(jws), await jwks("supplier"))).reason).toBe("signature does not match");
+    expect((await verifyWithJwks(jws, await jwks("supplier"), TOKEN_TYPE.offer)).valid).toBe(true);
+    expect(await verifyWithJwks(jws, await jwks("buyer"), TOKEN_TYPE.offer)).toMatchObject({ valid: false, reason: "unknown key" });
+    expect((await verifyWithJwks(tamper(jws), await jwks("supplier"), TOKEN_TYPE.offer)).reason).toBe("signature does not match");
   });
 
   it("returns the same key to concurrent first callers", async () => {

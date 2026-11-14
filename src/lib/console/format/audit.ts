@@ -1,4 +1,5 @@
 import { RuleId, type AuditEntry, type AuditEvent, type Order } from "@/lib/contracts";
+import { agentName } from "@/lib/supplier-console/names";
 import { eur } from "./money";
 import { offerSubject } from "./proof";
 import { askSentence, blockSentence, shortName } from "./rules";
@@ -78,7 +79,7 @@ export function auditDetail(entry: Pick<AuditEntry, "event" | "actor" | "summary
     orders.find((item) => item.id === entry.refs.orderId) ?? orders.find((item) => item.offer.id === entry.refs.offerId);
   switch (entry.event) {
     case "agent.connected":
-      return `${entry.actor.name} connected`;
+      return `${agentName(entry.actor)} connected`;
     case "catalog.searched": {
       const found = num(data.previews) ?? (Array.isArray(data.hits) ? data.hits.length : undefined);
       if (found !== undefined && typeof data.query === "string") return `Found ${found} ${found === 1 ? "product" : "products"} for '${data.query}'`;

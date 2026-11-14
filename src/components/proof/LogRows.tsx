@@ -4,6 +4,7 @@ import { linkState } from "@/lib/console/format/chain";
 import { actorKind } from "@/lib/console/format/log";
 import { isSeeded } from "@/lib/console/format/orders";
 import { clock, day } from "@/lib/console/format/time";
+import { agentName } from "@/lib/supplier-console/names";
 import type { ChainState } from "@/lib/console/types";
 import { DemoTag } from "../ui/DemoTag";
 
@@ -42,7 +43,7 @@ export function LogRows({ entries, chain, orders, onOpen }: LogRowsProps) {
                   <span className="sub">{clock(entry.at)}</span>
                 </td>
                 <td className="cell-who">
-                  <span>{entry.actor.name}</span>
+                  <span>{agentName(entry.actor)}</span>
                   {actorKind(entry) !== entry.actor.name ? <span className="sub">{actorKind(entry)}</span> : null}
                 </td>
                 <td className="cell-what">

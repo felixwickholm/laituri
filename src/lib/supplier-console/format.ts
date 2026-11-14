@@ -1,7 +1,9 @@
 import type { AuditEntry, Quantity } from "@/lib/contracts";
+import { helsinkiDate } from "@/lib/agent/dates";
 import { eventGroup, type EventGroup } from "@/lib/console/format/log";
 import { count, eur } from "@/lib/console/format/money";
 import type { Activity } from "@/lib/store/types";
+import { isKeyless } from "./names";
 import type { ControlAgent, ControlOverview, DailyPoint, OutcomeCounts, RunResult, UnmetReason, UnmetRequest } from "./types";
 
 /* ---------- Words ---------- */
@@ -78,9 +80,15 @@ export function plural(n: number, one: string, many = `${one}s`): string {
 /* ---------- Figures ---------- */
 
 export interface WeekFigures {
+  /** Requests that started in the seven days. */
   requests: number;
-  orders: number;
+  /** Of those requests, the ones that led to an order; never more than `requests`. */
+  ordered: number;
+  /** Orders placed in the seven days that are confirmed, and their net value. */
+  confirmed: number;
   confirmedNet: number;
+  /** The first day of the window, "2026-11-08". */
+  since: string | undefined;
   today: DailyPoint | undefined;
 }
 
@@ -88,10 +96,18 @@ export interface WeekFigures {
 export function weekFigures(daily: DailyPoint[]): WeekFigures {
   return {
     requests: daily.reduce((sum, day) => sum + day.requests, 0),
-    orders: daily.reduce((sum, day) => sum + day.orders, 0),
+    ordered: daily.reduce((sum, day) => sum + day.ordered, 0),
+    confirmed: daily.reduce((sum, day) => sum + day.confirmed, 0),
     confirmedNet: daily.reduce((cents, day) => cents + Math.round(day.confirmedNet * 100), 0) / 100,
+    since: daily[0]?.date,
     today: daily[daily.length - 1],
   };
+}
+
+/** Unserved requests that started inside the series' window (Helsinki dates), so they sit beside the week's figures. */
+export function unmetInWeek(unmet: UnmetRequest[], daily: DailyPoint[]): UnmetRequest[] {
+  const dates = new Set(daily.map((day) => day.date));
+  return unmet.filter((item) => dates.has(helsinkiDate(new Date(item.at))));
 }
 
 export function orderCount(orders: OutcomeCounts): number {
@@ -137,7 +153,7 @@ export interface Verdict {
   reason: string;
 }
 
-/** The overview in one line: what agents bought, then what went unserved and why. */
+/** The overview in one line: what agents bought in the last 7 days, then what went unserved in them and why. */
 export function overviewVerdict(overview: ControlOverview): Verdict {
   const week = weekFigures(overview.daily);
   const buyers = overview.agents.filter((agent) => agent.confirmedNet > 0).length;
@@ -148,14 +164,15 @@ export function overviewVerdict(overview: ControlOverview): Verdict {
       : week.confirmedNet > 0
         ? `${buyers === 1 ? "1 agent" : `${count(buyers)} agents`} bought ${eur(week.confirmedNet)} in the last 7 days.`
         : "Agents connected, but nothing was bought in the last 7 days.";
-  const main = mainReason(overview.unmet);
-  const lost = unmetNet(overview.unmet);
+  const unmet = unmetInWeek(overview.unmet, overview.daily);
+  const main = mainReason(unmet);
+  const lost = unmetNet(unmet);
   const parts: string[] = [];
   if (main) {
     parts.push(
       lost > 0
         ? `${eur(lost)} of demand went unserved, mostly because ${REASONS.find((r) => r.key === main.key)?.because}.`
-        : `${plural(overview.unmet.length, "request")} went unserved, mostly because ${REASONS.find((r) => r.key === main.key)?.because}.`,
+        : `${plural(unmet.length, "request")} went unserved, mostly because ${REASONS.find((r) => r.key === main.key)?.because}.`,
     );
   } else if (overview.agents.length > 0) {
     parts.push("Every request was served.");
@@ -197,16 +214,19 @@ export const OUTCOMES: { key: OutcomeSlot; label: string }[] = [
   { key: "blocked", label: "Blocked by a rule" },
 ];
 
-/** Status in words for the agents table. */
-export function statusWord(agent: Pick<ControlAgent, "status">): { word: string; tone: "success" | "neutral" | "danger" } {
-  switch (agent.status) {
-    case "suspended":
-      return { word: "Suspended", tone: "danger" };
-    case "active":
-      return { word: "Active", tone: "success" };
-    default:
-      return { word: "Idle", tone: "neutral" };
-  }
+/** An agent with a key that called in the last 24 hours; a keyless caller is never counted as active. */
+export function isActiveAgent(agent: Pick<ControlAgent, "status" | "agent">): boolean {
+  return agent.status === "active" && !isKeyless(agent.agent);
+}
+
+/**
+ * Status in words for the agents table. Calls made without a key can search and quote but never order,
+ * so that caller reads "Read-only" rather than active or idle.
+ */
+export function statusWord(agent: Pick<ControlAgent, "status"> & { agent?: { id: string } }): { word: string; tone: "success" | "neutral" | "danger" } {
+  if (agent.status === "suspended") return { word: "Suspended", tone: "danger" };
+  if (agent.agent && isKeyless(agent.agent)) return { word: "Read-only", tone: "neutral" };
+  return agent.status === "active" ? { word: "Active", tone: "success" } : { word: "Idle", tone: "neutral" };
 }
 
 /* ---------- Live calls ---------- */

@@ -8,6 +8,7 @@ import {
   offerStats,
   orderOutcome,
   orderStats,
+  requestOfOrder,
   summariseRequests,
   supplierOverview,
   topConcepts,
@@ -184,10 +185,44 @@ describe("rules", () => {
 
 describe("daily series", () => {
   it("covers the seven Helsinki days ending today", () => {
-    const days = dailySeries(summariseRequests(REQUESTS), ORDERS, NOW);
+    const days = dailySeries(summariseRequests(REQUESTS), ORDERS, new Set(["r1"]), NOW);
     expect(days.map((d) => d.date)).toEqual(["2026-11-08", "2026-11-09", "2026-11-10", "2026-11-11", "2026-11-12", "2026-11-13", "2026-11-14"]);
-    expect(days[5]).toEqual({ date: "2026-11-13", requests: 2, orders: 2, confirmedNet: 2626 });
-    expect(days[6]).toEqual({ date: "2026-11-14", requests: 0, orders: 1, confirmedNet: 0 });
+    expect(days[5]).toEqual({ date: "2026-11-13", requests: 2, ordered: 1, orders: 2, confirmed: 2, confirmedNet: 2626 });
+    expect(days[6]).toEqual({ date: "2026-11-14", requests: 0, ordered: 0, orders: 1, confirmed: 0, confirmedNet: 0 });
+  });
+});
+
+describe("requests against orders", () => {
+  // One request, three orders: its offer, an alternative its quote issued, and a second order after a rejection.
+  const LOG = [
+    record({ id: "s1", requestId: "r1", at: "2026-11-14T06:00:00.000Z" }),
+    record({ id: "q1", requestId: "r1", at: "2026-11-14T06:00:30.000Z", kind: "quote", offerId: "off_r1" }),
+    record({ id: "q1b", requestId: "r1", at: "2026-11-14T06:05:00.000Z", kind: "quote", offerId: "off_r1b" }),
+    record({ id: "s2", requestId: "r2", at: "2026-11-14T06:10:00.000Z", outcome: "not_found" }),
+    record({ id: "q3", requestId: "r3", at: "2026-11-13T15:00:00.000Z", kind: "quote", offerId: "off_r3" }),
+  ];
+  const AUDIT = [offerIssued(1, "off_r1", ["off_r1_alt"])];
+  const PLACED = [
+    order({ id: "a", status: "rejected", net: 10, offerId: "off_r1", createdAt: "2026-11-14T06:01:00.000Z" }),
+    order({ id: "b", status: "confirmed", net: 10, offerId: "off_r1_alt", createdAt: "2026-11-14T06:02:00.000Z" }),
+    order({ id: "c", status: "confirmed", net: 10, offerId: "off_r1b", createdAt: "2026-11-14T06:06:00.000Z" }),
+    // Quoted yesterday, ordered today.
+    order({ id: "d", status: "confirmed", net: 10, offerId: "off_r3", createdAt: "2026-11-14T06:20:00.000Z" }),
+    order({ id: "e", status: "confirmed", net: 10, offerId: "off_unlogged", createdAt: "2026-11-14T06:30:00.000Z" }),
+  ];
+
+  it("links each order to the request whose quote signed its offer, alternatives included", () => {
+    expect(Object.fromEntries(requestOfOrder(LOG, PLACED, AUDIT))).toEqual({ a: "r1", b: "r1", c: "r1", d: "r3" });
+  });
+
+  it("never shows more requests that led to an order than requests, on any day or in the week", () => {
+    const { daily } = supplierOverview({ now: NOW, orders: PLACED, offers: [], requests: LOG, activity: [], suspensions: [], audit: AUDIT });
+    const today = daily[daily.length - 1];
+    expect(today).toMatchObject({ date: "2026-11-14", requests: 2, ordered: 1, orders: 5 });
+    for (const day of daily) expect(day.ordered).toBeLessThanOrEqual(day.requests);
+    const sum = (key: "requests" | "ordered") => daily.reduce((total, day) => total + day[key], 0);
+    expect(sum("requests")).toBe(3);
+    expect(sum("ordered")).toBe(2);
   });
 });
 

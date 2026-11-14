@@ -1,26 +1,29 @@
 import { randomUUID } from "node:crypto";
 import type { Mandate, Offer, Order } from "@/lib/contracts";
 import { now } from "@/lib/clock";
+import { packText } from "@/lib/console/format/packs";
 import { shortDay } from "./dates";
 import { findCandidates } from "./find";
 import { parseRequest } from "./parse-request";
+import { quoteRefusal } from "./refusal";
 import { selectOffer } from "./select-offer";
 import type {
   AgentHooks,
   AgentTransport,
   NoteStatus,
+  ParsedRequest,
   PurchaseOptions,
   PurchaseResult,
   PurchaseStatus,
   PurchaseStep,
 } from "./types";
-import { amount, displayName, euro, personName, quantityText } from "./words";
+import { displayName, euro, personName, quantityText } from "./words";
 
-/** "1,000 x Valio Eila 1 l" or "51 x A and 149 x B". */
+/** "1,000 × Valio Eila 1 l = 1,000 l", "3 cases of Dafgårds ciabatta 58g = 13.92 kg" or "51 × A = 51 l and 149 × B = 149 l". */
 export function offerSubject(offer: Offer): string {
   return offer.lines
     .filter((line) => line.quantity > 0)
-    .map((line) => `${amount(line.quantity)} x ${displayName(line.name)}`)
+    .map((line) => packText(line, displayName(line.name)))
     .join(" and ");
 }
 
@@ -71,9 +74,10 @@ export async function runPurchase(
     return { status, summary, steps, ...extra };
   };
 
+  let parsed: ParsedRequest | undefined;
   try {
     const read = parseRequest(requestText, now());
-    const parsed = options.productId ? { ...read, productId: options.productId } : read;
+    parsed = options.productId ? { ...read, productId: options.productId } : read;
     const what = parsed.phrase || (parsed.productId ? `product ${parsed.productId}` : "the product");
     if (!parsed.quantity) return finish("needs_input", `I need a quantity. How much ${what} do you need?`, {}, "waiting");
     const quantity = parsed.quantity;
@@ -110,6 +114,9 @@ export async function runPurchase(
     await say(result.note, noteStatus);
     return finish(result.status, result.summary, { orderId: order.id, offerId: offer.id });
   } catch (error) {
+    // A refused quote is the buyer's request to restate, not a fault: say why in their terms.
+    const refusal = parsed ? quoteRefusal(error, parsed) : undefined;
+    if (refusal) return finish("needs_input", `${refusal} No order placed.`, {}, "blocked");
     const message = error instanceof Error ? error.message : String(error);
     return finish("failed", `Something went wrong: ${message} No order placed.`, {}, "error");
   }

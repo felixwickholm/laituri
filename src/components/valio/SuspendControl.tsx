@@ -2,14 +2,15 @@
 
 import { CircleCheck } from "lucide-react";
 import Link from "next/link";
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import type { AuditEntry } from "@/lib/contracts";
-import { shortHash } from "@/lib/console/format/activity";
 import { clock } from "@/lib/console/format/time";
 import { useConsole } from "@/lib/console/store";
 import { supplierApi } from "@/lib/supplier-console/api";
 import { overviewPoller } from "@/lib/supplier-console/hooks";
+import { agentName } from "@/lib/supplier-console/names";
 import type { ControlAgent } from "@/lib/supplier-console/types";
+import { withOperator } from "../session/gate";
 
 type Step = { kind: "idle" } | { kind: "confirm" } | { kind: "busy" } | { kind: "done"; since: string; suspended: boolean };
 
@@ -25,8 +26,9 @@ function entryFor(audit: AuditEntry[], agentId: string, suspended: boolean, sinc
 }
 
 /**
- * Suspends or resumes one agent. Suspending asks for a reason first; the change is written to the signed log,
- * and the entry is shown once it arrives.
+ * Suspends or resumes one agent, as the signed-in Valio Aimo operator: the same gate as the approver's, with
+ * one-click demo access first and the passcode second. Suspending asks for a reason first; the change is written
+ * to the signed log, and the entry is shown once it arrives.
  */
 export function SuspendControl({ agent }: { agent: ControlAgent }) {
   const { audit } = useConsole();
@@ -34,6 +36,7 @@ export function SuspendControl({ agent }: { agent: ControlAgent }) {
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
   const fieldId = useId();
+  const root = useRef<HTMLDivElement>(null);
   const suspended = agent.status === "suspended";
 
   async function change(next: boolean) {
@@ -41,7 +44,12 @@ export function SuspendControl({ agent }: { agent: ControlAgent }) {
     setError(null);
     const since = new Date(Date.now() - 2000).toISOString();
     try {
-      await supplierApi.suspend(agent.agent.id, next, next ? reason.trim() || undefined : undefined);
+      const anchor = root.current?.querySelector(next ? ".btn-danger" : ".btn-secondary") ?? root.current;
+      const saved = await withOperator(anchor ?? null, () => supplierApi.suspend(agent.agent.id, next, next ? reason.trim() || undefined : undefined));
+      if (!saved) {
+        setStep(next ? { kind: "confirm" } : { kind: "idle" });
+        return;
+      }
       setStep({ kind: "done", since, suspended: next });
       setReason("");
       void overviewPoller.refresh();
@@ -54,7 +62,7 @@ export function SuspendControl({ agent }: { agent: ControlAgent }) {
   const entry = step.kind === "done" ? entryFor(audit, agent.agent.id, step.suspended, step.since) : undefined;
 
   return (
-    <div className="suspend" data-suspended={suspended}>
+    <div className="suspend" data-suspended={suspended} ref={root}>
       {suspended ? (
         <div className="suspend-state" role="status">
           <p className="suspend-title">Suspended{agent.suspendedAt ? ` at ${clock(agent.suspendedAt)}` : ""}</p>
@@ -73,7 +81,7 @@ export function SuspendControl({ agent }: { agent: ControlAgent }) {
           }}
         >
           <label className="field-label" htmlFor={fieldId}>
-            Why suspend {agent.agent.name}?
+            Why suspend {agentName(agent.agent)}?
           </label>
           <textarea
             id={fieldId}
@@ -126,7 +134,7 @@ export function SuspendControl({ agent }: { agent: ControlAgent }) {
               <>
                 <p className="signed-summary">{entry.summary}</p>
                 <p className="signed-meta">
-                  {clock(entry.at)} · hash <span className="mono">{shortHash(entry.hash)}</span> ·{" "}
+                  {clock(entry.at)} ·{" "}
                   <Link href="/valio/audit" className="text-link">
                     Open the audit log
                   </Link>

@@ -8,6 +8,7 @@ import {
   eurShort,
   exportName,
   filterAudit,
+  isActiveAgent,
   kitchenOutcomes,
   liveCalls,
   mainReason,
@@ -20,10 +21,12 @@ import {
   runSentence,
   seconds,
   statusWord,
+  unmetInWeek,
   unmetNet,
   weekFigures,
   weekday,
 } from "@/lib/supplier-console/format";
+import { KEYLESS_AGENT_ID } from "@/lib/supplier-console/names";
 import type { ControlAgent, ControlOverview } from "@/lib/supplier-console/types";
 
 const HOTEL = { id: "fi:ovt:1", name: "Nordic Harbour Hotels" };
@@ -75,8 +78,9 @@ function overview(overrides: Partial<ControlOverview> = {}): ControlOverview {
     },
     rules: [],
     daily: [
-      { date: "2026-11-13", requests: 3, orders: 2, confirmedNet: 100.1 },
-      { date: "2026-11-14", requests: 2, orders: 1, confirmedNet: 0.2 },
+      { date: "2026-11-12", requests: 1, ordered: 0, orders: 0, confirmed: 0, confirmedNet: 0 },
+      { date: "2026-11-13", requests: 3, ordered: 2, orders: 3, confirmed: 2, confirmedNet: 100.1 },
+      { date: "2026-11-14", requests: 2, ordered: 1, orders: 1, confirmed: 1, confirmedNet: 0.2 },
     ],
     ...overrides,
   };
@@ -126,12 +130,31 @@ describe("words", () => {
     expect(statusWord({ status: "suspended" })).toEqual({ word: "Suspended", tone: "danger" });
     expect(statusWord({ status: "idle" }).tone).toBe("neutral");
   });
+
+  it("calls a caller without a key read-only, unless it is suspended", () => {
+    expect(statusWord({ status: "active", agent: { id: KEYLESS_AGENT_ID } })).toEqual({ word: "Read-only", tone: "neutral" });
+    expect(statusWord({ status: "suspended", agent: { id: KEYLESS_AGENT_ID } }).word).toBe("Suspended");
+    expect(statusWord({ status: "active", agent: HOTEL_AGENT }).word).toBe("Active");
+    expect(isActiveAgent({ status: "active", agent: { id: KEYLESS_AGENT_ID, name: "Unidentified agent" } })).toBe(false);
+    expect(isActiveAgent({ status: "active", agent: HOTEL_AGENT })).toBe(true);
+  });
 });
 
 describe("figures", () => {
+  it("never shows more requests that led to an order than requests", () => {
+    const week = weekFigures(overview().daily);
+    expect(week.ordered).toBeLessThanOrEqual(week.requests);
+    for (const day of overview().daily) expect(day.ordered).toBeLessThanOrEqual(day.requests);
+  });
+
+  it("keeps only the unserved requests inside the week", () => {
+    const rows = [unmet("short_stock", "2026-11-14T06:00:00.000Z", 10), unmet("not_found", "2026-11-01T06:00:00.000Z")];
+    expect(unmetInWeek(rows, overview().daily).map((item) => item.reason)).toEqual(["short_stock"]);
+  });
+
   it("sums the seven days in whole cents", () => {
     const week = weekFigures(overview().daily);
-    expect(week).toMatchObject({ requests: 5, orders: 3, confirmedNet: 100.3 });
+    expect(week).toMatchObject({ requests: 6, ordered: 3, confirmed: 3, confirmedNet: 100.3, since: "2026-11-12" });
     expect(week.today?.date).toBe("2026-11-14");
   });
 

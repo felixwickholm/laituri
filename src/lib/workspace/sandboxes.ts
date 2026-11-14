@@ -23,7 +23,10 @@ export interface Sandboxes {
   info(workspace: Workspace): SandboxInfo | undefined;
   /** Puts the template's copy back into one sandbox, leaving every other sandbox alone. */
   restore(workspace: Workspace): Promise<void>;
+  /** Sandboxes held in memory, an idle one included until it is next asked for. */
   size(): number;
+  /** Sandboxes used within the idle limit. */
+  active(): number;
 }
 
 export interface SandboxOptions {
@@ -136,5 +139,6 @@ export function createSandboxes(options: SandboxOptions): Sandboxes {
     },
 
     size: () => bySecret.size,
+    active: () => [...bySecret.values()].filter((entry) => !expired(entry)).length,
   };
 }

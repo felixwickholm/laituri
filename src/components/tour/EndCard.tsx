@@ -63,7 +63,7 @@ export function EndCard({ onGo, onReset, onBack, onClose }: EndCardProps) {
         </button>
         <button type="button" className="btn btn-quiet" onClick={() => void reset()} disabled={resetting}>
           <RotateCcw aria-hidden="true" />
-          {resetting ? "Resetting…" : "Reset demo"}
+          {resetting ? "Resetting…" : "Reset my demo"}
         </button>
       </div>
     </section>

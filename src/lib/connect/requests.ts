@@ -1,7 +1,11 @@
-/** The demo agent's key. It names the agent in the mandate; without it orders from the caller are blocked. */
+/**
+ * The shared workspace's public key for the primary demo buyer's agent. The page shows it only until this browser's
+ * workspace answers with the visitor's own keys.
+ */
 export const DEMO_KEY = "demo-agent-token";
 
-export const AUTH_HEADER = `Bearer ${DEMO_KEY}`;
+/** The Authorization header value an agent sends with its key. */
+export const authHeader = (key: string) => `Bearer ${key}`;
 
 /** What a buyer would say to their own agent. Pasted after connecting. */
 export const PROMPT = "Order 1,000 litres of lactose-free milk for Monday from Valio Aimo. Stay inside the mandate.";

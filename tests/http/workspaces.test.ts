@@ -10,6 +10,7 @@ import * as reset from "@/app/api/v1/demo/reset/route";
 import * as run from "@/app/api/v1/demo/runs/[runId]/route";
 import * as runs from "@/app/api/v1/demo/runs/route";
 import * as tamper from "@/app/api/v1/demo/tamper/route";
+import * as health from "@/app/api/v1/health/route";
 import * as mandate from "@/app/api/v1/mandate/route";
 import * as orders from "@/app/api/v1/orders/route";
 import * as quotes from "@/app/api/v1/quotes/route";
@@ -21,6 +22,7 @@ import type { AuditEntry, AuditVerification, Order, QuoteResponse } from "@/lib/
 import { DemoRun } from "@/lib/demo";
 import type { WorkspaceInfo } from "@/lib/contracts";
 import { MILK } from "@/lib/openapi/examples";
+import { Health } from "@/lib/openapi/schemas";
 import { dataDir, store } from "@/lib/store";
 import { sandboxTemplate } from "@/lib/workspace";
 import { proxy } from "@/proxy";
@@ -221,5 +223,15 @@ describe("looking at the shared workspace", () => {
     const back = await read<WorkspaceInfo>(await browser.call(view.POST, "/api/v1/workspace/view", { body: { view: "sandbox" } }));
     expect(back.label).toBe(own.label);
     expect((await info(browser)).label).toBe(own.label);
+  });
+});
+
+describe("health", () => {
+  it("counts the active sandboxes and says what they are copied from", async () => {
+    const before = Health.parse(await read(await new Browser({ sandbox: false }).call(health.GET, "/api/v1/health"))).sandboxes;
+    await info(new Browser());
+    const after = Health.parse(await read(await new Browser({ sandbox: false }).call(health.GET, "/api/v1/health"))).sandboxes;
+    expect(after.active).toBe(before.active + 1);
+    expect(after).toMatchObject({ max: 300, idleMinutes: 60, template: { state: "seeded" } });
   });
 });

@@ -17,6 +17,7 @@ import { ClientChips } from "./bits";
 import { OutcomeBar } from "./OutcomeBar";
 import { RuleBars } from "./RuleBars";
 import { SuspendControl } from "./SuspendControl";
+import { agentName, clientName } from "@/lib/supplier-console/names";
 
 interface AgentSheetProps {
   agent?: ControlAgent;
@@ -59,7 +60,7 @@ export function AgentSheet({ agent, open, onClose }: AgentSheetProps) {
       open={open}
       onClose={onClose}
       kicker={agent?.buyer?.name ?? "Agent"}
-      title={agent?.agent.name ?? "Agent"}
+      title={agent ? agentName(agent.agent) : "Agent"}
       lede={agent ? `First seen ${dayAndTime(agent.firstSeen)} · last call ${dayAndTime(agent.lastSeen)}` : undefined}
     >
       {agent && status ? (
@@ -100,7 +101,7 @@ export function AgentSheet({ agent, open, onClose }: AgentSheetProps) {
                     <span className="sub">
                       {day(ask.at)}
                       {ask.detail ? ` · ${withEuroSign(tidyProductText(ask.detail))}` : ""}
-                      {ask.client ? ` · ${ask.client}` : ""}
+                      {ask.client ? ` · ${clientName(ask.client)}` : ""}
                       {ask.seeded ? <DemoTag /> : null}
                     </span>
                   </li>

@@ -42,6 +42,14 @@
 .control-kpis {
   grid-template-columns: repeat(5, minmax(0, 1fr));
 }
+.kpi-window {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-3);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 400;
+}
 .kpi-of {
   margin-left: 2px;
   color: var(--text-3);
@@ -567,7 +575,7 @@
 .orders-inline .outcome {
   flex: 1;
   min-width: 72px;
-  max-width: 140px;
+  max-width: 110px;
 }
 .phone-unit {
   display: none;
@@ -986,6 +994,14 @@
   }
 }
 
+/* With the sidebar, a laptop screen leaves the agents table too narrow for every column; quotes stay in the agent sheet. */
+@media (max-width: 1360px) {
+  .agents-table .cell-quotes,
+  .agents-table th:nth-child(5) {
+    display: none;
+  }
+}
+
 @media (max-width: 1180px) {
   .control-grid {
     grid-template-columns: minmax(0, 1fr);
@@ -993,10 +1009,6 @@
   .control-kpis,
   .offer-kpis {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  .agents-table .cell-quotes,
-  .agents-table th:nth-child(5) {
-    display: none;
   }
 }
 

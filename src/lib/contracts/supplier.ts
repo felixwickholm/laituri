@@ -134,9 +134,11 @@ export type RuleStat = z.infer<typeof RuleStat>;
 
 export const DailyPoint = z.object({
   date: IsoDate.describe("Calendar date in Helsinki"),
-  requests: z.number().int(),
-  orders: z.number().int(),
-  confirmedNet: z.number(),
+  requests: z.number().int().describe("Requests that started that day: a search, or a quote that began one"),
+  ordered: z.number().int().describe("Of that day's requests, those that led to at least one order; never more than requests"),
+  orders: z.number().int().describe("Orders placed that day; one request can lead to several"),
+  confirmed: z.number().int().describe("Orders placed that day that are confirmed"),
+  confirmedNet: z.number().describe("Net EUR of the orders placed that day that are confirmed"),
 });
 export type DailyPoint = z.infer<typeof DailyPoint>;
 

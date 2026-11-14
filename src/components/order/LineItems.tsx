@@ -1,6 +1,14 @@
 import type { Offer } from "@/lib/contracts";
-import { count, eur } from "@/lib/console/format/money";
-import { contentText } from "@/lib/console/format/proof";
+import { eur } from "@/lib/console/format/money";
+import { packContent, packCount, priceUnit, stockText } from "@/lib/console/format/packs";
+
+/** The small print under a line's name: its code, what the packs come to, stock where it matters, what it replaces. */
+function lineFacts(line: Offer["lines"][number]): string {
+  return [packContent(line), stockText(line), line.substituteFor ? `replaces ${line.substituteFor.name}` : undefined]
+    .filter(Boolean)
+    .map((part) => ` · ${part}`)
+    .join("");
+}
 
 /** Line items with fixed unit prices, then net, VAT and gross. */
 export function LineItems({ offer }: { offer: Offer }) {
@@ -16,14 +24,15 @@ export function LineItems({ offer }: { offer: Offer }) {
               {line.name}
               <span className="sub">
                 {line.gtin ? <span className="mono">GTIN {line.gtin}</span> : <span className="mono">#{line.productId}</span>}
-                {contentText(line) ? ` · ${contentText(line)}` : ""}
-                {line.substituteFor ? ` · replaces ${line.substituteFor.name}` : ""}
+                {lineFacts(line)}
               </span>
             </span>
-            <span className="qty">×{count(line.quantity)}</span>
+            <span className="qty">{packCount(line)}</span>
             <span className="money">
               {eur(line.lineNet.amount)}
-              <span className="sub">{eur(line.unitPrice.amount)} each</span>
+              <span className="sub">
+                {eur(line.unitPrice.amount)} {priceUnit(line)}
+              </span>
             </span>
           </li>
         ))}

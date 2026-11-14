@@ -45,12 +45,12 @@ export function OverviewScreen() {
           <div className="control-grid">
             <section className="block" aria-labelledby="daily-title">
               <header className="block-head">
-                <h2 id="daily-title">Requests and orders</h2>
+                <h2 id="daily-title">Requests per day</h2>
                 <span className="block-meta series-key">
                   <span className="swatch" data-series="requests" aria-hidden="true" />
                   Requests
                   <span className="swatch" data-series="orders" aria-hidden="true" />
-                  Orders
+                  Led to an order
                   <span className="key-note">· confirmed value under each day</span>
                 </span>
               </header>

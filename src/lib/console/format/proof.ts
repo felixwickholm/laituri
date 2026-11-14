@@ -1,16 +1,11 @@
 import type { Offer, OfferLine, Order, RequestCheck, RequestCheckResult } from "@/lib/contracts";
-import { count } from "./money";
+import { packText } from "./packs";
 import { shortProductName } from "./product";
 import { day } from "./time";
 
-export function contentText(line: OfferLine): string | undefined {
-  return line.content ? `${count(line.content.amount)}\u00a0${line.content.unit}` : undefined;
-}
-
-/** "1,000 × Valio Eila 1 l = 1,000 l" */
+/** "1,000 × Valio Eila 1 l = 1,000 l"; "3 cases of Dafgårds ciabatta 58g = 13.92 kg" */
 export function lineText(line: OfferLine): string {
-  const content = contentText(line);
-  return `${count(line.quantity)} × ${line.name}${content ? ` = ${content}` : ""}`;
+  return packText(line, line.name);
 }
 
 /** "Asked: 1,000 l lactose-free milk by Mon 16 Nov" */
@@ -27,12 +22,12 @@ export function offeredLine(offer: Offer): string {
   return `Offered: ${lines}${when}`;
 }
 
-/** The offer for a list or card, with short product names: "1,600 × Arki Eila semi-skimmed lactose-free milk 1 l". */
+/** The offer for a list or card, with short product names: "1,600 × Arki Eila semi-skimmed lactose-free milk 1 l = 1,600 l". */
 export function offerSubject(offer: Offer): string {
-  return offer.lines.map((line) => `${count(line.quantity)} × ${shortProductName(line.name)}`).join("; ");
+  return offer.lines.map((line) => packText(line, shortProductName(line.name))).join("; ");
 }
 
-/** "Offered: 1,600 × Arki Eila … milk 1 l · Mon 16 Nov" */
+/** "Offered: 1,600 × Arki Eila … milk 1 l = 1,600 l · Mon 16 Nov" */
 export function offeredShort(offer: Offer): string {
   return `Offered: ${offerSubject(offer)}${offer.deliveryDate ? ` · ${day(offer.deliveryDate)}` : ""}`;
 }

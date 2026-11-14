@@ -6,7 +6,8 @@ import { consoleStore } from "@/lib/console/store";
 import { CONDITIONS, storyFacts } from "@/lib/tour/facts";
 import type { TourState } from "@/lib/tour/machine";
 import { MAIN_TARGET, STEPS, type TourStep } from "@/lib/tour/steps";
-import { ACTIONS, prepareDemo, restoreLog } from "./actions";
+import { resolveTargets } from "@/lib/tour/targets";
+import { ACTIONS, prepareDemo } from "./actions";
 import { tourStore } from "./tour-store";
 
 const WATCH_MS = 250;
@@ -25,14 +26,15 @@ function once(key: string, work: () => Promise<void>): void {
 }
 
 /** The step's own targets are on screen; the page's main region is only a fallback and never counts. */
-function targetShown(step: TourStep, done: boolean): boolean {
-  const selectors = (done && step.doneTarget ? step.doneTarget : step.target).filter((selector) => selector !== MAIN_TARGET);
-  return selectors.length === 0 || selectors.some((selector) => document.querySelector(selector) !== null);
+function targetShown(step: TourStep, runs: TourState["runs"]): boolean {
+  const own = (step.doneTarget ?? step.target).filter((selector) => selector !== MAIN_TARGET);
+  const selectors = resolveTargets(own, runs);
+  return own.length === 0 || selectors.some((selector) => document.querySelector(selector) !== null);
 }
 
-function outcomeReached(step: TourStep): boolean {
+function outcomeReached(step: TourStep, runs: TourState["runs"]): boolean {
   const snapshot = consoleStore.getSnapshot();
-  return CONDITIONS[step.until](snapshot, storyFacts(snapshot)) && targetShown(step, true);
+  return CONDITIONS[step.until](snapshot, storyFacts(snapshot)) && targetShown(step, runs);
 }
 
 function urlParam(state: TourState): string | null {
@@ -95,7 +97,7 @@ export function useTourRunner(state: TourState): void {
     if (!watchedSince.has(step.id)) watchedSince.set(step.id, Date.now());
     const since = watchedSince.get(step.id) ?? Date.now();
     const watch = () => {
-      if (!inFlight.has(`enter:${step.id}`) && outcomeReached(step)) tourStore.dispatch({ type: "outcome", step: step.id, outcome: "done" });
+      if (!inFlight.has(`enter:${step.id}`) && outcomeReached(step, tourStore.getSnapshot().runs)) tourStore.dispatch({ type: "outcome", step: step.id, outcome: "done" });
       else if (!outcome && Date.now() - since > step.timeoutMs) tourStore.dispatch({ type: "outcome", step: step.id, outcome: "timeout" });
     };
     watch();
@@ -122,7 +124,8 @@ export function useTourRunner(state: TourState): void {
     once("restore", async () => {
       // A change still on its way to the server would land after the restore and leave the log broken.
       await Promise.all([...inFlight].filter(([key]) => key.startsWith("enter:")).map(([, running]) => running));
-      await restoreLog();
+      // Puts the changed log entry back, so approvals are not left paused after the tour.
+      await consoleStore.restoreLog();
       tourStore.dispatch({ type: "tampered", value: false });
     });
   }, [state.tampered, state.status]);

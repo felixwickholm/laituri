@@ -2,7 +2,7 @@
 
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { runOutcome, runTitle, type RunContext } from "@/lib/console/format/run-view";
+import { runOutcome, runReason, runTitle, type RunContext } from "@/lib/console/format/run-view";
 import { plainSentence } from "@/lib/console/format/sentence";
 import { duration, hourMinute } from "@/lib/console/format/time";
 import type { RunBlock as Run, RunStep } from "@/lib/console/runs";
@@ -34,12 +34,14 @@ interface RunBlockProps {
   run: Run;
   ctx: RunContext;
   newest: boolean;
+  /** The id of the demo run this browser started that the block belongs to, for the walkthrough to point at. */
+  demoRun?: string;
   seeded: boolean;
   onOpenOrder: (orderId: string) => void;
 }
 
 /** One buyer request: their words, the steps in plain sentences, how it ended and how long it took. */
-export function RunBlock({ run, ctx, newest, seeded, onOpenOrder }: RunBlockProps) {
+export function RunBlock({ run, ctx, newest, demoRun, seeded, onOpenOrder }: RunBlockProps) {
   const [expandedByUser, setExpanded] = useState<boolean | null>(null);
   const [allSteps, setAllSteps] = useState(false);
   const [toolsByUser, setTools] = useState<boolean | null>(null);
@@ -47,6 +49,7 @@ export function RunBlock({ run, ctx, newest, seeded, onOpenOrder }: RunBlockProp
   const showTools = toolsByUser ?? ctx.active;
   const outcome = runOutcome(run, ctx);
   const title = runTitle(run, ctx);
+  const reason = runReason(run, ctx);
   const lastStep = useRef<HTMLLIElement>(null);
   const order = run.kind === "attempts" ? undefined : ctx.orders.get(run.orderIds[run.orderIds.length - 1] ?? "");
   const steps = ctx.active || allSteps ? run.steps : tellingSteps(run.steps);
@@ -62,7 +65,7 @@ export function RunBlock({ run, ctx, newest, seeded, onOpenOrder }: RunBlockProp
   }, [ctx.active, stepCount, showTools]);
 
   return (
-    <article className="run" data-active={ctx.active} data-expanded={expanded} aria-label={title}>
+    <article className="run" data-active={ctx.active} data-demo-run={demoRun} data-expanded={expanded} aria-label={title}>
       <button type="button" className="run-head" aria-expanded={expanded} aria-controls={bodyId} onClick={() => setExpanded(!expanded)}>
         <span className="run-title">{run.kind === "attempts" ? title : `“${title}”`}</span>
         <span className="run-time">
@@ -78,6 +81,12 @@ export function RunBlock({ run, ctx, newest, seeded, onOpenOrder }: RunBlockProp
       </button>
       {expanded ? (
         <div className="run-body" id={bodyId}>
+          {reason ? (
+            <p className="run-reason">
+              <span className="run-reason-label">Why the alternative</span>
+              {reason}
+            </p>
+          ) : null}
           {run.kind === "attempts" ? (
             <Attempts attempts={run.attempts} showTools={showTools} onOpenOrder={onOpenOrder} lastRef={lastStep} />
           ) : (

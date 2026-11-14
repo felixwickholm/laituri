@@ -4,6 +4,7 @@ import { eur } from "@/lib/console/format/money";
 import { day } from "@/lib/console/format/time";
 import { conceptLabel, quantityText, reasonLabel, unmetNet } from "@/lib/supplier-console/format";
 import type { UnmetRequest } from "@/lib/supplier-console/types";
+import { agentName } from "@/lib/supplier-console/names";
 
 /** The top unserved requests: what was asked, by whom, why it went unserved, and what it was worth. */
 export function UnservedPanel({ unmet, limit = 5 }: { unmet: UnmetRequest[]; limit?: number }) {
@@ -28,7 +29,7 @@ export function UnservedPanel({ unmet, limit = 5 }: { unmet: UnmetRequest[]; lim
               <span className="unserved-what">
                 <span className="unserved-words">{item.words ? `“${item.words}”` : conceptLabel(item.concept)}</span>
                 <span className="sub">
-                  {item.buyer?.name ?? item.agent.name} · {quantityText(item.quantity)} · {day(item.at)}
+                  {item.buyer?.name ?? agentName(item.agent)} · {quantityText(item.quantity)} · {day(item.at)}
                 </span>
               </span>
               <span className="reason-tag" data-reason={item.reason}>

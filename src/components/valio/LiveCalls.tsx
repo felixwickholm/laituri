@@ -7,6 +7,7 @@ import { tidyProductText } from "@/lib/console/format/product";
 import { ago, liveCalls, toolVerb } from "@/lib/supplier-console/format";
 import { useAllActivity } from "@/lib/supplier-console/hooks";
 import { DemoTag } from "../ui/DemoTag";
+import { agentName, clientName } from "@/lib/supplier-console/names";
 
 const STATUS_WORD = { ok: "", waiting: "Held", blocked: "Blocked", error: "Failed" } as const;
 
@@ -37,9 +38,9 @@ export function LiveCalls({ now, limit = 6 }: { now: number; limit?: number }) {
                 <span className="live-body">
                   <span className="live-title">{tidyProductText(call.title)}</span>
                   <span className="live-sub">
-                    {call.agent.name}
+                    {agentName(call.agent)}
                     {call.buyer ? ` · ${call.buyer.name}` : ""}
-                    {call.client ? ` · ${call.client}` : ""}
+                    {call.client ? ` · ${clientName(call.client)}` : ""}
                     {call.detail ? ` · ${withEuroSign(call.detail)}` : ""}
                   </span>
                 </span>

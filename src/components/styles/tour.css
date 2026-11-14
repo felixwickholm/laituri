@@ -4,13 +4,15 @@
  * here enters on opacity and transform, and reduced motion keeps the fades without the travel.
  */
 
+/* Measured on screenshots: the dimmed page keeps under a third of its brightness, so only the target, the card and
+   the phone read as lit. */
 :root {
-  --tour-dim: rgba(7, 11, 20, 0.6);
+  --tour-dim: rgba(7, 11, 20, 0.72);
   --tour-card-w: 520px;
   --tour-bezel: #0b0f17;
 }
 :root[data-theme="dark"] {
-  --tour-dim: rgba(0, 1, 4, 0.76);
+  --tour-dim: rgba(0, 1, 4, 0.8);
   --tour-bezel: #000000;
 }
 
@@ -520,4 +522,7 @@
   .tour-progress li::after {
     transition: none;
   }
+}
+.tour-intro .tour-engine {
+  margin-top: 14px;
 }

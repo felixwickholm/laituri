@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { ControlAgent } from "@/lib/supplier-console/types";
 import { statusWord } from "@/lib/supplier-console/format";
+import { clientName } from "@/lib/supplier-console/names";
 
 /** The client applications an agent was seen through, as plain text chips. */
 export function ClientChips({ clients, max = 3 }: { clients: string[]; max?: number }) {
@@ -11,7 +12,7 @@ export function ClientChips({ clients, max = 3 }: { clients: string[]; max?: num
     <span className="client-chips">
       {shown.map((client) => (
         <span key={client} className="client-chip">
-          {client}
+          {clientName(client)}
         </span>
       ))}
       {rest > 0 ? <span className="client-chip" data-more="true">+{rest}</span> : null}
@@ -19,8 +20,8 @@ export function ClientChips({ clients, max = 3 }: { clients: string[]; max?: num
   );
 }
 
-/** A status dot with its word: green active, grey idle, red suspended. */
-export function StatusMark({ agent }: { agent: Pick<ControlAgent, "status"> }) {
+/** A status dot with its word: green active, grey idle or read-only, red suspended. */
+export function StatusMark({ agent }: { agent: Pick<ControlAgent, "status" | "agent"> }) {
   const { word, tone } = statusWord(agent);
   return (
     <span className="status-mark" data-tone={tone}>

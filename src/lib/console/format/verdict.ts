@@ -15,7 +15,7 @@ function orders(n: number): string {
 /** The Today screen's verdict: the decision first, then the reason, in plain words. */
 export function todayVerdict(week: WeekStats, chainBroken: boolean, anyOrders: boolean): Verdict {
   if (chainBroken) {
-    return { lead: "The log does not verify.", reason: "Approvals are paused until it is restored. Reset demo restores it.", tone: "danger" };
+    return { lead: "The log does not verify.", reason: "Approvals stay paused until the log is restored from the last signed checkpoint.", tone: "danger" };
   }
   if (week.waiting > 0) {
     const rest =

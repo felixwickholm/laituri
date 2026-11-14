@@ -110,6 +110,20 @@ describe("runModelPurchase", () => {
     expect(spy.orders).toHaveLength(0);
   });
 
+  it("ends the run when the wholesaler refuses the quantity, so the model cannot order a smaller one itself", async () => {
+    const spy = spyTransport();
+    const { provider, seen } = fakeProvider([
+      () => call("request_quote", { lines: [{ productId: "464306", quantity: { amount: 1e12, unit: "l" } }], deliverBy: "2026-11-16" }),
+      () => call("request_quote", { lines: [{ productId: "464306", quantity: { amount: 20_000, unit: "l" } }], deliverBy: "2026-11-16" }),
+    ]);
+    const result = await runModelPurchase("1000000000000 l of Eila by Monday", spy.transport, hooks, provider);
+    expect(result.status).toBe("needs_input");
+    expect(result.summary).toBe("Valio Aimo refused the quote: 1,000,000,000,000 litres is more than one order line can carry. No order placed.");
+    expect(result.steps.at(-1)?.status).toBe("blocked");
+    expect(seen).toHaveLength(1);
+    expect(spy.orders).toHaveLength(0);
+  });
+
   it("rejects malformed tool arguments before calling the wholesaler", async () => {
     const spy = spyTransport();
     const { provider, seen } = fakeProvider([

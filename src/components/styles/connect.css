@@ -6,6 +6,7 @@
   --cx-code-muted: #9aa6ba;
   --cx-code-ok: #4fd1a1;
   --cx-code-bad: #ff8a7a;
+  --cx-code-wait: #f5c26b;
   --cx-code-line: rgba(255, 255, 255, 0.08);
   min-height: 100dvh;
   background: var(--bg);
@@ -129,6 +130,68 @@
 .cx-endpoint .cx-sub {
   grid-column: 2;
   margin-top: 0;
+}
+
+/* The agent key: which demo buyer it acts for, the key itself, and whose workspace its calls reach. */
+.cx-key {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--line);
+}
+.cx-key-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+.cx-key-head h3 {
+  font-size: 15px;
+  font-weight: 600;
+}
+.cx-key-agent {
+  color: var(--text-2);
+  font-size: 14px;
+}
+.cx-buyers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.cx-buyers button {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-full);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background-color var(--d-hover) var(--ease-hover),
+    border-color var(--d-hover) var(--ease-hover),
+    color var(--d-hover) var(--ease-hover),
+    transform var(--d-press) var(--ease-out);
+}
+.cx-buyers button:active {
+  transform: scale(0.97);
+}
+.cx-buyers button[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent-tint);
+  color: var(--text-1);
+}
+/* A key has no spaces: on a narrow screen it breaks anywhere so the whole key stays visible. */
+.cx-key .cx-code pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.cx-key-note {
+  color: var(--text-1);
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 /* App picker */
@@ -510,6 +573,14 @@
   background: var(--success-tint);
   color: var(--success);
 }
+.cx-stepper li[data-state="waiting"] {
+  border-color: var(--warn);
+  color: var(--text-1);
+}
+.cx-stepper li[data-state="waiting"] .cx-stepper-mark {
+  background: var(--warn-tint);
+  color: var(--warn);
+}
 .cx-stepper li[data-state="failed"] {
   border-color: var(--danger);
   color: var(--text-1);
@@ -610,8 +681,11 @@
   align-items: flex-start;
   color: var(--cx-code-bad);
 }
-.cx-term-res[data-ok] {
+.cx-term-res[data-tone="ok"] {
   color: var(--cx-code-ok);
+}
+.cx-term-res[data-tone="waiting"] {
+  color: var(--cx-code-wait);
 }
 .cx-term-res svg {
   flex: none;
@@ -716,7 +790,8 @@
     background: var(--surface-3);
     color: var(--text-1);
   }
-  .cx-variant button:hover:not([aria-pressed="true"]) {
+  .cx-variant button:hover:not([aria-pressed="true"]),
+  .cx-buyers button:hover:not([aria-pressed="true"]) {
     color: var(--text-1);
   }
   .cx-btn:hover {
@@ -816,6 +891,7 @@
   .cx-btn:active,
   .cx-link:active:not(:disabled),
   .cx-variant button:active,
+  .cx-buyers button:active,
   .cx-nav a:active {
     transform: none;
   }

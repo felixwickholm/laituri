@@ -117,6 +117,22 @@ export const Health = z.object({
       model: z.string().optional().describe("The model name; set for claude and gemini"),
     })
     .describe("Which engine runs free-text requests from the console (LAITURI_AGENT_ENGINE and the model keys)"),
+  sandboxes: z
+    .object({
+      active: z.number().int().describe("Sandboxes used within the idle limit"),
+      max: z.number().int().describe("At most this many live at once (LAITURI_SANDBOX_MAX); the least recently used is dropped first"),
+      idleMinutes: z.number().int().describe("An unused sandbox is replaced by a fresh copy after this long (LAITURI_SANDBOX_IDLE_MINUTES)"),
+      template: z
+        .object({
+          state: z.enum(["seeded", "skipped", "failed", "off"]).describe("seeded: the template holds the demo week; failed: writing it failed, sandboxes start empty; off: LAITURI_SEED=off"),
+          at: z.string().optional(),
+          requests: z.number().int().optional(),
+          orders: z.number().int().optional(),
+          reason: z.string().optional(),
+        })
+        .describe("The seeded workspace every sandbox starts as a copy of"),
+    })
+    .describe("Per-browser sandboxes: how many are active and what they are copied from"),
   store: z
     .object({
       recovery: z

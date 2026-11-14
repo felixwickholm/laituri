@@ -1,5 +1,7 @@
 import type { SupplierOverview } from "@/lib/contracts";
 import { SCRIPTED_CLIENT, UNKNOWN_CLIENT } from "@/lib/http/client-app";
+import { isActiveAgent } from "@/lib/supplier-console/format";
+import { agentName, clientName } from "@/lib/supplier-console/names";
 
 /** One row of the connected-agents fragment on the landing page. */
 export interface AgentRow {
@@ -33,7 +35,8 @@ const plural = (count: number, word: string) => `${count} ${word}${count === 1 ?
 
 /** The app an agent last called from, or the protocol when only the scripted agent or an unnamed caller used it. */
 function via(clients: string[]): string {
-  return clients.find((client) => client !== SCRIPTED_CLIENT && client !== UNKNOWN_CLIENT) ?? "REST";
+  const named = clients.find((client) => client !== SCRIPTED_CLIENT && client !== UNKNOWN_CLIENT);
+  return named ? clientName(named) : "REST";
 }
 
 /** The fragment's rows from the live overview: the three busiest agents, their buyers and orders, and the newest unserved request. */
@@ -42,11 +45,11 @@ export function agentsView(overview: SupplierOverview): AgentsView {
   const agents = ranked.map((agent) => {
     const placed = agent.orders.confirmed_auto + agent.orders.confirmed_after_approval;
     return {
-      name: agent.agent.name,
-      buyer: agent.buyer?.name ?? "Unknown buyer",
+      name: agentName(agent.agent),
+      buyer: agent.buyer?.name ?? "No buyer named",
       via: via(agent.clients),
       orders: plural(placed, "order"),
-      live: agent.status === "active",
+      live: isActiveAgent(agent),
     };
   });
   const missed = overview.unmet[0];

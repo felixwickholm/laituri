@@ -7,6 +7,7 @@ import { buyerOrders } from "@/lib/console/format/orders";
 import { useConsole } from "@/lib/console/store";
 import { OrderSheet } from "../order/OrderSheet";
 import { SignInPopover } from "../session/SignInPopover";
+import { SharedViewBanner } from "../session/WorkspaceIndicator";
 import { Sheet } from "../ui/Sheet";
 import { Tour } from "../tour/Tour";
 import { Toaster } from "../ui/toast";
@@ -60,7 +61,7 @@ export function AppShell({ side, children }: AppShellProps) {
           <nav className="side-nav" aria-label={side === "buyer" ? "Buyer" : "Valio Aimo"}>
             <NavLinks side={side} signals={signals} variant="list" />
           </nav>
-          <ShellTools health={snapshot.health} />
+          <ShellTools health={snapshot.health} side={side} />
         </aside>
 
         <header className="phone-bar">
@@ -71,6 +72,7 @@ export function AppShell({ side, children }: AppShellProps) {
         </header>
 
         <main className="canvas" id="main" tabIndex={-1}>
+          <SharedViewBanner />
           {children}
         </main>
 
@@ -84,7 +86,7 @@ export function AppShell({ side, children }: AppShellProps) {
       </div>
 
       <Sheet open={moreOpen} onClose={closeMore} title="More" lede={sideName}>
-        <ShellTools health={snapshot.health} />
+        <ShellTools health={snapshot.health} side={side} />
       </Sheet>
       <OrderSheet orderId={orderId} onClose={closeOrder} />
       <SignInPopover />
