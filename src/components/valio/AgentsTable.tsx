@@ -1,0 +1,83 @@
+import { count, eur } from "@/lib/console/format/money";
+import { day } from "@/lib/console/format/time";
+import { ago, orderCount } from "@/lib/supplier-console/format";
+import type { ControlAgent } from "@/lib/supplier-console/types";
+import { ClientChips, StatusMark } from "./bits";
+import { OutcomeBar } from "./OutcomeBar";
+
+interface AgentsTableProps {
+  agents: ControlAgent[];
+  now: number;
+  onOpen: (agentId: string) => void;
+}
+
+/** Every agent that reached Valio Aimo: who it buys for, how it connects, how busy it is and how its orders ended. */
+export function AgentsTable({ agents, now, onOpen }: AgentsTableProps) {
+  return (
+    <div className="table-frame">
+      <table className="agents-table">
+        <thead>
+          <tr>
+            <th scope="col">Agent</th>
+            <th scope="col">Client apps</th>
+            <th scope="col">Last seen</th>
+            <th scope="col" className="num">
+              Calls
+            </th>
+            <th scope="col" className="num">
+              Quotes
+            </th>
+            <th scope="col">Orders by outcome</th>
+            <th scope="col" className="num">
+              Confirmed
+            </th>
+            <th scope="col">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {agents.length === 0 ? (
+            <tr className="empty-row">
+              <td colSpan={8}>No agent has connected yet.</td>
+            </tr>
+          ) : (
+            agents.map((agent) => (
+              <tr key={agent.agent.id} data-status={agent.status}>
+                <td className="cell-agent">
+                  <button type="button" className="row-open" onClick={() => onOpen(agent.agent.id)}>
+                    {agent.agent.name}
+                  </button>
+                  <span className="sub">{agent.buyer?.name ?? "Unknown buyer"}</span>
+                </td>
+                <td className="cell-apps">
+                  <ClientChips clients={agent.clients} max={4} />
+                </td>
+                <td className="cell-seen">
+                  <span>{ago(agent.lastSeen, now)}</span>
+                  <span className="sub">since {day(agent.firstSeen)}</span>
+                </td>
+                <td className="cell-calls num">
+                  {count(agent.calls)}
+                  <span className="phone-unit"> calls</span>
+                </td>
+                <td className="cell-quotes num">
+                  {count(agent.quotes)}
+                  <span className="phone-unit"> quotes</span>
+                </td>
+                <td className="cell-orders">
+                  <span className="orders-inline">
+                    <OutcomeBar orders={agent.orders} />
+                    <span className="num">{count(orderCount(agent.orders))}</span>
+                  </span>
+                </td>
+                <td className="cell-net num">{eur(agent.confirmedNet)}</td>
+                <td className="cell-status">
+                  <StatusMark agent={agent} />
+                </td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+}
