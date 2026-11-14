@@ -623,3 +623,110 @@
   flex-wrap: wrap;
   gap: 8px;
 }
+
+/* The walkthrough at the top of the sidebar: big, lime, and a soft glow every 5 seconds so a visitor finds it. */
+.side-tour {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 60px;
+  margin: 4px 0 20px;
+  padding: 0 20px;
+  border-radius: var(--r-control);
+  background: var(--cta);
+  color: var(--on-cta);
+  font-size: calc(var(--fs-body) * 1.08);
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: var(--glass-shadow-soft);
+  transition:
+    transform var(--d-press) var(--ease-out),
+    background-color var(--d-fast) var(--ease-out);
+  animation: tour-glow 5s ease-out infinite;
+}
+.side-tour svg {
+  width: 24px;
+  height: 24px;
+  flex: none;
+}
+.side-tour:active {
+  transform: var(--press);
+}
+.side-tour:focus-visible {
+  outline: 2px solid var(--focus, var(--accent));
+  outline-offset: 3px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .side-tour:hover {
+    background: var(--cta-hover);
+  }
+}
+@keyframes tour-glow {
+  0%,
+  70% {
+    box-shadow: var(--glass-shadow-soft), 0 0 0 0 rgb(192 224 33 / 0);
+  }
+  80% {
+    box-shadow: var(--glass-shadow-soft), 0 0 0 6px rgb(192 224 33 / 0.55), 0 0 28px 6px rgb(192 224 33 / 0.45);
+  }
+  100% {
+    box-shadow: var(--glass-shadow-soft), 0 0 0 14px rgb(192 224 33 / 0), 0 0 36px 10px rgb(192 224 33 / 0);
+  }
+}
+
+/* On a desktop the sidebar holds the walkthrough; the top bar keeps the cart on the right. */
+@media (min-width: 1024px) {
+  .shell-top .shell-tour {
+    display: none;
+  }
+}
+.shell-top {
+  gap: 12px;
+  align-items: center;
+}
+.cart-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--glass-line);
+  border-radius: var(--r-control);
+  background: var(--glass-fill-strong);
+  color: var(--heading);
+  font-weight: 650;
+  text-decoration: none;
+  transition: border-color var(--d-hover) var(--ease-hover);
+}
+.cart-chip svg {
+  width: 20px;
+  height: 20px;
+}
+.cart-chip-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--text-inverse);
+  font-size: var(--fs-sm);
+}
+@media (hover: hover) and (pointer: fine) {
+  .cart-chip:hover {
+    border-color: var(--line-strong);
+  }
+}
+@media (max-width: 1023px) {
+  .shell-tour {
+    animation: tour-glow 5s ease-out infinite;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .side-tour,
+  .shell-tour {
+    animation: none;
+  }
+}

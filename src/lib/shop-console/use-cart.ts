@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { addLine, parseCart, setPacks, type Cart, type CartLine } from "./cart";
 
 const PREFIX = "laituri-cart:";
+/** Told on every write, so the cart count in the top bar follows a cart changed elsewhere on the page. */
+const CHANGED = "laituri-cart-changed";
 
 function read(key: string): Cart {
   try {
@@ -20,6 +22,28 @@ function write(key: string, cart: Cart): void {
   } catch {
     // Storage is blocked or full: the cart still works for this visit.
   }
+  window.dispatchEvent(new CustomEvent(CHANGED, { detail: { key, lines: cart.length } }));
+}
+
+/** How many lines the cart holds, kept in step with every cart on the page and in other tabs. */
+export function useCartCount(key: string | undefined): number {
+  const [lines, setLines] = useState(0);
+  useEffect(() => {
+    if (!key) return;
+    const refresh = () => setLines(read(key).length);
+    refresh();
+    const changed = (event: Event) => {
+      const detail = (event as CustomEvent<{ key: string; lines: number }>).detail;
+      if (detail?.key === key) setLines(detail.lines);
+    };
+    window.addEventListener(CHANGED, changed);
+    window.addEventListener("storage", refresh);
+    return () => {
+      window.removeEventListener(CHANGED, changed);
+      window.removeEventListener("storage", refresh);
+    };
+  }, [key]);
+  return lines;
 }
 
 /** The person's cart, kept in this browser for this workspace only. `key` is undefined until the workspace is known. */

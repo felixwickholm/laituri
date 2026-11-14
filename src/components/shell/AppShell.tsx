@@ -14,6 +14,7 @@ import { SharedLock } from "../session/SharedLock";
 import { SharedViewBanner } from "../session/WorkspaceIndicator";
 import { Sheet } from "../ui/Sheet";
 import { Tour } from "../tour/Tour";
+import { CartChip } from "./CartChip";
 import { TourLink } from "../tour/TourLink";
 import { Toaster } from "../ui/toast";
 import { useHandoffs } from "./feed";
@@ -67,6 +68,10 @@ export function AppShell({ side, children }: AppShellProps) {
             <BrandHeader layout="stack" logoHeight={48} />
           </Link>
           <SideSwitch side={side} />
+          <TourLink className="side-tour">
+            <CirclePlay aria-hidden="true" />
+            <span>Demo walkthrough</span>
+          </TourLink>
           <nav className="side-nav" aria-label={label}>
             <NavLinks items={items} root={root} signals={signals} variant="list" />
           </nav>
@@ -86,6 +91,7 @@ export function AppShell({ side, children }: AppShellProps) {
               <CirclePlay aria-hidden="true" />
               Demo walkthrough
             </TourLink>
+            {side === "buyer" ? <CartChip /> : null}
           </div>
           <main className="canvas" id="main" tabIndex={-1}>
             {locked ? (
