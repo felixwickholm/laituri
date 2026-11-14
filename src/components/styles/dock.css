@@ -171,7 +171,7 @@
   position: absolute;
   inset: 0;
   width: 30%;
-  background: var(--accent);
+  background: rgba(255, 255, 255, 0.7);
   border-radius: inherit;
   animation: dock-run 1.4s cubic-bezier(0.45, 0, 0.55, 1) infinite;
 }

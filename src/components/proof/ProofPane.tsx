@@ -9,23 +9,9 @@ import type { ChainState, Jwks, SignedMandate } from "@/lib/console/types";
 import { EmptyLine, Pane, type Feed } from "../shell/Pane";
 import { useUi } from "../shell/ui-context";
 import { AuditSheet } from "./AuditSheet";
+import { ChainEntry, linkState } from "./ChainEntry";
+import { ChainExample } from "./ChainExample";
 import { ProofHead } from "./ProofHead";
-
-function AuditRow({ entry, chain, onOpen }: { entry: AuditEntry; chain: ChainState; onOpen: (seq: number) => void }) {
-  const broken = chain.state === "broken" && chain.brokenAt === entry.seq;
-  const after = chain.state === "broken" && entry.seq > chain.brokenAt;
-  return (
-    <li>
-      <button type="button" className="audit" data-broken={broken} data-after-break={after} onClick={() => onOpen(entry.seq)}>
-        <span className="audit-title">{auditTitle(entry)}</span>
-        <time className="mono" dateTime={entry.at}>
-          {clock(entry.at)}
-        </time>
-        <span className="sentence">{broken && chain.state === "broken" ? chain.reason : plainSentence(entry.summary)}</span>
-      </button>
-    </li>
-  );
-}
 
 interface ProofPaneProps {
   audit: AuditEntry[];
@@ -48,11 +34,22 @@ export function ProofPane({ audit, chain, orders, jwks, mandate, feed, visible }
     <Pane id="proof" num={3} title="Proof" sub="What was logged and verified" visible={visible} alarm={chain.state === "broken"}>
       <ProofHead audit={audit} chain={chain} latest={latest} jwks={jwks} mandate={mandate} onOpenOrder={ui.openOrder} />
       {newestFirst.length === 0 ? (
-        <EmptyLine feed={feed}>The log is empty. Every step the agent takes is signed and chained here.</EmptyLine>
+        <>
+          <EmptyLine feed={feed}>The log is empty. Every step the agent takes is signed and chained here.</EmptyLine>
+          {feed === "ok" ? <ChainExample /> : null}
+        </>
       ) : (
-        <ol className="audit-list" aria-label="Audit log, newest first">
+        <ol className="audit-list chain" data-chain={chain.state} aria-label="Audit log, newest first">
           {newestFirst.map((item) => (
-            <AuditRow key={item.seq} entry={item} chain={chain} onOpen={setOpenSeq} />
+            <ChainEntry
+              key={item.seq}
+              state={linkState(item.seq, chain)}
+              title={auditTitle(item)}
+              detail={chain.state === "broken" && chain.brokenAt === item.seq ? chain.reason : plainSentence(item.summary)}
+              time={clock(item.at)}
+              dateTime={item.at}
+              onOpen={() => setOpenSeq(item.seq)}
+            />
           ))}
         </ol>
       )}

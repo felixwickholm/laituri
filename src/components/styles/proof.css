@@ -17,6 +17,13 @@
   height: 44px;
   padding: 0 8px 0 12px;
 }
+.chain-note {
+  margin: -6px 0 0;
+  padding: 0 16px 12px;
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 18px;
+}
 .chain-row .meta {
   color: var(--text-3);
   font-size: 12px;
@@ -46,8 +53,11 @@
   stroke-width: 2;
 }
 .chain-badge[data-state="verified"] {
+  color: var(--text-1);
+  background: rgba(255, 255, 255, 0.06);
+}
+.chain-badge[data-state="verified"] svg {
   color: var(--success);
-  background: var(--success-tint);
 }
 .chain-badge[data-state="broken"] {
   color: #fff;
@@ -111,31 +121,49 @@
 .audit-list {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 4px 0 0;
+}
+
+/* The log drawn as a chain: a line down the left with a seal on every entry. */
+.chain {
+  --link: #3a5443;
+  --seal: #6f9c7c;
 }
 .audit {
+  position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 2px 12px;
+  grid-template-columns: 26px minmax(0, 1fr) auto;
+  gap: 2px 10px;
   width: 100%;
   min-height: 56px;
-  padding: 9px 16px;
+  padding: 9px 16px 9px 10px;
   border: 0;
-  border-bottom: 1px solid var(--line);
   background: transparent;
   color: inherit;
   font: inherit;
   text-align: left;
+  transition: opacity 240ms var(--ease-out);
+}
+button.audit {
   cursor: pointer;
-  transition:
-    opacity 200ms var(--ease-out),
-    transform 200ms var(--ease-out);
-  @starting-style {
-    opacity: 0;
-    transform: translateY(-6px);
-  }
+}
+.audit .audit-title,
+.audit .sentence {
+  grid-column: 2;
+}
+.audit time {
+  grid-column: 3;
+  grid-row: 1;
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--text-3);
+  text-align: right;
+}
+.audit .sentence {
+  grid-column: 2 / 4;
 }
 .audit-title {
+  grid-row: 1;
   font-size: 14px;
   line-height: 20px;
   font-weight: 510;
@@ -144,13 +172,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.audit time {
-  font-size: 12px;
-  color: var(--text-3);
-  text-align: right;
-}
 .audit .sentence {
-  grid-column: 1 / -1;
   font-size: 13px;
   line-height: 18px;
   color: var(--text-2);
@@ -158,21 +180,116 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.audit[data-broken="true"] {
-  background: var(--danger-tint);
-  box-shadow: inset 3px 0 0 var(--danger);
+@media (hover: hover) and (pointer: fine) {
+  button.audit:hover {
+    background: rgba(255, 255, 255, 0.03);
+  }
 }
-.audit[data-broken="true"] .audit-title,
-.audit[data-broken="true"] .sentence {
+
+.chain-seg {
+  position: absolute;
+  left: 22px;
+  width: 2px;
+  background: var(--link);
+  transition:
+    transform 240ms var(--ease-out),
+    opacity 240ms var(--ease-out);
+}
+.chain-seg.up {
+  top: 0;
+  height: 14px;
+}
+.chain-seg.down {
+  top: 26px;
+  bottom: 0;
+}
+.chain-item:first-child .chain-seg.up,
+.chain-item:last-child .chain-seg.down {
+  display: none;
+}
+.chain-node {
+  position: absolute;
+  left: 17px;
+  top: 15px;
+  display: grid;
+  place-items: center;
+  width: 12px;
+  height: 12px;
+  border-radius: var(--r-full);
+  border: 1.5px solid var(--seal);
+  background: var(--surface-1);
+  color: var(--seal);
+  transition:
+    transform 160ms var(--ease-out),
+    opacity 160ms var(--ease-out);
+  @starting-style {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+}
+.chain-node svg {
+  width: 8px;
+  height: 8px;
+  stroke-width: 3.5;
+}
+.chain-item[data-link="unknown"] .chain-node {
+  border-color: var(--text-4);
+}
+
+/* Broken: the line parts at the changed entry, its seal turns red, and everything written after it fades. */
+.chain-item[data-link="broken"] .audit {
+  background: var(--danger-tint);
+}
+.chain-item[data-link="broken"] .chain-node {
+  border-color: var(--danger);
+  background: var(--danger);
+  color: #fff;
+}
+.chain-item[data-link="broken"] .chain-seg.up {
+  height: 9px;
+  transform: translateX(4px);
+  background: none;
+  border-left: 2px dashed var(--text-4);
+}
+.chain-item[data-link="broken"] .chain-seg.down {
+  top: 31px;
+  background: var(--danger);
+  opacity: 0.6;
+}
+.chain-item[data-link="broken"] .audit-title,
+.chain-item[data-link="broken"] .sentence {
   color: #ff8a82;
 }
-.audit[data-after-break="true"] {
+.chain-item[data-link="untrusted"] .audit {
   opacity: 0.45;
 }
-@media (hover: hover) and (pointer: fine) {
-  .audit:hover {
-    background: var(--surface-2);
-  }
+.chain-item[data-link="untrusted"] .chain-seg {
+  background: none;
+  border-left: 2px dashed var(--text-4);
+}
+.chain-item[data-link="untrusted"] .chain-seg.down {
+  transform: translateX(4px);
+}
+.chain-item[data-link="untrusted"] .chain-node {
+  border-style: dashed;
+  border-color: var(--text-4);
+  color: transparent;
+}
+
+/* A faint example in the empty pane. */
+.example {
+  padding: 8px 0 0;
+  opacity: 0.3;
+  pointer-events: none;
+}
+.example-label {
+  margin: 8px 16px 4px;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--label);
 }
 
 /* Audit entry drawer. */
@@ -216,8 +333,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .audit,
-  .stamp {
+  .stamp,
+  .chain-seg,
+  .chain-node {
     transition-property: opacity;
   }
 }

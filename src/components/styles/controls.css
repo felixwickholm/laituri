@@ -220,7 +220,7 @@
   width: 6px;
   height: 6px;
   border-radius: var(--r-full);
-  background: var(--accent);
+  background: var(--text-1);
   flex: none;
   animation: live-pulse 2s ease-in-out infinite;
 }

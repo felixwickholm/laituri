@@ -29,16 +29,18 @@ export function Pane({ id, num, title, sub, visible, live, alarm, children }: Pa
   const headingId = `${id}-title`;
   return (
     <section className="pane" aria-labelledby={headingId} data-guide={id} data-visible={visible} data-alarm={alarm} id={`pane-${id}`}>
-      <header className="pane-head">
-        <span className="pane-num" aria-hidden="true">
-          {num}
-        </span>
-        <h2 className="pane-title" id={headingId}>
-          {title}
-        </h2>
-        <span className="pane-sub">{sub}</span>
-      </header>
-      <div aria-live={live ? "polite" : undefined}>{children}</div>
+      <div className="pane-scroll">
+        <header className="pane-head">
+          <span className="pane-num" aria-hidden="true">
+            {num}
+          </span>
+          <h2 className="pane-title" id={headingId}>
+            {title}
+          </h2>
+          <span className="pane-sub">{sub}</span>
+        </header>
+        <div aria-live={live ? "polite" : undefined}>{children}</div>
+      </div>
     </section>
   );
 }

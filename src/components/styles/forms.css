@@ -93,7 +93,7 @@
 .usage span {
   display: block;
   height: 100%;
-  background: var(--accent);
+  background: var(--text-2);
   transform-origin: left center;
   transition: transform 400ms var(--ease-out);
 }

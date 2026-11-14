@@ -84,7 +84,7 @@
   position: fixed;
   z-index: 70;
   left: 50%;
-  bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(104px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
   align-items: center;

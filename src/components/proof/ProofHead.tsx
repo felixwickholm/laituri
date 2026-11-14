@@ -30,7 +30,6 @@ function lastStamp(audit: AuditEntry[]): AuditEntry | undefined {
 /** Pinned at the top of pane 3: the chain state, the latest order's signatures, and the newest human signature. */
 export function ProofHead({ audit, chain, latest, jwks, mandate, onOpenOrder }: ProofHeadProps) {
   const proof = useOrderProof(latest, jwks, mandate, audit);
-  const signed = proof.signatures.filter((row) => row.state === "valid").length;
   const failed = proof.signatures.some((row) => row.state === "invalid");
   const stamp = lastStamp(audit);
   const lastSeq = audit.length ? audit[audit.length - 1].seq : 0;
@@ -39,19 +38,16 @@ export function ProofHead({ audit, chain, latest, jwks, mandate, onOpenOrder }: 
     <div className="proof-head" data-state={chain.state}>
       <div className="chain-row">
         <ChainBadge chain={chain} lastSeq={lastSeq} />
-        <span className="meta">Checked in your browser</span>
         <ProofTools />
       </div>
+      {chain.state === "verified" ? <p className="chain-note">Every step signed. Checked in your browser.</p> : null}
       {chain.state === "broken" ? (
         <p className="alarm" role="alert">
           {chain.reason} Everything after it can no longer be trusted.
         </p>
-      ) : latest && proof.signatures.length > 0 ? (
-        <button type="button" className="proof-line" onClick={() => onOpenOrder(latest.id)}>
-          <span className={failed ? "tone-danger" : undefined}>
-            {failed ? "A signature on the latest order does not match" : `${signed} ${signed === 1 ? "signature" : "signatures"} on the latest order verified`}
-          </span>
-          <span className="mono order-id">{latest.id}</span>
+      ) : latest && failed ? (
+        <button type="button" className="proof-line tone-danger" onClick={() => onOpenOrder(latest.id)}>
+          A signature on the latest order does not match.
         </button>
       ) : null}
       {stamp && chain.state !== "broken" ? (

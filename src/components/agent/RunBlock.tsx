@@ -2,7 +2,6 @@
 
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { eur } from "@/lib/console/format/money";
 import { runOutcome, runTitle, type RunContext } from "@/lib/console/format/run-view";
 import { plainSentence } from "@/lib/console/format/sentence";
 import { hourMinute } from "@/lib/console/format/time";
@@ -71,7 +70,7 @@ export function RunBlock({ run, ctx, newest, onOpenOrder }: RunBlockProps) {
         <span className="run-title" title={title}>
           {title}
         </span>
-        <span className="run-amount mono">{order ? eur(order.offer.totals.net.amount) : hourMinute(run.startedAt)}</span>
+        <span className="run-time mono">{hourMinute(run.startedAt)}</span>
         <span className="run-meta">
           <StateWord word={outcome.word} tone={outcome.tone} />
           {outcome.detail ? <span className="run-detail">{outcome.detail}</span> : null}

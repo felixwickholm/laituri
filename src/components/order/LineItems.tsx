@@ -21,8 +21,8 @@ export function LineItems({ offer }: { offer: Offer }) {
                 {line.substituteFor ? ` · replaces ${line.substituteFor.name}` : ""}
               </span>
             </span>
-            <span className="qty mono">×{count(line.quantity)}</span>
-            <span className="money mono">
+            <span className="qty">×{count(line.quantity)}</span>
+            <span className="money">
               {eur(line.lineNet.amount)}
               <span className="sub">{eur(line.unitPrice.amount)} each</span>
             </span>
@@ -31,11 +31,11 @@ export function LineItems({ offer }: { offer: Offer }) {
       </ol>
       <dl className="totals">
         <dt>Net</dt>
-        <dd className="mono">{eur(offer.totals.net.amount)}</dd>
+        <dd>{eur(offer.totals.net.amount)}</dd>
         <dt>VAT</dt>
-        <dd className="mono">{eur(offer.totals.tax.amount)}</dd>
+        <dd>{eur(offer.totals.tax.amount)}</dd>
         <dt>Total with VAT</dt>
-        <dd className="mono strong">{eur(offer.totals.gross.amount)}</dd>
+        <dd className="strong">{eur(offer.totals.gross.amount)}</dd>
       </dl>
     </section>
   );

@@ -2,7 +2,7 @@ import { CircleCheck, CircleX, LoaderCircle } from "lucide-react";
 import type { ChainState } from "@/lib/console/types";
 
 function entries(count: number): string {
-  return count === 1 ? "1 entry" : `${count} entries`;
+  return count === 1 ? "1 step" : `${count} steps`;
 }
 
 /** The chain state, computed in this browser. */

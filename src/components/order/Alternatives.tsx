@@ -24,8 +24,8 @@ export function Alternatives({ order, alternatives }: { order: Order; alternativ
         {alternatives.map(({ offer }, index) => (
           <li key={offer.id} className="well">
             <span className="tier">{alternatives.length === 3 ? TIERS[index] : `Option ${String.fromCharCode(65 + index)}`}</span>
-            <span className="alt-total mono">{eur(offer.totals.net.amount)}</span>
-            <span className="alt-delta mono">{delta(offer.totals.net.amount, base)}</span>
+            <span className="alt-total">{eur(offer.totals.net.amount)}</span>
+            <span className="alt-delta">{delta(offer.totals.net.amount, base)}</span>
             <span className="alt-what">{offer.lines.map(lineText).join("; ")}</span>
             <span className="alt-when">{offer.deliveryDate ? `Delivers ${day(offer.deliveryDate)}` : "No delivery date"}</span>
             {offer.notes[0] ? <span className="alt-note">{offer.notes[0]}</span> : null}

@@ -1,5 +1,5 @@
 import type { Check, Order, RuleId } from "@/lib/contracts";
-import { eur, parseEur, percentOf } from "./money";
+import { eur, parseEur } from "./money";
 import { plainSentence } from "./sentence";
 
 /** Each policy rule in plain words, as a buyer would name it. */
@@ -25,16 +25,20 @@ export function ruleName(rule: RuleId | string): string {
   return RULE_NAMES[rule as RuleId] ?? rule;
 }
 
+/** How far an amount is over its limit, in whole cents so €1,616.00 − €1,500.00 is exactly €116.00. */
+export function overBy(amount: number, limit: number): number {
+  return Math.max(0, Math.round(amount * 100) - Math.round(limit * 100)) / 100;
+}
+
 /** One plain sentence for a check that asks a person. */
 export function askSentence(check: Check): string {
   const observed = parseEur(check.observed);
   const limit = parseEur(check.limit);
   if (check.rule === "spend.per_order" && observed !== undefined && limit !== undefined) {
-    const over = percentOf(observed - limit, limit);
-    return `${eur(observed)} is over the per-order limit of ${eur(limit)} (+${over}%).`;
+    return `${eur(overBy(observed, limit))} over the ${eur(limit)} per-order limit.`;
   }
   if (check.rule === "spend.per_week" && observed !== undefined && limit !== undefined) {
-    return `This order brings the week to ${eur(observed)}, over the weekly limit of ${eur(limit)}.`;
+    return `${eur(overBy(observed, limit))} over the ${eur(limit)} weekly limit.`;
   }
   return plainSentence(check.message);
 }

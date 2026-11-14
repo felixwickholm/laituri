@@ -44,7 +44,7 @@
   }
 }
 .run[data-active="true"] {
-  background: rgba(10, 132, 255, 0.05);
+  background: rgba(255, 255, 255, 0.03);
 }
 .run-row {
   display: grid;
@@ -85,7 +85,7 @@
   background: var(--danger);
 }
 .run[data-active="true"] .run-dot {
-  background: var(--accent);
+  background: var(--text-1);
   animation: live-pulse 2s ease-in-out infinite;
 }
 .run-title {
@@ -105,9 +105,9 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
-.run-amount {
-  font-size: 13px;
-  color: var(--text-1);
+.run-time {
+  font-size: 12px;
+  color: var(--text-3);
   text-align: right;
 }
 .run-meta {
@@ -206,7 +206,24 @@
   }
 }
 .state-swap[data-tone="success"] {
-  color: var(--success);
+  grid-template-columns: auto auto;
+  align-items: center;
+  column-gap: 6px;
+  color: var(--text-1);
+}
+.state-swap[data-tone="success"]::before {
+  content: "";
+  grid-area: 1 / 1;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--r-full);
+  background: var(--success);
+}
+.state-swap[data-tone="success"] .state-text {
+  grid-area: 1 / 2;
+}
+.run-meta .state-swap[data-tone="success"]::before {
+  display: none;
 }
 .state-swap[data-tone="waiting"] {
   color: var(--warn);
@@ -381,11 +398,20 @@
   color: var(--text-2);
 }
 .btn.cta {
-  height: 44px;
+  height: 52px;
   padding: 0 18px;
   border-radius: 12px;
   font-size: 14px;
 }
 .btn.cta::after {
   inset: 0;
+}
+
+@media (max-width: 640px) {
+  .run-title {
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
 }

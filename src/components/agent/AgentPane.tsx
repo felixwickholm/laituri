@@ -32,7 +32,6 @@ export function AgentPane({ activity, orders, run, approver, feed, visible }: Ag
   const running = run?.status === "running";
   const runs = useMemo(() => buildRuns(activity, orders), [activity, orders]);
   const orderMap = useMemo(() => new Map(orders.map((order) => [order.id, order])), [orders]);
-  const calls = activity.filter((item) => item.kind === "tool").length;
 
   return (
     <Pane id="agent" num={1} title="Agent" sub="What the agent does" visible={visible} live>
@@ -45,7 +44,6 @@ export function AgentPane({ activity, orders, run, approver, feed, visible }: Ag
         ) : (
           <span className="live-text">No agent connected</span>
         )}
-        <span className="meta mono">{calls === 1 ? "1 call" : `${calls} calls`}</span>
       </div>
       {runs.length === 0 ? (
         feed === "ok" ? (

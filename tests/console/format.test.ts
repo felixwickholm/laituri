@@ -42,7 +42,7 @@ describe("time", () => {
 
 describe("reasons", () => {
   it("writes the per-order reason with both figures and the overrun", () => {
-    expect(askReasons(pendingOrder())).toEqual(["€1,818.00 is over the per-order limit of €1,500.00 (+21%)."]);
+    expect(askReasons(pendingOrder())).toEqual(["€318.00 over the €1,500.00 per-order limit."]);
   });
 
   it("writes a blocked allergen as a rule", () => {
@@ -98,7 +98,21 @@ describe("weekly spend", () => {
   });
 });
 
+describe("over the limit", () => {
+  it("computes the difference in whole cents", async () => {
+    const { overBy } = await import("@/lib/console/format/rules");
+    expect(overBy(1616, 1500)).toBe(116);
+    expect(overBy(0.3, 0.1)).toBe(0.2);
+    expect(overBy(100, 1500)).toBe(0);
+  });
+});
+
 describe("plain sentences", () => {
+  it("writes percentages without a space", async () => {
+    const { plainSentence } = await import("@/lib/console/format/sentence");
+    expect(plainSentence("Same product type from Valio, 57 % cheaper.")).toBe("Same product type from Valio, 57% cheaper.");
+  });
+
   it("rewrites amounts and ISO dates", async () => {
     const { plainSentence } = await import("@/lib/console/format/sentence");
     expect(plainSentence("Delivery on 2026-11-16 meets the 2026-11-16 deadline, 1,010.00 EUR.")).toBe(

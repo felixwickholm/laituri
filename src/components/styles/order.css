@@ -332,3 +332,11 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* State text stays in ink; only the icon carries the green. */
+.sig-state.tone-success {
+  color: var(--text-1);
+}
+.sig-state.tone-success svg {
+  color: var(--success);
+}

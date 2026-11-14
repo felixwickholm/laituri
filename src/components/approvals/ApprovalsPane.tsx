@@ -6,6 +6,7 @@ import { EmptyLine, Pane, type Feed } from "../shell/Pane";
 import { useUi } from "../shell/ui-context";
 import { useNow } from "../ui/useNow";
 import { ApprovalRow } from "./ApprovalRow";
+import { DecisionExample } from "./DecisionExample";
 import { HandledRow } from "./HandledRow";
 
 type Tab = "waiting" | "handled";
@@ -37,9 +38,12 @@ export function ApprovalsPane({ orders, feed, visible }: { orders: Order[]; feed
         <>
           {waiting.length === 0 ? (
             feed === "ok" ? (
-              <p className="pane-empty quiet">
-                <strong>Nothing waits for you.</strong> The agent is inside its mandate.
-              </p>
+              <>
+                <p className="pane-empty quiet">
+                  <strong>Nothing waits for you.</strong> The agent is inside its mandate.
+                </p>
+                {handled.length === 0 ? <DecisionExample /> : null}
+              </>
             ) : (
               <EmptyLine feed={feed}>{null}</EmptyLine>
             )
