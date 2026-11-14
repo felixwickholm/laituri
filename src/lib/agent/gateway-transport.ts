@@ -7,7 +7,7 @@ export function gatewayTransport(agent: AgentRef): AgentTransport {
     searchCatalog: (request) => gateway().searchCatalog(agent, request),
     getProduct: (id) => gateway().getProduct(agent, id),
     requestQuote: (request) => gateway().requestQuote(agent, request),
-    getMandate: () => gateway().getMandate(),
+    getMandate: () => gateway().getMandate(agent.buyer?.id),
     placeOrder: (request) => gateway().placeOrder(agent, request),
     getOrder: (id) => gateway().getOrder(agent, id),
   };

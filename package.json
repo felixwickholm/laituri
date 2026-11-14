@@ -13,6 +13,7 @@
     "eval": "tsx evals/run.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.8.0",
     "@modelcontextprotocol/sdk": "^1.32.2",
     "jose": "^6.2.17",
     "lucide-react": "^1.72.0",
