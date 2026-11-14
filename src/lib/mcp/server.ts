@@ -1,3 +1,5 @@
+import { helsinkiDate } from "@/lib/agent/dates";
+import { now } from "@/lib/clock";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { CallToolRequestSchema, ListToolsRequestSchema, type CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { ZodError } from "zod";
@@ -17,7 +19,15 @@ export const INSTRUCTIONS = [
   "3. request_quote for a signed fixed-price offer; read availability, notes and alternatives.",
   "4. place_order with the offer JWS unchanged, the mandate JWS and a new idempotency key.",
   "If the order is pending_approval, stop and tell your human. Orders are simulated; verify_audit proves every step.",
+  "Hits come best buy first when the match is clear. One offer gives one order.",
 ].join("\n");
+
+/** Dates in requests are YYYY-MM-DD, so the agent is told which day it is at the wholesaler. */
+function instructions(): string {
+  const today = now();
+  const weekday = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Helsinki", weekday: "long" }).format(today);
+  return `${INSTRUCTIONS}\nToday is ${weekday} ${helsinkiDate(today)} in Finland. Send dates as YYYY-MM-DD.`;
+}
 
 function toolList() {
   return TOOLS.map((tool) => ({
@@ -49,7 +59,7 @@ function describeError(error: unknown): string {
 export function createMcpServer(agent: AgentRef): Server {
   const server = new Server(
     { name: SERVER_NAME, title: "Valio Aimo agent ordering (Laituri)", version: API_VERSION },
-    { capabilities: { tools: {} }, instructions: INSTRUCTIONS },
+    { capabilities: { tools: {} }, instructions: instructions() },
   );
 
   server.setRequestHandler(ListToolsRequestSchema, () => ({ tools: toolList() }));
