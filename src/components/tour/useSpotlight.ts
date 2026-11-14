@@ -1,7 +1,22 @@
 "use client";
 
 import { useEffect, type RefObject } from "react";
-import { HOLE_PAD, clampToView, dimPath, easeSheet, inflate, lerpBox, placeCard, roundedRect, scrollDelta, type Box, type CardSide } from "@/lib/tour/geometry";
+import {
+  HOLE_PAD,
+  HOLE_RADIUS,
+  clampToView,
+  dimPath,
+  easeSheet,
+  inflate,
+  lerpBox,
+  mergeHoles,
+  placeCard,
+  roundedRect,
+  scrollDelta,
+  union,
+  type Box,
+  type CardSide,
+} from "@/lib/tour/geometry";
 import { tourStore } from "./tour-store";
 
 /** The spotlight's travel between targets, matching the console's sheets. */
@@ -13,16 +28,13 @@ const PHONE_BAR = 64;
 const SETTLE_MS = 4000;
 /** A smooth scroll has finished by then. */
 const RESCROLL_MS = 900;
+/** How far the dimmed layer reaches past the screen, so its softened edge stays off screen. */
+const BLEED = 48;
 
 interface Refs {
   dim: RefObject<SVGPathElement | null>;
   ring: RefObject<SVGPathElement | null>;
   card: RefObject<HTMLElement | null>;
-}
-
-interface Motion {
-  from: Box | undefined;
-  start: number;
 }
 
 function firstVisible(selectors: readonly string[]): Element | null {
@@ -51,60 +63,72 @@ function point(box: Box): Box {
   return { x: box.x + box.w / 2, y: box.y + box.h / 2, w: 0, h: 0 };
 }
 
+/** Sets an attribute only when it changed, so a still spotlight does not repaint the softened layer every frame. */
+function setPath(element: SVGPathElement | null, d: string): void {
+  if (element && element.getAttribute("d") !== d) element.setAttribute("d", d);
+}
+
 /**
- * Draws the dimmed page with a rounded cut-out around the first visible match of `selectors`, eases it to each
- * new target, keeps it on the target while the page scrolls or grows, scrolls a new target into the open part
- * of the screen, and places a floating card beside, below or above it. `selectors` null closes the cut-out.
+ * Draws the dimmed page with a rounded cut-out around the first visible match of each selector group (only the
+ * first group on a phone), eases the cut-outs to each new target, keeps them on their targets while the page scrolls
+ * or grows, scrolls new targets into the open part of the screen, and places a floating card where it covers none
+ * of them. `groups` null closes the cut-outs.
  */
-export function useSpotlight(selectors: readonly string[] | null, { dim, ring, card: cardRef }: Refs, floatCard: boolean): void {
-  const key = selectors?.join("|") ?? "";
+export function useSpotlight(groups: readonly (readonly string[])[] | null, { dim, ring, card: cardRef }: Refs, floatCard: boolean): void {
+  const key = groups?.map((group) => group.join("|")).join("||") ?? "";
 
   useEffect(() => {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const duration = reduced ? 0 : MOVE_MS;
-    const list = key ? key.split("|") : [];
+    const lists = key ? key.split("||").map((group) => group.split("|")) : [];
     let frame = 0;
-    let target: Element | null = null;
-    let current: Box | undefined = tourStore.lastHole;
-    let hole: Motion = { from: current, start: performance.now() };
+    let targets: (Element | null)[] = [];
+    let current: Box[] = tourStore.lastHoles;
+    let from: Box[] = current;
+    let start = performance.now();
     let card: { x: number; y: number } | undefined;
     let cardMotion: { from: { x: number; y: number } | undefined; start: number } = { from: undefined, start: 0 };
     let side: CardSide | undefined;
-    let scrolled: Element | null = null;
     let targetSince = 0;
     let scrolledAt = 0;
 
     const tick = (now: number) => {
       const view = { w: window.innerWidth, h: window.innerHeight };
       const sheet = view.w < SHEET_BELOW;
-      const found = list.length ? firstVisible(list) : null;
-      if (found !== target) {
-        target = found;
+      // A phone has room above its bottom sheet for one target only: the first group.
+      const found = (sheet ? lists.slice(0, 1) : lists).map(firstVisible);
+      if (found.length !== targets.length || found.some((element, index) => element !== targets[index])) {
+        targets = found;
         targetSince = now;
-        hole = { from: current ?? (found ? point(boxOf(found)) : undefined), start: now };
+        from = current;
+        start = now;
       }
 
       const cardEl = cardRef.current;
       const cardSize = cardEl ? { w: cardEl.offsetWidth, h: cardEl.offsetHeight } : { w: 0, h: 0 };
-      const box = target ? boxOf(target) : undefined;
-      const drifted = box !== undefined && now - targetSince < SETTLE_MS && now - scrolledAt > RESCROLL_MS && offScreen(box, view);
-      if (target && box && (scrolled !== target || drifted)) {
-        scrolled = target;
+      const boxes = targets.filter((element): element is Element => element !== null).map(boxOf);
+      const all = union(boxes);
+      const drifted = all !== undefined && now - targetSince < SETTLE_MS && now - scrolledAt > RESCROLL_MS && offScreen(all, view);
+      if (all && (targetSince > scrolledAt || drifted)) {
         scrolledAt = now;
-        const beside = view.w - (box.x + box.w) >= cardSize.w + 44 || box.x >= cardSize.w + 44;
+        const beside = view.w - (all.x + all.w) >= cardSize.w + 44 || all.x >= cardSize.w + 44;
         const reserve = sheet ? cardSize.h + 16 : beside ? 24 : cardSize.h + 44;
-        const delta = scrollDelta(box, view, reserve, sheet ? PHONE_BAR : 24);
+        const delta = scrollDelta(all, view, reserve, sheet ? PHONE_BAR : 24);
         if (Math.abs(delta) > 4) window.scrollBy({ top: delta, behavior: reduced ? "auto" : "smooth" });
       }
 
-      const held = box ? clampToView(inflate(box, HOLE_PAD), view) : undefined;
-      const wanted = held ?? (current ? point(current) : undefined);
-      const t = duration ? Math.min(1, (now - hole.start) / duration) : 1;
-      current = wanted && hole.from ? lerpBox(hole.from, wanted, easeSheet(t)) : wanted;
-      const open = current && current.w > 1 && current.h > 1 ? current : undefined;
-      dim.current?.setAttribute("d", dimPath(view, open));
-      ring.current?.setAttribute("d", open ? roundedRect(open, 18) : "");
-      tourStore.lastHole = open;
+      const held = boxes.map((box) => clampToView(inflate(box, HOLE_PAD), view));
+      const wanted = held.length ? held : current.map(point);
+      const t = duration ? Math.min(1, (now - start) / duration) : 1;
+      const eased = easeSheet(t);
+      current = wanted.map((box, index) => {
+        const origin = from[index] ?? from[0] ?? point(box);
+        return lerpBox(origin, box, eased);
+      });
+      const open = current.filter((box) => box.w > 1 && box.h > 1);
+      setPath(dim.current, dimPath(view, open, HOLE_RADIUS, BLEED));
+      setPath(ring.current, mergeHoles(open).map((box) => roundedRect(box, HOLE_RADIUS)).join(""));
+      tourStore.lastHoles = open;
 
       if (cardEl && floatCard && !sheet) {
         const place = placeCard(held, cardSize, view);
@@ -113,8 +137,8 @@ export function useSpotlight(selectors: readonly string[] | null, { dim, ring, c
           side = place.side;
         }
         const c = duration ? Math.min(1, (now - cardMotion.start) / duration) : 1;
-        const from = cardMotion.from;
-        card = from ? { x: from.x + (place.x - from.x) * easeSheet(c), y: from.y + (place.y - from.y) * easeSheet(c) } : { x: place.x, y: place.y };
+        const origin = cardMotion.from;
+        card = origin ? { x: origin.x + (place.x - origin.x) * easeSheet(c), y: origin.y + (place.y - origin.y) * easeSheet(c) } : { x: place.x, y: place.y };
         cardEl.style.transform = `translate3d(${Math.round(card.x)}px, ${Math.round(card.y)}px, 0)`;
       } else if (cardEl) {
         cardEl.style.removeProperty("transform");

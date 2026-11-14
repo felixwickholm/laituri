@@ -6,6 +6,7 @@ import { count } from "@/lib/console/format/money";
 import { landingCounts, type LandingCounts } from "./counts";
 import { Reveal } from "./Reveal";
 import { stagger } from "./stagger";
+import { loadOverview } from "./useOverview";
 
 const COUNT_MS = 900;
 
@@ -14,6 +15,7 @@ const FIGURES: { key: keyof LandingCounts; label: string }[] = [
   { key: "ordersConfirmed", label: "orders confirmed inside a mandate" },
   { key: "logSteps", label: "steps in the verified log" },
   { key: "connectedAgents", label: "agents connected" },
+  { key: "secondsToOrder", label: "seconds from signed offer to order, median" },
 ];
 
 async function getJson(path: string): Promise<unknown> {
@@ -29,7 +31,7 @@ function list<T>(body: unknown, key: string): T[] | undefined {
 
 /** Reads the live figures once. Each source fails on its own. */
 async function loadCounts(): Promise<LandingCounts> {
-  const [orders, audit, overview] = await Promise.allSettled([getJson("/api/v1/orders"), getJson("/api/v1/audit"), getJson("/api/v1/supplier/overview")]);
+  const [orders, audit, overview] = await Promise.allSettled([getJson("/api/v1/orders"), getJson("/api/v1/audit"), loadOverview()]);
   return landingCounts({
     orders: orders.status === "fulfilled" ? list<Order>(orders.value, "orders") : undefined,
     audit: audit.status === "fulfilled" ? list<AuditEntry>(audit.value, "entries") : undefined,
@@ -74,7 +76,7 @@ function Figure({ value }: { value?: number }) {
   );
 }
 
-/** Four figures read from this server's own API, with a plain note on what is live and what is demo. */
+/** Five figures read from this server's own API, with a plain note on what is live and what is demo. */
 export function LiveCounters() {
   const [counts, setCounts] = useState<LandingCounts>({});
   const [loaded, setLoaded] = useState(false);
@@ -107,7 +109,7 @@ export function LiveCounters() {
           </div>
         ))}
       </dl>
-      <p className="lp-honest rv" style={stagger(5)}>
+      <p className="lp-honest rv" style={stagger(FIGURES.length + 1)}>
         Prices and stock are live from the challenge&apos;s mock API. Orders are simulated. History is demo data.
       </p>
     </Reveal>

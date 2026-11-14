@@ -90,9 +90,11 @@ describe("step conditions", () => {
     expect(CONDITIONS.overLimitDecided(approved, facts(approved))).toBe(true);
   });
 
-  it("counts only live activity as the agent working, and a broken chain as the log step's outcome", () => {
-    const seeded = snapshot({ activity: [{ id: "1", at: "", agent: { id: "a", name: "A" }, kind: "note", title: "x", status: "ok", seeded: true }] });
-    expect(CONDITIONS.agentWorking(seeded, facts(seeded))).toBe(false);
+  it("counts only a live quote as the milk priced, and a broken chain as the log step's outcome", () => {
+    const quote = { id: "1", at: "", agent: { id: "a", name: "A" }, kind: "tool" as const, tool: "request_quote", title: "Asked for a quote", detail: "Full offer, 1,010.00 EUR net", status: "ok" as const };
+    expect(facts(snapshot({ activity: [{ ...quote, seeded: true }] })).milkQuoted).toBe(false);
+    expect(facts(snapshot({ activity: [quote] }))).toMatchObject({ milkQuoted: true, milkTotal: "€1,010.00" });
+    expect(facts(snapshot({ orders: [story[1]] })).milkQuoted).toBe(true);
     const broken = snapshot({ chain: { state: "broken", entries: 3, brokenAt: 2, reason: "hash" } });
     expect(CONDITIONS.logBroken(broken, facts(broken))).toBe(true);
   });
@@ -108,6 +110,7 @@ describe("step sentences", () => {
     }
     const byId = Object.fromEntries(STEPS.map((step) => [step.id, step]));
     expect(byId.offer.copy(full).title).toContain("€1,010.00");
+    expect(byId.offer.copy(empty).title).toContain("asks for a price");
     expect(byId.phone.copy(full).title).toContain("€116.00 over the limit");
     expect(byId.stock.copy(full).title).toContain("only 51 of the 200");
     expect(byId.log.copy(full).detail).toContain("entry 7");

@@ -90,32 +90,71 @@ export function roundedRect(box: Box, radius: number): string {
   ].join("");
 }
 
-/** The dimmed page with the hole cut out, for an SVG path filled with the even-odd rule. */
-export function dimPath(view: Size, hole: Box | undefined, radius = HOLE_RADIUS): string {
-  const outer = `M0 0H${view.w}V${view.h}H0Z`;
-  return hole && hole.w > 0 && hole.h > 0 ? `${outer}${roundedRect(hole, radius)}` : outer;
+/** The smallest box around all of `boxes`, or undefined when there are none. */
+export function union(boxes: readonly Box[]): Box | undefined {
+  if (boxes.length === 0) return undefined;
+  const x = Math.min(...boxes.map((box) => box.x));
+  const y = Math.min(...boxes.map((box) => box.y));
+  const right = Math.max(...boxes.map((box) => box.x + box.w));
+  const bottom = Math.max(...boxes.map((box) => box.y + box.h));
+  return { x, y, w: right - x, h: bottom - y };
+}
+
+function overlaps(a: Box, b: Box, gap = 0): boolean {
+  return a.x < b.x + b.w + gap && b.x < a.x + a.w + gap && a.y < b.y + b.h + gap && b.y < a.y + a.h + gap;
+}
+
+/** Cut-outs that touch become one, so the even-odd fill never paints their overlap dark again. */
+export function mergeHoles(holes: readonly Box[]): Box[] {
+  const merged: Box[] = [];
+  for (const hole of holes.filter((box) => box.w > 1 && box.h > 1)) {
+    let next = hole;
+    for (let index = merged.length - 1; index >= 0; index--) {
+      if (!overlaps(merged[index], next)) continue;
+      next = union([merged[index], next]) as Box;
+      merged.splice(index, 1);
+    }
+    merged.push(next);
+  }
+  return merged;
+}
+
+/**
+ * The dimmed page with the holes cut out, for an SVG path filled with the even-odd rule. `bleed` grows the dimmed
+ * area past the screen's edges, so a softened edge never shows at the border of the viewport.
+ */
+export function dimPath(view: Size, holes: readonly Box[], radius = HOLE_RADIUS, bleed = 0): string {
+  const outer = `M${-bleed} ${-bleed}H${view.w + bleed}V${view.h + bleed}H${-bleed}Z`;
+  return outer + mergeHoles(holes).map((hole) => roundedRect(hole, radius)).join("");
 }
 
 export type CardSide = "below" | "above" | "right" | "left" | "bottom";
 
 /**
- * Where the card goes: below or above the target when it fits there, else beside it, else at the foot of
- * the screen. It never covers the target when any of those fit.
+ * Where the card goes: beside, below or above the first target where it fits on screen without covering any
+ * target, trying each target in turn, else at the foot of the screen.
  */
-export function placeCard(target: Box | undefined, card: Size, view: Size, edge = 24): { x: number; y: number; side: CardSide } {
-  const centreX = (view.w - card.w) / 2;
+export function placeCard(targets: readonly Box[], card: Size, view: Size, edge = 24): { x: number; y: number; side: CardSide } {
   const clampX = (x: number) => Math.min(Math.max(edge, x), view.w - card.w - edge);
   const clampY = (y: number) => Math.min(Math.max(edge, y), view.h - card.h - edge);
-  const bottom = { x: centreX, y: view.h - card.h - edge * 1.5, side: "bottom" as const };
-  if (!target) return bottom;
-
-  const besideY = clampY(target.y + target.h / 2 - card.h / 2);
-  if (view.w - (target.x + target.w) >= card.w + GAP + edge) return { x: target.x + target.w + GAP, y: besideY, side: "right" };
-  if (target.x >= card.w + GAP + edge) return { x: target.x - GAP - card.w, y: besideY, side: "left" };
-  const underX = clampX(target.x + target.w / 2 - card.w / 2);
-  if (view.h - (target.y + target.h) >= card.h + GAP + edge) return { x: underX, y: target.y + target.h + GAP, side: "below" };
-  if (target.y >= card.h + GAP + edge) return { x: underX, y: target.y - GAP - card.h, side: "above" };
-  return bottom;
+  const fits = (x: number, y: number) => {
+    const box = { x, y, w: card.w, h: card.h };
+    const inside = x >= edge && y >= edge && x + card.w <= view.w - edge && y + card.h <= view.h - edge;
+    return inside && targets.every((target) => !overlaps(box, target));
+  };
+  for (const target of targets) {
+    const besideY = clampY(target.y + target.h / 2 - card.h / 2);
+    const underX = clampX(target.x + target.w / 2 - card.w / 2);
+    const candidates = [
+      { x: target.x + target.w + GAP, y: besideY, side: "right" as const },
+      { x: target.x - GAP - card.w, y: besideY, side: "left" as const },
+      { x: underX, y: target.y + target.h + GAP, side: "below" as const },
+      { x: underX, y: target.y - GAP - card.h, side: "above" as const },
+    ];
+    const place = candidates.find((candidate) => fits(candidate.x, candidate.y));
+    if (place) return place;
+  }
+  return { x: (view.w - card.w) / 2, y: view.h - card.h - edge * 1.5, side: "bottom" };
 }
 
 /**

@@ -2,6 +2,7 @@
 
 import { Check, RotateCcw, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { TEST_NEED } from "@/lib/connect/requests";
 import { FLOW_STEPS, flowRequest, previewBody, readStep, type FlowState, type FlowStepId } from "@/lib/connect/test-flow";
 
 type Phase = "idle" | "running" | "done" | "failed";
@@ -71,6 +72,7 @@ export function TestOrder({ deliverBy }: { deliverBy: string }) {
       <div className="cx-test-side">
         <h2 id="cx-test-title">No agent at hand?</h2>
         <p className="cx-sub">This browser runs the same four HTTP calls an agent makes, with the demo key. They show up under Connected right now.</p>
+        <p className="cx-sub cx-test-real">It is a real order for {TEST_NEED.amount} litres, placed inside the demo buyer&rsquo;s mandate.</p>
         <ol className="cx-stepper">
           {FLOW_STEPS.map((step, index) => (
             <li key={step.id} data-state={stepState(index)}>

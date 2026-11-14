@@ -3,7 +3,7 @@ import { takenInstead } from "./facts";
 import type { PlanStep } from "./machine";
 
 /** What the tour does in the product itself. The runner in the browser carries each one out. */
-export type ActionId = "askForMilk" | "startOverLimit" | "approveOnPhone" | "tamperLog";
+export type ActionId = "typeRequest" | "sendRequest" | "startOverLimit" | "approveOnPhone" | "tamperLog";
 
 export interface StepCopy {
   /** The one sentence a restaurant owner reads first. */
@@ -17,6 +17,8 @@ export interface TourStep extends PlanStep {
   route: string;
   /** Selectors tried in order while the step's outcome is still coming; the first match is spotlit. */
   target: readonly string[];
+  /** A second element spotlit at the same time, the first match of these selectors. */
+  also?: readonly string[];
   /** Where the spotlight moves once the outcome is on screen. Defaults to `target`. */
   doneTarget?: readonly string[];
   /** "phone" shows Maria's phone with the real approval page once the order is waiting. */
@@ -26,6 +28,8 @@ export interface TourStep extends PlanStep {
   timeoutMs: number;
   /** The quiet label on Next while the product is still working. */
   waiting: string;
+  /** The label on Next once the outcome is in, when Next does more than move on. */
+  nextLabel?: string;
   copy: (facts: StoryFacts) => StepCopy;
   /** Said instead of the detail line when the outcome did not arrive in time. */
   fallback: string;
@@ -37,37 +41,49 @@ export interface TourStep extends PlanStep {
 export const MAIN_TARGET = "main#main";
 const RUNS = '[data-tour="runs"] .run:first-of-type';
 
+/** The agent's newest run while it works, else the newest run. */
+const NEWEST_RUN = ['[data-tour="runs"] .run[data-active="true"]', RUNS];
+const LIVE_AGENT = ['.live-agent'];
+
 export const STEPS: readonly TourStep[] = [
   {
     id: "request",
     route: "/buyer",
     target: ['[data-tour="composer"]', ".live-agent .composer"],
-    doneTarget: [RUNS, '[data-tour="composer"]'],
     view: "spotlight",
-    enter: "askForMilk",
-    until: "agentWorking",
+    enter: "typeRequest",
+    until: "now",
     timeoutMs: 15_000,
-    waiting: "Sending the request…",
+    waiting: "Typing the request…",
+    nextLabel: "Send it",
     copy: () => ({
-      title: "A hotel kitchen’s AI agent asks Valio Aimo for milk. No person is involved.",
-      detail: "The request: 1,000 litres of lactose-free milk by Monday.",
+      title: "A hotel kitchen’s AI agent is about to ask Valio Aimo for milk. No person is involved.",
+      detail: "The request is typed in: 1,000 litres of lactose-free milk by Monday. Press Send it and watch the agent work.",
     }),
-    fallback: "The agent is slow to start. Press Next and the story goes on.",
+    fallback: "The composer is slow to appear. Press Send it and the story goes on.",
   },
   {
     id: "offer",
     route: "/buyer",
-    target: [RUNS],
+    target: NEWEST_RUN,
+    also: LIVE_AGENT,
     view: "spotlight",
+    enter: "sendRequest",
     until: "milkConfirmed",
     timeoutMs: 25_000,
     waiting: "Agent is working…",
-    copy: (facts) => ({
-      title: facts.milkTotal
-        ? `Valio Aimo answers with a fixed price it has signed: ${facts.milkTotal}. Nobody can change it on the way.`
-        : "Valio Aimo answers with a fixed price it has signed. Nobody can change it on the way.",
-      detail: "Each line is one step the agent took, in plain words.",
-    }),
+    copy: (facts) =>
+      facts.milkQuoted
+        ? {
+            title: facts.milkTotal
+              ? `Valio Aimo answers with a fixed price it has signed: ${facts.milkTotal}. Nobody can change it on the way.`
+              : "Valio Aimo answers with a fixed price it has signed. Nobody can change it on the way.",
+            detail: "The agent checks the offer against the rules, then orders.",
+          }
+        : {
+            title: "The agent searches Valio Aimo’s catalogue and asks for a price.",
+            detail: "Each new line is one step it took, in plain words.",
+          },
     fallback: "The offer is taking longer than usual. Press Next and it finishes in the background.",
   },
   {
@@ -80,7 +96,7 @@ export const STEPS: readonly TourStep[] = [
     waiting: "Checking the rules…",
     copy: (facts) => ({
       title: `All ${facts.milkRulesPassed ?? facts.rulesTotal} of ${facts.approverFirst}’s rules passed, so the agent ordered on its own.`,
-      detail: `${facts.approver} signed these rules once. The full ring means every one of them held.`,
+      detail: `${facts.approver} signed these rules once. Each short arc around the orb is one rule, and every arc is filled.`,
     }),
     fallback: "The order is still being confirmed. Press Next to go on.",
   },

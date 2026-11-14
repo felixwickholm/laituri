@@ -31,7 +31,7 @@
 
   --text-1: #0b1220;
   --text-2: #475467;
-  --text-3: #667085;
+  --text-3: #5d6779;
   --text-4: #8a94a6;
 
   /* One accent for interaction. Green, amber and red mark state only. */
@@ -39,9 +39,9 @@
   --accent-hover: #1a43b8;
   --accent-tint: #eaf0fe;
   --on-accent: #ffffff;
-  --success: #12805c;
+  --success: #0f7553;
   --success-tint: #e7f6ef;
-  --warn: #b25e09;
+  --warn: #9a5207;
   --warn-tint: #fdf2e3;
   --danger: #c4321f;
   --danger-tint: #fdecea;

@@ -15,6 +15,8 @@ export interface StoryFacts {
   approver: string;
   rulesTotal: number;
   milk?: Order;
+  /** The agent has Valio Aimo's signed offer for the milk: the price is on screen. */
+  milkQuoted: boolean;
   milkTotal?: string;
   milkRulesPassed?: number;
   overLimit?: Order;
@@ -61,7 +63,10 @@ export function storyFacts(snapshot: ConsoleSnapshot): StoryFacts {
   const milk = orders.find((order) => !substituted(order) && !isOverLimit(order));
   const overLimit = orders.find(isOverLimit);
   const shortStock = orders.find(substituted);
-  const facts: StoryFacts = { approver: name, approverFirst: name.split(" ")[0], rulesTotal: RULES_TOTAL, milk, overLimit, shortStock };
+  const quote = live(snapshot.activity).find((item) => item.tool === "request_quote" && item.status === "ok");
+  const quoted = parseEur(quote?.detail);
+  const facts: StoryFacts = { approver: name, approverFirst: name.split(" ")[0], rulesTotal: RULES_TOTAL, milk, milkQuoted: quote !== undefined || milk !== undefined, overLimit, shortStock };
+  if (quoted !== undefined) facts.milkTotal = eur(quoted);
 
   if (milk) {
     facts.milkTotal = eur(milk.offer.totals.net.amount);
@@ -91,11 +96,9 @@ export function takenInstead(order: Order | undefined): string | undefined {
 }
 
 /** The conditions a step waits for, each a plain question about the live console. */
-export type ConditionId = "agentWorking" | "milkConfirmed" | "milkShown" | "overLimitWaiting" | "overLimitDecided" | "shortStockDone" | "logBroken" | "now";
+export type ConditionId = "milkConfirmed" | "milkShown" | "overLimitWaiting" | "overLimitDecided" | "shortStockDone" | "logBroken" | "now";
 
 export const CONDITIONS: Record<ConditionId, (snapshot: ConsoleSnapshot, facts: StoryFacts) => boolean> = {
-  /** The request reached the agent and its first steps are on screen. */
-  agentWorking: (snapshot) => live(snapshot.activity).length >= 2,
   milkConfirmed: (_, facts) => facts.milk?.status === "confirmed",
   /** The confirmed order and its passed rules are what the orb shows. */
   milkShown: (snapshot, facts) => facts.milk?.status === "confirmed" && snapshot.run?.status !== "running",

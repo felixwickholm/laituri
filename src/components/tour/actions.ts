@@ -48,19 +48,23 @@ async function startScene(scenario: Scenario): Promise<void> {
   else await consoleStore.startRun({ scenario });
 }
 
-/** Types the request into the composer letter by letter, then sends the milk scene that asks exactly that. */
-async function askForMilk(): Promise<void> {
+/** Types the request into the composer letter by letter and leaves it there, unsent, for the person to read. */
+async function typeRequest(): Promise<void> {
   const input = await element<HTMLInputElement>("#live-agent-ask", 8000);
   await until(() => idle() && !input?.disabled, 10_000);
-  if (input) {
-    const step = reducedMotion() ? 0 : TYPE_MS;
-    for (let index = 1; index <= MILK_REQUEST.length; index++) {
-      setInputValue(input, MILK_REQUEST.slice(0, index));
-      if (step) await sleep(step);
-    }
-    await sleep(SETTLE_MS);
-    setInputValue(input, "");
+  if (!input) return;
+  const step = reducedMotion() ? 0 : TYPE_MS;
+  for (let index = 1; index <= MILK_REQUEST.length; index++) {
+    setInputValue(input, MILK_REQUEST.slice(0, index));
+    if (step) await sleep(step);
   }
+  await sleep(SETTLE_MS);
+}
+
+/** Sends what was typed: the scripted milk scene asks exactly those words, so the story is the same every time. */
+async function sendRequest(): Promise<void> {
+  const input = document.querySelector<HTMLInputElement>("#live-agent-ask");
+  if (input) setInputValue(input, "");
   await startScene("milk");
 }
 
@@ -91,7 +95,8 @@ async function tamperLog(): Promise<void> {
 }
 
 export const ACTIONS: Record<ActionId, () => Promise<void>> = {
-  askForMilk,
+  typeRequest,
+  sendRequest,
   startOverLimit: () => startScene("over-limit"),
   approveOnPhone,
   tamperLog,

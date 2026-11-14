@@ -15,8 +15,8 @@ class TourStore {
   private state: TourState = CLOSED;
   private loaded = false;
   private listeners = new Set<() => void>();
-  /** The cut-out last drawn, so the spotlight on a newly mounted page starts from where it was. */
-  lastHole: Box | undefined;
+  /** The cut-outs last drawn, so the spotlight on a newly mounted page starts from where it was. */
+  lastHoles: Box[] = [];
   /** Where focus was before the tour opened, so closing returns it there. */
   returnFocus: HTMLElement | null = null;
 

@@ -70,6 +70,16 @@ describe("runs", () => {
     expect(runOutcome(run, { ...ctx, orders: new Map([["ord_1", confirmed]]) }).detail).toBe("€1,818.00 net · Mon 16 Nov");
   });
 
+  it("titles a run that only searched with the buyer's words and says the product is not stocked", () => {
+    const tag = { id: "run_seed_1", title: "vegan feta, 10 kg" };
+    const [run] = buildRuns([tool("search_catalog", "Searched the catalogue for 'vegan feta'", { detail: "No products found", run: tag })]);
+    const ctx = { orders: new Map(), active: false };
+    expect(runTitle(run, ctx)).toBe("Vegan feta, 10 kg");
+    expect(runOutcome(run, ctx)).toEqual({ word: "Not in the assortment", tone: "neutral" });
+    const [found] = buildRuns([tool("search_catalog", "Searched", { detail: "3 products, best match Feta" })]);
+    expect(runOutcome(found, ctx).word).toBe("Done");
+  });
+
   it("reads scene 3 as four attempts and the rule that stopped each", () => {
     const activity = [
       note("Attempt 1 of 4: ordering a product that contains nuts."),

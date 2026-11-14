@@ -5,12 +5,12 @@
  */
 
 :root {
-  --tour-dim: rgba(11, 18, 32, 0.56);
+  --tour-dim: rgba(7, 11, 20, 0.6);
   --tour-card-w: 520px;
   --tour-bezel: #0b0f17;
 }
 :root[data-theme="dark"] {
-  --tour-dim: rgba(2, 4, 9, 0.74);
+  --tour-dim: rgba(0, 1, 4, 0.76);
   --tour-bezel: #000000;
 }
 
@@ -29,15 +29,16 @@
   pointer-events: none;
   animation: tour-fade var(--d-sheet) var(--ease-out) both;
 }
-/* The dimmed area takes the clicks; the cut-out lets them through to the target. */
+/* The dimmed area takes the clicks; the cut-out lets them through to the target. The blur softens its edge. */
 .tour-dim-fill {
   fill: var(--tour-dim);
+  filter: blur(5px);
   pointer-events: visiblePainted;
 }
 .tour-ring {
   fill: none;
-  stroke: var(--accent);
-  stroke-width: 2;
+  stroke: color-mix(in srgb, var(--accent) 55%, transparent);
+  stroke-width: 1.5;
 }
 
 /* The floating card: placed by script beside, below or above the target. */
@@ -294,11 +295,12 @@
 .tour-phone-layout .tour-actions {
   justify-content: flex-end;
 }
+/* The frame keeps a phone's proportions and shrinks with the window, so the whole phone is always in view. */
 .tour-phone {
   position: relative;
   flex: none;
-  width: 390px;
-  height: min(800px, calc(100dvh - 48px));
+  height: min(800px, calc(100dvh - 80px));
+  aspect-ratio: 390 / 800;
   padding: 12px;
   border-radius: 54px;
   background: var(--tour-bezel);
@@ -388,6 +390,7 @@
     width: min(390px, 100%);
     height: auto;
     min-height: 0;
+    aspect-ratio: auto;
     margin: 16px 0;
   }
   .tour-phone-layout > .tour-float {

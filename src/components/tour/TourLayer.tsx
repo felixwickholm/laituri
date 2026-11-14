@@ -50,7 +50,8 @@ export function TourLayer({ state }: { state: TourState }) {
   const outcome = step ? state.outcomes[step.id] : undefined;
   const phoneOrder = step?.view === "phone" ? facts.overLimit : undefined;
   const selectors = step && !phoneOrder ? (outcome === "done" && step.doneTarget ? step.doneTarget : step.target) : null;
-  useSpotlight(selectors, { dim, ring, card: cardRef }, step !== undefined && phoneOrder === undefined);
+  const groups = selectors ? (step?.also ? [selectors, step.also] : [selectors]) : null;
+  useSpotlight(groups, { dim, ring, card: cardRef }, step !== undefined && phoneOrder === undefined);
 
   const next = useCallback(() => tourStore.dispatch({ type: "next" }), []);
   const back = useCallback(() => tourStore.dispatch({ type: "back" }), []);
@@ -96,7 +97,7 @@ export function TourLayer({ state }: { state: TourState }) {
           ? (step.pressAction?.label ?? "Next")
           : state.index === STEPS.length - 1
             ? "Finish"
-            : "Next";
+            : (step.nextLabel ?? "Next");
   const decided = step?.pressAction ? CONDITIONS[step.pressAction.until](snapshot, facts) : false;
   const copy = step ? (decided && step.pressAction ? step.pressAction.copy(facts) : step.copy(facts)) : undefined;
   const announcement = step && copy ? `Step ${state.index + 1} of ${STEPS.length}. ${copy.title}` : "";

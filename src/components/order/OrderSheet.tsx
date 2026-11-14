@@ -17,12 +17,14 @@ import { LineItems } from "./LineItems";
 import { RequestProof } from "./RequestProof";
 import { Signatures } from "./Signatures";
 import { Stepper } from "./Stepper";
+import { useAnyOrder } from "./useAnyOrder";
 import { useOrderProof } from "./useOrderProof";
 
 export function OrderSheet({ orderId, onClose }: { orderId: string | null; onClose: () => void }) {
-  const { orders, jwks, mandate, audit, chain } = useConsole();
+  const snapshot = useConsole();
+  const { orders, jwks, audit, chain } = snapshot;
   const paused = chain.state === "broken";
-  const order = orders.find((item) => item.id === orderId);
+  const { order, mandate, own, loading } = useAnyOrder(orderId, orders, audit, snapshot.mandate);
   const proof = useOrderProof(order, jwks, mandate, audit);
   const [busy, setBusy] = useState(false);
 
@@ -43,7 +45,7 @@ export function OrderSheet({ orderId, onClose }: { orderId: string | null; onClo
     }
   }
 
-  const pending = order?.status === "pending_approval";
+  const pending = own && order?.status === "pending_approval";
   const approver = mandate?.mandate.approval.approver.name ?? "the approver";
   return (
     <Sheet
@@ -96,7 +98,7 @@ export function OrderSheet({ orderId, onClose }: { orderId: string | null; onClo
           </p>
         </>
       ) : (
-        <p className="pane-empty">This order is not in the list any more. It may have been cleared by a reset.</p>
+        <p className="pane-empty">{loading ? "Loading the order…" : "This order is not in the list any more. It may have been cleared by a reset."}</p>
       )}
     </Sheet>
   );

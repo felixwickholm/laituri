@@ -13,20 +13,22 @@ interface NeedsYouProps {
   /** True while the log does not verify; the server refuses approvals then. */
   paused: boolean;
   ready: boolean;
+  /** Also lists the last few decisions; off where the queue leads the page and must stay short. */
+  recent?: boolean;
 }
 
 /** The approvals queue, then the last few decisions so an empty queue still shows what happened. */
-export function NeedsYou({ orders, paused, ready }: NeedsYouProps) {
+export function NeedsYou({ orders, paused, ready, recent: withRecent = true }: NeedsYouProps) {
   const ui = useUi();
   const now = useNow(15_000);
   const waiting = orders.filter((order) => order.status === "pending_approval");
-  const recent = orders
+  const recent = (withRecent ? orders : [])
     .filter((order) => order.status !== "pending_approval")
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
     .slice(0, RECENT);
 
   return (
-    <section className="block" id="needs-you" aria-labelledby="needs-title">
+    <section className="block" id="needs-you" aria-labelledby="needs-title" data-waiting={waiting.length > 0}>
       <header className="block-head">
         <h2 id="needs-title">
           Needs you <span className="count">{waiting.length}</span>

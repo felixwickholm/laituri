@@ -616,11 +616,15 @@
   .today-grid {
     grid-template-columns: minmax(0, 1fr);
   }
-  /* Blocks that ask for a decision come before the history. */
+  /* One column of blocks: what waits for a decision first, then the agent, then the history. */
+  .today-main,
   .today-side {
-    order: -1;
+    display: contents;
   }
-  .today-side #needs-you {
+  .today-grid #needs-you[data-waiting="true"] {
+    order: -2;
+  }
+  .today-grid .live-agent {
     order: -1;
   }
 }

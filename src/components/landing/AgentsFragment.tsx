@@ -1,21 +1,25 @@
-const AGENTS = [
-  { name: "Harbour purchasing agent", buyer: "Nordic Harbour Hotels", via: "MCP", orders: "4 orders", live: true },
-  { name: "Kaisla menu planner", buyer: "Kaisla School Kitchens", via: "REST", orders: "2 orders", live: true },
-  { name: "Laine kitchen assistant", buyer: "Ravintola Laine", via: "MCP", orders: "1 order", live: false },
-];
+"use client";
 
-/** A true-to-product crop of Valio Aimo control: who is buying through the door, and what it could not sell. */
+import { FALLBACK_AGENTS, agentsView } from "./agent-rows";
+import { useOverview } from "./useOverview";
+
+/**
+ * A crop of Valio Aimo control: who is buying through the door, and what it could not sell. It reads the live
+ * overview; the server renders the demo scene's rows until the overview answers.
+ */
 export function AgentsFragment() {
+  const overview = useOverview();
+  const view = overview ? agentsView(overview) : FALLBACK_AGENTS;
   return (
     <div className="ui-card ui-agents" data-ui="agents" inert>
       <div className="ui-row">
         <span className="ui-title">Connected agents</span>
         <span className="ui-muted">
-          <span className="live-dot" aria-hidden="true" /> 2 active now
+          <span className="live-dot" aria-hidden="true" /> {view.activeNow} active now
         </span>
       </div>
       <ul className="ui-agent-list">
-        {AGENTS.map((agent) => (
+        {view.agents.map((agent) => (
           <li key={agent.name} className="ui-agent">
             <span className="ui-agent-mark" data-live={agent.live} aria-hidden="true" />
             <span className="ui-agent-name">
@@ -32,8 +36,8 @@ export function AgentsFragment() {
           Unmet demand
         </span>
         <p>
-          Arla fat-free UHT milk drink: 200 l asked, 51 in stock.
-          <span className="ui-muted"> A signed alternative was offered.</span>
+          {view.unmet.text}
+          <span className="ui-muted"> {view.unmet.note}</span>
         </p>
       </div>
     </div>

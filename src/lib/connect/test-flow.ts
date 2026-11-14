@@ -1,4 +1,4 @@
-import { AUTH_HEADER, PATHS, orderBody, quoteBody, searchBody } from "./requests";
+import { AUTH_HEADER, PATHS, TEST_NEED, orderBody, quoteBody, searchBody } from "./requests";
 
 export type FlowStepId = "search" | "quote" | "mandate" | "order";
 
@@ -25,13 +25,13 @@ export const FLOW_STEPS: { id: FlowStepId; label: string }[] = [
 
 const JSON_HEADERS = { Authorization: AUTH_HEADER, "Content-Type": "application/json" };
 
-/** The exact request an outside agent sends for each step of the documented HTTP flow. */
+/** The exact request an outside agent sends for each step of the documented HTTP flow, for the small test order. */
 export function flowRequest(step: FlowStepId, state: FlowState): FlowRequest {
   switch (step) {
     case "search":
-      return { method: "POST", path: PATHS.search, headers: JSON_HEADERS, body: searchBody(state.deliverBy) };
+      return { method: "POST", path: PATHS.search, headers: JSON_HEADERS, body: searchBody(state.deliverBy, TEST_NEED) };
     case "quote":
-      return { method: "POST", path: PATHS.quotes, headers: JSON_HEADERS, body: quoteBody(state.deliverBy) };
+      return { method: "POST", path: PATHS.quotes, headers: JSON_HEADERS, body: quoteBody(state.deliverBy, TEST_NEED) };
     case "mandate":
       return { method: "GET", path: PATHS.mandate, headers: { Authorization: AUTH_HEADER } };
     case "order":

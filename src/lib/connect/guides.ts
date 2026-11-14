@@ -6,7 +6,7 @@ export interface CodeBlock {
   value: string;
   /** What the copy button copies, in words, for its accessible name. */
   label: string;
-  /** Prose wraps; commands and configs keep their lines and scroll inside the block. */
+  /** Prose and one-line commands wrap at spaces (the copy stays one line); configs keep their lines and scroll inside the block. */
   wrap?: boolean;
 }
 
@@ -99,7 +99,7 @@ export function guideFor(app: AppId, origin: string, deliverBy: string): Guide {
     case "claude-code":
       return {
         steps: [
-          { text: "Add Laituri as an MCP server. Run this in a terminal.", code: { value: claudeCodeCommand(origin), label: "Copy command" } },
+          { text: "Add Laituri as an MCP server. Run this in a terminal.", code: { value: claudeCodeCommand(origin), label: "Copy command", wrap: true } },
           { text: "Start Claude Code and type /mcp. Laituri shows as connected with seven tools." },
           PROMPT_STEP,
         ],

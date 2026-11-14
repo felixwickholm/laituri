@@ -17,6 +17,13 @@
 .ph[data-embedded="true"] {
   padding-top: 44px;
 }
+/* Inside the walkthrough's phone frame the page scrolls without a bar, as on a real phone. */
+html:has(.ph[data-embedded="true"]) {
+  scrollbar-width: none;
+}
+html:has(.ph[data-embedded="true"])::-webkit-scrollbar {
+  display: none;
+}
 
 .ph-top {
   display: flex;

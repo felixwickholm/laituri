@@ -79,7 +79,7 @@ export function AuditScreen() {
         }
       />
       <div className="log-top">
-        <LogHead chain={chain} lastSeq={lastSeq} />
+        <LogHead chain={chain} lastSeq={lastSeq} audience="wholesaler" />
         <DayHistogram days={entriesPerDay(byBuyer, now)} />
       </div>
       {overview ? <OfferSummary offers={overview.offers} /> : null}

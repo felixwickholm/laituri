@@ -12,16 +12,16 @@ import { tourStore } from "./tour-store";
 const WATCH_MS = 250;
 
 /** One-shot work already under way in this tab, so a remount or a second render never repeats it. */
-const inFlight = new Set<string>();
+const inFlight = new Map<string, Promise<void>>();
 /** When this tab began waiting for each step, so a page change does not restart its timeout. */
 const watchedSince = new Map<string, number>();
 
 function once(key: string, work: () => Promise<void>): void {
   if (inFlight.has(key)) return;
-  inFlight.add(key);
-  void work()
+  const running = work()
     .catch(() => undefined)
     .finally(() => inFlight.delete(key));
+  inFlight.set(key, running);
 }
 
 /** The step's own targets are on screen; the page's main region is only a fallback and never counts. */
@@ -95,7 +95,7 @@ export function useTourRunner(state: TourState): void {
     if (!watchedSince.has(step.id)) watchedSince.set(step.id, Date.now());
     const since = watchedSince.get(step.id) ?? Date.now();
     const watch = () => {
-      if (outcomeReached(step)) tourStore.dispatch({ type: "outcome", step: step.id, outcome: "done" });
+      if (!inFlight.has(`enter:${step.id}`) && outcomeReached(step)) tourStore.dispatch({ type: "outcome", step: step.id, outcome: "done" });
       else if (!outcome && Date.now() - since > step.timeoutMs) tourStore.dispatch({ type: "outcome", step: step.id, outcome: "timeout" });
     };
     watch();
@@ -120,6 +120,8 @@ export function useTourRunner(state: TourState): void {
   useEffect(() => {
     if (!state.tampered || state.status === "step" || state.status === "end" || state.status === "starting") return;
     once("restore", async () => {
+      // A change still on its way to the server would land after the restore and leave the log broken.
+      await Promise.all([...inFlight].filter(([key]) => key.startsWith("enter:")).map(([, running]) => running));
       await restoreLog();
       tourStore.dispatch({ type: "tampered", value: false });
     });

@@ -24,8 +24,30 @@ function headline(chain: ChainState): string {
   }
 }
 
-/** The log's verdict, how it was reached, and a way to run the check again. */
-export function LogHead({ chain, lastSeq }: { chain: ChainState; lastSeq: number }) {
+/** Who reads the log: the buyer in their own console, or Valio Aimo on its side. */
+export type LogAudience = "buyer" | "wholesaler";
+
+const WORDS: Record<LogAudience, { checked: string; consequence: string }> = {
+  buyer: {
+    checked: "checked in your browser with Valio Aimo’s public keys",
+    consequence: "Every entry after it can no longer be trusted, and approvals are paused until the log is restored. Reset demo restores it.",
+  },
+  wholesaler: {
+    checked: "checked in this browser with Valio Aimo’s public keys",
+    consequence: "While the log does not verify, Valio Aimo treats later entries as untrusted. Reset demo restores it.",
+  },
+};
+
+interface LogHeadProps {
+  chain: ChainState;
+  lastSeq: number;
+  /** Defaults to the buyer, whose console is where the log first appeared. */
+  audience?: LogAudience;
+}
+
+/** The log's verdict, how it was reached, and a way to run the check again, worded for the side that reads it. */
+export function LogHead({ chain, lastSeq, audience = "buyer" }: LogHeadProps) {
+  const words = WORDS[audience];
   const [checking, setChecking] = useState(false);
   const [checkedAt, setCheckedAt] = useState<string | null>(null);
   const entries = chain.state === "empty" ? 0 : chain.entries;
@@ -53,7 +75,7 @@ export function LogHead({ chain, lastSeq }: { chain: ChainState; lastSeq: number
             {checking ? "Checking every entry…" : missing ? "Entries are missing" : headline(chain)}
           </p>
           <p className="log-sub">
-            {count(entries)} {entries === 1 ? "entry" : "entries"} · checked in your browser with Valio Aimo&rsquo;s public keys
+            {count(entries)} {entries === 1 ? "entry" : "entries"} · {words.checked}
             {checkedAt ? ` · last checked ${checkedAt}` : ""}
           </p>
         </div>
@@ -64,8 +86,7 @@ export function LogHead({ chain, lastSeq }: { chain: ChainState; lastSeq: number
       </button>
       {chain.state === "broken" ? (
         <p className="log-alarm" role="alert">
-          {missing ? "The newest entries this browser saw are gone." : `Entry ${chain.brokenAt} was changed after it was written.`} Every entry after it can no longer be
-          trusted, and approvals are paused until the log is restored. Reset demo restores it.
+          {missing ? "The newest entries this browser saw are gone." : `Entry ${chain.brokenAt} was changed after it was written.`} {words.consequence}
         </p>
       ) : null}
       <div className="how">

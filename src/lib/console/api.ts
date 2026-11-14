@@ -63,6 +63,8 @@ function unwrap<T>(text: string, key: string): T[] {
 export const api = {
   activityText: () => getText("/api/v1/activity"),
   ordersText: () => getText("/api/v1/orders"),
+  /** Another buyer's orders, read as the wholesaler reads them; no agent call is recorded. */
+  ordersOf: async (buyerId: string) => unwrap<Order>(await getText(`/api/v1/orders?buyer=${encodeURIComponent(buyerId)}`), "orders"),
   auditText: () => getText("/api/v1/audit"),
   parseActivity: (text: string) => unwrap<Activity>(text, "activity"),
   parseOrders: (text: string) => unwrap<Order>(text, "orders"),
@@ -73,6 +75,7 @@ export const api = {
     send<Order>("POST", `/api/v1/approvals/${encodeURIComponent(orderId)}`, body),
 
   mandate: () => getJson<SignedMandate>("/api/v1/mandate"),
+  mandateOf: (buyerId: string) => getJson<SignedMandate>(`/api/v1/mandate?buyer=${encodeURIComponent(buyerId)}`),
   updateMandate: (patch: MandatePatch) => send<SignedMandate>("PUT", "/api/v1/mandate", patch),
 
   session: () => getJson<ConsoleSession>("/api/v1/console/session"),

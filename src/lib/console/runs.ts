@@ -37,6 +37,8 @@ export interface RunBlock {
   attempts: Attempt[];
   orderIds: string[];
   toolCount: number;
+  /** Every catalogue search in the run came back empty: what the buyer asked for is not stocked. */
+  foundNothing?: boolean;
   summary?: Activity;
 }
 
@@ -46,6 +48,7 @@ const LOOKING = /^Looking for /;
 const ATTEMPT = /^Attempt (\d+) of (\d+):\s*(.*)$/;
 const ATTEMPT_SUMMARY = /^(\d+) of (\d+) attempts/;
 const CONNECTED = / connected$/;
+const NOTHING_FOUND = /^No products found/;
 
 function startsBlock(item: Activity, block: RunBlock | undefined, previousAt: number | undefined): boolean {
   if (!block) return true;
@@ -103,6 +106,7 @@ function addNote(block: RunBlock, item: Activity): void {
 
 function addTool(block: RunBlock, item: Activity): void {
   block.toolCount += 1;
+  if (item.tool === "search_catalog") block.foundNothing = block.foundNothing !== false && NOTHING_FOUND.test(item.detail ?? "");
   const orderId = item.refs?.orderId;
   if (orderId && !block.orderIds.includes(orderId)) block.orderIds.push(orderId);
   const attempt = block.attempts[block.attempts.length - 1];

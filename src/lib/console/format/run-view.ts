@@ -35,7 +35,7 @@ function capitalise(text: string): string {
 
 /** The block title: the buyer's request in their own words when it is known. */
 export function runTitle(run: RunBlock, ctx: RunContext): string {
-  if (run.title) return run.title;
+  if (run.title) return capitalise(run.title);
   if (run.kind === "attempts") return "Try to break the rules";
   const intent = lastOrder(run, ctx.orders)?.offer.intent?.trim();
   if (intent) return capitalise(intent);
@@ -78,6 +78,7 @@ export function runOutcome(run: RunBlock, ctx: RunContext): RunOutcome {
     }
   }
   if (ctx.active) return { word: "Working", tone: "neutral" };
+  if (run.foundNothing) return { word: "Not in the assortment", tone: "neutral" };
   const last = run.steps[run.steps.length - 1];
   if (last?.status === "error") return { word: "Failed", detail: plainSentence(last.text), tone: "danger" };
   if (last?.status === "blocked") return { word: "Stopped", detail: plainSentence(last.text), tone: "danger" };

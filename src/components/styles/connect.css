@@ -33,14 +33,6 @@
   text-decoration: none;
   border-radius: var(--r-sm);
 }
-.cx-home .wordmark {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 16px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
 .cx-nav {
   display: flex;
   gap: 4px;
@@ -298,7 +290,12 @@
 }
 .cx-code[data-wrap] pre {
   white-space: pre-wrap;
-  overflow-wrap: break-word;
+}
+.cx-word {
+  white-space: nowrap;
+}
+.cx-test-real {
+  margin-top: 6px;
 }
 .cx-code pre:focus-visible {
   outline-offset: -2px;

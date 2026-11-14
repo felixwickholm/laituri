@@ -8,7 +8,7 @@ process.env.LAITURI_DEMO_STEP_MS = "0";
 
 const { verifyAuditLog } = await import("@/lib/audit");
 const { withClock } = await import("@/lib/clock");
-const { trust } = await import("@/lib/trust");
+const { TOKEN_TYPE, trust } = await import("@/lib/trust");
 const { getRun, resetDemo, startRun } = await import("@/lib/demo");
 const { gateway } = await import("@/lib/gateway");
 const { BUYER_IDS } = await import("@/lib/mandate");
@@ -85,7 +85,7 @@ describe.skipIf(!recorded)("seeded demo history", () => {
     expect(Date.parse(offer.expiresAt) - Date.parse(offer.issuedAt)).toBeGreaterThan(5 * DAY_MS);
     expect(Date.parse(offer.expiresAt)).toBe(Date.parse(offer.orderBy!));
     const signed = await store().offers.get(offer.id);
-    expect((await trust().verify<{ expiresAt: string }>("supplier", signed!.jws)).payload?.expiresAt).toBe(offer.expiresAt);
+    expect((await trust().verify<{ expiresAt: string }>("supplier", signed!.jws, TOKEN_TYPE.offer)).payload?.expiresAt).toBe(offer.expiresAt);
 
     const others = (await store().offers.list()).filter((o) => o.offer.id !== offer.id);
     expect(others.every(({ offer: o }) => Date.parse(o.expiresAt) - Date.parse(o.issuedAt) <= 15 * 60_000)).toBe(true);

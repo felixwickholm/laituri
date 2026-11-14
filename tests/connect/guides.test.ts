@@ -106,6 +106,12 @@ describe("browser test flow", () => {
     expect(PlaceOrderRequest.omit({ idempotencyKey: true }).safeParse(order.body).success).toBe(true);
   });
 
+  it("buys a small quantity, so repeated tests stay inside the demo buyer's weekly limit", () => {
+    expect(flowRequest("quote", state).body).toMatchObject({ lines: [{ quantity: { amount: 20, unit: "l" } }], intent: "20 litres of lactose-free milk by Monday" });
+    expect(flowRequest("search", state).body).toMatchObject({ need: { amount: 20, unit: "l" } });
+    expect(curlQuote("https://x.test", MONDAY)).toContain('"amount":1000');
+  });
+
   it("shortens only the signatures in the terminal preview", () => {
     const shown = previewBody({ offerJws: "eyJhbGciOiJFUzI1NiIsImtpZCI6Ij.payload.signature", intent: "1,000 litres of lactose-free milk by Monday" });
     expect(shown).toBe('{"offerJws":"eyJhbGciOiJFUzI1…","intent":"1,000 litres of lactose-free milk by Monday"}');

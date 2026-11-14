@@ -29,14 +29,6 @@
   text-decoration: none;
   border-radius: var(--r-sm);
 }
-.lp-home .wordmark {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 17px;
-  font-weight: 620;
-  letter-spacing: -0.025em;
-}
 .lp-nav {
   display: flex;
   align-items: center;
@@ -184,7 +176,7 @@
 }
 .hero-orb-hint {
   margin: 0 0 4px;
-  color: var(--text-4);
+  color: var(--text-3);
   font-size: 11px;
 }
 .hero-orb-stage {
@@ -254,11 +246,18 @@
 .lp-counters > * {
   max-width: none;
 }
+/* Five figures: three across, then two wider ones. */
 .lp-figures {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 8px;
   margin: 40px 0 0;
+}
+.lp-figure {
+  grid-column: span 2;
+}
+.lp-figure:nth-child(n + 4) {
+  grid-column: span 3;
 }
 .lp-figure {
   display: flex;
@@ -914,6 +913,13 @@
   .lp-figures {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+  .lp-figure,
+  .lp-figure:nth-child(n + 4) {
+    grid-column: span 1;
+  }
+  .lp-figure:last-child {
+    grid-column: 1 / -1;
+  }
   .lp-side,
   .lp-side:nth-child(2) {
     grid-template-columns: minmax(0, 1fr);
@@ -1000,8 +1006,12 @@
   .hero-orb-caption .typed-caption {
     min-height: 3em;
   }
+  /* The two sentences run on as one paragraph, so the heading takes three lines instead of four. */
   .lp-h1 {
     font-size: 32px;
+  }
+  .lp-h1 > span {
+    display: inline;
   }
   .lp-lede {
     margin-top: 20px;

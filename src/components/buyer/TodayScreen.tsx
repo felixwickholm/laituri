@@ -20,6 +20,9 @@ export function TodayScreen() {
   const week = weekStats(orders, now);
   const broken = snapshot.chain.state === "broken";
   const verdict = todayVerdict(week, broken, orders.length > 0);
+  // An order waiting for a person leads the page; an empty queue sits quietly under the agent.
+  const waiting = orders.some((order) => order.status === "pending_approval");
+  const needsYou = <NeedsYou orders={orders} paused={broken} ready={snapshot.ready} recent={!waiting} />;
 
   return (
     <div className="page">
@@ -38,6 +41,7 @@ export function TodayScreen() {
       <KpiStrip week={week} weeklyLimit={snapshot.mandate?.mandate.limits.perWeek.amount} chain={snapshot.chain} />
       <div className="today-grid">
         <div className="today-main">
+          {waiting ? needsYou : null}
           <AgentRuns
             activity={snapshot.activity}
             orders={snapshot.orders}
@@ -48,7 +52,7 @@ export function TodayScreen() {
         </div>
         <div className="today-side">
           <LiveAgentPanel snapshot={snapshot} />
-          <NeedsYou orders={orders} paused={broken} ready={snapshot.ready} />
+          {waiting ? null : needsYou}
           <MandateCard mandate={snapshot.mandate} jwks={snapshot.jwks} />
         </div>
       </div>
