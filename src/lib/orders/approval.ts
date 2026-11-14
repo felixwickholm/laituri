@@ -2,7 +2,8 @@ import type { Approval, ApprovalDecisionRequest, Order } from "@/lib/contracts";
 import { NotFoundError, StateError } from "@/lib/gateway/errors";
 import { confirmOrder } from "./confirm";
 import { serial } from "./lock";
-import { SUPPLIER_ACTOR, orderRefs, summaries } from "./summaries";
+import { recheckOrder } from "./recheck";
+import { SUPPLIER_ACTOR, nonPassing, orderRefs, summaries } from "./summaries";
 import type { Decider, OrderDeps, StoredOrder } from "./types";
 
 async function save(previous: Order, next: Order, deps: OrderDeps): Promise<Order> {
@@ -14,7 +15,9 @@ async function save(previous: Order, next: Order, deps: OrderDeps): Promise<Orde
 /**
  * The approver of the order's buyer decides a pending order. The decision is signed with the approver key.
  * Another buyer's approver cannot see the order. An offer that expired while waiting cannot be confirmed,
- * so the order is rejected and the reason audited.
+ * so the order is rejected and the reason audited. An approval re-checks the order against the mandate in force:
+ * what the "ask" tier flagged is the approver's to decide, but a "never" rule, an invalid or expired mandate, or an
+ * offer no longer valid or already used stops it, and the order is blocked with the reason audited.
  */
 export function decideApproval(orderId: string, body: ApprovalDecisionRequest, deps: OrderDeps, decider: Decider): Promise<Order> {
   return serial(() => decide(orderId, body, deps, decider));
@@ -41,6 +44,21 @@ async function decide(orderId: string, body: ApprovalDecisionRequest, deps: Orde
       data: { reason: "offer_expired", expiresAt: order.offer.expiresAt, requestedDecision: body.decision, ...via },
     });
     return save(order, rejected, deps);
+  }
+
+  if (body.decision === "approved") {
+    const recheck = await recheckOrder(order, deps, now);
+    if (recheck.outcome === "blocked") {
+      const blocked: Order = { ...order, status: "blocked", decision: recheck, updatedAt: decidedAt };
+      await deps.audit.append({
+        actor: SUPPLIER_ACTOR,
+        event: "order.blocked",
+        summary: summaries.stoppedAtApproval(blocked),
+        refs,
+        data: { reason: "mandate_recheck", requestedDecision: body.decision, checks: nonPassing(recheck), ...via },
+      });
+      return save(order, blocked, deps);
+    }
   }
 
   const { mandate } = await deps.mandates.current(order.buyer.id);

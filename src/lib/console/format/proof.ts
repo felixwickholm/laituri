@@ -1,15 +1,7 @@
-import type { Offer, OfferLine, Order } from "@/lib/contracts";
-import { count, eur } from "./money";
+import type { Offer, OfferLine, Order, RequestCheck, RequestCheckResult } from "@/lib/contracts";
+import { count } from "./money";
 import { shortProductName } from "./product";
-import { day, hourMinute } from "./time";
-
-const CLAIM_WORDS: Record<string, string> = {
-  lactose_free: "lactose-free",
-  low_lactose: "low-lactose",
-  gluten_free: "gluten-free",
-  vegan: "vegan",
-  organic: "organic",
-};
+import { day } from "./time";
 
 export function contentText(line: OfferLine): string | undefined {
   return line.content ? `${count(line.content.amount)}\u00a0${line.content.unit}` : undefined;
@@ -48,44 +40,42 @@ export function offeredShort(offer: Offer): string {
 export interface MatchedFact {
   label: string;
   detail: string;
+  /** met, unmet or unchecked, exactly as the wholesaler signed it in the offer. */
+  result: RequestCheckResult;
+  /** True only for a requirement the offer meets. */
   ok: boolean;
 }
 
-/** The claim the person cares about: the mandate's required claims, or a claim named in the request. */
-function claimFact(order: Order): MatchedFact | undefined {
-  const claims = order.decision.checks.find((item) => item.rule === "dietary.claims");
-  if (claims?.limit && claims.limit !== "none") {
-    const detail = claims.limit
-      .split(",")
-      .map((claim) => CLAIM_WORDS[claim.trim()] ?? claim.trim().replace(/_/g, " "))
-      .join(", ");
-    return { label: "Claim", ok: claims.status === "pass", detail };
-  }
-  const intent = order.offer.intent?.toLowerCase() ?? "";
-  const named = Object.values(CLAIM_WORDS).find((word) => intent.includes(word));
-  if (!named) return undefined;
-  const match = order.decision.checks.find((item) => item.rule === "match.confidence");
-  const ok = match?.status !== "ask";
-  return { label: "Claim", ok, detail: `${named}, match ${order.offer.matchConfidence}` };
+const LABEL: Record<RequestCheck["requirement"], string> = {
+  product: "Product",
+  claim: "Claim",
+  wording: "Other words",
+  quantity: "Quantity",
+  date: "Date",
+  budget: "Budget",
+  approval: "Approval first",
+};
+
+/** Keeps a number with its unit: "1,800 l" -> "1,800\u00a0l". */
+function joinUnits(text: string): string {
+  return text.replace(/(\d) (l|kg|units)\b/g, "$1\u00a0$2");
 }
 
-/** The facts a person checks when comparing request and offer, each with a pass mark. */
+function fact(check: RequestCheck): MatchedFact {
+  const detail = check.result === "unchecked"
+    ? `Not checked: ${check.offered}`
+    : `Asked ${check.asked} · offered ${check.offered}`;
+  return { label: LABEL[check.requirement], detail: joinUnits(detail), result: check.result, ok: check.result === "met" };
+}
+
+/**
+ * The wholesaler's comparison of the buyer's words with the offer, as signed inside the offer: one fact per
+ * requirement, never derived from the match confidence or the stock figures. No words means nothing was compared.
+ */
 export function matchedFacts(order: Order): MatchedFact[] {
-  const { offer } = order;
-  const short = offer.lines.filter((line) => line.availability.available < line.availability.requested);
-  const facts: MatchedFact[] = [
-    {
-      label: "Quantity",
-      ok: short.length === 0,
-      detail: short.length === 0
-        ? offer.lines.map((line) => contentText(line) ?? `${count(line.quantity)} ${line.salesUnit}`).join(", ")
-        : `${count(short[0].availability.available)} of ${count(short[0].availability.requested)} available`,
-    },
-  ];
-  const claim = claimFact(order);
-  if (claim) facts.push(claim);
-  const onTime = Boolean(offer.deliveryDate && offer.deliveryDate <= offer.deliverBy);
-  facts.push({ label: "Date", ok: onTime, detail: offer.deliveryDate ? day(offer.deliveryDate) : "No delivery date" });
-  facts.push({ label: "Price", ok: true, detail: `${eur(offer.totals.net.amount)}\u00a0net, fixed until ${hourMinute(offer.expiresAt)}` });
-  return facts;
+  const checks = order.offer.requestCheck;
+  if (!checks?.length) {
+    return [{ label: "Request", result: "unchecked", ok: false, detail: "Not checked: the agent sent no buyer's words to compare" }];
+  }
+  return checks.map(fact);
 }

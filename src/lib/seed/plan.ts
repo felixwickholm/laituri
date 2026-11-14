@@ -76,7 +76,7 @@ export const SEED_REQUESTS: SeedRequest[] = [
   { buyer: HARBOUR, client: SCRIPTED_CLIENT, when: { workingDaysAgo: 1, at: "08:05" },
     words: "36 kg of eggs for the breakfast buffets", query: "eggs", quantity: kilos(36), order: "primary" },
   { buyer: HARBOUR, client: "ChatGPT", when: { workingDaysAgo: 1, at: "09:12" },
-    words: "vegan feta 10 kg", query: "vegan feta", quantity: kilos(10) },
+    words: "vegan feta, 10 kg", query: "vegan feta", quantity: kilos(10) },
 
   // Kaisla School Kitchens: school lunches, planned in ChatGPT and Cursor.
   { buyer: KAISLA, client: "ChatGPT", when: { workingDaysAgo: 5, at: "07:30" },
@@ -95,7 +95,7 @@ export const SEED_REQUESTS: SeedRequest[] = [
     words: "40 kg of salmon fillet for Thursday", query: "salmon fillet", quantity: kilos(40), order: "primary",
     decision: { decision: "approved", note: "Checked with the wholesaler: plain salmon, fish only.", afterMinutes: 8 } },
   { buyer: KAISLA, client: "ChatGPT", when: { workingDaysAgo: 2, at: "07:58" },
-    words: "gluten-free rye bread 40 kg", query: "gluten-free rye bread", quantity: kilos(40) },
+    words: "gluten-free rye bread, 40 kg", query: "gluten-free rye bread", quantity: kilos(40) },
   { buyer: KAISLA, client: "Cursor", when: { workingDaysAgo: 2, at: "08:47" },
     words: "25 kg of grated cheese for the pasta bake", query: "grated cheese", quantity: kilos(25), order: "primary" },
   { buyer: KAISLA, client: "ChatGPT", when: { workingDaysAgo: 1, at: "07:36" },
@@ -115,7 +115,7 @@ export const SEED_REQUESTS: SeedRequest[] = [
     words: "10 kg of salmon fillet for the weekend menu", query: "salmon fillet", quantity: kilos(10), order: "primary",
     decision: { decision: "approved", note: "Good price, keep this one.", afterMinutes: 7 } },
   { buyer: LAINE, client: "curl", when: { workingDaysAgo: 4, at: "10:14" },
-    words: "lingonberry jam 20 kg", query: "lingonberry jam", quantity: kilos(20) },
+    words: "lingonberry jam, 20 kg", query: "lingonberry jam", quantity: kilos(20) },
   { buyer: LAINE, client: "Claude", when: { workingDaysAgo: 4, at: "10:41" },
     words: "40 litres of Arla whipping cream", query: "whipping cream", quantity: litres(40),
     productId: ARLA_WHIPPING_CREAM, order: "alternative" },

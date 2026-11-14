@@ -1,6 +1,7 @@
 import { fixtureCatalog } from "@/lib/catalog";
 import { now, withClock } from "@/lib/clock";
 import { createGateway } from "@/lib/gateway/gateway";
+import { inRun } from "@/lib/gateway/recorder";
 import { realDeps } from "@/lib/gateway/deps";
 import type { Deps } from "@/lib/gateway/types";
 import { buyerIds, currentMandate } from "@/lib/mandate";
@@ -78,8 +79,10 @@ export async function seedHistory(): Promise<{ requests: number; orders: number 
   let orders = 0;
   await asSeeded(() =>
     withClock(() => clock.current, async () => {
-      for (const { request, start } of timeline) {
-        if (await playRequest(request, start, ctx)) orders += 1;
+      for (const [index, { request, start }] of timeline.entries()) {
+        // One run per request, titled with the buyer's own words, so a run that only searched still reads as what was asked.
+        const run = { id: `run_seed_${index + 1}`, title: request.words };
+        if (await inRun(run, () => playRequest(request, start, ctx))) orders += 1;
       }
     }),
   );

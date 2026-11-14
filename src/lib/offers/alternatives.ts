@@ -2,6 +2,7 @@ import type { Product, Quantity } from "@/lib/contracts";
 import { count, priceChangePhrase, productName, weekday } from "./format";
 import { buildLine, isOnTime } from "./lines";
 import { contentPerUnit, requiredContent, round } from "./packs";
+import { stockLedger } from "./stock";
 import { isLikeForLike, substituteLine } from "./substitutes";
 import type { BuiltLine, Market } from "./types";
 
@@ -113,25 +114,30 @@ function premium(options: BuiltLine[], exclude: Set<string>): Option | undefined
 /**
  * Up to three ways to cover the full need when the primary offer cannot.
  * A tier is skipped unless every problem line has a valid candidate for it.
+ * Within one plan, lines of one product share its stock: the lines that need no help claim theirs first,
+ * then each problem line is planned from what is left.
  */
 export function planAlternatives(needs: Need[], market: Market): AlternativePlan[] {
   const problems = needs.filter((need) => !isOnTime(need.primary.line, market.deliverBy));
   if (problems.length === 0) return [];
   const used = new Map<Need, Set<string>>(problems.map((need) => [need, new Set<string>()]));
-  const full = new Map<Need, BuiltLine[]>(problems.map((need) => [need, fullSubstitutes(need, market)]));
 
-  const pickers: Record<Tier, (need: Need) => Option | undefined> = {
-    good: (need) => option(cheapest(full.get(need) ?? []), "Same product type"),
-    better: (need) => split(need, market) ?? mostReliable(full.get(need) ?? [], used.get(need) ?? new Set()),
-    best: (need) => premium(full.get(need) ?? [], used.get(need) ?? new Set()),
+  const pickers: Record<Tier, (need: Need, left: Market) => Option | undefined> = {
+    good: (need, left) => option(cheapest(fullSubstitutes(need, left)), "Same product type"),
+    better: (need, left) => split(need, left) ?? mostReliable(fullSubstitutes(need, left), used.get(need) ?? new Set()),
+    best: (need, left) => premium(fullSubstitutes(need, left), used.get(need) ?? new Set()),
   };
 
   const plans: AlternativePlan[] = [];
   for (const tier of ["good", "better", "best"] as const) {
+    const ledger = stockLedger(market);
+    ledger.claim(needs.filter((need) => !problems.includes(need)).map((need) => need.primary.line));
     const chosen = new Map<Need, Option>();
     for (const need of problems) {
-      const picked = pickers[tier](need);
-      if (picked) chosen.set(need, picked);
+      const picked = pickers[tier](need, ledger.view());
+      if (!picked) continue;
+      chosen.set(need, picked);
+      ledger.claim(picked.lines.map((built) => built.line));
     }
     if (chosen.size !== problems.length) continue;
     for (const [need, picked] of chosen) used.get(need)?.add(picked.productId);

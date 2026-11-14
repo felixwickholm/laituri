@@ -4,6 +4,7 @@ import type { AgentTransport } from "@/lib/agent";
 import type { PlaceOrderRequest } from "@/lib/contracts";
 import { ProviderError, runModelPurchase, type ModelProvider, type ModelReply, type ToolOutcome } from "@/lib/agent/llm";
 import { createGateway } from "@/lib/gateway";
+import { evaluate } from "@/lib/policy/evaluate";
 import { AGENT, makeDeps } from "../support/deps";
 
 const REQUEST = "100 litres of Eila by Monday";
@@ -17,8 +18,9 @@ interface Spy {
   searches: number;
 }
 
-function spyTransport(): Spy {
-  const gateway = createGateway(makeDeps().deps);
+/** With `mandateRules` the real mandate rules decide the order instead of the stub. */
+function spyTransport(mandateRules = false): Spy {
+  const gateway = createGateway(makeDeps(mandateRules ? { policy: { evaluate } } : {}).deps);
   const spy: Omit<Spy, "transport"> = { orders: [], quoteJws: [], mandateJws: [], searches: 0 };
   const transport: AgentTransport = {
     searchCatalog: (request) => {
@@ -183,5 +185,19 @@ describe("runModelPurchase", () => {
 
     expect(result.steps[0].text).toBe("The Claude agent stopped: it ran out of time. The scripted agent takes over.");
     expect(result.status).toBe("confirmed");
+  });
+
+  it("is told what the offer misses against the buyer's words, and the order waits as the words asked", async () => {
+    const spy = spyTransport(true);
+    const { provider, seen } = fakeProvider([
+      () => call("search_catalog", { query: "Eila", need: { amount: 100, unit: "l" }, deliverBy: "2026-11-16" }),
+      () => call("request_quote", { lines: [{ productId: "464306", quantity: { amount: 100, unit: "l" } }], deliverBy: "2026-11-16" }),
+      (results) => call("place_order", { offerId: offerIdIn(results) }),
+    ]);
+    const result = await runModelPurchase("100 litres of Eila by Monday, ask me first", spy.transport, hooks, provider);
+
+    expect(seen[2][0].content).toContain("Against the buyer's words: Approval: asked a person approves before ordering");
+    expect(result.status).toBe("waiting");
+    expect(result.summary).toMatch(/approves before ordering/);
   });
 });

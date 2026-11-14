@@ -5,8 +5,8 @@
     {
       "id": "scenarios",
       "name": "Scenarios",
-      "passed": 19,
-      "total": 19,
+      "passed": 24,
+      "total": 24,
       "bar": ">=90%",
       "met": true,
       "cases": [
@@ -15,7 +15,7 @@
           "name": "1,000 l lactose-free milk",
           "pass": true,
           "evidence": "auto: 1000 x 464306 (1000 l); delivery 2026-11-16; audit verified",
-          "expected": "route auto; concept milk [lactose_free]; >= 1000 l, at most one lot more; delivery on time; audit sequence complete and verified",
+          "expected": "route auto; concept milk [lactose_free]; >= 1000 l, at most one lot more; delivery on time for 2026-11-16; audit sequence complete and verified",
           "actual": "auto (confirmed)"
         },
         {
@@ -23,7 +23,7 @@
           "name": "Finnish request",
           "pass": true,
           "evidence": "auto: 1000 x 464306 (1000 l); delivery 2026-11-16; audit verified",
-          "expected": "route auto; concept milk [lactose_free]; >= 1000 l, at most one lot more; delivery on time; audit sequence complete and verified",
+          "expected": "route auto; concept milk [lactose_free]; >= 1000 l, at most one lot more; delivery on time for 2026-11-16; audit sequence complete and verified",
           "actual": "auto (confirmed)"
         },
         {
@@ -31,7 +31,7 @@
           "name": "200 l milk",
           "pass": true,
           "evidence": "auto: 200 x 464306 (200 l); delivery 2026-11-16; audit verified",
-          "expected": "route auto; concept milk [lactose_free]; >= 200 l, at most one lot more; delivery on time; audit sequence complete and verified",
+          "expected": "route auto; concept milk [lactose_free]; >= 200 l, at most one lot more; delivery on time for 2026-11-16; audit sequence complete and verified",
           "actual": "auto (confirmed)"
         },
         {
@@ -39,7 +39,7 @@
           "name": "Over the per-order limit",
           "pass": true,
           "evidence": "approval: 3000 x 464306 (3000 l); delivery 2026-11-16; flagged spend.per_order:ask; audit verified",
-          "expected": "route approval; concept milk [lactose_free]; >= 3000 l, at most one lot more; delivery on time; flags spend.per_order; audit sequence complete and verified",
+          "expected": "route approval; concept milk [lactose_free]; >= 3000 l, at most one lot more; delivery on time for 2026-11-16; flags spend.per_order; audit sequence complete and verified",
           "actual": "approval (pending_approval)"
         },
         {
@@ -47,15 +47,15 @@
           "name": "Short stock, split covers need",
           "pass": true,
           "evidence": "auto: 1000 x 464401 (1000 l); delivery 2026-11-16; primary partial 51/1000, 2 alternatives; split 51 x 462775 (51 l) + 949 x 464401 (949 l) confirmed; audit verified; 462775 has 51 units in stock",
-          "expected": "route auto or approval; concept milk [lactose_free]; >= 1000 l, at most one lot more; delivery on time; audit sequence complete and verified",
+          "expected": "route auto or approval; concept milk [lactose_free]; >= 1000 l, at most one lot more; delivery on time for 2026-11-16; audit sequence complete and verified",
           "actual": "auto (confirmed)"
         },
         {
           "id": "6",
           "name": "Cut-off passed",
           "pass": true,
-          "evidence": "auto: 500 x 464306 (500 l); delivery 2026-11-16; primary cutoff_passed, ordering it blocked (offer.expiry:block,delivery.deadline:block); 3 on-time alternatives; audit verified",
-          "expected": "route auto or approval; concept milk [lactose_free]; >= 500 l, at most one lot more; delivery on time; audit sequence complete and verified",
+          "evidence": "auto: 500 x 464306 (500 l); delivery 2026-11-16; primary cutoff_passed, ordering it blocked (offer.expiry:block,delivery.deadline:block,match.confidence:ask); 3 on-time alternatives; audit verified",
+          "expected": "route auto or approval; concept milk [lactose_free]; >= 500 l, at most one lot more; delivery on time for 2026-11-16; audit sequence complete and verified",
           "actual": "auto (confirmed)"
         },
         {
@@ -63,7 +63,7 @@
           "name": "50 kg butter",
           "pass": true,
           "evidence": "auto: 100 x 464411 (50 kg); delivery 2026-11-16; audit verified",
-          "expected": "route auto; concept butter; >= 50 kg, at most one lot more; delivery on time; audit sequence complete and verified",
+          "expected": "route auto; concept butter; >= 50 kg, at most one lot more; delivery on time for 2026-11-16; audit sequence complete and verified",
           "actual": "auto (confirmed)"
         },
         {
@@ -71,7 +71,7 @@
           "name": "Oat drink keeps vegan",
           "pass": true,
           "evidence": "auto: 40 x 468465 (40 l); delivery 2026-11-16; audit verified",
-          "expected": "route auto or approval; concept oat_drink [vegan]; >= 40 l, at most one lot more; delivery on time; audit sequence complete and verified",
+          "expected": "route auto or approval; concept oat_drink [vegan]; >= 40 l, at most one lot more; delivery on time for 2026-11-16; audit sequence complete and verified",
           "actual": "auto (confirmed)"
         },
         {
@@ -118,8 +118,8 @@
           "id": "13",
           "name": "Tomorrow is Sunday",
           "pass": true,
-          "evidence": "approval: 100 x 464306 (100 l); delivery 2026-11-16; flagged delivery.deadline:ask; audit verified",
-          "expected": "route approval; concept milk [lactose_free]; >= 100 l, at most one lot more; delivery one day late; flags delivery.deadline; audit sequence complete and verified",
+          "evidence": "approval: 100 x 464306 (100 l); delivery 2026-11-16; flagged delivery.deadline:ask,match.confidence:ask; audit verified",
+          "expected": "route approval; concept milk [lactose_free]; >= 100 l, at most one lot more; delivery one day late for 2026-11-15; flags delivery.deadline; audit sequence complete and verified",
           "actual": "approval (pending_approval)"
         },
         {
@@ -127,7 +127,7 @@
           "name": "Over the weekly limit",
           "pass": true,
           "evidence": "approval: 1000 x 464306 (1000 l); delivery 2026-11-16; flagged spend.per_week:ask; audit verified; weekly limit set to 2,000 EUR; an earlier 1,000 l order this week",
-          "expected": "route approval; concept milk; >= 1000 l, at most one lot more; delivery on time; flags spend.per_week; audit sequence complete and verified",
+          "expected": "route approval; concept milk; >= 1000 l, at most one lot more; delivery on time for 2026-11-16; flags spend.per_week; audit sequence complete and verified",
           "actual": "approval (pending_approval)"
         },
         {
@@ -135,7 +135,7 @@
           "name": "Category outside mandate",
           "pass": true,
           "evidence": "approval: 20 x 462150 (20 kg); delivery 2026-11-16; flagged category.allowed:ask,dietary.allergens:ask; audit verified; no cleaning products in the recording; salmon is in fish, outside the mandate",
-          "expected": "route approval; concept salmon; >= 20 kg, at most one lot more; delivery on time; flags category.allowed; audit sequence complete and verified",
+          "expected": "route approval; concept salmon; >= 20 kg, at most one lot more; delivery on time for 2026-11-16; flags category.allowed; audit sequence complete and verified",
           "actual": "approval (pending_approval)"
         },
         {
@@ -143,7 +143,7 @@
           "name": "Same idempotency key twice",
           "pass": true,
           "evidence": "auto: 200 x 464306 (200 l); delivery 2026-11-16; 3 sends, 1 order; audit verified",
-          "expected": "route auto; concept milk [lactose_free]; >= 200 l, at most one lot more; delivery on time; audit sequence complete and verified",
+          "expected": "route auto; concept milk [lactose_free]; >= 200 l, at most one lot more; delivery on time for 2026-11-16; audit sequence complete and verified",
           "actual": "auto (confirmed)"
         },
         {
@@ -159,7 +159,47 @@
           "name": "First-time product",
           "pass": true,
           "evidence": "approval: 200 x 464306 (200 l); delivery 2026-11-16; flagged product.first_time:ask; audit verified",
-          "expected": "route approval; concept milk [lactose_free]; >= 200 l, at most one lot more; delivery on time; flags product.first_time; audit sequence complete and verified",
+          "expected": "route approval; concept milk [lactose_free]; >= 200 l, at most one lot more; delivery on time for 2026-11-16; flags product.first_time; audit sequence complete and verified",
+          "actual": "approval (pending_approval)"
+        },
+        {
+          "id": "19",
+          "name": "Words say wait for approval",
+          "pass": true,
+          "evidence": "approval: 200 x 464306 (200 l); delivery 2026-11-16; flagged match.confidence:ask; audit verified",
+          "expected": "route approval; concept milk [lactose_free]; >= 200 l, at most one lot more; delivery on time for 2026-11-16; flags match.confidence; agent waiting; audit sequence complete and verified",
+          "actual": "approval (pending_approval)"
+        },
+        {
+          "id": "20",
+          "name": "Words set a budget",
+          "pass": true,
+          "evidence": "approval: 80 x 464306 (80 l); delivery 2026-11-16; flagged match.confidence:ask; audit verified; the offer is about 92 EUR with VAT",
+          "expected": "route approval; concept milk [lactose_free]; >= 80 l, at most one lot more; delivery on time for 2026-11-16; flags match.confidence; audit sequence complete and verified",
+          "actual": "approval (pending_approval)"
+        },
+        {
+          "id": "21",
+          "name": "Finnish budget and wait",
+          "pass": true,
+          "evidence": "approval: 80 x 464306 (80 l); delivery 2026-11-16; flagged match.confidence:ask; audit verified",
+          "expected": "route approval; concept milk [lactose_free]; >= 80 l, at most one lot more; delivery on time for 2026-11-16; flags match.confidence; audit sequence complete and verified",
+          "actual": "approval (pending_approval)"
+        },
+        {
+          "id": "22",
+          "name": "Agent quotes the wrong milk",
+          "pass": true,
+          "evidence": "blocked: 1 x 469477 (1 l); flagged match.confidence:block; audit verified; the agent quotes one litre of ordinary milk with high confidence",
+          "expected": "route blocked; concept milk; flags match.confidence; agent blocked; audit sequence complete and verified",
+          "actual": "blocked (blocked)"
+        },
+        {
+          "id": "23",
+          "name": "Words not understood",
+          "pass": true,
+          "evidence": "approval: 200 x 464306 (200 l); delivery 2026-11-16; flagged match.confidence:ask; audit verified",
+          "expected": "route approval; concept milk [lactose_free]; >= 200 l, at most one lot more; delivery on time for 2026-11-16; flags match.confidence; audit sequence complete and verified",
           "actual": "approval (pending_approval)"
         }
       ]
@@ -167,8 +207,8 @@
     {
       "id": "guardrails",
       "name": "Guardrails",
-      "passed": 20,
-      "total": 20,
+      "passed": 22,
+      "total": 22,
       "bar": "100%",
       "met": true,
       "cases": [
@@ -331,14 +371,30 @@
           "evidence": "200,200,200,404,400,201; anonymous order blocked by mandate.validity",
           "expected": "no 5xx; refused or recorded as data; nothing confirmed",
           "actual": "200,200,200,404,400,201; anonymous order blocked by mandate.validity"
+        },
+        {
+          "id": "G21",
+          "name": "Another buyer's offer by id",
+          "pass": true,
+          "evidence": "other buyer 404 not_found; missing 404; own buyer 200",
+          "expected": "404 for another buyer's token, as for a missing offer; 200 for the own buyer's token",
+          "actual": "other buyer 404 not_found; missing 404; own buyer 200"
+        },
+        {
+          "id": "G22",
+          "name": "Approval after the mandate changed",
+          "pass": true,
+          "evidence": "approval answered blocked by dietary.allergens; order blocked, dietary.allergens block",
+          "expected": "the approver's approval of a waiting order is stopped once the mandate excludes milk; the order is blocked, not confirmed",
+          "actual": "approval answered blocked by dietary.allergens; order blocked, dietary.allergens block"
         }
       ]
     },
     {
       "id": "trust",
       "name": "Trust",
-      "passed": 14,
-      "total": 14,
+      "passed": 16,
+      "total": 16,
       "bar": "100%",
       "met": true,
       "cases": [
@@ -453,6 +509,22 @@
           "evidence": "origin: signature does not match, order blocked; label: signature does not match, order blocked",
           "expected": "detected; ordering it is blocked by the signature check",
           "actual": "origin: signature does not match, order blocked; label: signature does not match, order blocked"
+        },
+        {
+          "id": "T15",
+          "name": "Earlier entry rewritten in a longer log",
+          "pass": true,
+          "evidence": "rewrote from 6, 13 entries for 11 remembered: Entry 11 is not the one recorded earlier, so the log was rewritten from there on.",
+          "expected": "detected against the remembered head, whatever the new length",
+          "actual": "rewrote from 6, 13 entries for 11 remembered: Entry 11 is not the one recorded earlier, so the log was rewritten from there on."
+        },
+        {
+          "id": "T16",
+          "name": "Audit tail cut, then extended",
+          "pass": true,
+          "evidence": "kept 9, added 3, 12 entries for 11 remembered: Entry 11 is not the one recorded earlier, so the log was rewritten from there on.",
+          "expected": "detected against the remembered head",
+          "actual": "kept 9, added 3, 12 entries for 11 remembered: Entry 11 is not the one recorded earlier, so the log was rewritten from there on."
         }
       ]
     },
@@ -524,9 +596,9 @@
           "id": "O8",
           "name": "Outside agent from llms.txt only",
           "pass": true,
-          "evidence": "/api/v1/products/search -> 464306; /api/v1/quotes -> full; /api/v1/mandate -> jws; /api/v1/orders -> confirmed",
-          "expected": "search, quote and order the milk; order confirmed",
-          "actual": "/api/v1/products/search -> 464306; /api/v1/quotes -> full; /api/v1/mandate -> jws; /api/v1/orders -> confirmed"
+          "evidence": "POST /api/v1/products/search -> 464306; POST /api/v1/quotes -> full; GET /api/v1/mandate -> jws; POST /api/v1/orders -> confirmed",
+          "expected": "over HTTP, the REST flow in llms.txt searches, quotes and orders the milk; order confirmed",
+          "actual": "POST /api/v1/products/search -> 464306; POST /api/v1/quotes -> full; GET /api/v1/mandate -> jws; POST /api/v1/orders -> confirmed"
         }
       ]
     }

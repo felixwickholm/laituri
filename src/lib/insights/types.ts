@@ -1,4 +1,4 @@
-import type { AgentSuspension, DemandOutcome, Order, Quantity, SignedOffer } from "@/lib/contracts";
+import type { AgentSuspension, AuditEntry, DemandOutcome, Order, Quantity, SignedOffer } from "@/lib/contracts";
 import type { DemandRecord } from "@/lib/demand/types";
 import type { Activity } from "@/lib/store/types";
 
@@ -24,6 +24,8 @@ export interface InsightInput {
   requests: DemandRecord[];
   activity: Activity[];
   suspensions: AgentSuspension[];
+  /** The signed log; the overview reads which quote issued each alternative offer. */
+  audit: AuditEntry[];
 }
 
 export interface Party {

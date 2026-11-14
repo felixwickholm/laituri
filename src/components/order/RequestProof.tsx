@@ -1,8 +1,8 @@
-import { Check, X } from "lucide-react";
+import { Check, CircleQuestionMark, X } from "lucide-react";
 import type { Order } from "@/lib/contracts";
 import { askedLine, matchedFacts, offeredLine } from "@/lib/console/format/proof";
 
-/** The request beside the signed offer, with a mark on each fact that must match. */
+/** The request beside the signed offer, with the wholesaler's mark on each requirement: matches, does not match or not checked. */
 export function RequestProof({ order }: { order: Order }) {
   const facts = matchedFacts(order);
   return (
@@ -12,9 +12,9 @@ export function RequestProof({ order }: { order: Order }) {
         <p className="asked">{askedLine(order.offer)}</p>
         <p className="offered">{offeredLine(order.offer)}</p>
         <ul className="facts">
-          {facts.map((fact) => (
-            <li key={fact.label} data-ok={fact.ok}>
-              {fact.ok ? <Check aria-label="Matches" /> : <X aria-label="Does not match" />}
+          {facts.map((fact, index) => (
+            <li key={`${fact.label}-${index}`} data-ok={fact.ok} data-result={fact.result}>
+              {fact.result === "met" ? <Check aria-label="Matches" /> : fact.result === "unmet" ? <X aria-label="Does not match" /> : <CircleQuestionMark aria-label="Not checked" />}
               <span className="name">{fact.label}</span>
               <span className="value">{fact.detail}</span>
             </li>

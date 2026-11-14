@@ -8,6 +8,7 @@ import { Checks } from "../support/checks";
 import { mandate, placeOrder } from "../support/flow";
 import { changeOneByte } from "../support/jws";
 import { get } from "../support/router";
+import { rewriteLog } from "../support/rewrite";
 import { buildTrail, verifyAs, verifyEntries, type Trail } from "../support/trail";
 
 type Body = (trail: Trail, checks: Checks) => Promise<string>;
@@ -137,6 +138,21 @@ const CASES: EvalCase[] = [
     }
     checks.expect(offer.offer.lines.every((line) => line.facts !== undefined), "the signed offer carries no product facts");
     return outcomes.join("; ");
+  }),
+  trustCase("T15", "Earlier entry rewritten in a longer log", "detected against the remembered head, whatever the new length", async ({ entries, jwks, head }, checks) => {
+    const at = middle(entries).seq;
+    const rewritten = await rewriteLog(entries, at - 1, entries.length - at + 3);
+    checks.expect((await verifyEntries(rewritten, jwks)).valid, "the rewritten chain should be internally consistent");
+    const verification = await verifyEntries(rewritten, jwks, head);
+    checks.expect(!verification.valid && verification.brokenAt === head.size, `brokenAt ${verification.brokenAt}, expected ${head.size}`);
+    return `rewrote from ${at}, ${rewritten.length} entries for ${head.size} remembered: ${verification.reason}`;
+  }),
+  trustCase("T16", "Audit tail cut, then extended", "detected against the remembered head", async ({ entries, jwks, head }, checks) => {
+    const extended = await rewriteLog(entries, entries.length - 2, 3);
+    checks.expect((await verifyEntries(extended, jwks)).valid, "the extended chain should be internally consistent");
+    const verification = await verifyEntries(extended, jwks, head);
+    checks.expect(!verification.valid, "a log cut and extended past the remembered head still verifies");
+    return `kept ${entries.length - 2}, added 3, ${extended.length} entries for ${head.size} remembered: ${verification.reason}`;
   }),
 ];
 

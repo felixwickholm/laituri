@@ -66,6 +66,58 @@ describe("console session", () => {
     expect((await off.json()).code).toBe("demo_access_off");
   });
 
+  it("ends demo sessions already issued once demo access is turned off", async () => {
+    const cookie = await demoCookie();
+    process.env.LAITURI_DEMO_ACCESS = "off";
+    expect(await readSession(cookie)).toMatchObject({ signedIn: false, demoAccess: false });
+    const body = { limits: { perOrder: { amount: 1400, currency: "EUR" } } };
+    const refused = await mandate.PUT(jsonRequest("/api/v1/mandate", { method: "PUT", body, headers: { cookie } }));
+    expect(refused.status).toBe(403);
+    expect((await refused.json()).code).toBe("approver_sign_in_required");
+  });
+
+  it("keeps a demo session to the primary buyer, whatever buyer the call names", async () => {
+    const cookie = await demoCookie();
+    const kaislaBefore = (await gateway().getMandate(BUYER_IDS.kaisla)).mandate;
+    const body = { limits: { perOrder: { amount: 1400, currency: "EUR" } } };
+    const url = `/api/v1/mandate?buyer=${encodeURIComponent(BUYER_IDS.kaisla)}`;
+    expect((await mandate.PUT(jsonRequest(url, { method: "PUT", body, headers: { cookie } }))).status).toBe(200);
+    expect((await gateway().getMandate(BUYER_IDS.kaisla)).mandate.version).toBe(kaislaBefore.version);
+    expect((await gateway().getMandate(BUYER_IDS.nordicHarbour)).mandate.limits.perOrder.amount).toBe(1400);
+  });
+
+  it.skipIf(!hasFixtures)("cannot decide another buyer's order in a demo session", async () => {
+    const kaisla = { id: "agent:kaisla-menu-planner", name: "Kaisla menu planner", buyer: { id: BUYER_IDS.kaisla, name: "Kaisla School Kitchens" } };
+    const offer = await gateway().requestQuote(kaisla, {
+      lines: [{ productId: MILK.productId, quantity: { amount: 1000, unit: "l" } }],
+      deliverBy: MILK.deliverBy,
+    });
+    const { jws } = await gateway().getMandate(BUYER_IDS.kaisla);
+    const waiting = await gateway().placeOrder(kaisla, { offerJws: offer.primary.jws, mandateJws: jws, idempotencyKey: "demo-other-buyer-1" });
+    expect(waiting.status).toBe("pending_approval");
+    const cookie = await demoCookie();
+    const response = await decide.POST(
+      jsonRequest(`/api/v1/approvals/${waiting.id}`, { body: { decision: "approved" }, headers: { cookie } }),
+      params({ orderId: waiting.id }),
+    );
+    expect(response.status).toBe(404);
+    expect((await gateway().listOrders(BUYER_IDS.kaisla)).find((order) => order.id === waiting.id)?.status).toBe("pending_approval");
+  });
+
+  it("signs in with the passcode while demo access is on, and while it is off", async () => {
+    for (const access of ["on", "off"]) {
+      process.env.LAITURI_DEMO_ACCESS = access;
+      const response = await signIn({ passcode: "open-sesame" });
+      expect(await response.json()).toMatchObject({ signedIn: true, demo: false, mode: "passcode", demoAccess: access === "on" });
+      const cookie = response.headers.get("set-cookie")!.split(";")[0];
+      const body = { limits: { perOrder: { amount: 1400, currency: "EUR" } } };
+      expect((await mandate.PUT(jsonRequest("/api/v1/mandate", { method: "PUT", body, headers: { cookie } }))).status).toBe(200);
+      const entry = (await gateway().auditLog()).at(-1);
+      expect(entry?.event).toBe("mandate.updated");
+      expect(entry?.data).not.toHaveProperty("via");
+    }
+  });
+
   it("signs in another buyer's approver with the passcode, not flagged as demo", async () => {
     const body = (await (await signIn({ passcode: "open-sesame", buyer: BUYER_IDS.laine })).json()) as ConsoleSession;
     expect(body).toMatchObject({ signedIn: true, demo: false, approver: { name: "Sofia Laine, Owner" }, buyer: { name: "Ravintola Laine" } });

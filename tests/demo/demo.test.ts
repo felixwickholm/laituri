@@ -36,6 +36,15 @@ describe("tamperAudit", () => {
     expect((await verifyAuditLog()).valid).toBe(true);
   });
 
+  it("leaves the newest entry alone, so the service keeps writing while the edit is shown", async () => {
+    await appendAudit({ actor, event: "order.requested", summary: "Asked.", data: { totals: { net: { amount: 10 }, gross: { amount: 12 } } } });
+    await appendAudit({ actor, event: "order.confirmed", summary: "Confirmed.", data: { totals: { net: { amount: 10 }, gross: { amount: 12 } } } });
+    const { seq } = await tamperAudit();
+    expect(seq).toBe(1);
+    await expect(appendAudit({ actor, event: "catalog.searched", summary: "Searched." })).resolves.toMatchObject({ seq: 3 });
+    expect(await restoreAudit()).toBe(true);
+  });
+
   it("refuses an empty log", async () => {
     await expect(tamperAudit()).rejects.toThrow("The audit log is empty");
   });

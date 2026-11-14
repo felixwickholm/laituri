@@ -109,6 +109,29 @@ describe("quote", () => {
     expect(primary.offer.notes[0]).toBe("Valio Eila 1 l arrives on Tuesday 17 Nov, after the requested Monday 16 Nov.");
   });
 
+  it("counts two lines of one product against one stock: two 40-unit lines against 51 in stock are not both available", async () => {
+    const { deps } = makeDeps();
+    const twoLines: QuoteRequest = {
+      lines: [
+        { productId: "462775", quantity: { amount: 40, unit: "sales_unit" } },
+        { productId: "462775", quantity: { amount: 40, unit: "sales_unit" } },
+      ],
+      deliverBy: DELIVER_BY,
+    };
+    const { primary, alternatives } = await quote(twoLines, ctx, deps);
+
+    expect(primary.offer.fulfilment).toBe("partial");
+    expect(primary.offer.lines.map((line) => [line.quantity, line.availability.status])).toEqual([[40, "available"], [11, "partial"]]);
+    expect(primary.offer.lines.reduce((sum, line) => sum + line.quantity, 0)).toBeLessThanOrEqual(51);
+    for (const { signed } of alternatives) {
+      const fromStock = signed.offer.lines.filter((line) => line.productId === "462775").reduce((sum, line) => sum + line.quantity, 0);
+      expect(fromStock).toBeLessThanOrEqual(51);
+      expect(signed.offer.lines.reduce((sum, line) => sum + (line.content?.amount ?? 0), 0)).toBeGreaterThanOrEqual(80);
+    }
+    const better = alternatives.find((a) => a.tier === "better")!;
+    expect(better.signed.offer.lines.map((line) => [line.productId, line.quantity])).toEqual([["462775", 40], ["462775", 11], ["464306", 29]]);
+  });
+
   it("turns an upstream failure into a typed error", async () => {
     const { deps, upstream } = makeDeps();
     upstream.fail = true;

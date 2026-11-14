@@ -23,7 +23,10 @@ Laituri is the agent front door for a food-service wholesaler: a customer's own 
 
 - An agent never signs or approves. Only the buyer key signs mandates, only the approver key signs approvals.
 - An offer is single use and expires; an order must carry it unchanged.
-- Every call that searches, quotes, orders, approves or changes a mandate goes through the gateway. Only two read-only routes read the store directly: `GET /api/v1/offers/{id}` and `/api/v1/health`.
+- Every call that searches, quotes, orders, approves or changes a mandate goes through the gateway. Three read-only routes bypass it: `GET /api/v1/offers/{id}` reads the store, `/api/v1/audit/checkpoint` signs through the audit module and `/api/v1/health` reads status.
+- A suspended agent's credential is refused with 403 `agent_suspended` on every route, these included: `route()` in `src/lib/http/handler.ts` checks it before the handler runs, and MCP checks it before any method. Without a credential, public documents stay readable.
+- An agent token reads only its own buyer's orders, offers, mandate and approvals; another buyer's record answers 404 as if missing. The audit log is one public chain: every reader sees every buyer's entries and their summaries (products, quantities, totals), so the whole chain can be verified.
+- An order is confirmed alone only when the signed offer meets every requirement in the buyer's words (`offer.requestCheck`, `src/lib/request`); an approval re-checks the mandate in force.
 - The upstream API key stays on the server.
 - No number in README.md or docs/ is typed by hand: it comes from `src/lib/evidence/facts.json` through `npm run evidence`.
 - Tests and evals use recorded data and never call a paid service.

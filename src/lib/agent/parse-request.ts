@@ -1,4 +1,5 @@
 import type { Quantity } from "@/lib/contracts";
+import { readInstructions } from "@/lib/request/instructions";
 import { addDays, helsinkiDate, isValidDate, nextWeekday, nextWorkingDay } from "./dates";
 import type { ParsedRequest } from "./types";
 
@@ -126,26 +127,39 @@ function findProductCode(tokens: Token[]): string | undefined {
   return token.text.replace("#", "");
 }
 
-function phraseOf(tokens: Token[]): string {
-  const words = tokens.filter((t) => !t.used);
-  while (words.length && FILLER.has(words[0].text)) words.shift();
-  while (words.length && FILLER.has(words[words.length - 1].text)) words.pop();
-  return words.map((t) => t.raw).join(" ");
+function trimmed(words: Token[]): string {
+  const kept = [...words];
+  while (kept.length && FILLER.has(kept[0].text)) kept.shift();
+  while (kept.length && FILLER.has(kept[kept.length - 1].text)) kept.pop();
+  return kept.map((t) => t.raw).join(" ");
 }
 
-/** Reads quantity, product and delivery date from a buyer's request in English or Finnish. */
+/** The product words, and what the buyer said it is for: "milk for the breakfast buffets". */
+function phraseOf(tokens: Token[]): { phrase: string; purpose?: string } {
+  const words = tokens.filter((t) => !t.used);
+  const start = words.findIndex((t) => !FILLER.has(t.text));
+  const forAt = words.findIndex((t, i) => i > start && start >= 0 && t.text === "for");
+  if (forAt === -1) return { phrase: trimmed(words) };
+  const purpose = trimmed(words.slice(forAt + 1));
+  return { phrase: trimmed(words.slice(0, forAt)), ...(purpose ? { purpose } : {}) };
+}
+
+/** Reads quantity, product, delivery date, a spending ceiling and an order to wait, in English or Finnish. */
 export function parseRequest(text: string, now: Date): ParsedRequest {
   const today = helsinkiDate(now);
-  const tokens = tokenize(text);
+  const instructions = readInstructions(text);
+  const tokens = tokenize(instructions.rest);
   const stated = findDate(tokens, today);
   const quantity = findQuantity(tokens);
   const productId = findProductCode(tokens);
   return {
     text,
     quantity,
-    phrase: phraseOf(tokens),
+    ...phraseOf(tokens),
     productId,
     deliverBy: stated ?? nextWorkingDay(today),
     deliverByStated: stated !== undefined,
+    ...(instructions.budget !== undefined ? { budget: instructions.budget } : {}),
+    waitForPerson: instructions.waitForPerson,
   };
 }

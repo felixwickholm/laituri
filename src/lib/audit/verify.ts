@@ -74,22 +74,28 @@ export async function verifyChain(
     }
     prev = entry;
   }
-  const head = prev?.hash ?? GENESIS_HASH;
-  if (expected && entries.length < expected.size) {
+  const inconsistency = expected ? prefixInconsistency(entries, expected) : undefined;
+  if (inconsistency) return { valid: false, entries: entries.length, ...inconsistency };
+  return { valid: true, entries: entries.length, head: prev?.hash };
+}
+
+/**
+ * A log may only grow: the entry at the remembered size must still carry the remembered hash,
+ * whatever the log's length now. Run after the chain itself verified, so that one entry vouches for all before it.
+ */
+function prefixInconsistency(entries: AuditEntry[], expected: LogHead): { brokenAt: number; reason: string } | undefined {
+  if (expected.size === 0) return undefined;
+  if (entries.length < expected.size) {
     return {
-      valid: false,
-      entries: entries.length,
       brokenAt: entries.length + 1,
       reason: `The log holds ${entries.length} entries but ${expected.size} were recorded. The newest entries were removed.`,
     };
   }
-  if (expected && entries.length === expected.size && head !== expected.head) {
+  if (entries[expected.size - 1].hash !== expected.head) {
     return {
-      valid: false,
-      entries: entries.length,
-      brokenAt: entries.length,
-      reason: "The newest entry is not the one that was recorded last.",
+      brokenAt: expected.size,
+      reason: `Entry ${expected.size} is not the one recorded earlier, so the log was rewritten from there on.`,
     };
   }
-  return { valid: true, entries: entries.length, head: prev?.hash };
+  return undefined;
 }

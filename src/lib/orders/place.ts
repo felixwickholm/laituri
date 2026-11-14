@@ -5,9 +5,9 @@ import { seededMark } from "@/lib/provenance";
 import { confirmOrder } from "./confirm";
 import { serial } from "./lock";
 import { orderedProductIds, productsFor, weekSpendNet } from "./context";
-import { decodeUnverified, readOffer } from "./read-offer";
+import { decodeUnverified, readOffer, singleUse } from "./read-offer";
 import { SUPPLIER_ACTOR, agentActor, nonPassing, orderRefs, summaries } from "./summaries";
-import type { Caller, MandateRead, OfferRead, OrderDeps, StoredOrder } from "./types";
+import type { Caller, MandateRead, OrderDeps, StoredOrder } from "./types";
 
 export const UNKNOWN_AGENT = { id: "unknown", name: "Unknown agent" };
 /** The offer names no buyer, so an order without a valid mandate cannot say whose it is. */
@@ -53,13 +53,6 @@ export async function placeOrder(request: PlaceOrderRequest, deps: OrderDeps, ca
   } finally {
     inFlight.delete(request.idempotencyKey);
   }
-}
-
-/** A fixed-price offer covers one order. A second order needs a new quote, so stock is not promised twice. */
-function singleUse<T extends OfferRead>(read: T, orders: Order[]): T {
-  if (!read.valid || !read.offer) return read;
-  const used = orders.find((o) => o.offer.id === read.offer?.id && (o.status === "confirmed" || o.status === "pending_approval"));
-  return used ? { ...read, valid: false, reason: `This offer was already used for order ${used.id}. Ask for a new quote.` } : read;
 }
 
 /** Only the mandate in force counts. An older copy stays correctly signed after the buyer tightens the limits. */

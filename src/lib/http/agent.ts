@@ -72,6 +72,15 @@ export async function resolveAgent(headers: Headers, call: string, mcpClient?: s
   return agent;
 }
 
+/**
+ * A suspended agent's credential is refused on every route, public documents included, and the refusal is logged.
+ * A call without a token, or with a token the service does not know, is left to the route.
+ */
+export async function refuseSuspendedCredential(request: Request): Promise<void> {
+  const token = bearerToken(request.headers);
+  if (token && DEMO_TOKENS[token]) await resolveAgent(request.headers, restCall(request));
+}
+
 /** Demo controls (start a scene, suspend an agent) are open to visitors but never to an agent credential. */
 export function refuseAgents(headers: Headers): void {
   if (bearerToken(headers)) {

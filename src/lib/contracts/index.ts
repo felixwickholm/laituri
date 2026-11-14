@@ -3,6 +3,7 @@ export * from "./facts";
 export * from "./product";
 export * from "./mandate";
 export * from "./policy";
+export * from "./request-check";
 export * from "./offer";
 export * from "./order";
 export * from "./audit";

@@ -155,7 +155,9 @@ async function approverSession(headers: Headers): Promise<ApproverSession | unde
     typeof claims.buyer === "string" &&
     isKnownBuyer(claims.buyer) &&
     typeof claims.exp === "number" &&
-    claims.exp * 1000 > now().getTime();
+    claims.exp * 1000 > now().getTime() &&
+    // Turning demo access off also ends the demo sessions already issued.
+    (claims.demo !== true || demoAccessEnabled());
   if (!isSession || !claims) return undefined;
   const { mandate } = await currentMandate(claims.buyer);
   return {

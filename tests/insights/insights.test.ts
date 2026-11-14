@@ -4,6 +4,7 @@ import {
   connectedAgents,
   dailySeries,
   firedRules,
+  medianSecondsRequestToConfirmed,
   offerStats,
   orderOutcome,
   orderStats,
@@ -12,7 +13,7 @@ import {
   topConcepts,
   unmetRequests,
 } from "@/lib/insights";
-import { HARBOUR, KAISLA, KAISLA_AGENT, NOW, activity, order, record, signedOffer } from "./fixtures";
+import { HARBOUR, KAISLA, KAISLA_AGENT, NOW, activity, offerIssued, order, record, signedOffer } from "./fixtures";
 
 const ASK_LIMIT = { rule: "spend.per_order" as const, status: "ask" as const, message: "Order total 1,616.00 EUR is over the 1,500.00 EUR limit.", observed: "1,616.00 EUR", limit: "1,500.00 EUR" };
 const BLOCK_NUTS = { rule: "dietary.allergens" as const, status: "block" as const, message: "Almond drink contains nuts.", observed: "nuts", limit: "exclude peanut, nuts" };
@@ -127,6 +128,49 @@ describe("offers", () => {
   });
 });
 
+describe("request to confirmed order", () => {
+  const LIVE = [
+    record({ id: "s1", requestId: "r1", at: "2026-11-14T06:00:00.000Z" }),
+    record({ id: "q1", requestId: "r1", at: "2026-11-14T06:00:30.000Z", kind: "quote", offerId: "off_r1" }),
+    record({ id: "q2", requestId: "r2", at: "2026-11-14T06:10:00.000Z", kind: "quote", offerId: "off_r2" }),
+    record({ id: "s3", requestId: "r3", at: "2026-11-14T06:20:00.000Z" }),
+    record({ id: "q3", requestId: "r3", at: "2026-11-14T06:20:20.000Z", kind: "quote", offerId: "off_r3" }),
+  ];
+  const SEEDED = [record({ id: "q9", requestId: "r9", at: "2026-11-10T06:00:00.000Z", kind: "quote", offerId: "off_r9", seeded: true })];
+  const AUDIT = [offerIssued(1, "off_r2", ["off_r2_alt"]), offerIssued(2, "off_r9", ["off_r9_alt"])];
+
+  it("measures from the first search, or the first quote, to each order confirmed without a person", () => {
+    const orders = [
+      order({ id: "a", status: "confirmed", net: 10, offerId: "off_r1", createdAt: "2026-11-14T06:01:30.000Z" }),
+      order({ id: "b", status: "confirmed", net: 10, offerId: "off_r2_alt", createdAt: "2026-11-14T06:10:40.000Z" }),
+      order({ id: "c", status: "confirmed", net: 10, offerId: "off_r3", createdAt: "2026-11-14T06:21:01.000Z" }),
+    ];
+    // 90 s from r1's search, 40 s from r2's quote via the alternative it issued, 61 s from r3's search.
+    expect(medianSecondsRequestToConfirmed(LIVE, orders, AUDIT)).toBe(61);
+  });
+
+  it("leaves out approved, waiting and blocked orders and everything seeded", () => {
+    const orders = [
+      order({ id: "a", status: "confirmed", net: 10, offerId: "off_r1", createdAt: "2026-11-14T06:01:30.000Z" }),
+      order({ id: "approved", status: "confirmed", approved: true, net: 10, offerId: "off_r3", createdAt: "2026-11-14T08:00:00.000Z" }),
+      order({ id: "waiting", status: "pending_approval", net: 10, offerId: "off_r3", createdAt: "2026-11-14T08:00:00.000Z" }),
+      order({ id: "blocked", status: "blocked", net: 10, offerId: "off_r3", createdAt: "2026-11-14T08:00:00.000Z" }),
+      order({ id: "seeded-order", status: "confirmed", net: 10, offerId: "off_r3", createdAt: "2026-11-14T08:00:00.000Z", seeded: true }),
+      order({ id: "seeded-request", status: "confirmed", net: 10, offerId: "off_r9_alt", createdAt: "2026-11-14T08:00:00.000Z" }),
+      order({ id: "unknown-offer", status: "confirmed", net: 10, offerId: "off_elsewhere", createdAt: "2026-11-14T08:00:00.000Z" }),
+    ];
+    expect(medianSecondsRequestToConfirmed([...LIVE, ...SEEDED], orders, AUDIT)).toBe(90);
+    expect(medianSecondsRequestToConfirmed(SEEDED, orders, AUDIT)).toBeUndefined();
+  });
+
+  it("appears in the overview only once there is something to measure", () => {
+    const input = { now: NOW, offers: [], activity: [], suspensions: [], audit: AUDIT, requests: LIVE };
+    const measured = supplierOverview({ ...input, orders: [order({ id: "a", status: "confirmed", net: 10, offerId: "off_r1", createdAt: "2026-11-14T06:01:30.000Z" })] });
+    expect(SupplierOverview.parse(measured).orders.medianSecondsRequestToConfirmed).toBe(90);
+    expect(supplierOverview({ ...input, orders: [] }).orders).not.toHaveProperty("medianSecondsRequestToConfirmed");
+  });
+});
+
 describe("rules", () => {
   it("counts the rules that held or stopped orders, without the buyer's limits", () => {
     const rules = firedRules(ORDERS);
@@ -149,9 +193,9 @@ describe("daily series", () => {
 
 describe("supplier overview", () => {
   it("matches the published schema and says when seeded history is included", () => {
-    const overview = supplierOverview({ now: NOW, orders: ORDERS, offers: [], requests: REQUESTS, activity: [], suspensions: [] });
+    const overview = supplierOverview({ now: NOW, orders: ORDERS, offers: [], requests: REQUESTS, activity: [], suspensions: [], audit: [] });
     expect(SupplierOverview.safeParse(overview).success).toBe(true);
     expect(overview).toMatchObject({ generatedAt: NOW.toISOString(), includesSeeded: true, demand: { requests: 4 } });
-    expect(supplierOverview({ now: NOW, orders: [], offers: [], requests: [], activity: [], suspensions: [] }).includesSeeded).toBe(false);
+    expect(supplierOverview({ now: NOW, orders: [], offers: [], requests: [], activity: [], suspensions: [], audit: [] }).includesSeeded).toBe(false);
   });
 });

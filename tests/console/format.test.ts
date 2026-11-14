@@ -65,21 +65,41 @@ describe("request versus offer", () => {
     expect(offeredShort(offer)).toBe("Offered: 1,800 × Arki Eila 1 l · Mon 16 Nov");
   });
 
-  it("marks each matched fact", () => {
-    const facts = matchedFacts(pendingOrder());
-    expect(facts.map((fact) => [fact.label, fact.ok])).toEqual([
-      ["Quantity", true],
-      ["Claim", true],
-      ["Date", true],
-      ["Price", true],
+  it("renders exactly the wholesaler's signed comparisons, with 'not checked' as its own mark", () => {
+    const order = pendingOrder();
+    order.offer.matchConfidence = "high";
+    order.offer.requestCheck = [
+      { requirement: "product", asked: "milk", offered: "Valio Arki Eila 1 l", result: "met", certain: false },
+      { requirement: "claim", asked: "lactose-free", offered: "not lactose-free: Valio Arki Eila 1 l", result: "unmet", certain: true },
+      { requirement: "quantity", asked: "1,800 l", offered: "51 l", result: "unmet", certain: false },
+      { requirement: "wording", asked: "\"lapland\"", offered: "\"lapland\" not understood", result: "unchecked", certain: false },
+    ];
+    const facts = matchedFacts(order);
+    expect(facts.map((fact) => [fact.label, fact.result, fact.ok])).toEqual([
+      ["Product", "met", true],
+      ["Claim", "unmet", false],
+      ["Quantity", "unmet", false],
+      ["Other words", "unchecked", false],
     ]);
-    expect(facts[3].detail).toBe("€1,818.00 net, fixed until 09:15");
+    expect(facts[1].detail).toBe("Asked lactose-free · offered not lactose-free: Valio Arki Eila 1\u00a0l");
+    expect(facts[2].detail).toBe("Asked 1,800\u00a0l · offered 51\u00a0l");
+    expect(facts[3].detail).toBe("Not checked: \"lapland\" not understood");
+    expect(facts.map((fact) => fact.label)).not.toContain("Price");
   });
 
-  it("flags a short delivery", () => {
+  it("does not take a high confidence or the stock figure as a match", () => {
     const order = pendingOrder();
-    order.offer.lines[0].availability.available = 51;
-    expect(matchedFacts(order)[0]).toMatchObject({ ok: false, detail: "51 of 1,800 available" });
+    order.offer.lines[0].availability.available = 1800;
+    order.offer.requestCheck = [{ requirement: "quantity", asked: "1,000 l", offered: "1 l", result: "unmet", certain: true }];
+    expect(matchedFacts(order)).toEqual([expect.objectContaining({ label: "Quantity", result: "unmet", ok: false })]);
+  });
+
+  it("says nothing was compared when the agent sent no words", () => {
+    const order = pendingOrder();
+    delete order.offer.requestCheck;
+    expect(matchedFacts(order)).toEqual([
+      { label: "Request", result: "unchecked", ok: false, detail: "Not checked: the agent sent no buyer's words to compare" },
+    ]);
   });
 });
 

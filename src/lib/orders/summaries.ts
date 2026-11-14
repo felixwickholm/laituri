@@ -61,4 +61,9 @@ export const summaries = {
 
   expired: (order: Order) =>
     `The offer for ${what(order)} expired before approval, so the order was rejected.`,
+
+  stoppedAtApproval(order: Order): string {
+    const reason = concerns(order.decision, "block")[0]?.message;
+    return `The approval of ${what(order)} was stopped: the mandate in force no longer allows it.${reason ? ` ${reason}` : ""}`;
+  },
 };

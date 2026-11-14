@@ -1,4 +1,4 @@
-import { Offer } from "@/lib/contracts";
+import { Offer, type Order } from "@/lib/contracts";
 import { ValidationError } from "@/lib/gateway/errors";
 import type { OfferRead, OrderDeps } from "./types";
 
@@ -30,4 +30,11 @@ export async function readOffer(jws: string, deps: Pick<OrderDeps, "trust">): Pr
     offer: parsed.data,
     reason: verified.reason ?? "The wholesaler's signature on the offer does not match its content.",
   };
+}
+
+/** A fixed-price offer covers one order. A second order needs a new quote, so stock is not promised twice. */
+export function singleUse<T extends OfferRead>(read: T, orders: Order[]): T {
+  if (!read.valid || !read.offer) return read;
+  const used = orders.find((o) => o.offer.id === read.offer?.id && (o.status === "confirmed" || o.status === "pending_approval"));
+  return used ? { ...read, valid: false, reason: `This offer was already used for order ${used.id}. Ask for a new quote.` } : read;
 }

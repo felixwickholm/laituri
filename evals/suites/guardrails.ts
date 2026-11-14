@@ -5,6 +5,8 @@ import { issueMandate, type MandateClaims } from "@/lib/mandate";
 import type { Suite } from "../harness";
 import { APPROVAL_GUARDRAILS } from "../support/guardrails-approval";
 import { INPUT_GUARDRAILS } from "../support/guardrails-input";
+import { RECHECK_GUARDRAILS } from "../support/guardrails-recheck";
+import { SCOPE_GUARDRAILS } from "../support/guardrails-scope";
 import { SPEND_GUARDRAILS } from "../support/guardrails-spend";
 import { mandate, placeOrder, quoteLitres } from "../support/flow";
 import { expectRefused, guardrail, outcomeText } from "../support/hostile";
@@ -97,5 +99,5 @@ export const guardrailsSuite: Suite = {
   id: "guardrails",
   name: "Guardrails",
   bar: 1,
-  cases: [...OFFER_GUARDRAILS, ...MANDATE_GUARDRAILS, ...SPEND_GUARDRAILS, ...APPROVAL_GUARDRAILS, ...INPUT_GUARDRAILS],
+  cases: [...OFFER_GUARDRAILS, ...MANDATE_GUARDRAILS, ...SPEND_GUARDRAILS, ...APPROVAL_GUARDRAILS, ...INPUT_GUARDRAILS, ...SCOPE_GUARDRAILS, ...RECHECK_GUARDRAILS],
 };

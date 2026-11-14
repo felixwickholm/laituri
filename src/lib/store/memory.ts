@@ -1,8 +1,9 @@
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import type { AgentSuspension, AuditEntry, Order, SignedOffer } from "@/lib/contracts";
 import type { DemandRecord } from "@/lib/demand/types";
+import { StorageError } from "@/lib/gateway/errors";
 import { dataDir } from "./data-dir";
+import { readSnapshot, writeSnapshot, type Recovery } from "./snapshot";
 import type { Activity, Store } from "./types";
 
 interface State {
@@ -18,6 +19,7 @@ interface State {
 /** An order as kept by the store: the contract plus the key that makes retries safe. */
 export type StoredOrder = Order & { idempotencyKey?: string };
 
+/** Offers, activity and demand records are saved together a moment later; records that commit are saved at once. */
 const SNAPSHOT_DELAY_MS = 250;
 
 function emptyState(): State {
@@ -31,55 +33,92 @@ function snapshotFile(): string {
 /** The activity feed is a view for the console, not a record; the audit log is the record. */
 const MAX_ACTIVITY = 1000;
 
-/** Reads the last snapshot. A missing or unreadable file starts an empty state. */
-function loadState(file: string): State {
-  try {
-    const parsed = JSON.parse(readFileSync(file, "utf8")) as Partial<State>;
-    return {
-      offers: parsed.offers ?? {},
-      orders: parsed.orders ?? {},
-      audit: Array.isArray(parsed.audit) ? parsed.audit : [],
-      activity: Array.isArray(parsed.activity) ? parsed.activity : [],
-      requests: Array.isArray(parsed.requests) ? parsed.requests : [],
-      mandates: parsed.mandates && typeof parsed.mandates === "object" ? parsed.mandates : {},
-      suspensions: parsed.suspensions && typeof parsed.suspensions === "object" ? parsed.suspensions : {},
-    };
-  } catch {
-    // Keep an unreadable snapshot for inspection instead of overwriting it with an empty one.
-    if (existsSync(file)) renameSync(file, `${file}.unreadable-${Date.now()}`);
-    return emptyState();
-  }
+function toState(value: unknown): State {
+  if (!value || typeof value !== "object") return emptyState();
+  const parsed = value as Partial<State>;
+  return {
+    offers: parsed.offers ?? {},
+    orders: parsed.orders ?? {},
+    audit: Array.isArray(parsed.audit) ? parsed.audit : [],
+    activity: Array.isArray(parsed.activity) ? parsed.activity : [],
+    requests: Array.isArray(parsed.requests) ? parsed.requests : [],
+    mandates: parsed.mandates && typeof parsed.mandates === "object" ? parsed.mandates : {},
+    suspensions: parsed.suspensions && typeof parsed.suspensions === "object" ? parsed.suspensions : {},
+  };
 }
 
-export function createMemoryStore(file: string = snapshotFile()): Store & { flush(): void } {
-  let state = loadState(file);
+/** What health reports about the store: a snapshot set aside at start-up, and the last delayed save that failed. */
+export interface StoreStatus {
+  recovery?: Recovery;
+  lastSaveError?: string;
+}
+
+export type MemoryStore = Store & {
+  /** Saves now. Throws StorageError when the snapshot cannot be written. */
+  flush(): void;
+  /** The unreadable snapshot that was kept aside at start-up, if there was one. */
+  recovery(): Recovery | undefined;
+  status(): StoreStatus;
+};
+
+/**
+ * State in memory with a JSON snapshot on disk. An audit entry, an order, a mandate or a suspension is on disk
+ * before the call that wrote it returns; when the write fails the change is undone and the call fails.
+ */
+export function createMemoryStore(file: string = snapshotFile()): MemoryStore {
+  const loaded = readSnapshot(file);
+  let state = toState(loaded.value);
   let timer: ReturnType<typeof setTimeout> | undefined;
+  let lastSaveError: string | undefined;
 
   function flush(): void {
     if (timer) clearTimeout(timer);
     timer = undefined;
     try {
-      mkdirSync(path.dirname(file), { recursive: true });
-      const tmp = `${file}.${process.pid}.tmp`;
-      writeFileSync(tmp, JSON.stringify(state));
-      renameSync(tmp, file);
+      writeSnapshot(file, state);
+      lastSaveError = undefined;
     } catch (error) {
-      console.error(`Could not save state to ${file}:`, (error as Error).message);
+      lastSaveError = (error as Error).message;
+      throw new StorageError(`The state could not be saved to disk: ${lastSaveError}`);
     }
   }
 
-  function changed(): void {
+  function saveLater(): void {
     if (timer) return;
-    timer = setTimeout(flush, SNAPSHOT_DELAY_MS);
+    timer = setTimeout(() => {
+      try {
+        flush();
+      } catch {
+        // Recorded in lastSaveError and reported by health; the next save writes the whole state again.
+      }
+    }, SNAPSHOT_DELAY_MS);
     timer.unref?.();
+  }
+
+  /** Applies a change and saves it before returning; a failed save undoes the change. */
+  function commit(apply: () => void, undo: () => void): void {
+    apply();
+    try {
+      flush();
+    } catch (error) {
+      undo();
+      throw error;
+    }
+  }
+
+  function restoreKey<T>(record: Record<string, T>, key: string, previous: T | undefined): void {
+    if (previous === undefined) delete record[key];
+    else record[key] = previous;
   }
 
   return {
     flush,
+    recovery: () => loaded.recovery,
+    status: () => ({ recovery: loaded.recovery, lastSaveError }),
     offers: {
       async put(offer) {
         state.offers[offer.offer.id] = offer;
-        changed();
+        saveLater();
       },
       async get(id) {
         return state.offers[id];
@@ -90,8 +129,8 @@ export function createMemoryStore(file: string = snapshotFile()): Store & { flus
     },
     orders: {
       async put(order) {
-        state.orders[order.id] = order;
-        changed();
+        const previous = state.orders[order.id];
+        commit(() => (state.orders[order.id] = order), () => restoreKey(state.orders, order.id, previous));
       },
       async get(id) {
         return state.orders[id];
@@ -105,8 +144,8 @@ export function createMemoryStore(file: string = snapshotFile()): Store & { flus
     },
     audit: {
       async append(entry) {
-        state.audit.push(entry);
-        changed();
+        const audit = state.audit;
+        commit(() => audit.push(entry), () => audit.pop());
       },
       async list(afterSeq) {
         return afterSeq === undefined ? [...state.audit] : state.audit.filter((entry) => entry.seq > afterSeq);
@@ -118,14 +157,14 @@ export function createMemoryStore(file: string = snapshotFile()): Store & { flus
         const index = state.audit.findIndex((item) => item.seq === seq);
         if (index === -1) throw new Error(`No audit entry with seq ${seq}.`);
         state.audit[index] = entry;
-        changed();
+        saveLater();
       },
     },
     activity: {
       async append(activity) {
         state.activity.push(activity);
         if (state.activity.length > MAX_ACTIVITY) state.activity.splice(0, state.activity.length - MAX_ACTIVITY);
-        changed();
+        saveLater();
       },
       async list(afterId) {
         if (afterId === undefined) return [...state.activity];
@@ -136,7 +175,7 @@ export function createMemoryStore(file: string = snapshotFile()): Store & { flus
     requests: {
       async append(record) {
         state.requests.push(record);
-        changed();
+        saveLater();
       },
       async list() {
         return [...state.requests];
@@ -147,8 +186,8 @@ export function createMemoryStore(file: string = snapshotFile()): Store & { flus
         return state.mandates[buyerId];
       },
       async put(buyerId, jws) {
-        state.mandates[buyerId] = jws;
-        changed();
+        const previous = state.mandates[buyerId];
+        commit(() => (state.mandates[buyerId] = jws), () => restoreKey(state.mandates, buyerId, previous));
       },
     },
     suspensions: {
@@ -156,20 +195,21 @@ export function createMemoryStore(file: string = snapshotFile()): Store & { flus
         return state.suspensions[agentId];
       },
       async put(suspension) {
-        state.suspensions[suspension.agent.id] = suspension;
-        changed();
+        const id = suspension.agent.id;
+        const previous = state.suspensions[id];
+        commit(() => (state.suspensions[id] = suspension), () => restoreKey(state.suspensions, id, previous));
       },
       async remove(agentId) {
-        delete state.suspensions[agentId];
-        changed();
+        const previous = state.suspensions[agentId];
+        commit(() => delete state.suspensions[agentId], () => restoreKey(state.suspensions, agentId, previous));
       },
       async list() {
         return Object.values(state.suspensions);
       },
     },
     async reset() {
-      state = emptyState();
-      flush();
+      const previous = state;
+      commit(() => (state = emptyState()), () => (state = previous));
     },
   };
 }

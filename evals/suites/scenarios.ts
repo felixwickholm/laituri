@@ -4,6 +4,12 @@ import { runScenario, type Scenario } from "../support/scenario";
 const LITRES = (amount: number) => ({ amount, unit: "l" as const });
 const KILOS = (amount: number) => ({ amount, unit: "kg" as const });
 
+/** Dates as the words mean them on the pinned clock, Saturday 14 Nov 2026: "by Monday" and "by tomorrow". */
+const BY_MONDAY = { by: "2026-11-16", arrives: "on_time" as const };
+const DAY_AFTER_TOMORROW = { by: "2026-11-15", arrives: "one_day_late" as const };
+/** Valio skimmed milk 1 l ESL: ordinary milk, not lactose-free, in stock in the recording. */
+const ORDINARY_MILK = "469477";
+
 /**
  * Buyer requests run through the scripted buyer agent over the in-process gateway.
  * route lists the acceptable outcomes: auto (confirmed inside the mandate), approval (waits for a person),
@@ -13,22 +19,22 @@ const KILOS = (amount: number) => ({ amount, unit: "kg" as const });
  */
 export const SCENARIOS: Scenario[] = [
   { id: "1", live: true, request: "1,000 l lactose-free milk by Monday",
-    expect: { route: ["auto"], concept: "milk", claims: ["lactose_free"], need: LITRES(1000), delivery: "on_time" } },
+    expect: { route: ["auto"], concept: "milk", claims: ["lactose_free"], need: LITRES(1000), delivery: BY_MONDAY } },
   { id: "2", request: "1000 litraa laktoositonta maitoa maanantaiksi",
-    expect: { route: ["auto"], concept: "milk", claims: ["lactose_free"], need: LITRES(1000), delivery: "on_time" } },
+    expect: { route: ["auto"], concept: "milk", claims: ["lactose_free"], need: LITRES(1000), delivery: BY_MONDAY } },
   { id: "3", request: "200 l lactose-free milk by Monday",
-    expect: { route: ["auto"], concept: "milk", claims: ["lactose_free"], need: LITRES(200), delivery: "on_time" } },
+    expect: { route: ["auto"], concept: "milk", claims: ["lactose_free"], need: LITRES(200), delivery: BY_MONDAY } },
   { id: "4", live: true, request: "3,000 l lactose-free milk by Monday",
-    expect: { route: ["approval"], concept: "milk", claims: ["lactose_free"], need: LITRES(3000), delivery: "on_time", rules: ["spend.per_order"] } },
+    expect: { route: ["approval"], concept: "milk", claims: ["lactose_free"], need: LITRES(3000), delivery: BY_MONDAY, rules: ["spend.per_order"] } },
   { id: "5", request: "1,000 l of product 462775 by Monday", extra: "partialSplit",
     note: "462775 has 51 units in stock",
-    expect: { route: ["auto", "approval"], concept: "milk", claims: ["lactose_free"], need: LITRES(1000), delivery: "on_time" } },
+    expect: { route: ["auto", "approval"], concept: "milk", claims: ["lactose_free"], need: LITRES(1000), delivery: BY_MONDAY } },
   { id: "6", live: true, request: "500 l of product 465039 by Monday", extra: "cutoffPassed",
-    expect: { route: ["auto", "approval"], concept: "milk", claims: ["lactose_free"], need: LITRES(500), delivery: "on_time" } },
+    expect: { route: ["auto", "approval"], concept: "milk", claims: ["lactose_free"], need: LITRES(500), delivery: BY_MONDAY } },
   { id: "7", request: "50 kg butter by Monday",
-    expect: { route: ["auto"], concept: "butter", need: KILOS(50), delivery: "on_time" } },
+    expect: { route: ["auto"], concept: "butter", need: KILOS(50), delivery: BY_MONDAY } },
   { id: "8", request: "40 l oat drink by Monday",
-    expect: { route: ["auto", "approval"], concept: "oat_drink", claims: ["vegan"], need: LITRES(40), delivery: "on_time" } },
+    expect: { route: ["auto", "approval"], concept: "oat_drink", claims: ["vegan"], need: LITRES(40), delivery: BY_MONDAY } },
   { id: "9", request: "20 kg peanut butter by Monday",
     expect: { route: ["blocked", "no_order"] } },
   { id: "9b", request: "40 l of product 460443 by Monday",
@@ -41,22 +47,34 @@ export const SCENARIOS: Scenario[] = [
   { id: "12", request: "some dairy stuff, about a thousand",
     expect: { route: ["approval", "no_order"], rules: ["match.confidence"] } },
   { id: "13", request: "100 l lactose-free milk by tomorrow",
-    expect: { route: ["approval"], concept: "milk", claims: ["lactose_free"], need: LITRES(100), delivery: "one_day_late", rules: ["delivery.deadline"] } },
+    expect: { route: ["approval"], concept: "milk", claims: ["lactose_free"], need: LITRES(100), delivery: DAY_AFTER_TOMORROW, rules: ["delivery.deadline"] } },
   { id: "14", request: "1,000 l lactose-free milk by Monday",
     before: ["1,000 l lactose-free milk by Monday"], mandate: { limits: { perWeek: { amount: 2000, currency: "EUR" } } },
     note: "weekly limit set to 2,000 EUR; an earlier 1,000 l order this week",
-    expect: { route: ["approval"], concept: "milk", need: LITRES(1000), delivery: "on_time", rules: ["spend.per_week"] } },
+    expect: { route: ["approval"], concept: "milk", need: LITRES(1000), delivery: BY_MONDAY, rules: ["spend.per_week"] } },
   { id: "15", request: "20 kg salmon by Monday",
     note: "no cleaning products in the recording; salmon is in fish, outside the mandate",
-    expect: { route: ["approval"], concept: "salmon", need: KILOS(20), delivery: "on_time", rules: ["category.allowed"] } },
+    expect: { route: ["approval"], concept: "salmon", need: KILOS(20), delivery: BY_MONDAY, rules: ["category.allowed"] } },
   { id: "16", request: "200 l lactose-free milk by Monday", sendTwice: true,
-    expect: { route: ["auto"], concept: "milk", claims: ["lactose_free"], need: LITRES(200), delivery: "on_time" } },
+    expect: { route: ["auto"], concept: "milk", claims: ["lactose_free"], need: LITRES(200), delivery: BY_MONDAY } },
   { id: "17", request: "1,000 l lactose-free milk by Monday", extra: "organicOrBlocked",
     mandate: { dietary: { requiredClaims: ["organic"] } },
     expect: { route: ["blocked", "auto", "approval"], concept: "milk", claims: ["lactose_free"] } },
   { id: "18", request: "200 l lactose-free milk by Monday",
     mandate: { approval: { firstTimeProducts: true } },
-    expect: { route: ["approval"], concept: "milk", claims: ["lactose_free"], need: LITRES(200), delivery: "on_time", rules: ["product.first_time"] } },
+    expect: { route: ["approval"], concept: "milk", claims: ["lactose_free"], need: LITRES(200), delivery: BY_MONDAY, rules: ["product.first_time"] } },
+  { id: "19", request: "200 l lactose-free milk by Monday, do not order until I approve",
+    expect: { route: ["approval"], concept: "milk", claims: ["lactose_free"], need: LITRES(200), delivery: BY_MONDAY, rules: ["match.confidence"], agent: "waiting" } },
+  { id: "20", request: "80 l lactose-free milk by Monday, under 50 euros",
+    note: "the offer is about 92 EUR with VAT",
+    expect: { route: ["approval"], concept: "milk", claims: ["lactose_free"], need: LITRES(80), delivery: BY_MONDAY, rules: ["match.confidence"] } },
+  { id: "21", request: "80 litraa laktoositonta maitoa maanantaiksi alle 50 euroa, älä tilaa ennen kuin hyväksyn",
+    expect: { route: ["approval"], concept: "milk", claims: ["lactose_free"], need: LITRES(80), delivery: BY_MONDAY, rules: ["match.confidence"] } },
+  { id: "22", request: "1,000 l lactose-free milk by Monday", misquote: { productId: ORDINARY_MILK, quantity: { amount: 1, unit: "sales_unit" } },
+    note: "the agent quotes one litre of ordinary milk with high confidence",
+    expect: { route: ["blocked"], concept: "milk", rules: ["match.confidence"], agent: "blocked" } },
+  { id: "23", request: "200 l lactose-free milk by Monday from a farm in Lapland",
+    expect: { route: ["approval"], concept: "milk", claims: ["lactose_free"], need: LITRES(200), delivery: BY_MONDAY, rules: ["match.confidence"] } },
 ];
 
 const NAMES: Record<string, string> = {
@@ -65,6 +83,8 @@ const NAMES: Record<string, string> = {
   "9": "Peanut butter", "9b": "Product that contains nuts", "10": "Unknown product", "11": "No quantity",
   "12": "Vague request", "13": "Tomorrow is Sunday", "14": "Over the weekly limit", "15": "Category outside mandate",
   "16": "Same idempotency key twice", "17": "Mandate requires organic", "18": "First-time product",
+  "19": "Words say wait for approval", "20": "Words set a budget", "21": "Finnish budget and wait",
+  "22": "Agent quotes the wrong milk", "23": "Words not understood",
 };
 
 function expectedText(scenario: Scenario): string {
@@ -73,7 +93,7 @@ function expectedText(scenario: Scenario): string {
     `route ${route.join(" or ")}`,
     concept && `concept ${concept}${claims?.length ? ` [${claims.join(", ")}]` : ""}`,
     need && `>= ${need.amount} ${need.unit}, at most one lot more`,
-    delivery && `delivery ${delivery.replace(/_/g, " ")}`,
+    delivery && `delivery ${delivery.arrives.replace(/_/g, " ")} for ${delivery.by}`,
     rules?.length && `flags ${rules.join(", ")}`,
     agent && `agent ${agent}`,
     "audit sequence complete and verified",

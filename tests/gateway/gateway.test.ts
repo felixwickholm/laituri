@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ValidationError } from "@/lib/gateway/errors";
 import { createGateway } from "@/lib/gateway/gateway";
+import { asSeeded } from "@/lib/provenance";
 import { AGENT, BUYER, makeDeps } from "../support/deps";
 import { DELIVER_BY } from "../support/products";
 
@@ -106,6 +107,27 @@ describe("gateway", () => {
     expect(unknown).toMatchObject({ client: "Unknown client", outcome: "not_found" });
     expect(unknown.buyer).toBeUndefined();
     expect((await gateway.activity()).find((a) => a.tool === "request_quote")).toMatchObject({ buyer: BUYER, client: "Claude Code" });
+  });
+
+  it("measures request to confirmed order from real elapsed time, leaving seeded history out", async () => {
+    const env = makeDeps();
+    const gateway = createGateway(env.deps);
+    const later = (seconds: number) => (env.clock.current = new Date(env.clock.current.getTime() + seconds * 1000));
+    const lines = [{ productId: "464306", quantity: { amount: 1000, unit: "l" as const } }];
+    async function purchase(key: string, quoteAfter: number, orderAfter: number) {
+      await gateway.searchCatalog(AGENT, { query: "Eila" });
+      later(quoteAfter);
+      const quoted = await gateway.requestQuote(AGENT, { lines, deliverBy: DELIVER_BY });
+      later(orderAfter);
+      const { jws: mandateJws } = await gateway.getMandate();
+      expect((await gateway.placeOrder(AGENT, { offerJws: quoted.primary.jws, mandateJws, idempotencyKey: key })).status).toBe("confirmed");
+    }
+
+    await asSeeded(() => purchase("history-order-1", 60, 240));
+    expect((await gateway.supplierOverview()).orders).not.toHaveProperty("medianSecondsRequestToConfirmed");
+    later(3600);
+    await purchase("live-order-1", 20, 55);
+    expect((await gateway.supplierOverview()).orders.medianSecondsRequestToConfirmed).toBe(75);
   });
 });
 

@@ -1,52 +1,94 @@
-import type { Order, QuoteRequest, QuoteResponse, SearchResponse } from "@/lib/contracts";
-import { call, ok } from "./router";
+import type { Order, SearchResponse } from "@/lib/contracts";
 
-interface Curl {
+/** One curl line of the numbered REST flow in llms.txt. */
+interface FlowStep {
+  step: number;
+  method: "GET" | "POST";
   url: string;
-  flags: string;
+  headers: Record<string, string>;
+  body?: unknown;
+}
+
+const PLACEHOLDER = /^<([\w.]+) from step (\d+)>$/;
+
+/** The curl lines of the "REST flow" section, in document order, each with the number of its step. */
+export function restFlow(llms: string): FlowStep[] {
+  const section = llms.split(/^\*\*/m).find((part) => part.startsWith("REST flow"));
+  if (!section) throw new Error("llms.txt has no REST flow section.");
+  const steps: FlowStep[] = [];
+  let step = 0;
+  for (const line of section.split("\n")) {
+    const numbered = line.match(/^(\d+)\.\s/);
+    if (numbered) step = Number(numbered[1]);
+    const curl = line.match(/^curl -s (\S+)(.*)$/);
+    if (!curl) continue;
+    const headers = Object.fromEntries([...curl[2].matchAll(/-H "([^:"]+):\s*([^"]*)"/g)].map((m) => [m[1], m[2]]));
+    const data = curl[2].match(/-d '([^']*)'/)?.[1];
+    steps.push({ step, method: data === undefined ? "GET" : "POST", url: curl[1], headers, body: data === undefined ? undefined : JSON.parse(data) });
+  }
+  if (steps.length === 0) throw new Error("The REST flow in llms.txt shows no curl line.");
+  return steps;
+}
+
+function field(value: unknown, path: string): unknown {
+  return path.split(".").reduce<unknown>((node, key) => (node as Record<string, unknown> | undefined)?.[key], value);
+}
+
+/** Replaces "<primary.jws from step 2>" with that field of step 2's answer, anywhere in a body. */
+function fill(body: unknown, answers: Map<number, unknown>): unknown {
+  if (typeof body === "string") {
+    const placeholder = body.match(PLACEHOLDER);
+    if (!placeholder) return body;
+    const value = field(answers.get(Number(placeholder[2])), placeholder[1]);
+    if (typeof value !== "string") throw new Error(`Step ${placeholder[2]} gave no ${placeholder[1]}.`);
+    return value;
+  }
+  if (Array.isArray(body)) return body.map((item) => fill(item, answers));
+  if (body && typeof body === "object") return Object.fromEntries(Object.entries(body).map(([key, item]) => [key, fill(item, answers)]));
+  return body;
+}
+
+/** "Quote for the product you chose": the example lines carry the product the search step chose. */
+function withProduct(body: unknown, productId: string | undefined): unknown {
+  const lines = (body as { lines?: Record<string, unknown>[] } | undefined)?.lines;
+  if (!productId || !Array.isArray(lines)) return body;
+  return { ...(body as object), lines: lines.map((line) => ({ ...line, productId })) };
+}
+
+async function send(step: FlowStep, body: unknown): Promise<unknown> {
+  const response = await fetch(step.url, { method: step.method, headers: step.headers, body: body === undefined ? undefined : JSON.stringify(body) });
+  const answer = (await response.json()) as { detail?: string };
+  if (!response.ok) throw new Error(`Step ${step.step} (${step.method} ${new URL(step.url).pathname}) answered ${response.status}: ${answer.detail ?? ""}`);
+  return answer;
+}
+
+function outcome(answer: unknown, chosen: string | undefined): string {
+  const value = answer as { hits?: unknown; primary?: { offer: { fulfilment: string } }; jws?: string; status?: string };
+  if (value.hits) return chosen ?? "no orderable hit";
+  if (value.primary) return value.primary.offer.fulfilment;
+  return value.status ?? (value.jws ? "jws" : "answered");
 }
 
 /**
- * An agent that knows nothing but the text of llms.txt. It finds the endpoints and example bodies in
- * the curl lines, then buys the milk from the worked example.
+ * An agent that knows nothing but the text of llms.txt, fetched over HTTP. It runs the numbered REST flow's
+ * curl lines in order, with the URLs, headers and bodies written there; it takes the first orderable search hit,
+ * as the text says, and fills each "<field from step N>" from step N's answer.
  */
-export async function outsideAgent(llms: string): Promise<{ order: Order; steps: string[] }> {
-  const token = llms.match(/Authorization: Bearer ([\w.-]+)/)?.[1];
-  if (!token) throw new Error("llms.txt names no bearer token.");
-  const curls: Curl[] = [...llms.matchAll(/^curl -s (\S+)(.*)$/gm)].map((match) => ({ url: match[1], flags: match[2] }));
-  const endpoint = (pattern: RegExp): Curl => {
-    const found = curls.find((curl) => pattern.test(new URL(curl.url).pathname));
-    if (!found) throw new Error(`llms.txt shows no endpoint matching ${pattern}.`);
-    return found;
-  };
-  const bodyOf = (curl: Curl): Record<string, unknown> => {
-    const raw = curl.flags.match(/-d '([^']*)'/)?.[1];
-    if (!raw) throw new Error(`llms.txt gives no body for ${curl.url}.`);
-    return JSON.parse(raw) as Record<string, unknown>;
-  };
-  const auth = { authorization: `Bearer ${token}` };
+export async function outsideAgent(origin: string): Promise<{ order: Order; steps: string[] }> {
+  const llms = await (await fetch(new URL("/llms.txt", origin))).text();
+  const answers = new Map<number, unknown>();
   const steps: string[] = [];
-
-  const search = endpoint(/\/products\/search$/);
-  const found = ok<SearchResponse>(await call("POST", search.url, { body: bodyOf(search), headers: auth }), "Search");
-  const product = found.hits.find((hit) => hit.product.content?.unit === "l")?.product;
-  if (!product) throw new Error("The search found no milk sold by the litre.");
-  steps.push(`${new URL(search.url).pathname} -> ${product.id}`);
-
-  const quote = endpoint(/\/quotes$/);
-  const example = bodyOf(quote) as QuoteRequest;
-  const request = { ...example, lines: example.lines.map((line) => ({ ...line, productId: product.id })) };
-  const offer = ok<QuoteResponse>(await call("POST", quote.url, { body: request, headers: auth }), "Quote");
-  steps.push(`${new URL(quote.url).pathname} -> ${offer.primary.offer.fulfilment}`);
-
-  const mandateUrl = endpoint(/\/mandate$/).url;
-  const { jws: mandateJws } = ok<{ jws: string }>(await call("GET", mandateUrl, { headers: auth }), "Mandate");
-  steps.push(`${new URL(mandateUrl).pathname} -> jws`);
-
-  const orders = endpoint(/\/orders$/);
-  const keyHeader = orders.flags.match(/-H "(Idempotency-Key): [^"]*"/i)?.[1] ?? "Idempotency-Key";
-  const headers = { ...auth, [keyHeader]: "outside-agent-milk-0001" };
-  const order = ok<Order>(await call("POST", orders.url, { body: { offerJws: offer.primary.jws, mandateJws }, headers }), "Order");
-  steps.push(`${new URL(orders.url).pathname} -> ${order.status}`);
+  let chosen: string | undefined;
+  let last: unknown;
+  for (const step of restFlow(llms)) {
+    if (new URL(step.url).origin !== new URL(origin).origin) throw new Error(`llms.txt sends step ${step.step} to ${step.url}, not to ${origin}.`);
+    last = await send(step, fill(withProduct(step.body, chosen), answers));
+    answers.set(step.step, last);
+    const hits = (last as Partial<SearchResponse>).hits;
+    if (hits) chosen = hits.find((hit) => hit.offerPreview?.orderable)?.product.id;
+    steps.push(`${step.method} ${new URL(step.url).pathname} -> ${outcome(last, chosen)}`);
+  }
+  const order = last as Order;
+  if (!order.status) throw new Error("The last step of the REST flow did not answer with an order.");
   return { order, steps };
 }

@@ -3,6 +3,7 @@ import type { EvalCase, Suite } from "../harness";
 import { Checks } from "../support/checks";
 import { callEveryTool, listTools } from "../support/mcp-tools";
 import { callEveryOperation } from "../support/operations";
+import { serveRoutes } from "../support/http-server";
 import { outsideAgent } from "../support/outside-agent";
 import { get } from "../support/router";
 
@@ -116,11 +117,15 @@ const CASES: EvalCase[] = [
     }
     return `${DISCOVERY.length} documents served`;
   }),
-  opennessCase("O8", "Outside agent from llms.txt only", "search, quote and order the milk; order confirmed", async (checks) => {
-    const llms = (await get("/llms.txt")).text;
-    const { order, steps } = await outsideAgent(llms);
-    checks.expect(order.status === "confirmed", `the order is ${order.status}`);
-    return steps.join("; ");
+  opennessCase("O8", "Outside agent from llms.txt only", "over HTTP, the REST flow in llms.txt searches, quotes and orders the milk; order confirmed", async (checks) => {
+    const server = await serveRoutes();
+    try {
+      const { order, steps } = await outsideAgent(server.origin);
+      checks.expect(order.status === "confirmed", `the order is ${order.status}`);
+      return steps.join("; ");
+    } finally {
+      await server.close();
+    }
   }),
 ];
 

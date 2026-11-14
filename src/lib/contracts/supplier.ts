@@ -115,6 +115,12 @@ export const OrderStats = z.object({
     rejected: Tally,
     blocked: Tally,
   }),
+  medianSecondsRequestToConfirmed: z.number().int().optional().describe(
+    "Median seconds from the first search of a request (its first quote when it began with one) to an order that " +
+      "confirmed without a person; an order on an alternative offer counts from the request whose quote issued it. " +
+      "Only live requests and orders count: seeded demo history runs on a backdated clock, so it is left out. " +
+      "Absent until one such order exists.",
+  ),
 });
 export type OrderStats = z.infer<typeof OrderStats>;
 

@@ -71,8 +71,10 @@ export function createMcpServer(agent: AgentRef): Server {
       const input = tool.input.parse(request.params.arguments ?? {});
       const raw = await tool.run(agent, input as never);
       // Parsing drops internal fields so the result matches the published output schema.
+      // A result that does not parse is withheld whole: nothing unvalidated reaches the caller.
       const parsed = SCHEMAS[tool.output].safeParse(raw);
-      const structured = (parsed.success ? parsed.data : raw) as Record<string, unknown>;
+      if (!parsed.success) return failure(`The ${tool.name} result did not match its published schema, so it was withheld.`);
+      const structured = parsed.data as Record<string, unknown>;
       return {
         structuredContent: structured,
         content: [{ type: "text", text: tool.summarize(structured as never) }],

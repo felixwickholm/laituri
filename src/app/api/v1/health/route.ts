@@ -4,6 +4,7 @@ import { route } from "@/lib/http/handler";
 import { json } from "@/lib/http/respond";
 import { catalogStatus } from "@/lib/http/health";
 import { seedStatus } from "@/lib/seed";
+import { storeStatus } from "@/lib/store";
 import { ping } from "@/lib/valio";
 
 export const dynamic = "force-dynamic";
@@ -12,13 +13,16 @@ export const runtime = "nodejs";
 export const GET = route(async () => {
   const upstream = await ping();
   const catalog = catalogStatus();
+  const saved = storeStatus();
+  const healthy = upstream.ok && catalog.ready && !saved.recovery && !saved.lastSaveError;
   return json({
-    status: upstream.ok && catalog.ready ? "ok" : "degraded",
+    status: healthy ? "ok" : "degraded",
     mode: upstream.mode,
     upstream: { ok: upstream.ok, latencyMs: upstream.latencyMs, error: upstream.error },
     catalog,
     seed: seedStatus(),
     agent: activeEngine(),
+    store: saved,
     time: now().toISOString(),
   });
 });

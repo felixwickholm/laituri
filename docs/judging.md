@@ -24,31 +24,31 @@ How to check: `/buyer?tour=1` on the live demo; `npm run eval -- --suite scenari
 
 Measured:
 
-- Scenarios eval suite: 19/19 cases pass (bar >=90%).
-- An agent that reads only /llms.txt searches, quotes and orders the milk (eval O8).
+- Scenarios eval suite: 24/24 cases pass (bar >=90%).
+- An agent that knows only the text of /llms.txt, fetched over HTTP from a server started for the eval, runs the curl lines of its REST flow in order (URLs, headers and bodies as written, filling each <field from step N> from that step's answer), searches, quotes and orders the milk, and the order confirms (eval O8).
 
 Known limit: Orders are simulated: the mock API has price and availability but no order endpoint, so Laituri writes the order and receipt itself and marks each one simulated: true.
 
 ### Solving the problem and user need (20%)
 
-The agent orders what the buyer asked for: the wholesaler turns litres and kilograms into whole sales units, states how sure it is of the match, and every order shows the request next to the signed offer.
+The agent orders what the buyer asked for: the wholesaler turns litres and kilograms into whole sales units, compares the buyer's words with every offer and signs that comparison into it, and an order that does not meet the words in full is never confirmed alone.
 
 What we built:
 
 - Search reads Finnish, Swedish or English needs as a product concept plus claims (for example lactose_free) and returns a match confidence.
 - Pack maths: 1,000 l becomes 1,000 x 1 l; the scenario evals accept at most one lot more than asked.
-- Each order shows the asked amount, the offered packs, the claim, the delivery date and the fixed price side by side.
-- An uncertain match is never ordered alone: the match.confidence rule sends it to a person.
+- Request check: product, every claim, words not understood, quantity (at most one lot over), date, a budget ("under 50 euros", "alle 50 euroa") and an order to wait ("ask me first", "älä tilaa ennen kuin hyväksyn"), each met, unmet or unchecked, signed inside the offer and shown on the order.
+- The match.confidence rule refuses a certain mismatch (wrong product, a missing claim, far too little) and sends anything unmet, unchecked or uncertain to a person with the requirement named.
 - 3 demo buyers with their own signed mandates (Nordic Harbour Hotels, Kaisla School Kitchens, Ravintola Laine). The same sentence confirms for the hotel and is blocked for the school kitchens, which exclude sesame even as a trace.
 - Every offer line carries the product's country of origin, labels, delivery reliability and category-average CO2 inside the signature; search can rank a clear match by price, reliability or sustainability.
 
-Where in the code: [`src/lib/catalog/search.ts`](../src/lib/catalog/search.ts), [`src/lib/offers/packs.ts`](../src/lib/offers/packs.ts), [`src/lib/gateway/confidence.ts`](../src/lib/gateway/confidence.ts), [`src/components/order/RequestProof.tsx`](../src/components/order/RequestProof.tsx), [`src/lib/mandate/defaults.ts`](../src/lib/mandate/defaults.ts), [`src/lib/contracts/facts.ts`](../src/lib/contracts/facts.ts), [`src/components/valio/TwoKitchens.tsx`](../src/components/valio/TwoKitchens.tsx).
+Where in the code: [`src/lib/catalog/search.ts`](../src/lib/catalog/search.ts), [`src/lib/offers/packs.ts`](../src/lib/offers/packs.ts), [`src/lib/request/index.ts`](../src/lib/request/index.ts), [`src/lib/gateway/confidence.ts`](../src/lib/gateway/confidence.ts), [`src/components/order/RequestProof.tsx`](../src/components/order/RequestProof.tsx), [`src/lib/mandate/defaults.ts`](../src/lib/mandate/defaults.ts), [`src/lib/contracts/facts.ts`](../src/lib/contracts/facts.ts), [`src/components/valio/TwoKitchens.tsx`](../src/components/valio/TwoKitchens.tsx).
 
-How to check: eval 2; eval 12; `tests/demo/two-kitchens.test.ts`; `tests/offers/packs.test.ts`.
+How to check: eval 2; eval 12; eval 19; eval 22; `tests/request/fidelity.test.ts`; `tests/demo/two-kitchens.test.ts`; `tests/offers/packs.test.ts`.
 
 Measured:
 
-- 19/19 scenario cases end on the expected route with the expected concept, amount and date.
+- 24/24 scenario cases end on the expected route with the expected concept, amount and date.
 - 3 demo buyers, 31 seeded requests played through the real gateway.
 
 Known limit: The product concepts and category groups are our own, built from the product data. The catalogue sells "lactose-free milk" as "lactose-free milk drink"; Laituri treats the two as one request and names the product it chose.
@@ -72,8 +72,8 @@ How to check: `npm run eval -- --suite guardrails`; eval G10; eval G5; `/buyer/m
 
 Measured:
 
-- Guardrails eval suite: 20/20 cases pass (bar 100%).
-- Trust eval suite: 14/14 cases pass (bar 100%).
+- Guardrails eval suite: 22/22 cases pass (bar 100%).
+- Trust eval suite: 16/16 cases pass (bar 100%).
 - 15 mandate rules, 3 signing keys (supplier, buyer, approver).
 
 Known limit: In the demo one server holds all three private keys, and the approver signs in with a passcode or one-click demo access that the audit log labels as such.
@@ -98,8 +98,8 @@ How to check: eval 5; eval 6; eval 13; eval G20; eval G14.
 
 Measured:
 
-- Scenarios eval suite: 19/19 cases pass (bar >=90%).
-- Guardrails eval suite: 20/20 cases pass (bar 100%).
+- Scenarios eval suite: 24/24 cases pass (bar >=90%).
+- Guardrails eval suite: 22/22 cases pass (bar 100%).
 
 Known limit: Substitutes are chosen like for like within the wholesaler's own concept and category, not through recipe logic.
 
@@ -111,7 +111,7 @@ What we built:
 
 - 7 MCP tools and 21 REST operations on 19 paths, from one schema set.
 - 6 discovery documents: OpenAPI is served beside the JWKS, agent card, AI catalog, UCP profile, OAuth protected-resource metadata and llms.txt.
-- An outside agent that knows only llms.txt buys the milk.
+- An outside agent that knows only the text of llms.txt, fetched over HTTP, buys the milk by following its REST flow.
 - Standards table separates "used" (implemented and tested) from "follows" (names and shapes taken from the standard).
 - Decision records in docs/decisions; assumptions and the path to production in this README and on /evidence.
 - MIT licence.
@@ -157,7 +157,7 @@ Known limit: Agents use demo bearer tokens, not OAuth 2.1. AP2, UCP and Peppol a
 | Not exposed | Status | Answer | Where | Check |
 |---|---|---|---|---|
 | Real systems | Covered | The upstream API key and address stay on the server. Agents call Laituri's own routes; upstream answers are normalised into Laituri's contracts before anything is returned. | [`src/lib/valio/http.ts`](../src/lib/valio/http.ts)<br>[`src/lib/valio/normalise.ts`](../src/lib/valio/normalise.ts) | `/api/v1/openapi.json` on the live demo |
-| Confidential data | Covered | Agents receive only the fields defined in the published schemas; the MCP server parses every tool result against its output schema, which drops anything else. An agent token reads only its own buyer's records. | [`src/lib/contracts`](../src/lib/contracts)<br>[`src/lib/mcp/server.ts`](../src/lib/mcp/server.ts)<br>[`src/lib/http/buyer-scope.ts`](../src/lib/http/buyer-scope.ts) | eval O6; `tests/buyers/isolation.test.ts` |
+| Confidential data | Partly | Agents receive only the fields defined in the published schemas; the MCP server parses every tool result against its output schema, which drops any other field, and a result that does not parse is withheld and answered as a tool error. For an agent token, orders, offers, the mandate and approvals are scoped to its own buyer. The audit log is one public chain whose entries carry summaries with other buyers' products, quantities and prices (see Public audit log under Simulated, assumed and not built). | [`src/lib/contracts`](../src/lib/contracts)<br>[`src/lib/mcp/server.ts`](../src/lib/mcp/server.ts)<br>[`src/lib/http/buyer-scope.ts`](../src/lib/http/buyer-scope.ts)<br>[`src/app/api/v1/offers/[id]/route.ts`](../src/app/api/v1/offers/%5Bid%5D/route.ts) | eval O6; eval G21; `tests/buyers/isolation.test.ts`; `tests/mcp/output-validation.test.ts` |
 | The buyer's terms | Covered | The wholesaler's overview counts which mandate rule held or stopped an order and its tier, never the limits or values behind it. | [`src/lib/insights/rules.ts`](../src/lib/insights/rules.ts)<br>[`src/lib/contracts/supplier.ts`](../src/lib/contracts/supplier.ts) | `tests/insights/insights.test.ts` |
 | The marketplace roadmap | Covered | Nothing in the interface depends on a marketplace: it exposes today's catalogue, price, availability and ordering only. All data is the challenge's synthetic data. | [`src/lib/openapi/registry.ts`](../src/lib/openapi/registry.ts)<br>[`fixtures/upstream`](../fixtures/upstream) | `/api/v1/openapi.json` on the live demo |
 
@@ -184,15 +184,16 @@ Simulated or assumed:
 - **Demo access.** One click signs a visitor in as the hotel's approver without the passcode; each approval or mandate change made that way says "demo access" in the audit log. LAITURI_DEMO_ACCESS=off disables it. ([`src/lib/http/console-session.ts`](../src/lib/http/console-session.ts))
 - **Open reading.** Orders, approvals, the mandate and the audit log can be read without signing in, so anyone can watch. They hold synthetic data only. Production puts every read behind each party's own access control. ([`src/lib/http/buyer-scope.ts`](../src/lib/http/buyer-scope.ts))
 - **Demo controls.** Starting a scene, altering one log entry to show detection and suspending an agent are open to visitors and refuse agent credentials; reset needs the approver. The altered entry is put back after five minutes. A production deployment has none of these controls open. ([`src/lib/demo/tamper.ts`](../src/lib/demo/tamper.ts), [`src/app/api/v1/demo/reset/route.ts`](../src/app/api/v1/demo/reset/route.ts))
-- **State.** State is kept in memory with a JSON snapshot. One process serialises order decisions, so two orders cannot pass a limit together. ([`src/lib/store/memory.ts`](../src/lib/store/memory.ts), [`src/lib/orders/lock.ts`](../src/lib/orders/lock.ts))
+- **State.** State is kept in memory with a JSON snapshot on disk. An order, an approval, a mandate change, a suspension and each audit entry are written to disk (temporary file, fsync, rename) before the call returns, and a failed write fails the call. Offers, activity and demand records are saved a moment later. An unreadable snapshot is kept aside under a new name and reported by /api/v1/health, and the service starts empty. One process serialises order decisions, so two orders cannot pass a limit together. ([`src/lib/store/memory.ts`](../src/lib/store/memory.ts), [`src/lib/store/snapshot.ts`](../src/lib/store/snapshot.ts), [`src/lib/orders/lock.ts`](../src/lib/orders/lock.ts))
 - **Recorded mode.** Without an API key, recorded price and availability answers for 255 products replay with a fixed clock. Tests and evals always use this mode. ([`src/lib/valio/recorded.ts`](../src/lib/valio/recorded.ts), [`fixtures/upstream`](../fixtures/upstream))
 - **Product concepts.** Category groups and the product concept list are our own, built from the product data. "Lactose-free milk" is sold as "lactose-free milk drink"; Laituri treats them as one request and shows the product name it chose. ([`src/lib/catalog/build/groups.ts`](../src/lib/catalog/build/groups.ts), [`src/lib/catalog/lexicon.ts`](../src/lib/catalog/lexicon.ts))
 - **Upstream data.** A closingTime in the past means that delivery date can no longer be ordered. An available amount of 9999999999 or 999999 means no tracked limit. Availability returns the next delivery date whatever date is asked; Laituri compares it with the requested date. ([`src/lib/valio/normalise.ts`](../src/lib/valio/normalise.ts))
 - **Pack contents.** Litres or kilograms per sales unit come from the product's unit data, else from the price divided by the comparison price. ([`src/lib/offers/packs.ts`](../src/lib/offers/packs.ts))
 - **Carbon figure.** The CO2 figure is the average for the product's category (categoryAverageCo2PerKg), not a measurement of the product. ([`src/lib/contracts/facts.ts`](../src/lib/contracts/facts.ts))
-- **Match confidence.** The agent may state how sure it is of a match, but the wholesaler checks the buyer's words against its own catalogue and never reports a higher confidence than it finds. ([`src/lib/gateway/confidence.ts`](../src/lib/gateway/confidence.ts))
-- **Approver judgement.** An approver can approve several waiting orders that together pass the weekly limit. That is the approver's decision; each order shows the limit it passed. ([`src/lib/orders/approval.ts`](../src/lib/orders/approval.ts))
-- **Audit completeness.** Verification proves that entries were not changed, reordered or removed from the middle. That the newest entries are still there is checked against the last head the verifier saw. While the log does not verify, approvals are paused. ([`src/lib/audit/verify.ts`](../src/lib/audit/verify.ts), [`src/lib/audit/head.ts`](../src/lib/audit/head.ts), [`src/lib/gateway/gateway.ts`](../src/lib/gateway/gateway.ts))
+- **Request check.** The wholesaler compares the buyer's words, sent as the quote's intent, with every offer before it signs it: the product, every claim, words it does not understand, the quantity (covers the need, at most one lot over), the date, a budget and an order to wait for a person. Each is met, unmet or unchecked and is signed inside the offer. An order is confirmed alone only when all are met; a certain mismatch (wrong product, a missing claim, less than half the need asked for) blocks it, and anything else waits for the approver with the requirement named. The agent's stated match confidence never counts for more than the wholesaler finds. What the goods are for ("for the breakfast buffets") is kept as context and not checked. An agent that sends no words gets no request check, and its order can still be confirmed alone inside the mandate. ([`src/lib/request/index.ts`](../src/lib/request/index.ts), [`src/lib/request/requirements.ts`](../src/lib/request/requirements.ts), [`src/lib/policy/rules/products.ts`](../src/lib/policy/rules/products.ts), [`src/lib/gateway/confidence.ts`](../src/lib/gateway/confidence.ts))
+- **Approver judgement.** An approval re-checks the order against the mandate in force at that moment. What the ask tier flagged, such as a weekly limit or a category the mandate no longer lists, is the approver's to decide, so an approver can approve several waiting orders that together pass the weekly limit; each order shows the limit it passed. A never-tier rule, an invalid or expired mandate, or an offer that expired or was used stops the approval, and the order is blocked with a signed audit entry. ([`src/lib/orders/approval.ts`](../src/lib/orders/approval.ts), [`src/lib/orders/recheck.ts`](../src/lib/orders/recheck.ts))
+- **Audit completeness.** Verification proves that entries were not changed, reordered or removed from the middle. A verifier that remembers a head (size and hash) checks that the entry at that size still carries that hash in any later log, so a log that was cut, cut and extended, or rewritten from an earlier entry is detected whatever its length. The service will not append onto a tail that fails its hash, link, signature or remembered head. While the log does not verify, approvals are paused. ([`src/lib/audit/verify.ts`](../src/lib/audit/verify.ts), [`src/lib/audit/tail.ts`](../src/lib/audit/tail.ts), [`src/lib/audit/chain.ts`](../src/lib/audit/chain.ts), [`src/lib/audit/head.ts`](../src/lib/audit/head.ts), [`src/lib/gateway/gateway.ts`](../src/lib/gateway/gateway.ts))
+- **Public audit log.** The audit log is one public chain, so anyone can verify all of it: every reader, with any token or none, reads every buyer's entries. Each entry names its buyer and carries a one-sentence summary and structured data: what was searched for, the products and quantities offered and ordered, offer and order totals in euros, delivery dates, the mandate checks that held or stopped an order with their messages (which can quote a buyer's limit), and each mandate change. Between buyers that is commercially sensitive. Production keeps the one chain but gives each buyer only its own entries, each with an inclusion proof against a signed checkpoint, and keeps summaries free of prices and quantities. ([`src/app/api/v1/audit/route.ts`](../src/app/api/v1/audit/route.ts), [`src/lib/orders/summaries.ts`](../src/lib/orders/summaries.ts), [`src/lib/gateway/describe.ts`](../src/lib/gateway/describe.ts))
 - **Buyer agent.** The fixed demo scenes, the tests and the evals use a scripted buyer agent, so results repeat. Free-text requests use Claude or Gemini when a key is set, else the scripted agent. ([`src/lib/agent/purchase.ts`](../src/lib/agent/purchase.ts), [`src/lib/agent/llm/engine.ts`](../src/lib/agent/llm/engine.ts))
 - **Voice.** Spoken input uses the browser's Web Speech API. Spoken answers use the browser's voice, or ElevenLabs when a key is set on the server. ([`src/lib/voice/speech-to-text.ts`](../src/lib/voice/speech-to-text.ts), [`src/lib/voice/text-to-speech.ts`](../src/lib/voice/text-to-speech.ts))
 

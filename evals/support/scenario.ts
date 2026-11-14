@@ -1,16 +1,17 @@
-import type { Order, Quantity, RuleId } from "@/lib/contracts";
-import { DEMO_AGENT, gatewayTransport, parseRequest, runPurchase, type AgentTransport, type PurchaseStatus } from "@/lib/agent";
+import type { Order, Quantity, QuoteRequest, RuleId } from "@/lib/contracts";
+import { DEMO_AGENT, gatewayTransport, runPurchase, type AgentTransport, type PurchaseStatus } from "@/lib/agent";
 import { catalog } from "@/lib/catalog";
-import { now } from "@/lib/clock";
 import { gateway } from "@/lib/gateway";
 import type { MandatePatch } from "@/lib/orders/types";
-import type { Verdict } from "../harness";
+import { PINNED_NOW, type Verdict } from "../harness";
 import { Checks } from "./checks";
 import { auditVerifies, expectedEvents, nonPassing, orderEvents } from "./flow";
 import { EXTRAS, type ExtraName } from "./scenario-extras";
 import { addDays, coveredAmount, lineText, lotExcessLimit } from "./quantities";
 
 export type Route = "auto" | "approval" | "blocked" | "no_order";
+
+type QuoteLine = QuoteRequest["lines"][number];
 
 export interface Scenario {
   id: string;
@@ -20,7 +21,8 @@ export interface Scenario {
     concept?: string;
     claims?: string[];
     need?: Quantity;
-    delivery?: "on_time" | "one_day_late";
+    /** When the goods must arrive: by the date the words mean on the pinned clock, or one day after it. */
+    delivery?: { by: string; arrives: "on_time" | "one_day_late" };
     /** Checks that must ask or block on the order. */
     rules?: RuleId[];
     agent?: PurchaseStatus;
@@ -31,6 +33,8 @@ export interface Scenario {
   before?: string[];
   /** The agent's order request is sent three times with one idempotency key. */
   sendTwice?: boolean;
+  /** The agent quotes this line instead of what it found, as a careless model might; the buyer's words go with it. */
+  misquote?: QuoteLine;
   extra?: ExtraName;
   note?: string;
   live?: boolean;
@@ -57,6 +61,11 @@ function resending(base: AgentTransport, replies: Order[]): AgentTransport {
   };
 }
 
+/** Quotes a fixed line whatever the agent chose, keeping the buyer's words and claiming a certain match. */
+function misquoting(base: AgentTransport, line: QuoteLine): AgentTransport {
+  return { ...base, requestQuote: (request) => base.requestQuote({ ...request, lines: [line], matchConfidence: "high" }) };
+}
+
 function checkProducts(order: Order, expect: Scenario["expect"], checks: Checks): void {
   for (const line of order.offer.lines.filter((l) => l.quantity > 0)) {
     const product = catalog().get(line.productId);
@@ -77,12 +86,17 @@ function checkQuantity(order: Order, need: Quantity, checks: Checks): void {
   checks.expect(covered - need.amount <= limit + 1e-9, `ordered ${covered} ${need.unit}, more than one lot over ${need.amount}`);
 }
 
-function checkDelivery(order: Order, request: string, delivery: "on_time" | "one_day_late", checks: Checks): string {
-  const { deliverBy } = parseRequest(request, now());
+/**
+ * The expected date is written out for the pinned clock. A live run has today's clock, so there the date the agent
+ * asked for stands in, and the note says so.
+ */
+function checkDelivery(order: Order, delivery: NonNullable<Scenario["expect"]["delivery"]>, checks: Checks): string {
+  const pinned = process.env.LAITURI_NOW === PINNED_NOW;
+  const by = pinned ? delivery.by : order.offer.deliverBy;
   const dates = [...new Set(order.offer.lines.filter((l) => l.quantity > 0).map((l) => l.availability.deliveryDate ?? "none"))];
-  const ok = delivery === "on_time" ? dates.every((d) => d !== "none" && d <= deliverBy) : dates.every((d) => d === addDays(deliverBy, 1));
-  checks.expect(ok, `delivery ${dates.join(",")} for ${deliverBy}, expected ${delivery.replace(/_/g, " ")}`);
-  return dates.join(",");
+  const ok = delivery.arrives === "on_time" ? dates.every((d) => d !== "none" && d <= by) : dates.every((d) => d === addDays(by, 1));
+  checks.expect(ok, `delivery ${dates.join(",")} for ${by}, expected ${delivery.arrives.replace(/_/g, " ")}`);
+  return `${dates.join(",")}${pinned ? "" : ` (live: by ${by}, the agent's date)`}`;
 }
 
 export async function runScenario(scenario: Scenario): Promise<Verdict> {
@@ -95,7 +109,8 @@ export async function runScenario(scenario: Scenario): Promise<Verdict> {
   }
   const countBefore = (await gateway().listOrders()).length;
   const replies: Order[] = [];
-  const result = await runPurchase(scenario.request, scenario.sendTwice ? resending(base, replies) : base, QUIET);
+  const asked = scenario.misquote ? misquoting(base, scenario.misquote) : base;
+  const result = await runPurchase(scenario.request, scenario.sendTwice ? resending(asked, replies) : asked, QUIET);
   const order = result.orderId ? await gateway().getOrder(DEMO_AGENT, result.orderId) : undefined;
   const countAfter = (await gateway().listOrders()).length;
   const { expect } = scenario;
@@ -110,7 +125,7 @@ export async function runScenario(scenario: Scenario): Promise<Verdict> {
   if (order) {
     checkProducts(order, expect, checks);
     if (expect.need) checkQuantity(order, expect.need, checks);
-    if (expect.delivery) checks.note(`delivery ${checkDelivery(order, scenario.request, expect.delivery, checks)}`);
+    if (expect.delivery) checks.note(`delivery ${checkDelivery(order, expect.delivery, checks)}`);
     for (const rule of expect.rules ?? []) {
       const status = order.decision.checks.find((check) => check.rule === rule)?.status ?? "missing";
       checks.expect(status === "ask" || status === "block", `${rule} ${status}, expected ask or block`);

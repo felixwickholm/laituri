@@ -1,4 +1,4 @@
-import type { Approval, Check, Order, SignedOffer } from "@/lib/contracts";
+import type { Approval, AuditEntry, Check, Order, SignedOffer } from "@/lib/contracts";
 import type { DemandRecord } from "@/lib/demand/types";
 import type { Activity } from "@/lib/store/types";
 import { offer } from "../policy/fixtures";
@@ -57,4 +57,20 @@ export function record(patch: Partial<DemandRecord> & Pick<DemandRecord, "id" | 
 
 export function activity(patch: Partial<Activity> & Pick<Activity, "id" | "at">): Activity {
   return { agent: HARBOUR_AGENT, buyer: HARBOUR, client: "Claude Code", kind: "tool", tool: "search_catalog", title: "Searched", status: "ok", ...patch };
+}
+
+/** The signed entry for one quote: its primary offer and the alternatives issued with it. */
+export function offerIssued(seq: number, offerId: string, alternativeOfferIds: string[]): AuditEntry {
+  return {
+    seq,
+    at: NOW.toISOString(),
+    actor: { type: "supplier", id: "supplier:valio-aimo", name: "Valio Aimo" },
+    event: "offer.issued",
+    summary: "Offer issued.",
+    refs: { offerId, buyerId: HARBOUR.id },
+    data: { alternativeOfferIds },
+    prevHash: "0",
+    hash: "0",
+    signature: "a.b.c",
+  };
 }

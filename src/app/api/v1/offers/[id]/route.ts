@@ -8,9 +8,11 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 // The gateway has no offer lookup; offers are read straight from the store.
+// For an agent token, an offer made for another buyer does not exist; a reader without a token sees any offer.
 export const GET = route(async (request, params) => {
-  await resolveAgent(request.headers, restCall(request));
+  const agent = await resolveAgent(request.headers, restCall(request));
   const signed = await store().offers.get(params.id);
-  if (!signed) throw new NotFoundError(`Offer ${params.id} does not exist.`);
+  const otherBuyer = agent.buyer !== undefined && signed?.offer.buyer.id !== agent.buyer.id;
+  if (!signed || otherBuyer) throw new NotFoundError(`Offer ${params.id} does not exist.`);
   return json(signed);
 });

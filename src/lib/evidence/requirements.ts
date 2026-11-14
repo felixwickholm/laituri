@@ -100,10 +100,10 @@ export function privacy(): Requirement[] {
     },
     {
       quote: "Confidential data",
-      status: "covered",
-      answer: "Agents receive only the fields defined in the published schemas; the MCP server parses every tool result against its output schema, which drops anything else. An agent token reads only its own buyer's records.",
-      where: ["src/lib/contracts", "src/lib/mcp/server.ts", "src/lib/http/buyer-scope.ts"],
-      check: [{ kind: "eval", value: "O6" }, { kind: "test", value: "tests/buyers/isolation.test.ts" }],
+      status: "partly",
+      answer: "Agents receive only the fields defined in the published schemas; the MCP server parses every tool result against its output schema, which drops any other field, and a result that does not parse is withheld and answered as a tool error. For an agent token, orders, offers, the mandate and approvals are scoped to its own buyer. The audit log is one public chain whose entries carry summaries with other buyers' products, quantities and prices (see Public audit log under Simulated, assumed and not built).",
+      where: ["src/lib/contracts", "src/lib/mcp/server.ts", "src/lib/http/buyer-scope.ts", "src/app/api/v1/offers/[id]/route.ts"],
+      check: [{ kind: "eval", value: "O6" }, { kind: "eval", value: "G21" }, { kind: "test", value: "tests/buyers/isolation.test.ts" }, { kind: "test", value: "tests/mcp/output-validation.test.ts" }],
     },
     {
       quote: "The buyer's terms",

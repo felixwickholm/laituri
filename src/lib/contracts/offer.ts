@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { IsoDate, IsoDateTime, Jws, Money, Quantity } from "./common";
 import { ProductFacts } from "./facts";
+import { RequestCheck } from "./request-check";
 
 export const QuoteLineRequest = z.object({
   productId: z.string(),
@@ -73,6 +74,10 @@ export const Offer = z.object({
   lines: z.array(OfferLine),
   totals: z.object({ net: Money, tax: Money, gross: Money }),
   notes: z.array(z.string()).describe("Plain-language exceptions, for example a passed cut-off"),
+  requestCheck: z.array(RequestCheck).optional().describe(
+    "The wholesaler's comparison of the buyer's words (intent) with this offer, one entry per requirement, signed with the offer. " +
+      "Absent when no words were sent",
+  ),
   source: z.object({
     system: z.string(),
     pricedAt: IsoDateTime,

@@ -28,7 +28,7 @@ Contracts: [`src/lib/contracts/offer.ts`](../src/lib/contracts/offer.ts), [`src/
 5. **Check fit.** Compare the payload with the need: `availability.status` is `available` for a full offer; `deliveryDate` is on or before `deliverBy`; `facts.labels` and `facts.countryOfOrigin` meet the buyer's wishes.
 6. **Order with the bytes unchanged.** Send the JWS exactly as received. The gateway verifies it again and refuses a changed, expired, foreign or already used offer.
 7. **Verify the receipt.** A confirmed order has `receiptJws`, signed by the supplier key, with `offerHash` (SHA-256 of the canonical offer), `orderId`, `responseCode` and `auditSeq`.
-8. **Check the log.** `GET /api/v1/audit/verify` re-checks every hash link and every entry signature. `GET /api/v1/audit/checkpoint` returns a signed `{size, head}`. Keep it; a later verification that finds fewer entries or a different head at that size shows the log was cut or rewritten.
+8. **Check the log.** `GET /api/v1/audit/verify` re-checks every hash link and every entry signature. `GET /api/v1/audit/checkpoint` returns a signed `{size, head}`. Keep it; a later verification that finds fewer entries, or a different entry at that size whatever the log's length, shows the log was cut or rewritten.
 
 ## Failure cases and how they are caught
 
@@ -43,7 +43,8 @@ Contracts: [`src/lib/contracts/offer.ts`](../src/lib/contracts/offer.ts), [`src/
 | Mandate signed by the agent's own key | `mandate.signature` blocks | G6 |
 | One byte changed in a receipt | Signature check fails | T8 |
 | An audit entry changed, deleted or reordered | Verification names the entry | T9, T10, T11, T13 |
-| The newest audit entries cut off | Detected against the remembered head | T12 |
+| The newest audit entries cut off, the log cut and extended, or rewritten from an earlier entry | Detected against the remembered head | T12, T15, T16 |
+| A waiting order approved after the mandate changed to exclude it | The approval re-checks the mandate in force and blocks the order | G22 |
 
 Run them: `npm run eval -- --suite trust` and `npm run eval -- --suite guardrails`.
 

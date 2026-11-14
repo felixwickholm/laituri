@@ -1,4 +1,5 @@
 import type { OfferLine, Product } from "@/lib/contracts";
+import { describeCheck } from "@/lib/request";
 import type { FullContext, Rule } from "../context";
 import { check, listText, plural } from "../format";
 
@@ -112,12 +113,24 @@ export const firstTimeProducts: Rule = {
   },
 };
 
+/**
+ * The offer against the buyer's words: a requirement the offer certainly fails blocks the order; one it does not meet,
+ * or that cannot be checked, goes to a person, named; an uncertain product match goes to a person too.
+ */
 export const matchConfidence: Rule = {
   id: "match.confidence",
   needs: "offer",
   run: ({ offer }) => {
     const level = offer.matchConfidence;
-    const extra = { observed: level, limit: "medium or high" };
+    const open = (offer.requestCheck ?? []).filter((item) => item.result !== "met");
+    const extra = { observed: open.length ? open.map((item) => item.requirement).join(", ") : level, limit: "every requirement in the words met" };
+    const certain = open.filter((item) => item.certain);
+    if (certain.length) {
+      return check("match.confidence", "block", `The offer does not match the request. ${certain.map(describeCheck).join(". ")}.`, extra);
+    }
+    if (open.length) {
+      return check("match.confidence", "ask", `A person must confirm the offer against the request. ${open.map(describeCheck).join(". ")}.`, extra);
+    }
     if (level === "low") return check("match.confidence", "ask", "The product match is uncertain, so a person should confirm it.", extra);
     if (level === "medium") return check("match.confidence", "pass", "The product match is likely but not certain.", extra);
     return check("match.confidence", "pass", "The product match is certain.", extra);

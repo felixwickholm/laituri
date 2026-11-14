@@ -111,6 +111,15 @@ export const Health = z.object({
       model: z.string().optional().describe("The model name; set for claude and gemini"),
     })
     .describe("Which engine runs free-text requests from the console (LAITURI_AGENT_ENGINE and the model keys)"),
+  store: z
+    .object({
+      recovery: z
+        .object({ keptAs: z.string(), reason: z.string(), at: z.string() })
+        .optional()
+        .describe("Set when the saved state could not be read at start-up: the file was kept under keptAs and the service started empty"),
+      lastSaveError: z.string().optional().describe("Set while the last delayed save of offers, activity or demand failed"),
+    })
+    .describe("The saved state on disk. Orders, approvals, mandate changes and audit entries are saved before their call returns"),
   time: z.string(),
 });
 

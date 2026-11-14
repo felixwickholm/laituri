@@ -1,4 +1,4 @@
-import type { Order } from "@/lib/contracts";
+import { OrderStatus, type Order } from "@/lib/contracts";
 import { gateway } from "@/lib/gateway";
 import { mandate, placeOrder, quoteLitres } from "./flow";
 import { guardrail, orderOf, outcomeText, type Hostile } from "./hostile";
@@ -7,10 +7,15 @@ import type { Checks } from "./checks";
 const LITRES = 1000;
 const cents = (value: number) => Math.round(value * 100);
 
+/** Outcomes in a fixed order, so concurrent orders that finish in any order give the same text. */
+const OUTCOMES = [...OrderStatus.options, "refused"] as const;
+
 function tally(orders: (Order | undefined)[]): string {
-  const counts = new Map<string, number>();
-  for (const order of orders) counts.set(order?.status ?? "refused", (counts.get(order?.status ?? "refused") ?? 0) + 1);
-  return [...counts].map(([status, count]) => `${count} ${status}`).join(", ");
+  const outcomes = orders.map((order) => order?.status ?? "refused");
+  return OUTCOMES.flatMap((outcome) => {
+    const count = outcomes.filter((item) => item === outcome).length;
+    return count ? [`${count} ${outcome}`] : [];
+  }).join(", ");
 }
 
 /** Confirmed spend this run must stay inside the weekly limit, and only what fits may confirm. */

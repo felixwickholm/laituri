@@ -36,7 +36,7 @@ export function criteria(f: Facts): Criterion[] {
       ],
       measured: [
         suiteLine(f, "scenarios"),
-        `An agent that reads only /llms.txt searches, quotes and orders the milk (eval O8)`,
+        "An agent that knows only the text of /llms.txt, fetched over HTTP from a server started for the eval, runs the curl lines of its REST flow in order (URLs, headers and bodies as written, filling each <field from step N> from that step's answer), searches, quotes and orders the milk, and the order confirms (eval O8)",
       ],
       limit: "Orders are simulated: the mock API has price and availability but no order endpoint, so Laituri writes the order and receipt itself and marks each one simulated: true.",
     },
@@ -44,18 +44,19 @@ export function criteria(f: Facts): Criterion[] {
       name: "Solving the problem and user need",
       weight: 20,
       claim:
-        "The agent orders what the buyer asked for: the wholesaler turns litres and kilograms into whole sales units, states how sure it is of the match, and every order shows the request next to the signed offer.",
+        "The agent orders what the buyer asked for: the wholesaler turns litres and kilograms into whole sales units, compares the buyer's words with every offer and signs that comparison into it, and an order that does not meet the words in full is never confirmed alone.",
       built: [
         "Search reads Finnish, Swedish or English needs as a product concept plus claims (for example lactose_free) and returns a match confidence.",
         "Pack maths: 1,000 l becomes 1,000 x 1 l; the scenario evals accept at most one lot more than asked.",
-        "Each order shows the asked amount, the offered packs, the claim, the delivery date and the fixed price side by side.",
-        "An uncertain match is never ordered alone: the match.confidence rule sends it to a person.",
+        "Request check: product, every claim, words not understood, quantity (at most one lot over), date, a budget (\"under 50 euros\", \"alle 50 euroa\") and an order to wait (\"ask me first\", \"älä tilaa ennen kuin hyväksyn\"), each met, unmet or unchecked, signed inside the offer and shown on the order.",
+        "The match.confidence rule refuses a certain mismatch (wrong product, a missing claim, far too little) and sends anything unmet, unchecked or uncertain to a person with the requirement named.",
         `${f.demoBuyers} demo buyers with their own signed mandates (${f.buyerNames.join(", ")}). The same sentence confirms for the hotel and is blocked for the school kitchens, which exclude sesame even as a trace.`,
         "Every offer line carries the product's country of origin, labels, delivery reliability and category-average CO2 inside the signature; search can rank a clear match by price, reliability or sustainability.",
       ],
       where: [
         "src/lib/catalog/search.ts",
         "src/lib/offers/packs.ts",
+        "src/lib/request/index.ts",
         "src/lib/gateway/confidence.ts",
         "src/components/order/RequestProof.tsx",
         "src/lib/mandate/defaults.ts",
@@ -65,6 +66,9 @@ export function criteria(f: Facts): Criterion[] {
       check: [
         { kind: "eval", value: "2" },
         { kind: "eval", value: "12" },
+        { kind: "eval", value: "19" },
+        { kind: "eval", value: "22" },
+        { kind: "test", value: "tests/request/fidelity.test.ts" },
         { kind: "test", value: "tests/demo/two-kitchens.test.ts" },
         { kind: "test", value: "tests/offers/packs.test.ts" },
       ],
@@ -149,7 +153,7 @@ export function criteria(f: Facts): Criterion[] {
       built: [
         `${f.mcpTools} MCP tools and ${f.restOperations} REST operations on ${f.restPaths} paths, from one schema set.`,
         `${f.discoveryDocuments} discovery documents: OpenAPI is served beside the JWKS, agent card, AI catalog, UCP profile, OAuth protected-resource metadata and llms.txt.`,
-        "An outside agent that knows only llms.txt buys the milk.",
+        "An outside agent that knows only the text of llms.txt, fetched over HTTP, buys the milk by following its REST flow.",
         "Standards table separates \"used\" (implemented and tested) from \"follows\" (names and shapes taken from the standard).",
         "Decision records in docs/decisions; assumptions and the path to production in this README and on /evidence.",
         "MIT licence.",

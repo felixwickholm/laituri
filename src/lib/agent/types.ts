@@ -34,13 +34,19 @@ export interface AgentHooks {
 export interface ParsedRequest {
   text: string;
   quantity?: Quantity;
-  /** The product in the buyer's words, without quantity and date. */
+  /** The product in the buyer's words, without quantity, date, purpose or instructions. */
   phrase: string;
+  /** What the buyer said the goods are for ("the breakfast buffets"); context, not a requirement. */
+  purpose?: string;
   /** A wholesaler product code named in the request, for example "product 462775". */
   productId?: string;
   deliverBy: string;
   /** False when no date was given and the next working day was assumed. */
   deliverByStated: boolean;
+  /** The most the buyer will pay, in euros ("under 50 euros"). */
+  budget?: number;
+  /** The buyer asked a person to approve before anything is ordered ("ask me first"). */
+  waitForPerson: boolean;
 }
 
 export interface PurchaseOptions {

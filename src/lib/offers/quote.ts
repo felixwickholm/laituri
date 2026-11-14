@@ -1,9 +1,11 @@
-import type { Alternative, Product, QuoteRequest, QuoteResponse } from "@/lib/contracts";
+import type { Alternative, Product, QuoteRequest, QuoteResponse, SignedOffer } from "@/lib/contracts";
 import { UpstreamError, errorMessage } from "@/lib/gateway/errors";
+import { checkRequest, offeredLines, readBuyerWords } from "@/lib/request";
 import { TIER_MEANING, planAlternatives, type Need } from "./alternatives";
 import { assembleOffer, issueOffer } from "./assemble";
 import { quoteLine } from "./lines";
-import type { Market, OfferDeps, QuoteContext } from "./types";
+import { stockLedger } from "./stock";
+import type { BuiltLine, Market, OfferDeps, QuoteContext } from "./types";
 
 const SUBSTITUTE_CANDIDATES = 12;
 const UPSTREAM_BATCH_LIMIT = 1000;
@@ -41,22 +43,28 @@ export async function quote(request: QuoteRequest, ctx: QuoteContext, deps: Offe
   ].slice(0, UPSTREAM_BATCH_LIMIT);
 
   const market = await fetchMarket(ids, request, ctx, deps);
-  const needs: Need[] = requested.map(({ line, product }) => ({
-    original: product,
-    quantity: line.quantity,
-    primary: quoteLine(line.productId, product, line.quantity, market),
-    candidates: product ? candidates.get(product.id) ?? [] : [],
-  }));
+  // Lines of one product share its stock: each line is offered only what the lines before it left.
+  const ledger = stockLedger(market);
+  const needs: Need[] = requested.map(({ line, product }) => {
+    const primary = quoteLine(line.productId, product, line.quantity, ledger.view());
+    ledger.claim([primary.line]);
+    return { original: product, quantity: line.quantity, primary, candidates: product ? candidates.get(product.id) ?? [] : [] };
+  });
 
   const base = { request, customerNumber: ctx.customerNumber, buyer: ctx.buyer, now: market.now, validityMs: deps.offerValidityMs?.() };
-  const primaryOffer = assembleOffer({ ...base, lines: needs.map((need) => need.primary) });
-  const primary = await issueOffer(primaryOffer, deps);
-  if (primaryOffer.fulfilment === "full") return { primary, alternatives: [] };
+  // The buyer's words as they stood at quote time, held against every offer before it is signed.
+  const words = request.intent ? readBuyerWords(request.intent, market.now) : undefined;
+  const issue = (lines: BuiltLine[]): Promise<SignedOffer> => {
+    const offer = assembleOffer({ ...base, lines });
+    const requestCheck = words ? checkRequest(words, offer, offeredLines(lines, (id) => deps.catalog.get(id))) : undefined;
+    return issueOffer(requestCheck ? { ...offer, requestCheck } : offer, deps);
+  };
+  const primary = await issue(needs.map((need) => need.primary));
+  if (primary.offer.fulfilment === "full") return { primary, alternatives: [] };
 
   const alternatives: Alternative[] = [];
   for (const plan of planAlternatives(needs, market)) {
-    const signed = await issueOffer(assembleOffer({ ...base, lines: plan.lines }), deps);
-    alternatives.push({ tier: plan.tier, meaning: TIER_MEANING[plan.tier], tradeoff: plan.tradeoff, signed });
+    alternatives.push({ tier: plan.tier, meaning: TIER_MEANING[plan.tier], tradeoff: plan.tradeoff, signed: await issue(plan.lines) });
   }
   return { primary, alternatives };
 }

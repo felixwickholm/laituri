@@ -1,7 +1,7 @@
 import { existsSync, readdirSync } from "node:fs";
 import path from "node:path";
 
-/** Origin used for in-process requests. Nothing listens here; requests go straight to the route handlers. */
+/** Origin used for in-process requests. Nothing listens here; `call` goes straight to the route handlers. */
 export const ORIGIN = "http://localhost:3210";
 export const AGENT_TOKEN = "demo-agent-token";
 export const AGENT_AUTH = { authorization: `Bearer ${AGENT_TOKEN}` };
@@ -45,7 +45,7 @@ function resolveRoute(pathname: string): { file: string; params: Params } | unde
   return existsSync(file) ? { file, params } : undefined;
 }
 
-function reply(status: number, text: string, headers = new Headers()): Reply {
+function reply(status: number, text: string, headers: Headers): Reply {
   const contentType = headers.get("content-type") ?? "";
   let body: unknown;
   try {
@@ -56,18 +56,21 @@ function reply(status: number, text: string, headers = new Headers()): Reply {
   return { status, contentType, text, body, headers };
 }
 
-/** Calls the route handler for a method and URL as Next.js would, without a server. */
-export async function call(method: string, url: string, options: CallOptions = {}): Promise<Reply> {
-  const target = new URL(url, ORIGIN);
-  const route = resolveRoute(target.pathname);
-  if (!route) return reply(404, "No route serves this path.");
+/** Hands a request to the App Router route handler that serves its path, as Next.js would. */
+export async function dispatch(request: Request): Promise<Response> {
+  const route = resolveRoute(new URL(request.url).pathname);
+  if (!route) return new Response("No route serves this path.", { status: 404 });
   const handlers = (await import(route.file)) as Record<string, Handler | undefined>;
-  const handler = handlers[method.toUpperCase()];
-  if (!handler) return reply(405, `The route has no ${method} handler.`);
+  const handler = handlers[request.method];
+  if (!handler) return new Response(`The route has no ${request.method} handler.`, { status: 405 });
+  return handler(request, { params: Promise.resolve(route.params) });
+}
+
+/** Calls the route handler for a method and URL in process, without a server. */
+export async function call(method: string, url: string, options: CallOptions = {}): Promise<Reply> {
   const body = options.body === undefined ? undefined : typeof options.body === "string" ? options.body : JSON.stringify(options.body);
   const headers = { ...(body === undefined ? {} : { "content-type": "application/json" }), ...options.headers };
-  const request = new Request(target, { method: method.toUpperCase(), headers, body });
-  const response = await handler(request, { params: Promise.resolve(route.params) });
+  const response = await dispatch(new Request(new URL(url, ORIGIN), { method: method.toUpperCase(), headers, body }));
   return reply(response.status, await response.text(), response.headers);
 }
 

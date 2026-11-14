@@ -19,12 +19,16 @@ function inflate(entry: AuditEntry): AuditEntry {
   return copy;
 }
 
-/** Quietly edits one stored audit entry, the latest order entry when there is one, so verification fails there. */
+/**
+ * Quietly edits one stored audit entry, the latest order entry when there is one, so verification fails there.
+ * The newest entry is left alone while there are others: the service refuses to chain onto an edited tail.
+ */
 export async function tamperAudit(): Promise<{ seq: number }> {
   await restoreAudit();
   const entries = await store().audit.list();
   if (entries.length === 0) throw new StateError("The audit log is empty. Run a scene first.");
-  const target = [...entries].reverse().find((entry) => entry.event.startsWith("order.")) ?? entries[Math.floor(entries.length / 2)];
+  const candidates = entries.length > 1 ? entries.slice(0, -1) : entries;
+  const target = [...candidates].reverse().find((entry) => entry.event.startsWith("order.")) ?? candidates[Math.floor(candidates.length / 2)];
   demoState().tampered = { seq: target.seq, original: target };
   await store().audit.replace(target.seq, inflate(target));
   const timer = setTimeout(() => void restoreAudit(), SELF_HEAL_MS);

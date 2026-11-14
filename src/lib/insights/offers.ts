@@ -1,12 +1,6 @@
 import type { Order, SignedOffer } from "@/lib/contracts";
+import { median } from "./median";
 import type { OfferStats } from "./types";
-
-function median(values: number[]): number | undefined {
-  if (values.length === 0) return undefined;
-  const sorted = [...values].sort((a, b) => a - b);
-  const middle = Math.floor(sorted.length / 2);
-  return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
-}
 
 /** Every signed offer, primary or alternative, and what became of it. An offer is ordered once an order names it. */
 export function offerStats(offers: SignedOffer[], orders: Order[], now: Date): OfferStats {

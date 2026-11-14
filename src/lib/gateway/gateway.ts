@@ -151,7 +151,9 @@ export function createGateway(deps: Deps): Gateway {
       const order = await orders.decideApproval(orderId, body, deps, decider);
       const title = order.approval
         ? `${order.approval.decidedBy.name} ${order.approval.decision} the order for ${offerSubject(order.offer)}`
-        : "The offer expired before approval";
+        : order.status === "blocked"
+          ? "The approval was stopped: the mandate in force no longer allows the order"
+          : "The offer expired before approval";
       await recorder.note({ ...order.agent, buyer: order.buyer }, title, {
         detail: orderDetail(order),
         status: orderStatus(order),
@@ -188,14 +190,15 @@ export function createGateway(deps: Deps): Gateway {
     },
 
     async supplierOverview() {
-      const [orderList, offers, requests, activity, suspended] = await Promise.all([
+      const [orderList, offers, requests, activity, suspended, audit] = await Promise.all([
         deps.store.orders.list(),
         deps.store.offers.list(),
         deps.store.requests.list(),
         deps.store.activity.list(),
         deps.store.suspensions.list(),
+        deps.store.audit.list(),
       ]);
-      return supplierOverview({ now: deps.now(), orders: orderList, offers, requests, activity, suspensions: suspended });
+      return supplierOverview({ now: deps.now(), orders: orderList, offers, requests, activity, suspensions: suspended, audit });
     },
 
     async admitAgent(agentInput, call) {

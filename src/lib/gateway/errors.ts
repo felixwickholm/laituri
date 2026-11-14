@@ -51,6 +51,13 @@ export class AgentSuspendedError extends GatewayError {
   }
 }
 
+/** A record could not be written to disk, so the call that made it did not happen. */
+export class StorageError extends GatewayError {
+  constructor(message: string) {
+    super(message, 503, "storage_unavailable");
+  }
+}
+
 export class UpstreamError extends GatewayError {
   constructor(message: string, details?: unknown) {
     super(message, 502, "upstream_unavailable", details);

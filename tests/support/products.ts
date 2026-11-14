@@ -46,12 +46,12 @@ function product(spec: Spec): Product {
 }
 
 export const PRODUCTS: Product[] = [
-  product({ id: "464306", en: "Valio Eila 1 l", brand: "Valio", concept: "lactose_free_milk", reliability: 0.95 }),
-  product({ id: "464401", en: "Arla Lactose Free Milk 1 l", brand: "Arla", concept: "lactose_free_milk", reliability: 0.99 }),
-  product({ id: "463335", en: "Valio Organic Eila 1 l", brand: "Valio", concept: "lactose_free_milk", labels: ["eu_organic"], reliability: 0.9 }),
-  product({ id: "462775", en: "Valio Eila Fat Free UHT 1 l", brand: "Valio", concept: "lactose_free_milk", reliability: 0.97 }),
-  product({ id: "465039", en: "Valio Eila 5 x 1 l", brand: "Valio", concept: "lactose_free_milk", salesUnit: "KI", content: { amount: 5, unit: "l" } }),
-  product({ id: "464073", en: "Almond Milk Drink 1 l", brand: "Valio", concept: "lactose_free_milk", contains: ["milk", "nuts"] }),
+  product({ id: "464306", en: "Valio Eila 1 l", brand: "Valio", concept: "milk", reliability: 0.95 }),
+  product({ id: "464401", en: "Arla Lactose Free Milk 1 l", brand: "Arla", concept: "milk", reliability: 0.99 }),
+  product({ id: "463335", en: "Valio Organic Eila 1 l", brand: "Valio", concept: "milk", labels: ["eu_organic"], reliability: 0.9 }),
+  product({ id: "462775", en: "Valio Eila Fat Free UHT 1 l", brand: "Valio", concept: "milk", reliability: 0.97 }),
+  product({ id: "465039", en: "Valio Eila 5 x 1 l", brand: "Valio", concept: "milk", salesUnit: "KI", content: { amount: 5, unit: "l" } }),
+  product({ id: "464073", en: "Almond Milk Drink 1 l", brand: "Valio", concept: "milk", contains: ["milk", "nuts"] }),
   product({ id: "464398", en: "Valio Milk 1 l", brand: "Valio", concept: "milk", claims: [] }),
   product({ id: "470001", en: "Valio Butter 500 g", brand: "Valio", concept: "butter", claims: [], lotSize: 4, content: { amount: 0.5, unit: "kg" } }),
 ];

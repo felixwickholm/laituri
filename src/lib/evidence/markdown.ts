@@ -65,7 +65,7 @@ const SUITE_PROVES: Record<string, string> = {
   scenarios: "Plain-language requests end on the right route (auto, approval, blocked, no order) with the right product, amount and date, and a verified audit trail.",
   guardrails: "Edited, expired, replayed or wrongly signed inputs, forged approvals, injected instructions and races never get past the mandate.",
   trust: "Every signature verifies with the published keys, and any changed, deleted, reordered or cut entry is detected.",
-  openness: "The OpenAPI document and MCP tools are complete and callable, discovery documents are served, and an agent can buy from llms.txt alone.",
+  openness: "The OpenAPI document and MCP tools are complete and callable, discovery documents are served, and an agent that reads llms.txt over HTTP buys by following its REST flow.",
 };
 
 export function evalsTable(f: Facts): string {

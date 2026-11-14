@@ -30,7 +30,7 @@ Laituri is one Next.js application. It plays three parties in the demo: the buye
 2. The gateway refuses the call if the wholesaler has suspended the agent ([`src/lib/gateway/suspension.ts`](../src/lib/gateway/suspension.ts)), and records the call for the wholesaler's activity view.
 3. Search reads the local index. A quote asks the upstream client for live price and availability, builds the lines and signs the offer with the supplier key.
 4. An order carries the offer JWS and the mandate JWS. The order module verifies both, checks the offer has not been used, runs every policy rule and then confirms, waits for approval, or blocks.
-5. Every step appends a signed entry to the audit chain. State lives in memory with a JSON snapshot in `.data/state.json` ([`src/lib/store/memory.ts`](../src/lib/store/memory.ts)).
+5. Every step appends a signed entry to the audit chain. State lives in memory with a JSON snapshot in `.data/state.json`; orders, approvals, mandate changes and audit entries are on disk before their call returns ([`src/lib/store/memory.ts`](../src/lib/store/memory.ts)).
 6. The screens poll the REST routes, fetch the JWKS and re-check the chain and signatures in the browser ([`src/lib/console/verify.ts`](../src/lib/console/verify.ts)).
 
 ## The three keys and their custody

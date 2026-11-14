@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { IsoDate, Quantity, QuoteLineRequest, type Mandate, type Order, type QuoteRequest, type SignedOffer } from "@/lib/contracts";
 import { searchText } from "@/lib/mcp/summaries";
+import { describeCheck } from "@/lib/request";
 import { shortDay } from "../dates";
 import { offerSubject } from "../purchase";
 import type { AgentTransport } from "../types";
@@ -39,7 +40,9 @@ function offerText(label: string, signed: SignedOffer, tradeoff?: string): strin
   const when = offer.deliveryDate ? `delivery ${shortDay(offer.deliveryDate)}` : "no delivery date";
   const notes = offer.notes.length ? ` ${offer.notes.join(" ")}` : "";
   const why = tradeoff ? ` ${tradeoff}` : "";
-  return `${label} offer ${offer.id}: ${offerSubject(offer)}, ${offer.fulfilment}, net ${euro(offer.totals.net.amount)}, ${when}.${notes}${why}`;
+  const open = (offer.requestCheck ?? []).filter((check) => check.result !== "met");
+  const fidelity = open.length ? ` Against the buyer's words: ${open.map(describeCheck).join("; ")}.` : "";
+  return `${label} offer ${offer.id}: ${offerSubject(offer)}, ${offer.fulfilment}, net ${euro(offer.totals.net.amount)}, ${when}.${notes}${why}${fidelity}`;
 }
 
 function mandateSummary(mandate: Mandate): string {
