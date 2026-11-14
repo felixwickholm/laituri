@@ -10,7 +10,7 @@ export const categoryAllowed: Rule = {
     const outside = offer.lines.filter((line) => !allowed.includes(line.categoryGroup));
     const limit = allowed.join(", ");
     if (outside.length > 0) {
-      const groups = [...new Set(outside.map((line) => line.categoryGroup))];
+      const groups = [...new Set(outside.map((line) => line.categoryGroup.replaceAll("_", " ")))];
       const verb = outside.length === 1 ? "is" : "are";
       return check("category.allowed", "ask", `${plural(outside.length, "line")} ${verb} in ${listText(groups)}, which the mandate does not allow.`, {
         observed: groups.join(", "),

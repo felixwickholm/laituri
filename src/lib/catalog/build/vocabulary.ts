@@ -76,7 +76,13 @@ function sorted(set: Set<string>): string[] {
   return [...set].sort();
 }
 
-export function allergensOf(raw: RawProduct, claims: string[]) {
+/** Allergens a product name states outright. A safety net for records that carry no declaration. */
+const NAMED_ALLERGENS: [string, RegExp][] = [
+  ["peanut", /(peanut|maap[aä]hkin|jordn[oö]t)/],
+  ["nuts", /(hazelnut|hasselp[aä]hkin|almond|manteli|cashew|walnut|saksanp[aä]hkin|pistachio|pistaasi|pecan|(?<!maa|muskotti|kookos)p[aä]hkin[aä]|\bnuts?\b|\bn[oö]tter\b)/],
+];
+
+export function allergensOf(raw: RawProduct, claims: string[], nameText = "") {
   const contains = new Set<string>();
   const mayContain = new Set<string>();
   const freeFrom = new Set<string>();
@@ -86,6 +92,9 @@ export function allergensOf(raw: RawProduct, claims: string[]) {
   }
   for (const value of classificationIds(raw, "nonAllergen")) {
     for (const name of ALLERGEN_CODES[value.id] ?? []) if (!contains.has(name)) freeFrom.add(name);
+  }
+  for (const [name, pattern] of NAMED_ALLERGENS) {
+    if (!freeFrom.has(name) && pattern.test(nameText)) contains.add(name);
   }
   // Milk carries lactose unless the product is declared lactose free.
   if (contains.has("milk") && !freeFrom.has("lactose") && !claims.includes("lactose_free")) contains.add("lactose");

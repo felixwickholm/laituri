@@ -50,7 +50,7 @@ export function toProduct(raw: RawProduct, extras: ProductExtras = {}): Product 
     lotSize: lotSize(raw),
     content: contentOf(raw, name.en, group !== "non_food"),
     temperature: temperatureOf(raw),
-    allergens: allergensOf(raw, claims),
+    allergens: allergensOf(raw, claims, text),
     claims,
     labels: labelsOf(raw),
     substitutes,
