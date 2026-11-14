@@ -1,0 +1,315 @@
+/*
+ * The approver's phone: one order, the reason first, the amount large, two full-width choices under the thumb.
+ * Mobile first; on a wide screen it stays a phone-width column.
+ */
+
+.ph {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 480px;
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: max(20px, env(safe-area-inset-top)) 16px max(20px, env(safe-area-inset-bottom));
+  color: var(--text-1);
+}
+.ph[data-embedded="true"] {
+  padding-top: 44px;
+}
+
+.ph-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 4px;
+}
+.ph-top .pier-mark {
+  flex: none;
+  color: var(--text-1);
+}
+.ph-buyer {
+  margin: 0;
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 650;
+}
+.ph-agent {
+  margin: 0;
+  color: var(--text-3);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.ph-card {
+  display: grid;
+  gap: 8px;
+  padding: 20px;
+  border-radius: var(--r-xl);
+  background: var(--surface-1);
+}
+
+.ph-pill {
+  justify-self: start;
+  margin: 0;
+  padding: 4px 10px;
+  border-radius: var(--r-full);
+  background: var(--warn-tint);
+  color: var(--warn);
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+}
+.ph-reason-line {
+  margin: 6px 0 0;
+  font-size: 20px;
+  line-height: 26px;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+}
+.ph-amount {
+  margin: 0;
+  font-size: 40px;
+  line-height: 44px;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+.ph-amount span {
+  color: var(--text-3);
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.ph-facts {
+  display: grid;
+  gap: 2px;
+  margin: 12px 0 0;
+  border-radius: var(--r-card);
+  overflow: hidden;
+}
+.ph-facts div {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  background: var(--surface-2);
+}
+.ph-facts dt {
+  color: var(--text-3);
+  font-size: 13px;
+  line-height: 18px;
+}
+.ph-facts dd {
+  margin: 0;
+  font-size: 15px;
+  line-height: 21px;
+  overflow-wrap: anywhere;
+}
+.ph-left {
+  color: var(--warn);
+  font-weight: 600;
+}
+
+/* The choices stay under the thumb while the facts scroll. */
+.ph-dock {
+  position: sticky;
+  bottom: 0;
+  margin: auto -16px 0;
+  padding: 12px 16px max(4px, env(safe-area-inset-bottom));
+  background: var(--bg);
+}
+.ph-actions {
+  display: grid;
+  gap: 10px;
+}
+.ph-form {
+  display: grid;
+  gap: 10px;
+}
+.ph-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 52px;
+  border: 0;
+  border-radius: var(--r-card);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform var(--d-press) var(--ease-out),
+    background-color var(--d-hover) var(--ease-hover);
+}
+.ph-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.ph-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.ph-primary {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.ph-secondary {
+  background: var(--surface-3);
+  color: var(--text-1);
+}
+.ph-danger {
+  background: var(--danger);
+  color: #ffffff;
+}
+@media (hover: hover) and (pointer: fine) {
+  .ph-primary:hover:not(:disabled) {
+    background: var(--accent-hover);
+  }
+  .ph-secondary:hover:not(:disabled) {
+    background: var(--surface-4);
+  }
+}
+
+.ph-label {
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 600;
+}
+.ph-input {
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-control);
+  background: var(--surface-1);
+  color: var(--text-1);
+  font: inherit;
+  font-size: 16px;
+}
+.ph-reason {
+  resize: none;
+}
+.ph-note,
+.ph-fine {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 14px;
+  line-height: 20px;
+}
+.ph-fine {
+  color: var(--text-3);
+  font-size: 13px;
+  line-height: 18px;
+  text-align: center;
+}
+.ph-error {
+  margin: 0;
+  color: var(--danger);
+  font-size: 14px;
+  line-height: 20px;
+}
+.ph-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 44px;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+.ph-link svg {
+  width: 16px;
+  height: 16px;
+}
+.ph-full {
+  align-self: center;
+}
+
+.ph-result {
+  display: grid;
+  justify-items: start;
+  gap: 6px;
+  animation: ph-rise var(--d-sheet) var(--ease-out) both;
+}
+.ph-result-icon {
+  width: 44px;
+  height: 44px;
+  stroke-width: 1.75;
+}
+.ph-result[data-tone="success"] .ph-result-icon {
+  color: var(--success);
+}
+.ph-result[data-tone="danger"] .ph-result-icon {
+  color: var(--danger);
+}
+.ph-result[data-tone="neutral"] .ph-result-icon {
+  color: var(--text-3);
+}
+.ph-result-word {
+  margin: 4px 0 0;
+  font-size: 28px;
+  line-height: 32px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+.ph-result-line {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 15px;
+  line-height: 22px;
+}
+.ph-signed {
+  margin: 6px 0 0;
+  padding: 6px 12px;
+  border-radius: var(--r-full);
+  background: var(--success-tint);
+  color: var(--text-1);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 550;
+}
+.ph-result[data-tone="neutral"] .ph-signed {
+  background: var(--surface-2);
+}
+
+.ph-empty {
+  display: grid;
+  gap: 8px;
+  margin: auto 0;
+  padding: 24px 4px;
+  text-align: center;
+}
+.ph-empty h1 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 28px;
+  font-weight: 650;
+}
+.ph-empty p {
+  margin: 0;
+  color: var(--text-2);
+}
+
+@keyframes ph-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ph-result {
+    animation-name: ph-fade;
+  }
+  @keyframes ph-fade {
+    from {
+      opacity: 0;
+    }
+  }
+}

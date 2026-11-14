@@ -1,0 +1,520 @@
+/*
+ * The guided walkthrough: the page dimmed with a rounded cut-out around the real target, one large card,
+ * and Maria's phone. The cut-out and the floating card are moved by script on transform only; everything
+ * here enters on opacity and transform, and reduced motion keeps the fades without the travel.
+ */
+
+:root {
+  --tour-dim: rgba(11, 18, 32, 0.56);
+  --tour-card-w: 520px;
+  --tour-bezel: #0b0f17;
+}
+:root[data-theme="dark"] {
+  --tour-dim: rgba(2, 4, 9, 0.74);
+  --tour-bezel: #000000;
+}
+
+.tour {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.tour-dim {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  animation: tour-fade var(--d-sheet) var(--ease-out) both;
+}
+/* The dimmed area takes the clicks; the cut-out lets them through to the target. */
+.tour-dim-fill {
+  fill: var(--tour-dim);
+  pointer-events: visiblePainted;
+}
+.tour-ring {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+/* The floating card: placed by script beside, below or above the target. */
+.tour-float {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: min(var(--tour-card-w), calc(100vw - 48px));
+  pointer-events: auto;
+  will-change: transform;
+}
+
+.tour-card {
+  position: relative;
+  padding: 22px 24px 20px;
+  border-radius: var(--r-xl);
+  background: var(--surface-1);
+  box-shadow: var(--shadow-float);
+  color: var(--text-1);
+  animation: tour-rise var(--d-sheet) var(--ease-out) both;
+}
+
+.tour-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: -6px -10px 0 0;
+}
+.tour-count {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+}
+.tour-close {
+  flex: none;
+}
+.tour-intro .tour-close,
+.tour-end .tour-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+}
+
+.tour-progress {
+  display: flex;
+  gap: 4px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.tour-progress li {
+  position: relative;
+  flex: 1;
+  height: 4px;
+  border-radius: var(--r-full);
+  background: var(--surface-3);
+  overflow: hidden;
+}
+.tour-progress li::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--d-sheet) var(--ease-sheet);
+}
+.tour-progress li[data-state="done"]::after,
+.tour-progress li[data-state="now"]::after {
+  transform: scaleX(1);
+}
+.tour-progress li[data-state="done"]::after {
+  opacity: 0.45;
+}
+
+.tour-copy {
+  animation: tour-swap var(--d-base) var(--ease-out) both;
+}
+.tour-title {
+  margin: 16px 0 0;
+  font-size: 22px;
+  line-height: 30px;
+  font-weight: 650;
+  letter-spacing: -0.016em;
+  text-wrap: pretty;
+}
+.tour-title-big {
+  margin: 4px 40px 0 0;
+  font-size: 28px;
+  line-height: 34px;
+  letter-spacing: -0.022em;
+}
+.tour-detail {
+  margin: 8px 0 0;
+  color: var(--text-2);
+  font-size: 16px;
+  line-height: 24px;
+}
+.tour-detail[data-note="true"] {
+  color: var(--warn);
+}
+
+.tour-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 22px;
+}
+.tour-keys {
+  margin: 0 auto 0 0;
+  color: var(--text-3);
+  font-size: 13px;
+  line-height: 18px;
+}
+.tour-next {
+  min-width: 140px;
+}
+.tour-next[aria-disabled="true"] {
+  opacity: 0.72;
+  cursor: progress;
+}
+.tour-next[aria-disabled="true"]:active {
+  transform: none;
+}
+.tour-next[data-busy="true"] {
+  background: var(--surface-3);
+  color: var(--text-1);
+}
+
+/* The intro and the end: centred, with the page dimmed behind and no cut-out. */
+.tour-center {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  pointer-events: none;
+}
+.tour-center > .tour-card {
+  width: min(560px, 100%);
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+  padding: 28px 28px 24px;
+  pointer-events: auto;
+}
+.tour-intro .tour-detail {
+  font-size: 17px;
+  line-height: 26px;
+}
+.tour-intro-actions {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+  margin-top: 28px;
+}
+.tour-start {
+  min-width: 180px;
+  height: 52px;
+  padding: 0 22px;
+  font-size: 16px;
+}
+.tour-fine {
+  margin: 0;
+  color: var(--text-3);
+  font-size: 13px;
+  line-height: 19px;
+}
+.tour-error {
+  margin: 14px 0 0;
+  color: var(--danger);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.tour-center > .tour-end {
+  width: min(620px, 100%);
+}
+.tour-recap {
+  display: grid;
+  gap: 8px;
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.tour-recap li {
+  padding: 12px 16px;
+  border-radius: var(--r-lg);
+  background: var(--surface-2);
+}
+.tour-recap p {
+  margin: 0;
+  font-size: 16px;
+  line-height: 23px;
+}
+.tour-recap .tour-criteria {
+  margin-top: 2px;
+  color: var(--text-3);
+  font-size: 13px;
+  line-height: 18px;
+}
+.tour-end-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 22px;
+}
+.tour-end-actions > :first-child {
+  grid-column: 1 / -1;
+  height: 52px;
+  font-size: 16px;
+}
+.tour-end-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+}
+.tour-end-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.tour-end-back svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Maria's phone, beside the card. */
+.tour-phone-layout {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 48px;
+  padding: 24px;
+  pointer-events: none;
+}
+.tour-phone-layout > * {
+  pointer-events: auto;
+}
+.tour-phone-layout > .tour-float {
+  position: static;
+  width: min(460px, 100%);
+}
+.tour-phone-layout .tour-keys {
+  display: none;
+}
+.tour-phone-layout .tour-actions {
+  justify-content: flex-end;
+}
+.tour-phone {
+  position: relative;
+  flex: none;
+  width: 390px;
+  height: min(800px, calc(100dvh - 48px));
+  padding: 12px;
+  border-radius: 54px;
+  background: var(--tour-bezel);
+  box-shadow: var(--shadow-float);
+  animation: tour-rise-far 420ms var(--ease-out) both;
+}
+:root[data-theme="dark"] .tour-phone {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14), var(--shadow-float);
+}
+.tour-phone-notch {
+  position: absolute;
+  top: 22px;
+  left: 50%;
+  z-index: 1;
+  width: 104px;
+  height: 30px;
+  border-radius: var(--r-full);
+  background: var(--tour-bezel);
+  transform: translateX(-50%);
+}
+.tour-phone-screen {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 42px;
+  background: var(--bg);
+}
+
+/* After Escape: a quiet way back in. */
+.tour-resume {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 95;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 4px 4px 6px;
+  border-radius: var(--r-full);
+  background: var(--surface-inverse);
+  color: var(--text-inverse);
+  box-shadow: var(--shadow-float);
+  animation: tour-rise var(--d-sheet) var(--ease-out) both;
+}
+.tour-resume-go {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--r-full);
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform var(--d-press) var(--ease-out);
+}
+.tour-resume-go:active {
+  transform: scale(0.97);
+}
+.tour-resume-go svg {
+  width: 18px;
+  height: 18px;
+}
+.tour-resume-step {
+  font-weight: 450;
+  opacity: 0.7;
+}
+.tour-resume .icon-btn {
+  color: inherit;
+  opacity: 0.75;
+}
+
+/* Tablets: the phone above, the card as a sheet below it. */
+@media (max-width: 959px) {
+  .tour-phone-layout {
+    flex-direction: column;
+    gap: 0;
+    padding: 0;
+  }
+  .tour-phone {
+    flex: 1;
+    width: min(390px, 100%);
+    height: auto;
+    min-height: 0;
+    margin: 16px 0;
+  }
+  .tour-phone-layout > .tour-float {
+    width: 100%;
+  }
+  .tour-phone-layout > .tour-float .tour-card {
+    border-radius: var(--r-xl) var(--r-xl) 0 0;
+  }
+}
+
+/* Phones: every card is a bottom sheet; the spotlight still works above it. */
+@media (max-width: 719px) {
+  .tour-float {
+    top: auto;
+    bottom: 0;
+    width: 100%;
+  }
+  .tour-card {
+    padding: 18px 16px max(16px, env(safe-area-inset-bottom));
+    border-radius: var(--r-xl) var(--r-xl) 0 0;
+    animation-name: tour-sheet;
+    animation-timing-function: var(--ease-sheet);
+  }
+  .tour-card-top {
+    margin-right: -6px;
+  }
+  .tour-title {
+    margin-top: 12px;
+    font-size: 19px;
+    line-height: 26px;
+  }
+  .tour-title-big {
+    font-size: 24px;
+    line-height: 30px;
+  }
+  .tour-detail {
+    font-size: 15px;
+    line-height: 22px;
+  }
+  .tour-keys {
+    display: none;
+  }
+  .tour-actions {
+    margin-top: 16px;
+  }
+  .tour-next {
+    flex: 1;
+  }
+  .tour-center {
+    place-items: end stretch;
+    padding: 0;
+  }
+  .tour-center > .tour-card {
+    width: 100%;
+    max-height: 92dvh;
+    padding: 24px 16px max(16px, env(safe-area-inset-bottom));
+  }
+  .tour-end-actions {
+    grid-template-columns: 1fr;
+  }
+  .tour-intro-actions {
+    justify-items: stretch;
+  }
+  .tour-phone {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    animation-name: tour-fade;
+  }
+  .tour-phone-notch {
+    display: none;
+  }
+  .tour-phone-screen {
+    border-radius: 0;
+  }
+  .tour-resume {
+    right: 16px;
+    bottom: calc(76px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (pointer: coarse) {
+  .tour-keys {
+    display: none;
+  }
+}
+
+@keyframes tour-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes tour-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes tour-rise-far {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
+@keyframes tour-sheet {
+  from {
+    transform: translateY(100%);
+  }
+}
+@keyframes tour-swap {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tour-card,
+  .tour-phone,
+  .tour-resume,
+  .tour-copy {
+    animation-name: tour-fade;
+  }
+  .tour-progress li::after {
+    transition: none;
+  }
+}
