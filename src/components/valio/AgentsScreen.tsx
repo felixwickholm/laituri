@@ -13,7 +13,7 @@ import { TwoKitchens } from "./TwoKitchens";
 
 /** Every connected agent, what Valio Aimo can and cannot see of it, and the control to stop one. */
 export function AgentsScreen({ initialAgent }: { initialAgent?: string }) {
-  const { data: overview, error } = useOverview();
+  const { data: overview, error, locked } = useOverview();
   const now = useNow(30_000);
   const [openId, setOpenId] = useState<string | null>(initialAgent ?? null);
   const close = useCallback(() => setOpenId(null), []);
@@ -34,38 +34,38 @@ export function AgentsScreen({ initialAgent }: { initialAgent?: string }) {
               : "Each buyer brings its own agent. Open one to see what it asked for, how its orders ended, or to suspend it."
             : error
               ? `Could not load the agents: ${error}`
-              : "Loading agents…"
+              : "Each buyer brings its own agent."
         }
       />
-      {overview ? (
+      {locked ? null : error && !overview ? (
+        <BlockNote>The agents could not be loaded. It retries every two seconds.</BlockNote>
+      ) : (
         <>
-          <AgentsTable agents={agents} now={now} onOpen={setOpenId} />
+          <AgentsTable agents={overview?.agents} now={now} onOpen={setOpenId} />
           <OutcomeKey />
         </>
-      ) : (
-        <BlockNote>{error ? "The agents could not be loaded." : "Loading agents…"}</BlockNote>
       )}
       <section className="sight" aria-labelledby="sight-title">
         <h2 id="sight-title" className="sr-only">
-          What Valio Aimo can see
+          What this dashboard shows
         </h2>
         <div className="sight-col">
-          <h3>Valio Aimo sees</h3>
+          <h3>The dashboard shows</h3>
           <ul>
-            <li>Every request and order that reached it, and the agent and app that sent it.</li>
+            <li>Every request and order that reached Valio Aimo, and the agent and app that sent it.</li>
             <li>Which buyer rule held or stopped an order, by name.</li>
-            <li>Every offer it signed, and whether it was used.</li>
+            <li>Every offer Valio Aimo signed, and whether it was used.</li>
           </ul>
         </div>
         <div className="sight-col">
-          <h3>Valio Aimo does not see</h3>
+          <h3>The dashboard does not show</h3>
           <ul>
-            <li>A buyer&rsquo;s limits, allergens or approval rules. Mandates stay with the buyer.</li>
+            <li>What sits behind a buyer&rsquo;s rules: its limits, allergen lists and approvers.</li>
           </ul>
-          <p className="sight-note">An agent proves its authority by presenting the buyer&rsquo;s signed mandate with each order.</p>
+          <p className="sight-note">The dashboard does not show a buyer&rsquo;s limits; it shows which rule fired.</p>
         </div>
       </section>
-      <TwoKitchens />
+      {locked ? null : <TwoKitchens />}
       <ControlFoot />
       <AgentSheet agent={agent} open={Boolean(openId && agent)} onClose={close} />
     </div>

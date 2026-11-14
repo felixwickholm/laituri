@@ -36,3 +36,25 @@ export function timeAgo(at: string, now: number): string {
   if (hours < 24) return `${hours} h ago`;
   return `${Math.floor(hours / 24)} d ago`;
 }
+
+/** What the live card says above its list: checking, the server is ready and waiting, a call has come in, or no answer. */
+export interface LiveStatus {
+  tone: "neutral" | "success" | "danger";
+  word: string;
+  line: string;
+}
+
+/**
+ * The live card's status. `server` is the health check made when the page opens; `calls` is what the feed has shown.
+ * A call from outside is the strongest signal, so it wins over the health check.
+ */
+export function liveStatus(server: "checking" | "online" | "offline", calls: CallRecord[], now: number): LiveStatus {
+  const latest = calls[0];
+  if (latest) {
+    const via = latest.client ? ` via ${latest.client}` : "";
+    return { tone: "success", word: "Connected", line: `${latest.agent.name}${via}, ${timeAgo(latest.at, now)}.` };
+  }
+  if (server === "online") return { tone: "success", word: "Ready", line: "The server is up. Waiting for your first call." };
+  if (server === "offline") return { tone: "danger", word: "No answer", line: "The server did not answer. Reload the page to try again." };
+  return { tone: "neutral", word: "Checking", line: "Checking the server…" };
+}

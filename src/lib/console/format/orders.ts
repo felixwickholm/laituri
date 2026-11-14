@@ -3,15 +3,26 @@ import type { SignedMandate } from "../types";
 import { blocks, handledState, ruleName, shortName } from "./rules";
 import { helsinkiDate, weekStart } from "./week";
 
-export type OutcomeKey = "auto" | "approved" | "waiting" | "rejected" | "blocked";
+export type OutcomeKey = "auto" | "approved" | "waiting" | "rejected" | "blocked" | "refused";
 export type OutcomeTone = "success" | "waiting" | "danger" | "neutral";
 
 export interface OrderOutcome {
   key: OutcomeKey;
   label: string;
   tone: OutcomeTone;
-  /** The rule that stopped a blocked order, in plain words. */
+  /** The rule that stopped a blocked order, or why a refused one was refused, in plain words. */
   rule?: string;
+}
+
+/** Refused before any mandate rule ran: a signed object did not verify, or was not issued here. Not a mandate block. */
+export function isRefused(order: Order): boolean {
+  return order.refusal !== undefined;
+}
+
+/** Why the order was refused, without the server's own "Refused:" lead: "The offer's signature did not verify." */
+export function refusalReason(order: Order): string | undefined {
+  const text = order.refusal?.message.replace(/^Refused:?\s*/i, "").trim();
+  return text ? text[0].toUpperCase() + text.slice(1) : undefined;
 }
 
 /** The orders placed for the buyer whose mandate the console shows. Before the mandate loads, all of them. */
@@ -26,6 +37,7 @@ export function newestFirst(orders: Order[]): Order[] {
 
 /** How an order ended, in the words of the orders table: "Confirmed automatically", "Approved by Maria Lind". */
 export function orderOutcome(order: Order): OrderOutcome {
+  if (order.refusal) return { key: "refused", label: "Refused", tone: "danger", rule: refusalReason(order) };
   if (order.status === "pending_approval") return { key: "waiting", label: "Waiting for you", tone: "waiting" };
   const who = order.approval ? shortName(order.approval.decidedBy.name) : undefined;
   switch (handledState(order)) {
@@ -51,6 +63,7 @@ export const OUTCOME_FILTERS: { key: OutcomeKey; label: string }[] = [
   { key: "waiting", label: "Waiting" },
   { key: "rejected", label: "Rejected" },
   { key: "blocked", label: "Blocked" },
+  { key: "refused", label: "Refused" },
 ];
 
 export interface WeekStats {
@@ -82,7 +95,7 @@ export function weekStats(orders: Order[], nowMs: number): WeekStats {
     confirmedApproved: confirmed.filter((order) => Boolean(order.approval)).length,
     waiting: waiting.length,
     waitingAmount: cents(waiting),
-    blocked: week.filter((order) => order.status === "blocked").length,
+    blocked: week.filter((order) => order.status === "blocked" && !isRefused(order)).length,
   };
 }
 

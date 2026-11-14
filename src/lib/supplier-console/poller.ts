@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { ApiError } from "@/lib/console/api";
 
 export interface Polled<T> {
   data?: T;
@@ -8,6 +9,11 @@ export interface Polled<T> {
   error?: string;
   /** When the data last arrived, as epoch ms. */
   updatedAt?: number;
+  /**
+   * The server wants a credential first (401): the shell shows one calm state for that, so a screen shows no
+   * error of its own. Polling goes on, and the first answer after sign-in clears it.
+   */
+  locked?: boolean;
 }
 
 type Listener = () => void;
@@ -20,7 +26,7 @@ export class Poller<T> {
   private state: Polled<T> = {};
   private listeners = new Set<Listener>();
   private timer: ReturnType<typeof setTimeout> | undefined;
-  private busy = false;
+  private inflight: Promise<void> | undefined;
   private text = "";
 
   constructor(
@@ -51,21 +57,36 @@ export class Poller<T> {
     if (document.visibilityState === "visible") void this.refresh();
   };
 
-  /** Loads now, then keeps polling. A call while a load is under way is dropped. */
-  async refresh(): Promise<void> {
-    if (this.busy) return;
-    this.busy = true;
+  /** Loads now, then keeps polling. A call while a load is under way joins that load instead of starting another. */
+  refresh(): Promise<void> {
+    this.inflight ??= this.run().finally(() => {
+      this.inflight = undefined;
+    });
+    return this.inflight;
+  }
+
+  /** The data, waiting for the load under way (or starting one) when none has arrived yet. */
+  async current(): Promise<T | undefined> {
+    if (this.state.data === undefined) await this.refresh();
+    return this.state.data;
+  }
+
+  private async run(): Promise<void> {
     try {
       const data = await this.load();
       const text = JSON.stringify(data);
-      if (text !== this.text || this.state.error) {
+      if (text !== this.text || this.state.error || this.state.locked) {
         this.text = text;
         this.set({ data, updatedAt: Date.now() });
       }
     } catch (error) {
-      this.set({ ...this.state, error: error instanceof Error ? error.message : "The server did not answer." });
+      if (error instanceof ApiError && error.status === 401) {
+        if (!this.state.locked) this.set({ locked: true });
+        this.text = "";
+      } else {
+        this.set({ ...this.state, error: error instanceof Error ? error.message : "The server did not answer." });
+      }
     } finally {
-      this.busy = false;
       clearTimeout(this.timer);
       if (this.listeners.size > 0 && document.visibilityState === "visible") {
         this.timer = setTimeout(() => void this.refresh(), this.everyMs);

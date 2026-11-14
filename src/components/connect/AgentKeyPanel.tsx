@@ -25,7 +25,7 @@ export function AgentKeyPanel({ info, primaryBuyerId, buyerId, onBuyer }: Props)
         {chosen && <p className="cx-key-agent">Acts as {chosen.agent.name}</p>}
       </div>
       {buyers.length > 1 && (
-        <div className="cx-buyers" role="group" aria-label="Demo buyer">
+        <div className="segmented inline cx-buyers" role="group" aria-label="Demo buyer">
           {buyers.map((entry) => (
             <button key={entry.buyer.id} type="button" aria-pressed={entry.buyer.id === buyerId} onClick={() => onBuyer(entry.buyer.id)}>
               {entry.buyer.name}

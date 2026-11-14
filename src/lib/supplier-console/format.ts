@@ -2,9 +2,11 @@ import type { AuditEntry, Quantity } from "@/lib/contracts";
 import { helsinkiDate } from "@/lib/agent/dates";
 import { eventGroup, type EventGroup } from "@/lib/console/format/log";
 import { count, eur } from "@/lib/console/format/money";
+import { ruleName } from "@/lib/console/format/rules";
+import { day, hourMinute } from "@/lib/console/format/time";
 import type { Activity } from "@/lib/store/types";
 import { isKeyless } from "./names";
-import type { ControlAgent, ControlOverview, DailyPoint, OutcomeCounts, RunResult, UnmetReason, UnmetRequest } from "./types";
+import type { ControlAgent, ControlOverview, DailyPoint, OutcomeCounts, RuleStat, RunResult, UnmetReason, UnmetRequest } from "./types";
 
 /* ---------- Words ---------- */
 
@@ -49,13 +51,6 @@ export function seconds(value: number | undefined): string {
   if (minutes < 60) return `${minutes} min`;
   const hours = Math.floor(minutes / 60);
   return minutes % 60 ? `${hours} h ${minutes % 60} min` : `${hours} h`;
-}
-
-/** Money for chart labels where space is tight: "€449", "€1.4k", "€12k". */
-export function eurShort(amount: number): string {
-  if (amount < 1000) return `€${Math.round(amount)}`;
-  const thousands = amount / 1000;
-  return `€${thousands < 10 ? thousands.toFixed(1).replace(/\.0$/, "") : Math.round(thousands)}k`;
 }
 
 /** How long ago, in words: "just now", "4 min ago", "3 h ago", "2 days ago". */
@@ -111,7 +106,7 @@ export function unmetInWeek(unmet: UnmetRequest[], daily: DailyPoint[]): UnmetRe
 }
 
 export function orderCount(orders: OutcomeCounts): number {
-  return orders.confirmed_auto + orders.confirmed_after_approval + orders.waiting + orders.rejected + orders.blocked;
+  return orders.confirmed_auto + orders.confirmed_after_approval + orders.waiting + orders.rejected + orders.blocked + orders.refused;
 }
 
 export interface ReasonTotal {
@@ -135,6 +130,13 @@ export function reasonTotals(unmet: UnmetRequest[]): ReasonTotal[] {
       unpriced: rows.filter((item) => item.estimatedLostNet === undefined).length,
     };
   });
+}
+
+/** Unserved requests per product concept, so a demand bar can show the part that went unserved. */
+export function unservedByConcept(unmet: UnmetRequest[]): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const item of unmet) if (item.concept) counts.set(item.concept, (counts.get(item.concept) ?? 0) + 1);
+  return counts;
 }
 
 export function unmetNet(unmet: UnmetRequest[]): number {
@@ -181,17 +183,34 @@ export function overviewVerdict(overview: ControlOverview): Verdict {
   return { lead, reason: parts.join(" ") };
 }
 
-/* ---------- Chart scale ---------- */
+/* ---------- Rules ---------- */
 
-/** Whole-number y ticks for counts, from zero, with the top tick above the maximum: 6 -> [0, 2, 4, 6, 8]. */
-export function niceTicks(max: number, target = 4): number[] {
-  if (!Number.isFinite(max) || max <= 0) return [0, 1];
-  const rough = max / target;
-  const magnitude = 10 ** Math.floor(Math.log10(rough));
-  const step = Math.max(1, [1, 2, 5, 10].map((m) => m * magnitude).find((candidate) => candidate >= rough) ?? 10 * magnitude);
-  let top = Math.ceil(max / step) * step;
-  if (top === max) top += step;
-  return Array.from({ length: Math.round(top / step) + 1 }, (_, i) => i * step);
+/**
+ * A fired rule's name as the wholesaler reads it. The allergen rule asks a person when a product has no allergen
+ * declaration and blocks when a product contains a never-buy allergen; the ask case gets its own name so the two
+ * rows never read as the same rule twice.
+ */
+export function ruleTitle(rule: Pick<RuleStat, "rule" | "title" | "tier">): string {
+  if (rule.rule === "dietary.allergens" && rule.tier === "ask") return "Allergen data missing";
+  const name = ruleName(rule.rule);
+  return name === rule.rule ? rule.title : name;
+}
+
+/* ---------- Days ---------- */
+
+/**
+ * When a call happened, as a list shows it: "16:35" today, "Fri 16:35" earlier this week, "Mon 2 Nov 16:35" before
+ * that. Days are Helsinki days.
+ */
+export function callTime(iso: string, nowMs: number): string {
+  const at = new Date(iso);
+  if (Number.isNaN(at.getTime())) return "–";
+  const time = hourMinute(iso);
+  const then = helsinkiDate(at);
+  const today = helsinkiDate(new Date(nowMs));
+  if (then === today) return time;
+  const days = Math.round((Date.parse(`${today}T12:00:00Z`) - Date.parse(`${then}T12:00:00Z`)) / 86_400_000);
+  return days > 0 && days < 7 ? `${weekday(then)} ${time}` : `${day(iso)} ${time}`;
 }
 
 const WEEKDAY = new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", weekday: "short" });
@@ -212,6 +231,7 @@ export const OUTCOMES: { key: OutcomeSlot; label: string }[] = [
   { key: "waiting", label: "Waiting for the buyer" },
   { key: "rejected", label: "Rejected by the buyer" },
   { key: "blocked", label: "Blocked by a rule" },
+  { key: "refused", label: "Refused" },
 ];
 
 /** An agent with a key that called in the last 24 hours; a keyless caller is never counted as active. */
@@ -244,6 +264,11 @@ export function toolVerb(tool: string | undefined): string {
   return (tool && TOOL_VERB[tool]) || "Call";
 }
 
+/** Newest first by instant (not by string), then by id, so the order never flickers between polls. */
+export function newestFirst(a: Pick<Activity, "at" | "id">, b: Pick<Activity, "at" | "id">): number {
+  return Date.parse(b.at) - Date.parse(a.at) || b.id.localeCompare(a.id);
+}
+
 /** Tool calls from every buyer's agent, newest first, without repeats. */
 export function liveCalls(lists: Activity[][], limit: number): Activity[] {
   const seen = new Set<string>();
@@ -253,12 +278,12 @@ export function liveCalls(lists: Activity[][], limit: number): Activity[] {
     seen.add(item.id);
     calls.push(item);
   }
-  return calls.sort((a, b) => b.at.localeCompare(a.at) || b.id.localeCompare(a.id)).slice(0, limit);
+  return calls.sort(newestFirst).slice(0, limit);
 }
 
 /** What an agent asked for: its quotes, newest first; its searches when it never asked for a quote. */
 export function recentAsks(activity: Activity[], agentId: string, limit: number): Activity[] {
-  const own = activity.filter((item) => item.agent.id === agentId && item.kind === "tool").sort((a, b) => b.at.localeCompare(a.at));
+  const own = activity.filter((item) => item.agent.id === agentId && item.kind === "tool").sort(newestFirst);
   const quotes = own.filter((item) => item.tool === "request_quote");
   return (quotes.length > 0 ? quotes : own.filter((item) => item.tool === "search_catalog")).slice(0, limit);
 }
@@ -305,6 +330,16 @@ export interface KitchenOutcome {
   orderId?: string;
 }
 
+/**
+ * A purchase summary without the order id the agent puts in front: "Order ord_x confirmed: 3 cases …" -> "3 cases …",
+ * "Order ord_x was blocked: may contain sesame. Nothing was ordered." -> "may contain sesame. Nothing was ordered.",
+ * capitalised. The id stays on the outcome, behind technical details.
+ */
+export function plainSummary(summary: string): string {
+  const text = summary.replace(/^Order \S+ (?:confirmed|was blocked|was rejected):\s*/, "").replace(/^Order \S+ is\s+/, "");
+  return text ? text[0].toUpperCase() + text.slice(1) : text;
+}
+
 /** The two kitchens of the scene, in the order their agents speak. */
 export const KITCHENS = ["Nordic Harbour Hotels", "Kaisla School Kitchens"];
 
@@ -322,7 +357,7 @@ export function latestStep(activity: Activity[], buyer: string, startedAt: strin
 export function kitchenOutcomes(results: RunResult[] | undefined, buyerOf: (orderId: string) => string | undefined): KitchenOutcome[] {
   return (results ?? []).map((result, index) => {
     const buyer = (result.orderId && buyerOf(result.orderId)) || KITCHENS[index] || `Kitchen ${index + 1}`;
-    const base = { buyer, summary: result.summary, orderId: result.orderId };
+    const base = { buyer, summary: plainSummary(result.summary), orderId: result.orderId };
     switch (result.status) {
       case "confirmed":
         return { ...base, word: "Confirmed", tone: "success" };

@@ -7,7 +7,6 @@ import { FiveWays } from "./FiveWays";
 import { Hero } from "./Hero";
 import { LandingBar } from "./LandingBar";
 import { LandingFooter } from "./LandingFooter";
-import { LiveCounters } from "./LiveCounters";
 import { TwoSides } from "./TwoSides";
 
 /** The public front page: what Laituri is, proof it runs, both sides, how it fails safely, how to connect. */
@@ -17,7 +16,6 @@ export function LandingPage({ pinnedOrb }: { pinnedOrb?: OrbState }) {
       <LandingBar />
       <main>
         <Hero pinned={pinnedOrb} />
-        <LiveCounters />
         <TwoSides />
         <FiveWays />
         <Criteria />

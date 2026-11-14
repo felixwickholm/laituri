@@ -1,3 +1,4 @@
+import { RuleId } from "@/lib/contracts";
 import { describe, expect, it } from "vitest";
 import { ORB_STATES } from "@/lib/console/orb-params";
 import { STORY, STORY_LENGTH_MS, storyFrame, storyFrameFor } from "@/lib/console/orb-story";
@@ -16,8 +17,8 @@ describe("the landing orb story", () => {
     const start = STORY[checking].at;
     const end = STORY[checking + 1].at;
     expect(storyFrame(start).rulesPassed).toBe(0);
-    expect(storyFrame((start + end) / 2).rulesPassed).toBe(8);
-    expect(storyFrame(end - 1).rulesPassed).toBe(15);
+    expect(storyFrame((start + end) / 2).rulesPassed).toBe(Math.round(RuleId.options.length / 2));
+    expect(storyFrame(end - 1).rulesPassed).toBe(RuleId.options.length);
   });
 
   it("loops", () => {

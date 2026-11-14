@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { LandingPage } from "@/components/landing/LandingPage";
 import { ORB_STATES, type OrbState } from "@/lib/console/orb-params";
 
-const TITLE = "Laituri · the loading dock for AI agents";
+const TITLE = "Laituri · The loading dock for AI agents";
 const DESCRIPTION =
   "An open front door, over MCP and REST, where a customer's own AI agent buys from Valio Aimo at a signed fixed price, inside limits a person signed, with a log anyone can verify.";
 

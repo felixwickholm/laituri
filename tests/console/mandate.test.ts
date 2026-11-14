@@ -16,7 +16,7 @@ const mandate: Mandate = {
   dietary: { excludeAllergens: ["nuts"], blockMayContain: false, requiredClaims: [] },
   substitution: { policy: "like_for_like", maxPriceIncreasePct: 10 },
   delivery: { allowPartial: false, maxDelayDays: 1 },
-  approval: { approver: { id: "u", name: "Maria Lind, Head of Purchasing" }, firstTimeProducts: false },
+  approval: { approver: { id: "u", name: "Maria Lind, Head of Purchasing" }, firstTimeProducts: false, requireRequestWords: true },
 };
 
 describe("mandate patch", () => {

@@ -4,9 +4,12 @@ import { Ellipsis } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { buyerOrders } from "@/lib/console/format/orders";
+import { sharedLocked } from "@/lib/console/format/workspace";
 import { useConsole } from "@/lib/console/store";
+import { useWorkspace } from "@/lib/console/workspace-store";
 import { OrderSheet } from "../order/OrderSheet";
 import { SignInPopover } from "../session/SignInPopover";
+import { SharedLock } from "../session/SharedLock";
 import { SharedViewBanner } from "../session/WorkspaceIndicator";
 import { Sheet } from "../ui/Sheet";
 import { Tour } from "../tour/Tour";
@@ -33,6 +36,7 @@ const FALLBACK_BUYER = "Nordic Harbour Hotels";
  */
 export function AppShell({ side, children }: AppShellProps) {
   const snapshot = useConsole();
+  const locked = sharedLocked(useWorkspace(), snapshot.session);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [moreOpen, setMoreOpen] = useState(false);
   const ui = useMemo<ConsoleUi>(() => ({ openOrder: setOrderId }), []);
@@ -61,7 +65,7 @@ export function AppShell({ side, children }: AppShellProps) {
           <nav className="side-nav" aria-label={side === "buyer" ? "Buyer" : "Valio Aimo"}>
             <NavLinks side={side} signals={signals} variant="list" />
           </nav>
-          <ShellTools health={snapshot.health} side={side} />
+          <ShellTools side={side} variant="sidebar" />
         </aside>
 
         <header className="phone-bar">
@@ -72,11 +76,18 @@ export function AppShell({ side, children }: AppShellProps) {
         </header>
 
         <main className="canvas" id="main" tabIndex={-1}>
-          <SharedViewBanner />
-          {children}
+          {locked ? (
+            <SharedLock role={side === "buyer" ? "approver" : "operator"} />
+          ) : (
+            <>
+              <SharedViewBanner />
+              {children}
+            </>
+          )}
         </main>
 
         <nav className="tab-bar" aria-label={side === "buyer" ? "Buyer" : "Valio Aimo"}>
+          <div className="phone-dock" data-tour-dock="phone" />
           <NavLinks side={side} signals={signals} variant="tabs" />
           <button type="button" className="nav-item" aria-haspopup="dialog" aria-expanded={moreOpen} onClick={() => setMoreOpen(true)}>
             <Ellipsis aria-hidden="true" />
@@ -86,7 +97,7 @@ export function AppShell({ side, children }: AppShellProps) {
       </div>
 
       <Sheet open={moreOpen} onClose={closeMore} title="More" lede={sideName}>
-        <ShellTools health={snapshot.health} side={side} />
+        <ShellTools side={side} variant="sheet" />
       </Sheet>
       <OrderSheet orderId={orderId} onClose={closeOrder} />
       <SignInPopover />

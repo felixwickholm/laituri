@@ -9,13 +9,14 @@ const LINKS = [
   { href: "/evidence", label: "Evidence", short: "Evidence" },
 ];
 
-/** A plain bar: the name, the four places to go, the theme switch. */
+/** A plain bar: the name and what it is, the four places to go, the theme switch. */
 export function LandingBar() {
   return (
     <header className="lp-bar">
       <Link href="/" className="lp-home" aria-label="Laituri home">
         <Wordmark />
       </Link>
+      <p className="lp-tagline">The loading dock for AI agents</p>
       <nav className="lp-nav" aria-label="Main">
         {LINKS.map((link) => (
           <Link key={link.href} href={link.href} className="lp-link" aria-label={link.label}>

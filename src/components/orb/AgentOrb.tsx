@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, type PointerEvent } from "react";
 import { ORB_STATE_WORDS, type OrbState } from "@/lib/console/orb-params";
+import { RuleId } from "@/lib/contracts";
 import { readPalette } from "./palette";
 import { OrbRenderer, type FrameInfo } from "./renderer";
 import { Seal } from "./Seal";
@@ -32,7 +33,7 @@ function sealTransform({ yaw, pitch, scale }: FrameInfo): string {
  * The agent, drawn: a sphere of dots made of the deal's digits, with the mandate seal at its heart.
  * State drives colour and motion; drag spins it. Pauses off-screen; reduced motion draws one still frame.
  */
-export function AgentOrb({ state, digits = "", rulesPassed = 0, rulesTotal = 15, level = 0, size = 440, className }: AgentOrbProps) {
+export function AgentOrb({ state, digits = "", rulesPassed = 0, rulesTotal = RuleId.options.length, level = 0, size = 440, className }: AgentOrbProps) {
   const frameRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sealRef = useRef<HTMLDivElement>(null);

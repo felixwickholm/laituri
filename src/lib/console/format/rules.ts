@@ -8,6 +8,7 @@ export const RULE_NAMES: Record<RuleId, string> = {
   "mandate.validity": "Mandate validity",
   "offer.signature": "Offer signature",
   "offer.expiry": "Offer validity",
+  "audit.integrity": "Audit log intact",
   "spend.per_order": "Per-order limit",
   "spend.per_week": "Weekly limit",
   "category.allowed": "Allowed categories",
@@ -18,6 +19,7 @@ export const RULE_NAMES: Record<RuleId, string> = {
   "delivery.partial": "Partial delivery",
   "delivery.deadline": "Delivery deadline",
   "match.confidence": "Product match",
+  "request.words": "Buyer's words sent",
   "product.first_time": "First-time products",
 };
 
@@ -73,8 +75,9 @@ export function askReasons(order: Order): string[] {
   return asks(order).map(askSentence);
 }
 
-/** "Blocked. Contains nuts. The mandate forbids nuts." */
+/** "Blocked. Contains nuts. The mandate forbids nuts.", or for an order refused before the mandate ran, "Refused. <why>". */
 export function blockedLine(order: Order): string {
+  if (order.refusal) return `Refused. ${plainSentence(order.refusal.message.replace(/^Refused:?\s*/i, ""))}`;
   const [first] = blocks(order);
   return first ? `Blocked. ${blockSentence(first)}` : "Blocked. The order is outside the mandate.";
 }
@@ -98,4 +101,16 @@ export const HANDLED_WORD: Record<HandledState, string> = {
 /** "Maria Lind, Head of Purchasing" -> "Maria Lind" */
 export function shortName(name: string): string {
   return name.split(",")[0].trim();
+}
+
+export interface RuleTick {
+  rule: string;
+  name: string;
+  status: Check["status"];
+}
+
+/** The order's mandate checks as a checklist: how many passed, of how many, and each rule by name in the order checked. */
+export function ruleChecklist(order: Pick<Order, "decision">): { passed: number; total: number; rules: RuleTick[] } {
+  const rules = order.decision.checks.map((check) => ({ rule: check.rule, name: ruleName(check.rule), status: check.status }));
+  return { passed: rules.filter((rule) => rule.status === "pass").length, total: rules.length, rules };
 }

@@ -2,11 +2,9 @@ import type { AuditEntry, Order } from "@/lib/contracts";
 import { auditDetail, auditTitle } from "@/lib/console/format/audit";
 import { linkState } from "@/lib/console/format/chain";
 import { actorKind } from "@/lib/console/format/log";
-import { isSeeded } from "@/lib/console/format/orders";
 import { clock, day } from "@/lib/console/format/time";
 import { agentName } from "@/lib/supplier-console/names";
 import type { ChainState } from "@/lib/console/types";
-import { DemoTag } from "../ui/DemoTag";
 
 interface LogRowsProps {
   entries: AuditEntry[];
@@ -54,7 +52,6 @@ export function LogRows({ entries, chain, orders, onOpen }: LogRowsProps) {
                     {chain.state === "broken" && chain.brokenAt === entry.seq ? chain.reason : auditDetail(entry, orders)}
                   </span>
                   {link === "broken" || link === "untrusted" ? <span className="link-note">{LINK_NOTE[link]}</span> : null}
-                  {isSeeded(entry) ? <DemoTag /> : null}
                 </td>
                 <td className="cell-seq num mono">{entry.seq}</td>
               </tr>

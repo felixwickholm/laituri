@@ -2,11 +2,17 @@ import type { ReactNode } from "react";
 
 interface RuleGroupProps {
   title: string;
-  /** Soft: a person can approve past it. Hard: blocked, no override. */
-  strength: "soft" | "hard";
+  /** alone: the agent buys inside it. ask: it waits for a person. hard: blocked, nobody can approve. */
+  strength: "alone" | "ask" | "hard";
   note: string;
   children: ReactNode;
 }
+
+const STRENGTH_WORD: Record<RuleGroupProps["strength"], string> = {
+  alone: "Buys alone",
+  ask: "Asks you first",
+  hard: "No override",
+};
 
 export function RuleGroup({ title, strength, note, children }: RuleGroupProps) {
   const id = `rules-${title.toLowerCase().replace(/\W+/g, "-")}`;
@@ -15,7 +21,7 @@ export function RuleGroup({ title, strength, note, children }: RuleGroupProps) {
       <header className="rule-group-head">
         <h2 id={id}>{title}</h2>
         <span className="strength" data-strength={strength}>
-          {strength === "soft" ? "Soft" : "Hard"}
+          {STRENGTH_WORD[strength]}
         </span>
       </header>
       <p className="rule-group-note">{note}</p>

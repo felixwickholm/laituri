@@ -1,17 +1,20 @@
 import { describe, expect, it } from "vitest";
 import { ANONYMOUS_AGENT } from "@/lib/http/agent";
-import { UNKNOWN_CLIENT } from "@/lib/http/client-app";
+import { SCRIPTED_CLIENT, UNKNOWN_CLIENT } from "@/lib/http/client-app";
 import { KEYLESS_AGENT_ID, agentName, clientName, isKeyless } from "@/lib/supplier-console/names";
 
 describe("client names", () => {
   it("names the command line and an unnamed app in plain words", () => {
-    expect(clientName("curl")).toBe("Command line (curl)");
+    expect(clientName("curl")).toBe("Command line");
     expect(clientName(UNKNOWN_CLIENT)).toBe("Unknown app");
   });
 
   it("keeps every other app's own name", () => {
     expect(clientName("Claude Code")).toBe("Claude Code");
-    expect(clientName("Scripted buyer agent")).toBe("Scripted buyer agent");
+  });
+
+  it("names the demo's scripted agent neutrally", () => {
+    expect(clientName(SCRIPTED_CLIENT)).toBe("Demo agent");
   });
 });
 

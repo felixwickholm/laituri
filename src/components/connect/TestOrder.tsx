@@ -86,7 +86,7 @@ export function TestOrder({ deliverBy, primaryBuyerId }: { deliverBy: string; pr
     <section className="cx-test" aria-labelledby="cx-test-title">
       <div className="cx-test-side">
         <h2 id="cx-test-title">No agent at hand?</h2>
-        <p className="cx-sub">This browser runs the same four HTTP calls an agent makes, with your agent key. They show up under Connected right now.</p>
+        <p className="cx-sub">This browser makes the same four HTTP calls an agent makes, with your agent key. They show up above.</p>
         <p className="cx-sub cx-test-real">
           It is a real order for {TEST_NEED.amount} litres, placed inside the mandate {buyer} signed, in {where}.
         </p>
@@ -103,11 +103,11 @@ export function TestOrder({ deliverBy, primaryBuyerId }: { deliverBy: string; pr
         </ol>
         <div className="cx-test-actions">
           {phase === "idle" ? (
-            <button type="button" className="cx-btn" onClick={start}>
+            <button type="button" className="btn btn-primary big wide" onClick={start}>
               Send a test order from this browser
             </button>
           ) : (
-            <button type="button" className="cx-link" onClick={start} disabled={phase === "running"}>
+            <button type="button" className="btn btn-secondary" onClick={start} disabled={phase === "running"}>
               <RotateCcw aria-hidden="true" />
               Replay
             </button>
@@ -116,12 +116,12 @@ export function TestOrder({ deliverBy, primaryBuyerId }: { deliverBy: string; pr
       </div>
       <div className="cx-term" role="log" aria-live="polite" aria-label="Requests and responses">
         {lines.length === 0 ? (
-          <div className="cx-term-idle mono">
-            <p>Requests and responses appear here:</p>
+          <div className="cx-term-idle">
+            <p>Requests and answers appear here.</p>
             {FLOW_STEPS.map((step) => {
               const request = flowRequest(step.id, { key, deliverBy, idempotencyKey: "" });
               return (
-                <p key={step.id}>
+                <p key={step.id} className="mono">
                   $ {request.method} {request.path}
                 </p>
               );

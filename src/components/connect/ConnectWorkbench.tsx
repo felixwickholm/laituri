@@ -10,6 +10,7 @@ import { AppPicker } from "./AppPicker";
 import { CodeBlock } from "./CodeBlock";
 import { LiveCalls } from "./LiveCalls";
 import { SetupGuide } from "./SetupGuide";
+import { TestOrder } from "./TestOrder";
 import { useOrigin } from "./useOrigin";
 
 interface Props {
@@ -19,7 +20,7 @@ interface Props {
   primaryBuyerId: string;
 }
 
-/** Pick an app, copy one line with this visitor's own key, and watch the call arrive next to it. */
+/** Pick an app and copy one line with this visitor's own key; beside it, watch the call arrive or send a test order. */
 export function ConnectWorkbench({ serverOrigin, deliverBy, primaryBuyerId }: Props) {
   const origin = useOrigin(serverOrigin);
   const info = useWorkspace();
@@ -46,7 +47,10 @@ export function ConnectWorkbench({ serverOrigin, deliverBy, primaryBuyerId }: Pr
         <AppPicker value={tileId} onChange={setTileId} />
         <SetupGuide key={tile.id} tile={tile} origin={origin} agentKey={key} deliverBy={deliverBy} />
       </section>
-      <LiveCalls />
+      <aside className="cx-aside" aria-label="Live">
+        <LiveCalls />
+        <TestOrder deliverBy={deliverBy} primaryBuyerId={primaryBuyerId} />
+      </aside>
     </div>
   );
 }

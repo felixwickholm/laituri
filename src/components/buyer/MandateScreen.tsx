@@ -8,6 +8,7 @@ import { buyerOrders } from "@/lib/console/format/orders";
 import { shortName } from "@/lib/console/format/rules";
 import { day } from "@/lib/console/format/time";
 import { weekSpend } from "@/lib/console/format/week";
+import { LOCKED_NOTE } from "@/lib/console/paused";
 import { consoleStore, useConsole } from "@/lib/console/store";
 import { AmountInput } from "../mandate/AmountInput";
 import { ChipSet, Choice, Toggle } from "../mandate/fields";
@@ -36,7 +37,7 @@ function days(n: number): string {
 
 /** The mandate as rules in plain sentences, with the values a person can change in place. Saving re-signs it. */
 export function MandateScreen() {
-  const { mandate, orders, jwks, ready } = useConsole();
+  const { mandate, orders, jwks, ready, locked } = useConsole();
   const signature = useMandateSignature(mandate, jwks);
   const base = mandate ? draftOf(mandate.mandate) : undefined;
   const [edits, setEdits] = useState<Partial<MandateDraft>>({});
@@ -68,7 +69,7 @@ export function MandateScreen() {
   if (!mandate || !draft) {
     return (
       <div className="page">
-        <PageHeader title="Mandate" lede={ready ? "The signed mandate could not be loaded. Retrying." : "Loading the signed mandate…"} />
+        <PageHeader title="Mandate" lede={locked ? LOCKED_NOTE : ready ? "The signed mandate could not be loaded. Retrying." : "Loading the signed mandate…"} />
       </div>
     );
   }
@@ -86,7 +87,7 @@ export function MandateScreen() {
       />
       <div className="mandate-layout">
         <div className="rule-groups">
-          <RuleGroup title="Allowed without asking" strength="soft" note="Inside these, your agent buys on its own. Past them, it stops and asks you.">
+          <RuleGroup title="Allowed without asking" strength="alone" note="Inside these, your agent buys on its own. Past them, it stops and asks you.">
             <RuleSentence>
               Spend up to <AmountInput id="per-order" label="Per-order limit" value={draft.perOrder} onChange={(value) => set("perOrder", value)} /> on one order.
             </RuleSentence>
@@ -115,16 +116,21 @@ export function MandateScreen() {
             </RuleSentence>
           </RuleGroup>
 
-          <RuleGroup title="Ask me first" strength="soft" note={`Your agent waits for ${shortName(m.approval.approver.name)} to approve or reject.`}>
+          <RuleGroup title="Ask me first" strength="ask" note={`Your agent waits for ${shortName(m.approval.approver.name)} to approve or reject.`}>
             <RuleSentence>
               Any order over {eur(draft.perOrder)}, or a week over {eur(draft.perWeek)}.
             </RuleSentence>
             <RuleSentence>Products outside your {draft.categories.length} categories.</RuleSentence>
             {!draft.allowPartial ? <RuleSentence>A delivery that covers only part of the order.</RuleSentence> : null}
-            <RuleSentence>
-              Products it has not ordered before{" "}
-              <Toggle label="Ask before new products" checked={draft.firstTimeProducts} onChange={(next) => set("firstTimeProducts", next)} />
-              <span className="toggle-word">{draft.firstTimeProducts ? "Ask first" : "Allowed"}</span>
+            <RuleSentence
+              detail={
+                <span className="toggle-line">
+                  <Toggle label="Ask me first about products it has not ordered before" checked={draft.firstTimeProducts} onChange={(next) => set("firstTimeProducts", next)} />
+                  <span className="toggle-word">{draft.firstTimeProducts ? "Ask me first: on. It waits for you." : "Ask me first: off. It buys them alone."}</span>
+                </span>
+              }
+            >
+              Products it has not ordered before.
             </RuleSentence>
             <RuleSentence>
               A delivery up to{" "}
@@ -157,17 +163,24 @@ export function MandateScreen() {
         </div>
 
         <aside className="mandate-aside" aria-label="Signature and changes">
-          <SignatureCard mandate={m} />
+          <SignatureCard mandate={m} signature={signature} />
           <div className="card save-card" data-dirty={changes.length > 0}>
             <p className="save-status">
               <strong>{changes.length === 0 ? "No changes" : changes.length === 1 ? "1 change" : `${changes.length} changes`}</strong>
-              <span>{changes.length === 0 ? "Change a value in a rule to edit the mandate." : `Saving signs version ${m.version + 1} as ${m.buyer.name}.`}</span>
+              <span>{changes.length === 0 ? "Change a value in a rule, then save to re-sign." : `Saving signs version ${m.version + 1} as ${m.buyer.name}.`}</span>
             </p>
             <div className="save-actions">
-              <button type="button" className="btn btn-secondary" disabled={changes.length === 0 || saving} onClick={() => setEdits({})}>
-                Discard
-              </button>
-              <button type="button" className="btn btn-primary" disabled={changes.length === 0 || saving} onClick={(event) => save(event.currentTarget)}>
+              {changes.length > 0 ? (
+                <button type="button" className="btn btn-secondary" disabled={saving} onClick={() => setEdits({})}>
+                  Discard
+                </button>
+              ) : null}
+              <button
+                type="button"
+                className={changes.length > 0 ? "btn btn-primary" : "btn btn-secondary"}
+                disabled={changes.length === 0 || saving}
+                onClick={(event) => save(event.currentTarget)}
+              >
                 {saving ? "Signing…" : "Save and re-sign"}
               </button>
             </div>

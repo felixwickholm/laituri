@@ -195,8 +195,8 @@
   background: var(--surface-1);
   box-shadow: var(--shadow-2);
   color: var(--text-1);
-  font-size: 12.5px;
-  font-weight: 540;
+  font-size: var(--fs-12);
+  font-weight: 550;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
@@ -217,79 +217,99 @@
   background: var(--surface-2);
 }
 
-/* The live agent panel on the buyer's Today screen. */
+/* The live agent panel on the buyer's Today screen: a small orb with one line on what it does, the composer, three scenes. */
 .live-agent {
-  container-type: inline-size;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding: 18px 18px 20px;
+  display: grid;
+  gap: 16px;
+  padding: 18px;
   border-radius: var(--r-card);
+  border: 1px solid var(--line);
   background: var(--surface-1);
-  box-shadow: var(--shadow-1);
 }
-.live-agent-hint {
-  display: flex;
+.live-agent[data-status="suspended"] {
+  border-color: color-mix(in srgb, var(--danger) 40%, var(--line));
+}
+.live-agent-top {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
   align-items: center;
-  gap: 8px;
-  margin: 0;
-  color: var(--text-3);
-  font-size: 11.5px;
+  gap: 16px;
 }
 .live-agent-stage {
   position: relative;
-  padding-inline: 8px;
 }
-.live-agent .orb-chip[data-place="top"] {
-  top: 6%;
-  left: 0;
+.live-agent-say {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
 }
-.live-agent .orb-chip[data-place="side"] {
-  top: 48%;
-  right: 0;
+.live-agent-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  margin: 0;
+  color: var(--text-1);
+  font-size: var(--fs-15);
+  line-height: 20px;
+  font-weight: 600;
 }
-.live-agent .orb-chip[data-place="bottom"] {
-  bottom: 4%;
-  left: 4%;
+.live-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-3);
+  font-size: var(--fs-13);
+  font-weight: 500;
 }
-@container (max-width: 460px) {
-  .live-agent .orb-chips {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 6px;
-    margin-top: 6px;
-  }
-  .live-agent .orb-chip {
-    position: static;
-    box-shadow: none;
-    background: var(--surface-2);
-  }
+.live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--r-full);
+  background: var(--text-4);
+}
+.live-status[data-status="live"] .live-dot {
+  background: var(--success);
+}
+.live-status[data-status="suspended"] {
+  color: var(--danger);
+}
+.live-status[data-status="suspended"] .live-dot {
+  background: var(--danger);
 }
 .typed-caption {
   margin: 0;
 }
 .live-agent-caption {
-  min-height: 3em;
-  color: var(--text-1);
-  font-size: 12.5px;
-  line-height: 1.5;
-  text-align: center;
-  text-wrap: balance;
+  min-height: 40px;
+  color: var(--text-2);
+  font-size: var(--fs-15);
+  line-height: 20px;
+  text-wrap: pretty;
+}
+.live-agent-offer {
+  margin: 0;
+  color: var(--warn);
+  font-size: var(--fs-13);
+  font-weight: 500;
 }
 
 .composer {
   display: flex;
   align-items: center;
   gap: 2px;
-  height: 46px;
+  height: 48px;
   padding: 0 6px 0 14px;
-  border-radius: var(--r-lg);
-  background: var(--surface-2);
-  transition: box-shadow var(--d-hover) var(--ease-hover);
+  border-radius: var(--r-control);
+  border: 1px solid var(--line-strong);
+  background: var(--surface-1);
+  transition:
+    border-color var(--d-hover) var(--ease-hover),
+    box-shadow var(--d-hover) var(--ease-hover);
 }
 .composer:focus-within {
-  box-shadow: 0 0 0 2px var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
 }
 .composer input {
   flex: 1;
@@ -299,11 +319,17 @@
   background: transparent;
   color: var(--text-1);
   font: inherit;
-  font-size: 15px;
+  font-size: var(--fs-15);
   outline: none;
+  text-overflow: ellipsis;
 }
 .composer input::placeholder {
-  color: var(--text-4);
+  color: var(--text-3);
+}
+/* Inside the 48px composer the two buttons stay 36px, with the hit area grown to 44px around them. */
+.composer .icon-btn {
+  width: 36px;
+  height: 36px;
 }
 .composer .icon-btn:disabled {
   opacity: 0.4;
@@ -317,47 +343,94 @@
   background: var(--accent);
   color: var(--on-accent);
 }
-.composer-note {
-  margin: -6px 0 0;
-  color: var(--text-3);
-  font-size: 12.5px;
-}
 
-.suggestions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+/* The three scripted scenes: one row each, a title and what it shows. */
+.scenes {
+  display: grid;
+  gap: 2px;
 }
-.suggestion {
-  height: 32px;
-  padding: 0 12px;
+.scenes-note {
+  margin: 0 0 4px;
+  color: var(--text-3);
+  font-size: var(--fs-12);
+}
+.scene {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 16px;
+  grid-template-areas:
+    "title go"
+    "explain go";
+  align-items: center;
+  gap: 1px 10px;
+  padding: 9px 10px;
+  margin-inline: -10px;
+  width: calc(100% + 20px);
   border: 0;
-  border-radius: var(--r-full);
-  background: var(--surface-2);
-  color: var(--text-1);
+  border-radius: var(--r-control);
+  background: transparent;
+  color: inherit;
   font: inherit;
-  font-size: 13px;
-  font-weight: 520;
+  text-align: left;
   cursor: pointer;
   transition:
     background-color var(--d-hover) var(--ease-hover),
-    transform var(--d-fast) var(--ease-out),
+    transform var(--d-press) var(--ease-out),
     opacity var(--d-fast) var(--ease-out);
 }
-.suggestion:active:not(:disabled) {
-  transform: scale(0.97);
+.scene:active:not(:disabled) {
+  transform: var(--press);
 }
-.suggestion:disabled {
+.scene:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
-.suggestion[data-running="true"] {
+.scene[data-running="true"] {
   background: var(--accent-tint);
-  color: var(--accent);
   opacity: 1;
 }
+.scene-title {
+  grid-area: title;
+  color: var(--text-1);
+  font-size: var(--fs-13);
+  line-height: 18px;
+  font-weight: 550;
+}
+.scene-explain {
+  grid-area: explain;
+  color: var(--text-3);
+  font-size: var(--fs-13);
+  line-height: 18px;
+}
+.scene-go {
+  grid-area: go;
+  width: 16px;
+  height: 16px;
+  color: var(--text-4);
+}
+.scene[data-running="true"] .scene-title,
+.scene[data-running="true"] .scene-go {
+  color: var(--accent);
+}
 @media (hover: hover) and (pointer: fine) {
-  .suggestion:hover:not(:disabled) {
-    background: var(--surface-3);
+  .scene:hover:not(:disabled) {
+    background: var(--surface-2);
+  }
+  .scene:hover:not(:disabled) .scene-go {
+    color: var(--text-2);
+  }
+}
+
+@media (max-width: 760px) {
+  .live-agent {
+    padding: 16px 14px;
+  }
+  .composer {
+    padding-left: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scene:active:not(:disabled) {
+    transform: none;
   }
 }

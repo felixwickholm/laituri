@@ -1,6 +1,6 @@
 "use client";
 
-import { FileWarning, RotateCcw } from "lucide-react";
+import { FileWarning, FlaskConical, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import { consoleStore } from "@/lib/console/store";
 import { toast } from "../ui/toast";
@@ -32,10 +32,10 @@ export function TamperControl({ broken }: { broken: boolean }) {
 
   return (
     <div className="demo-control">
-      <span className="demo-tag">demo control</span>
+      <FlaskConical aria-hidden="true" />
       <p>
-        <strong>Tamper with the log.</strong> Changes one stored entry on the server, the way an attacker would. Your browser&rsquo;s check catches it, and
-        approvals stay paused until the log is restored from the last signed checkpoint.
+        <strong>Try it: tamper with the log.</strong> This demo control changes one stored entry on the server, the way an attacker would. The check above
+        catches it.
       </p>
       {broken ? (
         <button type="button" className="btn btn-secondary" onClick={restore} disabled={busy}>

@@ -1,23 +1,22 @@
 "use client";
 
-import { ArrowLeft, ArrowRight, RotateCcw, X } from "lucide-react";
+import { ArrowRight, RotateCcw, X } from "lucide-react";
 import { useState } from "react";
 import { END_LINES } from "@/lib/tour/steps";
 
 interface EndCardProps {
   onGo: (href: string) => void;
   onReset: () => Promise<void>;
-  onBack: () => void;
   onClose: () => void;
 }
 
-const PLACES = [
+const MORE = [
   { href: "/buyer", label: "Explore the buyer side" },
-  { href: "/valio", label: "Explore Valio Aimo’s side" },
+  { href: "/connect", label: "Connect your own agent" },
 ];
 
-/** The close: what was just shown, in three lines tied to the judging criteria, and where to go next. */
-export function EndCard({ onGo, onReset, onBack, onClose }: EndCardProps) {
+/** The close, shown once where the tour ended: what was just shown, tied to the judging criteria, and where to go next. */
+export function EndCard({ onGo, onReset, onClose }: EndCardProps) {
   const [resetting, setResetting] = useState(false);
 
   async function reset() {
@@ -46,21 +45,17 @@ export function EndCard({ onGo, onReset, onBack, onClose }: EndCardProps) {
         ))}
       </ul>
       <div className="tour-end-actions">
-        <button type="button" className="btn btn-primary big" onClick={() => onGo("/connect")} data-tour-next>
-          Connect your own agent
+        <button type="button" className="btn btn-primary big" onClick={() => onGo("/valio")} data-tour-next>
+          Explore Valio Aimo’s side
           <ArrowRight aria-hidden="true" />
         </button>
-        {PLACES.map((place) => (
+        {MORE.map((place) => (
           <button key={place.href} type="button" className="btn btn-secondary big" onClick={() => onGo(place.href)}>
             {place.label}
           </button>
         ))}
       </div>
       <div className="tour-end-foot">
-        <button type="button" className="text-link tour-end-back" onClick={onBack}>
-          <ArrowLeft aria-hidden="true" />
-          Back to the last step
-        </button>
         <button type="button" className="btn btn-quiet" onClick={() => void reset()} disabled={resetting}>
           <RotateCcw aria-hidden="true" />
           {resetting ? "Resetting…" : "Reset my demo"}

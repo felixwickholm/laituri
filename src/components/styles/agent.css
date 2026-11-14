@@ -47,7 +47,7 @@
   grid-area: title;
   min-width: 0;
   color: var(--text-1);
-  font-size: 16px;
+  font-size: var(--fs-15);
   line-height: 23px;
   font-weight: 600;
   letter-spacing: -0.01em;
@@ -56,7 +56,7 @@
 .run-time {
   grid-area: time;
   color: var(--text-3);
-  font-size: 13px;
+  font-size: var(--fs-13);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
@@ -82,7 +82,7 @@
 .run-detail {
   min-width: 0;
   color: var(--text-2);
-  font-size: 14px;
+  font-size: var(--fs-15);
   line-height: 20px;
 }
 @media (hover: hover) and (pointer: fine) {
@@ -102,7 +102,7 @@
   border: 1px solid var(--line);
   background: var(--surface-2);
   color: var(--text-1);
-  font-size: 14px;
+  font-size: var(--fs-15);
   line-height: 20px;
   text-wrap: pretty;
 }
@@ -110,7 +110,7 @@
   display: block;
   margin-bottom: 2px;
   color: var(--text-3);
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 600;
   line-height: 16px;
 }
@@ -172,7 +172,7 @@
 .step-text {
   display: block;
   color: var(--text-2);
-  font-size: 14px;
+  font-size: var(--fs-15);
   line-height: 21px;
 }
 .step[data-status="blocked"] .step-text,
@@ -180,34 +180,99 @@
   color: var(--text-1);
 }
 
-.tool-rows {
-  display: grid;
-  gap: 4px;
-  margin: 6px 0 0;
-  padding: 8px 10px;
-  border-radius: var(--r-md);
+/* The mandate check of a run, compact: a tick per rule, the count, every rule by name when opened. */
+.rule-checks {
+  margin-top: 14px;
+  border-radius: var(--r-control);
   background: var(--surface-2);
+}
+.rule-checks summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 8px 12px;
+  list-style: none;
+  cursor: pointer;
+}
+.rule-checks summary::-webkit-details-marker {
+  display: none;
+}
+.rule-ticks {
+  display: inline-flex;
+  flex: none;
+  gap: 2px;
+}
+.rule-ticks span {
+  width: 4px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--success);
+}
+.rule-ticks span[data-status="ask"] {
+  background: var(--warn);
+}
+.rule-ticks span[data-status="block"] {
+  background: var(--danger);
+}
+.rule-ticks span[data-status="skipped"] {
+  background: var(--line-strong);
+}
+.rule-checks-line {
+  flex: 1;
+  min-width: 0;
+  color: var(--text-1);
+  font-size: var(--fs-13);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.rule-checks-chevron {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--text-3);
+  transition: transform var(--d-fast) var(--ease-out);
+}
+.rule-checks[open] .rule-checks-chevron {
+  transform: rotate(90deg);
+}
+.rule-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 16px;
+  margin: 0;
+  padding: 2px 12px 12px;
   list-style: none;
 }
-.tool-rows li {
-  display: grid;
-  grid-template-columns: minmax(0, auto) minmax(0, 1fr);
-  gap: 10px;
-  font-size: 13px;
-  line-height: 18px;
-}
-.tool-name {
-  color: var(--text-2);
-  font-family: var(--font-mono);
-  font-size: 12px;
-}
-.tool-text {
+.rule-list li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   min-width: 0;
-  color: var(--text-3);
+  color: var(--text-2);
+  font-size: var(--fs-13);
+  line-height: 20px;
 }
-.tool-rows li[data-status="error"] .tool-text,
-.tool-rows li[data-status="blocked"] .tool-text {
+.rule-list svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  color: var(--success);
+}
+.rule-list li[data-status="ask"] svg {
+  color: var(--warn);
+}
+.rule-list li[data-status="block"] svg {
   color: var(--danger);
+}
+.rule-list li[data-status="skipped"] svg {
+  color: var(--text-4);
+}
+.run-body > .tech-details {
+  margin-top: 12px;
+}
+.runs > .history-note {
+  margin: 0;
 }
 
 .run-foot {
@@ -249,21 +314,20 @@
 }
 .attempt-n {
   color: var(--text-3);
-  font-size: 13px;
+  font-size: var(--fs-13);
   font-variant-numeric: tabular-nums;
 }
 .attempt-action {
   color: var(--text-1);
-  font-size: 14px;
+  font-size: var(--fs-15);
   line-height: 20px;
 }
-.attempt-rule,
-.attempt .tool-rows {
+.attempt-rule {
   grid-column: 2 / -1;
 }
 .attempt-rule {
   color: var(--text-3);
-  font-size: 13px;
+  font-size: var(--fs-13);
   line-height: 19px;
 }
 .attempt-rule strong {
@@ -272,7 +336,7 @@
 }
 .attempt-rule .text-link {
   margin-left: 6px;
-  font-size: 13px;
+  font-size: var(--fs-13);
 }
 
 @media (max-width: 760px) {
@@ -292,6 +356,11 @@
     margin-left: 0;
   }
 }
+@media (max-width: 480px) {
+  .rule-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .run,
@@ -304,7 +373,8 @@
   .run-head:active {
     transform: none;
   }
-  .run-chevron {
+  .run-chevron,
+  .rule-checks-chevron {
     transition: none;
   }
 }

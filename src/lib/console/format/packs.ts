@@ -1,4 +1,4 @@
-import type { OfferLine } from "@/lib/contracts";
+import type { Offer, OfferLine } from "@/lib/contracts";
 import { count } from "./money";
 
 /** The parts of an offer line that say how much it holds. */
@@ -85,4 +85,28 @@ export function stockText(line: StockLine): string | undefined {
   if (stock === "untracked") return "stock not tracked";
   if (status === "partial" && available !== undefined) return `only ${count(available)} in stock`;
   return undefined;
+}
+
+function amountOf(text: string | undefined): number | undefined {
+  const match = text?.match(/(\d[\d,]*(?:\.\d+)?)\s*(l|kg)\b/);
+  return match ? Number(match[1].replace(/,/g, "")) : undefined;
+}
+
+/**
+ * Says so in words when whole packs come to more than was asked:
+ * "Asked 10 kg. Whole cases only: 3 cases = 13.92 kg." Built from the quantity the wholesaler compared in the
+ * signed offer and the one line that delivers; undefined when the amounts match or cannot be compared.
+ */
+export function roundingNote(offer: Pick<Offer, "lines" | "requestCheck">): string | undefined {
+  const check = offer.requestCheck?.find((item) => item.requirement === "quantity");
+  const lines = offer.lines.filter((line) => line.quantity > 0);
+  if (!check || lines.length !== 1) return undefined;
+  const [line] = lines;
+  const asked = amountOf(check.asked);
+  const total = contentText(line);
+  const delivered = line.content?.amount;
+  if (asked === undefined || delivered === undefined || !total || delivered <= asked + 1e-9) return undefined;
+  const noun = OUTER[line.salesUnit];
+  const packs = noun ? `${count(line.quantity)} ${noun[line.quantity === 1 ? 0 : 1]} = ${total}` : packContent(line) ?? total;
+  return `Asked ${check.asked.trim().replace(/(\d) (l|kg|units)\b/g, "$1\u00a0$2")}. Whole ${noun ? noun[1] : "packs"} only: ${packs}.`;
 }

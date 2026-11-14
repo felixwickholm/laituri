@@ -1,4 +1,5 @@
 import { ArrowRight } from "lucide-react";
+import { RuleId } from "@/lib/contracts";
 import Link from "next/link";
 import { Reveal } from "./Reveal";
 import { stagger } from "./stagger";
@@ -18,7 +19,7 @@ const CRITERIA = [
   {
     name: "Autonomy and controls",
     weight: 20,
-    evidence: "Fifteen rules in a signed mandate decide alone. Past a limit the order waits for a named person, and agents cannot approve.",
+    evidence: `A signed mandate of ${RuleId.options.length} rules decides alone. Past a limit the order waits for a named person, and agents cannot approve.`,
   },
   {
     name: "Robustness to exception situations",

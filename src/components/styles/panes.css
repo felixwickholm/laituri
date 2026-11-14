@@ -13,7 +13,7 @@
   border-radius: var(--r-control);
   background: var(--surface-inverse);
   color: var(--text-inverse);
-  font-size: 14px;
+  font-size: var(--fs-13);
   font-weight: 550;
   text-decoration: none;
   transform: translateY(-160%);
@@ -31,6 +31,7 @@
 
 .sidebar {
   position: sticky;
+  z-index: 20;
   top: 0;
   display: flex;
   flex-direction: column;
@@ -54,8 +55,8 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 17px;
-  font-weight: 650;
+  font-size: var(--fs-18);
+  font-weight: 600;
   letter-spacing: -0.02em;
 }
 
@@ -91,7 +92,7 @@
   place-items: center;
   border-radius: var(--r-full);
   color: var(--text-2);
-  font-size: 14px;
+  font-size: var(--fs-13);
   font-weight: 600;
   text-decoration: none;
   white-space: nowrap;
@@ -114,7 +115,7 @@
 .side-name {
   margin: 10px 8px 0;
   color: var(--text-3);
-  font-size: 13px;
+  font-size: var(--fs-13);
   line-height: 18px;
 }
 
@@ -141,7 +142,7 @@
   background: transparent;
   color: var(--text-2);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--fs-13);
   font-weight: 500;
   text-align: left;
   text-decoration: none;
@@ -199,8 +200,8 @@
   border-radius: var(--r-full);
   background: var(--warn-tint);
   color: color-mix(in srgb, var(--warn) 80%, var(--text-1));
-  font-size: 12px;
-  font-weight: 650;
+  font-size: var(--fs-12);
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 .nav-alarm {
@@ -211,43 +212,130 @@
   background: var(--danger);
 }
 
+/* The sidebar's foot: two more links, the tour's dock, the quiet demo line and the account row. */
 .shell-tools {
   display: grid;
-  gap: 16px;
+  gap: 12px;
   margin-top: auto;
   padding-top: 24px;
 }
-.sidebar .shell-tools .nav-list {
-  padding-top: 16px;
+.sidebar .shell-tools > .nav-list {
+  padding-top: 12px;
   border-top: 1px solid var(--line);
 }
-.session-row {
+.shell-tools[data-variant="sheet"] {
+  gap: 20px;
+}
+
+.demo-menu {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: start;
-  gap: 8px;
-  padding: 0 2px;
 }
-.honest-status {
+.demo-trigger {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
-  margin: 0;
-  padding: 0 8px;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--r-control);
+  background: transparent;
   color: var(--text-3);
-  font-size: 12px;
-  line-height: 17px;
+  font: inherit;
+  font-size: var(--fs-12);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color var(--d-hover) var(--ease-hover),
+    color var(--d-hover) var(--ease-hover),
+    transform var(--d-press) var(--ease-out);
 }
-.honest-status .dot {
+.demo-trigger:active {
+  transform: var(--press);
+}
+.demo-trigger[aria-expanded="true"] {
+  background: var(--surface-2);
+  color: var(--text-1);
+}
+.demo-trigger-word {
+  color: var(--text-2);
+  font-weight: 550;
+}
+.demo-trigger-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.demo-trigger svg {
   flex: none;
-  width: 6px;
-  height: 6px;
-  border-radius: var(--r-full);
-  background: var(--text-4);
-  transform: translateY(-1px);
+  width: 14px;
+  height: 14px;
+  margin-left: auto;
 }
-.honest-status .dot[data-live="true"] {
-  background: var(--success);
+@media (hover: hover) and (pointer: fine) {
+  .demo-trigger:hover {
+    background: var(--surface-2);
+    color: var(--text-1);
+  }
+}
+
+.account-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 0 0 4px;
+}
+.account-who {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.account-text {
+  display: grid;
+  min-width: 0;
+}
+.account-name {
+  overflow: hidden;
+  color: var(--text-1);
+  font-size: var(--fs-13);
+  font-weight: 600;
+  line-height: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.account-role {
+  color: var(--text-3);
+  font-size: var(--fs-12);
+  line-height: 16px;
+}
+.account-demo {
+  flex: 1;
+}
+.account-wait {
+  flex: 1;
+}
+.account-off {
+  flex: 1;
+  padding-left: 6px;
+  color: var(--text-3);
+  font-size: var(--fs-12);
+}
+.avatar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-full);
+  background: var(--accent-tint);
+  color: var(--accent);
+  font-size: var(--fs-12);
+  font-weight: 600;
 }
 
 .phone-bar,
@@ -281,14 +369,14 @@
 }
 .page-head h1 {
   margin: 0;
-  font-size: 30px;
+  font-size: var(--fs-title);
   line-height: 36px;
-  font-weight: 650;
-  letter-spacing: -0.025em;
+  font-weight: 600;
+  letter-spacing: var(--track-title);
 }
 .page-meta {
   color: var(--text-3);
-  font-size: 15px;
+  font-size: var(--fs-15);
 }
 .page-actions {
   display: flex;
@@ -299,8 +387,8 @@
   max-width: 72ch;
   margin: 0;
   color: var(--text-2);
-  font-size: 17px;
-  line-height: 26px;
+  font-size: var(--fs-15);
+  line-height: 22px;
 }
 .verdict-lead {
   color: var(--text-1);
@@ -324,7 +412,7 @@
 }
 .block-head h2 {
   margin: 0;
-  font-size: 16px;
+  font-size: var(--fs-15);
   line-height: 22px;
   font-weight: 600;
   letter-spacing: -0.01em;
@@ -335,7 +423,7 @@
 .block-meta {
   margin-left: auto;
   color: var(--text-3);
-  font-size: 13px;
+  font-size: var(--fs-13);
 }
 
 .card {
@@ -346,7 +434,7 @@
 }
 .card-title {
   margin: 0 0 14px;
-  font-size: 15px;
+  font-size: var(--fs-15);
   line-height: 20px;
   font-weight: 600;
 }
@@ -357,8 +445,8 @@
   border-radius: var(--r-card);
   border: 1px dashed var(--line-strong);
   color: var(--text-3);
-  font-size: 14px;
-  line-height: 21px;
+  font-size: var(--fs-13);
+  line-height: 20px;
 }
 
 .more {
@@ -385,7 +473,7 @@
 }
 .kpi dt {
   color: var(--text-3);
-  font-size: 14px;
+  font-size: var(--fs-13);
   font-weight: 500;
 }
 .kpi dd {
@@ -397,10 +485,10 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 26px;
-  line-height: 32px;
-  font-weight: 650;
-  letter-spacing: -0.02em;
+  font-size: var(--fs-title);
+  line-height: 36px;
+  font-weight: 600;
+  letter-spacing: var(--track-title);
   font-variant-numeric: tabular-nums;
 }
 .kpi-value svg {
@@ -410,7 +498,7 @@
 }
 .kpi-sub {
   color: var(--text-3);
-  font-size: 13px;
+  font-size: var(--fs-13);
   line-height: 18px;
 }
 .kpi .meter {
@@ -451,14 +539,14 @@
 .table-frame table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: var(--fs-13);
   line-height: 20px;
 }
 .table-frame th {
   padding: 12px 16px;
   border-bottom: 1px solid var(--line);
   color: var(--text-3);
-  font-size: 13px;
+  font-size: var(--fs-13);
   font-weight: 500;
   text-align: left;
   white-space: nowrap;
@@ -478,7 +566,7 @@
   display: block;
   margin-top: 2px;
   color: var(--text-3);
-  font-size: 13px;
+  font-size: var(--fs-13);
 }
 .table-frame tbody tr {
   position: relative;
@@ -559,9 +647,6 @@
     width: 220px;
     height: 40px;
   }
-  .phone-bar .side-switch a {
-    font-size: 13px;
-  }
   .tab-bar {
     position: fixed;
     z-index: 30;
@@ -573,6 +658,23 @@
     padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
     border-top: 1px solid var(--line);
     background: var(--surface-1);
+  }
+  /* The paused tour's pill sits just above the tab bar; empty, the slot takes no room. */
+  .phone-dock {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: calc(100% + 8px);
+    display: flex;
+    justify-content: center;
+    padding: 0 16px;
+    pointer-events: none;
+  }
+  .phone-dock > * {
+    pointer-events: auto;
+  }
+  .shell:has(.phone-dock:not(:empty)) .canvas {
+    padding-bottom: calc(152px + env(safe-area-inset-bottom, 0px));
   }
   .tab-list {
     display: grid;
@@ -587,7 +689,7 @@
     gap: 3px;
     height: 54px;
     padding: 0 2px;
-    font-size: 12px;
+    font-size: var(--fs-12);
     font-weight: 550;
     text-align: center;
   }
@@ -608,7 +710,6 @@
   .tab-bar .nav-count {
     min-width: 20px;
     height: 20px;
-    font-size: 11px;
   }
   .canvas {
     padding: 24px 20px calc(96px + env(safe-area-inset-bottom, 0px));
@@ -634,23 +735,11 @@
     padding-left: 16px;
     padding-right: 16px;
   }
-  .page-head h1 {
-    font-size: 26px;
-    line-height: 32px;
-  }
-  .page-lede {
-    font-size: 16px;
-    line-height: 24px;
-  }
   .kpis {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .kpi {
     padding: 14px 16px 16px;
-  }
-  .kpi-value {
-    font-size: 22px;
-    line-height: 28px;
   }
   .filter-row {
     flex-wrap: nowrap;
@@ -681,7 +770,46 @@
     transition: none;
   }
   .side-switch a:active,
+  .demo-trigger:active,
   .nav-item:active:not(:disabled) {
     transform: none;
   }
+}
+
+/* The not-found page: the brand, one calm sentence and the ways back in. */
+.nf {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 100dvh;
+  padding: 24px clamp(16px, 4vw, 48px) 48px;
+}
+.nf-brand {
+  margin: 0;
+}
+.nf-body {
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: 12px;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+}
+.nf h1 {
+  margin: 0;
+  font-size: var(--fs-title);
+  line-height: 36px;
+  font-weight: 600;
+  letter-spacing: var(--track-title);
+}
+.nf-line {
+  margin: 0 0 12px;
+  color: var(--text-2);
+  font-size: var(--fs-15);
+  line-height: 22px;
+}
+.nf-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }

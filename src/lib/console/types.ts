@@ -86,6 +86,8 @@ export type ChainState =
 export interface ConsoleSnapshot {
   ready: boolean;
   online: boolean;
+  /** Every read answered 401 credential_required: nothing here may be read without a sign-in. */
+  locked?: boolean;
   activity: Activity[];
   orders: Order[];
   audit: AuditEntry[];

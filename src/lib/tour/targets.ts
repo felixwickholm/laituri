@@ -1,5 +1,5 @@
 /** The demo scenes the tour starts itself. */
-export type TourScene = "milk" | "over-limit";
+export type TourScene = "milk" | "over-limit" | "break-mandate";
 
 const RUN_SLOT = /\{run:([a-z-]+)\}/g;
 

@@ -3,7 +3,7 @@
 import { useSyncExternalStore } from "react";
 import type { ApprovalDecisionRequest, Order } from "@/lib/contracts";
 import type { MandatePatch } from "@/lib/orders/types";
-import { api } from "./api";
+import { ApiError, CREDENTIAL_REQUIRED, api } from "./api";
 import { withoutRole } from "./session";
 import { workspaceStore } from "./workspace-store";
 import type { ChainState, ConsoleSession, ConsoleSnapshot, DemoRun, Scenario, SessionRole, SignInCredentials, SignedMandate } from "./types";
@@ -16,6 +16,7 @@ const MANDATE_EVERY = 5;
 const EMPTY: ConsoleSnapshot = {
   ready: false,
   online: true,
+  locked: false,
   activity: [],
   orders: [],
   audit: [],
@@ -23,6 +24,10 @@ const EMPTY: ConsoleSnapshot = {
 };
 
 type Listener = () => void;
+
+function isCredentialRequired(reason: unknown): boolean {
+  return reason instanceof ApiError && reason.status === 401 && (reason.code === undefined || reason.code === CREDENTIAL_REQUIRED);
+}
 
 /** One poller for the whole console. Polls once a second while the tab is visible. */
 class ConsoleStore {
@@ -79,10 +84,23 @@ class ConsoleStore {
     this.busy = true;
     const round = this.ticks++;
     try {
-      const [activity, orders, audit] = await Promise.allSettled([api.activityText(), api.ordersText(), api.auditText()]);
+      // Every slice in one round, so the mandate and keys do not wait behind the lists on the first load.
+      const [activity, orders, audit, jwks, health, mandate, run, session] = await Promise.allSettled([
+        api.activityText(),
+        api.ordersText(),
+        api.auditText(),
+        this.snapshot.jwks ? undefined : api.jwks(),
+        round % HEALTH_EVERY === 0 ? api.health() : undefined,
+        round % MANDATE_EVERY === 0 || !this.snapshot.mandate ? api.mandate() : undefined,
+        this.snapshot.run?.status === "running" ? api.run(this.snapshot.run.id) : undefined,
+        round % HEALTH_EVERY === 0 ? api.session() : undefined,
+      ]);
+      const lists = [activity, orders, audit];
       const patch: Partial<ConsoleSnapshot> = {
         ready: true,
-        online: [activity, orders, audit].some((result) => result.status === "fulfilled"),
+        online: lists.some((result) => result.status === "fulfilled"),
+        // Without a credential every read answers 401: the shell says so once; the screens stay quiet.
+        locked: lists.every((result) => result.status === "rejected" && isCredentialRequired(result.reason)),
       };
       if (activity.status === "fulfilled" && activity.value !== this.texts.activity) {
         this.texts.activity = activity.value;
@@ -98,14 +116,6 @@ class ConsoleStore {
         patch.audit = api.parseAudit(audit.value).sort((a, b) => a.seq - b.seq);
         auditChanged = true;
       }
-      const side = await Promise.allSettled([
-        this.snapshot.jwks ? undefined : api.jwks(),
-        round % HEALTH_EVERY === 0 ? api.health() : undefined,
-        round % MANDATE_EVERY === 0 ? api.mandate() : undefined,
-        this.snapshot.run?.status === "running" ? api.run(this.snapshot.run.id) : undefined,
-        round % HEALTH_EVERY === 0 ? api.session() : undefined,
-      ]);
-      const [jwks, health, mandate, run, session] = side;
       if (session.status === "fulfilled" && session.value) patch.session = session.value;
       if (jwks.status === "fulfilled" && jwks.value) patch.jwks = jwks.value;
       if (health.status === "fulfilled" && health.value) patch.health = health.value;

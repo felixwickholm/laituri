@@ -1,11 +1,14 @@
 import { Check, X } from "lucide-react";
+import { RuleId } from "@/lib/contracts";
+
+const RULES = RuleId.options.length;
 
 /** A true-to-product crop of the buyer's approval card: the over-limit order from scene two. */
 export function ApprovalFragment() {
   return (
     <div className="ui-card ui-approval" data-ui="approval" inert>
       <div className="ui-row">
-        <span className="ui-pill" data-tone="warn">
+        <span className="state" data-tone="waiting">
           Needs your OK
         </span>
         <span className="ui-muted">Offer valid 14:32</span>
@@ -25,7 +28,9 @@ export function ApprovalFragment() {
         </div>
         <div>
           <dt>Rules passed</dt>
-          <dd>14 of 15</dd>
+          <dd>
+            {RULES - 1} of {RULES}
+          </dd>
         </div>
       </dl>
       <p className="ui-muted ui-by">Asked by Harbour purchasing agent · decides Maria Lind</p>

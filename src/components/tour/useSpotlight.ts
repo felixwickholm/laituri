@@ -68,13 +68,20 @@ function setPath(element: SVGPathElement | null, d: string): void {
   if (element && element.getAttribute("d") !== d) element.setAttribute("d", d);
 }
 
+interface Options {
+  /** The card floats beside its target (off while the phone is shown). */
+  floatCard: boolean;
+  /** Keep the page at its top when the target fits there, so the page's title stays in view. */
+  pinTop: boolean;
+}
+
 /**
  * Draws the dimmed page with a rounded cut-out around the first visible match of each selector group (only the
  * first group on a phone), eases the cut-outs to each new target, keeps them on their targets while the page scrolls
  * or grows, scrolls new targets into the open part of the screen, and places a floating card where it covers none
  * of them. `groups` null closes the cut-outs.
  */
-export function useSpotlight(groups: readonly (readonly string[])[] | null, { dim, ring, card: cardRef }: Refs, floatCard: boolean): void {
+export function useSpotlight(groups: readonly (readonly string[])[] | null, { dim, ring, card: cardRef }: Refs, { floatCard, pinTop }: Options): void {
   const key = groups?.map((group) => group.join("|")).join("||") ?? "";
 
   useEffect(() => {
@@ -113,7 +120,8 @@ export function useSpotlight(groups: readonly (readonly string[])[] | null, { di
         scrolledAt = now;
         const beside = view.w - (all.x + all.w) >= cardSize.w + 44 || all.x >= cardSize.w + 44;
         const reserve = sheet ? cardSize.h + 16 : beside ? 24 : cardSize.h + 44;
-        const delta = scrollDelta(all, view, reserve, sheet ? PHONE_BAR : 24);
+        const fitsAtTop = all.y + window.scrollY + all.h <= view.h - reserve;
+        const delta = pinTop && fitsAtTop ? -window.scrollY : scrollDelta(all, view, reserve, sheet ? PHONE_BAR : 24);
         if (Math.abs(delta) > 4) window.scrollBy({ top: delta, behavior: reduced ? "auto" : "smooth" });
       }
 
@@ -148,5 +156,5 @@ export function useSpotlight(groups: readonly (readonly string[])[] | null, { di
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [key, dim, ring, cardRef, floatCard]);
+  }, [key, dim, ring, cardRef, floatCard, pinTop]);
 }

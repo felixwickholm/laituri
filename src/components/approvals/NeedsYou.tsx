@@ -1,7 +1,11 @@
 "use client";
 
+import { Inbox } from "lucide-react";
+import Link from "next/link";
 import type { Order } from "@/lib/contracts";
+import { isSeeded } from "@/lib/console/format/orders";
 import { useUi } from "../shell/ui-context";
+import { HistoryNote } from "../ui/HistoryNote";
 import { useNow } from "../ui/useNow";
 import { ApprovalRow } from "./ApprovalRow";
 import { HandledRow } from "./HandledRow";
@@ -41,13 +45,26 @@ export function NeedsYou({ orders, paused, ready, recent: withRecent = true }: N
           ))}
         </ul>
       ) : (
-        <p className="empty-frame">
-          {ready ? "Nothing waits for you. Orders over a limit stop here for your decision." : "Loading the approvals queue…"}
+        <p className="empty-frame quiet-empty">
+          {ready ? (
+            <>
+              <Inbox aria-hidden="true" />
+              <span>Nothing waits for you. Orders over a limit stop here.</span>
+              <Link href="/buyer/mandate" className="text-link strong">
+                See your limits
+              </Link>
+            </>
+          ) : (
+            "Loading the approvals queue…"
+          )}
         </p>
       )}
       {recent.length > 0 ? (
         <div className="recent">
-          <h3>Recent decisions</h3>
+          <h3>
+            Recent decisions <span className="recent-meta">net amounts</span>
+          </h3>
+          <HistoryNote show={recent.some(isSeeded)} />
           <ul className="handled-list">
             {recent.map((order) => (
               <HandledRow key={order.id} order={order} onOpen={ui.openOrder} />

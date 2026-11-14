@@ -1,14 +1,14 @@
 "use client";
 
-import { ArrowUp, Mic, Square } from "lucide-react";
+import { ArrowUp, ChevronRight, Mic, Square } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import type { Order } from "@/lib/contracts";
-import { engineLine } from "@/lib/console/format/engine";
-import { eur } from "@/lib/console/format/money";
-import { weekSpend } from "@/lib/console/format/week";
+import { priceHoldLine } from "@/lib/console/format/approval";
+import { shortName } from "@/lib/console/format/rules";
 import { orbStateFor } from "@/lib/console/orb-state";
 import { spokenRunResult } from "@/lib/console/orb-speech";
 import { consoleStore } from "@/lib/console/store";
+import { agentSuspension } from "@/lib/console/suspension";
 import type { ConsoleSnapshot, Scenario } from "@/lib/console/types";
 import { toast } from "../ui/toast";
 import { useNow } from "../ui/useNow";
@@ -20,29 +20,37 @@ export interface LiveAgentPanelProps {
   snapshot: ConsoleSnapshot;
 }
 
-const SUGGESTIONS: { scenario: Scenario; label: string }[] = [
-  { scenario: "milk", label: "1,000 l lactose-free milk by Monday" },
-  { scenario: "over-limit", label: "1,600 l: over the limit" },
-  { scenario: "break-mandate", label: "Try to break the rules" },
+interface Scene {
+  scenario: Scenario;
+  title: string;
+  explain: (approver: string) => string;
+}
+
+const SCENES: Scene[] = [
+  { scenario: "milk", title: "1,000 l lactose-free milk by Monday", explain: () => "Inside the limits, so the agent orders alone." },
+  { scenario: "over-limit", title: "1,600 l of the same milk", explain: (approver) => `Over the per-order limit, so it waits for ${approver}.` },
+  { scenario: "break-mandate", title: "Try to break the rules", explain: () => "Five attempts the mandate must refuse." },
 ];
 
-const ORB_SIZE = 260;
+const ORB_SIZE = 88;
 
-/** "4:32" until the newest waiting offer expires, or undefined when no offer is live. */
-function offerCountdown(orders: Order[], nowMs: number): string | undefined {
-  const live = orders
-    .filter((order) => order.status === "pending_approval")
+/** "Price held until 14:30" when the wholesaler signed a price hold, else "Offer expires in 4:32"; undefined when nothing waits. */
+function waitingLine(orders: Order[], nowMs: number): string | undefined {
+  const waiting = orders.filter((order) => order.status === "pending_approval");
+  const held = waiting.map(priceHoldLine).find(Boolean);
+  if (held) return held;
+  const live = waiting
     .map((order) => Date.parse(order.offer.expiresAt) - nowMs)
     .filter((left) => left > 0)
     .sort((a, b) => a - b)[0];
   if (live === undefined) return undefined;
   const seconds = Math.floor(live / 1000);
-  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+  return `Offer expires in ${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 }
 
-/** The agent, live: what it is doing now, and where a person asks it for something by typing or speaking. */
+/** The agent, live: one line on what it is doing, a composer to ask it for something, and three scripted scenes. */
 export function LiveAgentPanel({ snapshot }: LiveAgentPanelProps) {
-  const now = useNow(500);
+  const now = useNow(250);
   const [request, setRequest] = useState("");
   const [starting, setStarting] = useState<Scenario | "free" | null>(null);
   const spokenRun = useRef<{ id: string; startedAt: number } | null>(null);
@@ -84,39 +92,31 @@ export function LiveAgentPanel({ snapshot }: LiveAgentPanelProps) {
   const state = voice.listening ? "listening" : view.state;
   const caption = voice.listening ? (request ? `Heard: ${request}` : "Listening…") : view.caption;
   const terms = mandate?.mandate;
-  const budgetLeft = terms ? terms.limits.perWeek.amount - weekSpend(orders, now) : undefined;
-  const countdown = offerCountdown(orders, now);
-  const engine = engineLine(snapshot.health);
+  const suspended = agentSuspension(snapshot.audit, terms?.agent.id) !== undefined;
+  const approver = terms ? shortName(terms.approval.approver.name) : "your approver";
+  const countdown = waitingLine(orders, now);
+  const status = suspended ? "suspended" : snapshot.online ? "live" : "offline";
 
   return (
-    <section className="live-agent" aria-label="Your agent, live" data-ready={snapshot.ready}>
-      <p className="live-agent-hint mono">
-        <span className="live-dot" data-idle={!snapshot.online} aria-hidden="true" />
-        Live · {terms?.agent.name ?? "Harbour purchasing agent"}
-      </p>
-
-      <div className="live-agent-stage" data-tour="orb">
-        <AgentOrb state={state} digits={view.digits} rulesPassed={view.rulesPassed} rulesTotal={view.rulesTotal} level={voice.level} size={ORB_SIZE} />
-        <ul className="orb-chips" aria-label="Mandate at a glance">
-          {budgetLeft !== undefined && (
-            <li className="orb-chip" data-place="top">
-              <span className="orb-chip-key">Left this week</span> {eur(Math.max(0, budgetLeft))}
-            </li>
-          )}
-          {terms && (
-            <li className="orb-chip" data-place="side">
-              Mandate v{terms.version} <span className="orb-chip-key">signed</span>
-            </li>
-          )}
-          {countdown && (
-            <li className="orb-chip" data-place="bottom" data-tone="warn">
-              <span className="orb-chip-key">Offer expires in</span> <span className="mono">{countdown}</span>
-            </li>
-          )}
-        </ul>
+    <section className="live-agent" aria-label="Your agent, live" data-ready={snapshot.ready} data-status={status}>
+      <div className="live-agent-top">
+        <div className="live-agent-stage" data-tour="orb">
+          <AgentOrb state={state} digits={view.digits} rulesPassed={view.rulesPassed} rulesTotal={view.rulesTotal} level={voice.level} size={ORB_SIZE} />
+        </div>
+        <div className="live-agent-say">
+          <p className="live-agent-name">
+            <span>{terms?.agent.name ?? "Your purchasing agent"}</span>
+            <span className="live-status" data-status={status}>
+              <span className="live-dot" aria-hidden="true" />
+              {status === "suspended" ? "Suspended" : status === "live" ? "Live" : "Offline"}
+            </span>
+          </p>
+          <TypedCaption text={caption} className="live-agent-caption" />
+          {countdown && !suspended ? (
+            <p className="live-agent-offer num">{countdown}</p>
+          ) : null}
+        </div>
       </div>
-
-      <TypedCaption text={caption} className="live-agent-caption mono" />
 
       <form className="composer" onSubmit={submit} data-tour="composer">
         <label className="sr-only" htmlFor="live-agent-ask">
@@ -126,7 +126,7 @@ export function LiveAgentPanel({ snapshot }: LiveAgentPanelProps) {
           id="live-agent-ask"
           value={request}
           onChange={(event) => setRequest(event.target.value)}
-          placeholder={voice.listening ? "Listening…" : running ? `Working on: ${run?.request || "a scene"}` : "Ask your agent to buy something…"}
+          placeholder={voice.listening ? "Listening…" : running ? `Working on: ${run?.request || "a scene"}` : "Ask your agent to buy something"}
           disabled={running && !voice.listening}
           autoComplete="off"
           enterKeyHint="send"
@@ -146,26 +146,24 @@ export function LiveAgentPanel({ snapshot }: LiveAgentPanelProps) {
           <ArrowUp aria-hidden="true" />
         </button>
       </form>
-      {!voice.supported && <p className="composer-note">{VOICE_UNSUPPORTED}</p>}
-      {engine ? (
-        <p className="composer-note composer-engine" title={engine.model ? `Typed requests go to ${engine.model}` : "Typed requests are answered by the scripted agent"}>
-          {engine.text}
-          {engine.model ? <span className="mono"> · {engine.model}</span> : null}
-        </p>
-      ) : null}
 
-      <div className="suggestions" role="group" aria-label="Try a scene">
-        {SUGGESTIONS.map((item) => (
+      <div className="scenes" role="group" aria-labelledby="scenes-note">
+        <p className="scenes-note" id="scenes-note">
+          Demo scenes are scripted
+        </p>
+        {SCENES.map((scene) => (
           <button
-            key={item.scenario}
+            key={scene.scenario}
             type="button"
-            className="suggestion"
-            data-tour-scene={item.scenario}
+            className="scene"
+            data-tour-scene={scene.scenario}
             disabled={running}
-            data-running={starting === item.scenario}
-            onClick={() => void start({ scenario: item.scenario }, item.scenario)}
+            data-running={starting === scene.scenario || (snapshot.run?.status === "running" && snapshot.run.scenario === scene.scenario)}
+            onClick={() => void start({ scenario: scene.scenario }, scene.scenario)}
           >
-            {item.label}
+            <span className="scene-title">{scene.title}</span>
+            <span className="scene-explain">{scene.explain(approver)}</span>
+            <ChevronRight className="scene-go" aria-hidden="true" />
           </button>
         ))}
       </div>

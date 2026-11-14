@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { ConnectTopBar } from "@/components/connect/ConnectTopBar";
 import { ConnectWorkbench } from "@/components/connect/ConnectWorkbench";
-import { TestOrder } from "@/components/connect/TestOrder";
 import { ToolTable } from "@/components/connect/ToolTable";
 import { SharedViewBanner } from "@/components/session/WorkspaceIndicator";
 import { Toaster } from "@/components/ui/toast";
@@ -11,7 +10,7 @@ import { nextMonday } from "@/lib/connect/requests";
 import { PRIMARY_BUYER_ID } from "@/lib/mandate";
 
 export const metadata: Metadata = {
-  title: "Connect your agent · Laituri",
+  title: "Connect your agent · Laituri, the loading dock for AI agents",
   description: "Connect any MCP or HTTP agent to buy from Valio Aimo inside a signed mandate.",
 };
 
@@ -36,7 +35,6 @@ export default async function ConnectPage() {
           <p>Any agent that speaks MCP or HTTP can buy here. Copy one line.</p>
         </header>
         <ConnectWorkbench serverOrigin={origin} deliverBy={deliverBy} primaryBuyerId={PRIMARY_BUYER_ID} />
-        <TestOrder deliverBy={deliverBy} primaryBuyerId={PRIMARY_BUYER_ID} />
         <ToolTable />
         <footer className="cx-foot">
           <p>Product names and marks belong to their owners and are shown only to indicate compatibility.</p>

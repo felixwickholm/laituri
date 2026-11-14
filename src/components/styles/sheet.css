@@ -1,11 +1,12 @@
-/* Sheets float over the page from the right on the iOS sheet curve. Full screen on a phone. */
+/*
+ * Sheets float over the page from the right on the iOS sheet curve. Full screen on a phone.
+ * The scrim is light, as in Linear: the list behind the sheet stays readable.
+ */
 .sheet-backdrop {
   position: fixed;
   inset: 0;
   z-index: 60;
-  background: var(--scrim);
-  -webkit-backdrop-filter: blur(2px);
-  backdrop-filter: blur(2px);
+  background: rgba(11, 18, 32, 0.2);
   opacity: 1;
   transition: opacity var(--d-base) var(--ease-out);
   @starting-style {
@@ -14,6 +15,9 @@
 }
 .sheet-backdrop[data-closing="true"] {
   opacity: 0;
+}
+:root[data-theme="dark"] .sheet-backdrop {
+  background: rgba(0, 0, 0, 0.4);
 }
 .sheet {
   position: fixed;
@@ -51,20 +55,20 @@
 }
 .sheet-kicker {
   color: var(--text-3);
-  font-size: 13px;
+  font-size: var(--fs-13);
 }
 .sheet-head h2 {
   margin: 2px 0 0;
-  font-size: 21px;
-  line-height: 28px;
-  font-weight: 650;
-  letter-spacing: -0.02em;
+  font-size: var(--fs-18);
+  line-height: 26px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
 }
 .sheet-head .lede {
   margin: 4px 0 0;
   color: var(--text-3);
-  font-size: 14px;
-  line-height: 20px;
+  font-size: var(--fs-13);
+  line-height: 18px;
 }
 .sheet-head .close {
   flex: none;
@@ -93,20 +97,12 @@
 }
 .sheet-foot .note {
   color: var(--text-3);
-  font-size: 13px;
+  font-size: var(--fs-13);
 }
 .sheet-foot .end {
   display: flex;
   gap: 8px;
   margin-left: auto;
-}
-.sheet-foot .btn {
-  height: 44px;
-  padding: 0 18px;
-  font-size: 15px;
-}
-.sheet-foot .btn::after {
-  inset: 0;
 }
 
 @media (max-width: 640px) {

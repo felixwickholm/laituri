@@ -37,7 +37,7 @@ interface SealProps {
 
 /**
  * The Laituri seal: the outer ring is the signed mandate, each inner arc one of its rules, filling as the
- * rule passes. The pier in the middle is where the agent docks.
+ * rule passes. The dock in the middle is where the agent ties up.
  */
 export function Seal({ state, rulesPassed, rulesTotal }: SealProps) {
   const total = Math.max(1, rulesTotal);

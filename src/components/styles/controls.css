@@ -6,14 +6,14 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  height: 36px;
+  height: var(--control-h);
   padding: 0 14px;
   border-radius: var(--r-control);
   border: 1px solid transparent;
   background: transparent;
   color: var(--text-1);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--fs-13);
   font-weight: 550;
   letter-spacing: -0.01em;
   white-space: nowrap;
@@ -31,7 +31,7 @@
   inset: -4px -2px;
 }
 .btn:active:not(:disabled) {
-  transform: scale(0.97);
+  transform: var(--press);
 }
 .btn:disabled {
   opacity: 0.5;
@@ -60,8 +60,9 @@
   color: var(--text-2);
 }
 .btn.big {
-  height: 44px;
-  font-size: 15px;
+  height: var(--control-h-big);
+  padding: 0 18px;
+  font-size: var(--fs-15);
 }
 .btn.big::after {
   inset: 0;
@@ -84,8 +85,8 @@
   position: relative;
   display: inline-grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  width: var(--control-h);
+  height: var(--control-h);
   flex: none;
   border-radius: var(--r-control);
   border: 0;
@@ -108,7 +109,7 @@
   stroke-width: 1.75;
 }
 .icon-btn:active {
-  transform: scale(0.94);
+  transform: var(--press);
 }
 @media (hover: hover) and (pointer: fine) {
   .icon-btn:hover {
@@ -127,7 +128,7 @@
   background: none;
   color: var(--accent);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--fs-13);
   font-weight: 550;
   text-decoration: none;
   cursor: pointer;
@@ -141,7 +142,7 @@
   inset: -12px -4px;
 }
 .text-link:active {
-  transform: scale(0.97);
+  transform: var(--press);
 }
 .text-link svg {
   width: 16px;
@@ -168,13 +169,14 @@
   display: inline-flex;
   align-items: center;
   flex: none;
-  height: 24px;
-  padding: 0 9px;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
   border-radius: var(--r-full);
   background: var(--surface-2);
   color: var(--text-2);
-  font-size: 13px;
-  font-weight: 550;
+  font-size: var(--fs-13);
+  font-weight: 500;
   line-height: 1;
   white-space: nowrap;
 }
@@ -206,7 +208,7 @@
   border-radius: var(--r-xs);
   border: 1px dashed var(--line-strong);
   color: var(--text-3);
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 500;
   white-space: nowrap;
 }
@@ -245,14 +247,14 @@
 }
 .segmented button {
   position: relative;
-  height: 30px;
-  padding: 0 12px;
+  height: 26px;
+  padding: 0 10px;
   border: 0;
   border-radius: var(--r-full);
   background: transparent;
   color: var(--text-2);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--fs-13);
   font-weight: 500;
   white-space: nowrap;
   cursor: pointer;
@@ -264,10 +266,10 @@
 .segmented button::after {
   content: "";
   position: absolute;
-  inset: -7px -1px;
+  inset: -9px -1px;
 }
 .segmented button:active {
-  transform: scale(0.97);
+  transform: var(--press);
 }
 .segmented button[aria-pressed="true"],
 .segmented button[aria-selected="true"] {
@@ -288,14 +290,14 @@
   align-items: center;
   gap: 6px;
   flex: none;
-  height: 34px;
-  padding: 0 14px;
+  height: 26px;
+  padding: 0 10px;
   border-radius: var(--r-full);
   border: 1px solid var(--line-strong);
   background: var(--surface-1);
   color: var(--text-2);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--fs-13);
   font-weight: 500;
   white-space: nowrap;
   cursor: pointer;
@@ -308,10 +310,10 @@
 .filter-chip::after {
   content: "";
   position: absolute;
-  inset: -5px -2px;
+  inset: -9px -2px;
 }
 .filter-chip:active {
-  transform: scale(0.97);
+  transform: var(--press);
 }
 .filter-chip[aria-pressed="true"] {
   background: var(--text-1);
@@ -341,14 +343,14 @@
   align-items: center;
   gap: 4px;
   flex: none;
-  height: 32px;
-  padding: 0 6px 0 12px;
+  height: 26px;
+  padding: 0 4px 0 10px;
   border-radius: var(--r-full);
   border: 0;
   background: var(--surface-2);
   color: var(--text-1);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--fs-13);
   font-weight: 500;
   white-space: nowrap;
 }
@@ -356,8 +358,8 @@
   position: relative;
   display: grid;
   place-items: center;
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   border: 0;
   border-radius: var(--r-full);
   background: transparent;
@@ -371,13 +373,13 @@
 .chip button::after {
   content: "";
   position: absolute;
-  inset: -11px -8px;
+  inset: -12px -8px;
 }
 .chip button:active {
-  transform: scale(0.9);
+  transform: var(--press);
 }
 .chip-add {
-  padding: 0 12px;
+  padding: 0 10px;
   background: transparent;
   border: 1px dashed var(--line-strong);
   color: var(--text-2);
@@ -388,7 +390,7 @@
     transform var(--d-press) var(--ease-out);
 }
 .chip-add:active {
-  transform: scale(0.97);
+  transform: var(--press);
 }
 .chip-add svg {
   width: 14px;
@@ -453,25 +455,20 @@
   display: block;
   margin-bottom: 6px;
   color: var(--text-1);
-  font-size: 14px;
+  font-size: var(--fs-13);
   font-weight: 550;
 }
 .text-field {
   width: 100%;
-  height: 40px;
+  height: var(--control-h);
   padding: 0 12px;
   border-radius: var(--r-control);
   border: 1px solid var(--line-strong);
   background: var(--surface-1);
   color: var(--text-1);
   font: inherit;
-  font-size: 15px;
+  font-size: var(--fs-15);
   transition: border-color var(--d-hover) var(--ease-hover);
-}
-.text-field:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 0;
-  border-color: transparent;
 }
 
 /* A thin meter: the fill is the true ratio, scaled from the left. */
@@ -542,4 +539,78 @@
   .live-dot {
     animation: none;
   }
+}
+
+/* One quiet line above a list that holds seeded rows. */
+.history-note {
+  color: var(--text-3);
+  font-size: var(--fs-12);
+}
+
+/* Technical details: closed by default, the summary is one quiet line. */
+.tech-details {
+  font-size: var(--fs-13);
+}
+.tech-details summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-3);
+  font-weight: 500;
+  list-style: none;
+  cursor: pointer;
+  transition: color var(--d-hover) var(--ease-hover);
+}
+.tech-details summary::-webkit-details-marker {
+  display: none;
+}
+.tech-details summary svg {
+  width: 14px;
+  height: 14px;
+  transition: transform var(--d-fast) var(--ease-out);
+}
+.tech-details[open] summary svg {
+  transform: rotate(90deg);
+}
+.tech-details dl {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+}
+.tech-details dl > div {
+  display: grid;
+  grid-template-columns: minmax(96px, auto) 1fr;
+  gap: 12px;
+}
+.tech-details dt {
+  color: var(--text-3);
+}
+.tech-details dd {
+  min-width: 0;
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+}
+@media (hover: hover) and (pointer: fine) {
+  .tech-details summary:hover {
+    color: var(--text-1);
+  }
+}
+
+/* A dash where a value is missing; the reason is small and grey. */
+.dash {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.dash-mark {
+  color: var(--text-4);
+}
+.dash-reason {
+  color: var(--text-3);
+  font-size: var(--fs-13);
+  font-weight: 450;
+  letter-spacing: 0;
 }

@@ -4,19 +4,20 @@ import type { Activity } from "@/lib/store/types";
 import {
   ago,
   buyersOf,
+  callTime,
   conceptLabel,
-  eurShort,
   exportName,
   filterAudit,
   isActiveAgent,
   kitchenOutcomes,
   liveCalls,
   mainReason,
-  niceTicks,
   overviewVerdict,
   percent,
+  plainSummary,
   quantityText,
   reasonTotals,
+  ruleTitle,
   recentAsks,
   runSentence,
   seconds,
@@ -56,7 +57,7 @@ function agent(overrides: Partial<ControlAgent> = {}): ControlAgent {
     lastSeen: "2026-11-14T06:00:00.000Z",
     calls: 10,
     quotes: 3,
-    orders: { confirmed_auto: 2, confirmed_after_approval: 1, waiting: 0, rejected: 0, blocked: 1 },
+    orders: { confirmed_auto: 2, confirmed_after_approval: 1, waiting: 0, rejected: 0, blocked: 1, refused: 0 },
     confirmedNet: 500,
     status: "active",
     ...overrides,
@@ -74,7 +75,7 @@ function overview(overrides: Partial<ControlOverview> = {}): ControlOverview {
     offers: { signed: 10, ordered: 6, expiredUnused: 3, open: 1, conversionRate: 0.6, medianSecondsToOrder: 35 },
     orders: {
       total: tally,
-      byOutcome: { confirmed_auto: tally, confirmed_after_approval: tally, waiting: tally, rejected: tally, blocked: tally },
+      byOutcome: { confirmed_auto: tally, confirmed_after_approval: tally, waiting: tally, rejected: tally, blocked: tally, refused: tally },
     },
     rules: [],
     daily: [
@@ -102,16 +103,12 @@ describe("words", () => {
     expect(quantityText(undefined)).toBe("–");
   });
 
-  it("formats rates, durations and short money", () => {
+  it("formats rates and durations", () => {
     expect(percent(0.6)).toBe("60%");
     expect(percent(Number.NaN)).toBe("–");
     expect(seconds(35)).toBe("35 s");
     expect(seconds(3900)).toBe("1 h 5 min");
     expect(seconds(undefined)).toBe("–");
-    expect(eurShort(449.05)).toBe("€449");
-    expect(eurShort(1391.7)).toBe("€1.4k");
-    expect(eurShort(2000)).toBe("€2k");
-    expect(eurShort(12500)).toBe("€13k");
   });
 
   it("says how long ago in words", () => {
@@ -184,14 +181,6 @@ describe("figures", () => {
     expect(quiet.reason).toBe("Every request was served. 1 agent is suspended.");
     expect(overviewVerdict(overview({ agents: [] })).lead).toBe("No agent has connected yet.");
   });
-
-  it("draws round count ticks with the top above the maximum", () => {
-    expect(niceTicks(6)).toEqual([0, 2, 4, 6, 8]);
-    expect(niceTicks(7)).toEqual([0, 2, 4, 6, 8]);
-    expect(niceTicks(3)).toEqual([0, 1, 2, 3, 4]);
-    expect(niceTicks(37)).toEqual([0, 10, 20, 30, 40]);
-    expect(niceTicks(0)).toEqual([0, 1]);
-  });
 });
 
 describe("calls", () => {
@@ -201,6 +190,13 @@ describe("calls", () => {
     const note = call("n", "2026-11-14T06:06:00.000Z", { kind: "note" });
     expect(liveCalls([[a, note], [b, a]], 5).map((item) => item.id)).toEqual(["b", "a"]);
     expect(liveCalls([[a, b]], 1).map((item) => item.id)).toEqual(["b"]);
+  });
+
+  it("orders by instant, not by text, and breaks ties by id", () => {
+    const late = call("x", "2026-11-14T06:05:00Z");
+    const early = call("y", "2026-11-14T06:04:59.999Z");
+    const twin = call("z", "2026-11-14T06:05:00.000Z");
+    expect(liveCalls([[early, late, twin]], 5).map((item) => item.id)).toEqual(["z", "x", "y"]);
   });
 
   it("lists an agent's quotes, or its searches when it never quoted", () => {
@@ -259,6 +255,16 @@ describe("two kitchens", () => {
     expect(kitchenOutcomes(undefined, () => undefined)).toEqual([]);
   });
 
+  it("drops the order id from a purchase summary", () => {
+    expect(plainSummary("Order ord_kmmldznh45 confirmed: 3 cases of Dafgårds ciabatta 58g = 13.92 kg, €81.65 net, delivery Mon 16 Nov.")).toBe(
+      "3 cases of Dafgårds ciabatta 58g = 13.92 kg, €81.65 net, delivery Mon 16 Nov.",
+    );
+    expect(plainSummary("Order ord_1 was blocked: Dafgårds ciabatta 58g may contain sesame. Nothing was ordered.")).toBe(
+      "Dafgårds ciabatta 58g may contain sesame. Nothing was ordered.",
+    );
+    expect(plainSummary("Order ord_1 is waiting for Maria Lind: 1,600 l, €1,616.00 net. Over my limit.")).toBe("Waiting for Maria Lind: 1,600 l, €1,616.00 net. Over my limit.");
+  });
+
   it("reads the sentence from the first purchase after the run started", () => {
     const run = { id: "run_1", title: "10 kg of ciabatta rolls by Monday" };
     const activity = [
@@ -267,5 +273,25 @@ describe("two kitchens", () => {
     ];
     expect(runSentence(activity, "2026-11-14T06:00:00.000Z")).toBe(run.title);
     expect(runSentence(activity, undefined)).toBeUndefined();
+  });
+});
+
+describe("call times", () => {
+  const now = Date.parse("2026-11-14T10:00:00.000Z");
+  it("shows the time today, the weekday this week and the date before that, in Helsinki", () => {
+    expect(callTime("2026-11-14T08:15:00.000Z", now)).toBe("10:15");
+    expect(callTime("2026-11-13T14:35:00.000Z", now)).toBe("Fri 16:35");
+    expect(callTime("2026-11-13T22:30:00.000Z", now)).toBe("00:30");
+    expect(callTime("2026-11-02T14:35:00.000Z", now)).toBe("Mon 2\u00a0Nov 16:35");
+    expect(callTime("nonsense", now)).toBe("–");
+  });
+});
+
+describe("rule titles", () => {
+  it("names the allergen rule's ask case apart from its block case", () => {
+    expect(ruleTitle({ rule: "dietary.allergens", title: "Never-buy allergens", tier: "ask" })).toBe("Allergen data missing");
+    expect(ruleTitle({ rule: "dietary.allergens", title: "Never-buy allergens", tier: "block" })).toBe("Never-buy allergens");
+    expect(ruleTitle({ rule: "spend.per_order", title: "per order", tier: "ask" })).toBe("Per-order limit");
+    expect(ruleTitle({ rule: "request.words", title: "request.words", tier: "ask" })).toBe("Buyer's words sent");
   });
 });

@@ -44,7 +44,7 @@ export function FiveWays() {
           {CHAIN.map((hash, index) => (
             <li key={hash} className="lp-link-block" data-status={index < EDITED ? "ok" : index === EDITED ? "edited" : "after"} style={stagger(index)}>
               <span className="lp-link-seq">#{index + 1}</span>
-              <span className="lp-link-hash mono">{hash}</span>
+              <code className="lp-link-hash">{hash}</code>
             </li>
           ))}
         </ol>

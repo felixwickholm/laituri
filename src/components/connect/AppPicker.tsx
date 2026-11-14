@@ -38,7 +38,9 @@ export function AppPicker({ value, onChange }: { value: TileId; onChange: (id: T
             onClick={() => onChange(tile.id)}
             onKeyDown={(event) => onKeyDown(event, index)}
           >
-            <Logo />
+            <span className="cx-logo" data-app={tile.id}>
+              <Logo />
+            </span>
             <span>{tile.name}</span>
           </button>
         );

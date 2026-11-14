@@ -13,7 +13,7 @@ export function SetupGuide({ tile, origin, agentKey, deliverBy }: { tile: Tile; 
   return (
     <div className="cx-guide" id="cx-guide" role="tabpanel" aria-labelledby={`cx-tab-${tile.id}`}>
       {tile.guides.length > 1 && (
-        <div className="cx-variant" role="group" aria-label={`${tile.name} app`}>
+        <div className="segmented cx-variant" role="group" aria-label={`${tile.name} app`}>
           {tile.guides.map((option) => (
             <button key={option.id} type="button" aria-pressed={option.id === app} onClick={() => setApp(option.id)}>
               {option.label}

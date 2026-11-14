@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowLeft, ArrowRight, LoaderCircle, X } from "lucide-react";
+import type { CSSProperties } from "react";
 import type { StepCopy } from "@/lib/tour/steps";
 
 export interface TourCardProps {
@@ -11,6 +12,8 @@ export interface TourCardProps {
   note?: string;
   nextLabel: string;
   busy: boolean;
+  /** Next waits this long so the card can be read; its button fills over that time, starting when the wait does. */
+  reading?: { key: string; ms: number };
   canNext: boolean;
   canBack: boolean;
   onNext: () => void;
@@ -19,8 +22,9 @@ export interface TourCardProps {
 }
 
 /** The walkthrough's voice: where we are, one sentence, at most one more line, and the way on. */
-export function TourCard({ index, total, copy, note, nextLabel, busy, canNext, canBack, onNext, onBack, onClose }: TourCardProps) {
+export function TourCard({ index, total, copy, note, nextLabel, busy, reading, canNext, canBack, onNext, onBack, onClose }: TourCardProps) {
   const detail = note ?? copy.detail;
+
   return (
     <section className="tour-card" aria-labelledby="tour-title" aria-describedby={detail ? "tour-detail" : undefined}>
       <header className="tour-card-top">
@@ -53,6 +57,7 @@ export function TourCard({ index, total, copy, note, nextLabel, busy, canNext, c
           Back
         </button>
         <button type="button" className="btn btn-primary big tour-next" onClick={onNext} aria-disabled={!canNext} data-busy={busy} data-tour-next>
+          {reading ? <span key={reading.key} className="tour-next-fill" style={{ "--read-ms": `${reading.ms}ms` } as CSSProperties} aria-hidden="true" /> : null}
           {busy ? <LoaderCircle className="spin" aria-hidden="true" /> : null}
           {nextLabel}
           {busy ? null : <ArrowRight aria-hidden="true" />}

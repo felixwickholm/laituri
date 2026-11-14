@@ -19,6 +19,8 @@ class TourStore {
   lastHoles: Box[] = [];
   /** Where focus was before the tour opened, so closing returns it there. */
   returnFocus: HTMLElement | null = null;
+  /** When each card was first shown, by read key, so its reading time survives a page change or a remount. */
+  readSince = new Map<string, number>();
 
   subscribe = (listener: () => void): (() => void) => {
     this.load();

@@ -3,6 +3,7 @@
 import { Play } from "lucide-react";
 import { useEffect, useState } from "react";
 import { withEuroSign } from "@/lib/console/format/money";
+import { roundingNote } from "@/lib/console/format/packs";
 import { tidyProductText } from "@/lib/console/format/product";
 import { useConsole } from "@/lib/console/store";
 import { supplierApi } from "@/lib/supplier-console/api";
@@ -11,6 +12,7 @@ import { activityPoller, overviewPoller, useAllActivity } from "@/lib/supplier-c
 import type { ScenarioRun } from "@/lib/supplier-console/types";
 import { useUi } from "../shell/ui-context";
 import { StateWord } from "../ui/StateWord";
+import { TechDetails } from "../ui/TechDetails";
 
 const POLL_MS = 800;
 
@@ -99,20 +101,28 @@ export function TwoKitchens() {
           </div>
         ) : outcomes.length > 0 ? (
           <div className="kitchens-pair" aria-live="polite">
-            {outcomes.map((outcome) => (
-              <article key={outcome.buyer} className="kitchen" data-tone={outcome.tone}>
-                <header>
-                  <h3>{outcome.buyer}</h3>
-                  <StateWord word={outcome.word} tone={outcome.tone} />
-                </header>
-                <p>{withEuroSign(tidyProductText(outcome.summary))}</p>
-                {outcome.orderId && orders.some((order) => order.id === outcome.orderId) ? (
-                  <button type="button" className="text-link" onClick={() => ui.openOrder(outcome.orderId!)}>
-                    Open the order
-                  </button>
-                ) : null}
-              </article>
-            ))}
+            {outcomes.map((outcome) => {
+              const order = outcome.orderId ? orders.find((item) => item.id === outcome.orderId) : undefined;
+              const rounding = order && outcome.tone !== "danger" ? roundingNote(order.offer) : undefined;
+              return (
+                <article key={outcome.buyer} className="kitchen" data-tone={outcome.tone}>
+                  <header>
+                    <h3>{outcome.buyer}</h3>
+                    <StateWord word={outcome.word} tone={outcome.tone} />
+                  </header>
+                  <p>{withEuroSign(tidyProductText(outcome.summary))}</p>
+                  {rounding ? <p className="kitchen-rounding">{rounding}</p> : null}
+                  <div className="kitchen-foot">
+                    {order ? (
+                      <button type="button" className="text-link" onClick={() => ui.openOrder(order.id)}>
+                        Open the order
+                      </button>
+                    ) : null}
+                    <TechDetails rows={[{ label: "Order id", value: outcome.orderId, mono: true }]} />
+                  </div>
+                </article>
+              );
+            })}
           </div>
         ) : null}
         {state.kind === "error" ? (

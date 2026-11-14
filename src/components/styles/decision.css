@@ -35,7 +35,7 @@
   gap: 10px;
   margin: 0;
   color: var(--text-1);
-  font-size: 15px;
+  font-size: var(--fs-15);
   line-height: 22px;
   font-weight: 600;
 }
@@ -54,27 +54,27 @@
   gap: 8px;
 }
 .decision-amount .amount {
-  font-size: 36px;
+  font-size: var(--fs-title);
   line-height: 40px;
-  font-weight: 650;
-  letter-spacing: -0.03em;
+  font-weight: 600;
+  letter-spacing: var(--track-title);
   font-variant-numeric: tabular-nums;
 }
 .decision-amount .net {
   color: var(--text-3);
-  font-size: 15px;
+  font-size: var(--fs-15);
 }
 .decision-amount .age {
   margin-left: auto;
   color: var(--text-3);
-  font-size: 13px;
+  font-size: var(--fs-13);
   white-space: nowrap;
 }
 .decision-more {
   margin: -6px 0 0;
   padding: 0 0 0 18px;
   color: var(--text-2);
-  font-size: 14px;
+  font-size: var(--fs-15);
   line-height: 20px;
 }
 .mini-proof {
@@ -91,7 +91,7 @@
   grid-template-columns: 16px minmax(0, 1fr);
   gap: 8px;
   color: var(--text-2);
-  font-size: 13px;
+  font-size: var(--fs-13);
   line-height: 19px;
 }
 .mini-proof svg {
@@ -112,7 +112,7 @@
 .paused-note {
   margin: -4px 0 0;
   color: var(--danger);
-  font-size: 13px;
+  font-size: var(--fs-13);
 }
 .decision > .text-link {
   justify-self: start;
@@ -126,10 +126,34 @@
   background: var(--surface-1);
 }
 .recent h3 {
+  display: flex;
+  justify-content: space-between;
   margin: 14px 0 2px;
   color: var(--text-3);
-  font-size: 13px;
+  font-size: var(--fs-13);
   font-weight: 500;
+}
+.recent-meta {
+  font-weight: 450;
+}
+.recent .history-note {
+  margin: 0 0 4px;
+}
+/* An empty queue stays calm: an icon, one sentence, the next thing to do. */
+.quiet-empty {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  border-style: solid;
+  border-color: var(--line);
+  background: var(--surface-1);
+  color: var(--text-2);
+}
+.quiet-empty svg {
+  width: 18px;
+  height: 18px;
+  color: var(--text-3);
 }
 .handled-list {
   margin: 0;
@@ -160,7 +184,7 @@
   min-width: 0;
   overflow: hidden;
   color: var(--text-1);
-  font-size: 14px;
+  font-size: var(--fs-15);
   line-height: 20px;
   font-weight: 500;
   text-overflow: ellipsis;
@@ -168,7 +192,7 @@
 }
 .handled-amount {
   color: var(--text-1);
-  font-size: 14px;
+  font-size: var(--fs-15);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   text-align: right;
@@ -182,7 +206,7 @@
 }
 .handled-when {
   color: var(--text-3);
-  font-size: 13px;
+  font-size: var(--fs-13);
 }
 @media (hover: hover) and (pointer: fine) {
   .handled:hover .handled-what {
@@ -197,13 +221,13 @@
 .mandate-may {
   margin: 0;
   color: var(--text-1);
-  font-size: 15px;
+  font-size: var(--fs-15);
   line-height: 23px;
 }
 .mandate-limits {
   margin: 0;
   color: var(--text-2);
-  font-size: 14px;
+  font-size: var(--fs-15);
   line-height: 21px;
 }
 .mandate-card .text-link {
@@ -217,7 +241,7 @@
   gap: 8px;
   margin: 0;
   color: var(--text-2);
-  font-size: 13px;
+  font-size: var(--fs-13);
   line-height: 19px;
 }
 .signature-line svg {
@@ -239,7 +263,7 @@
   color: var(--text-3);
 }
 .page-lede .signature-line {
-  font-size: 15px;
+  font-size: var(--fs-15);
   line-height: 22px;
 }
 .page-lede .signature-line svg {
@@ -260,4 +284,95 @@
   .handled:active {
     transform: none;
   }
+}
+
+/* Across Today when Valio Aimo has suspended the buyer's agent. */
+.suspension {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 4px 14px;
+  padding: 16px 18px;
+  border-radius: var(--r-card);
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--line));
+  background: var(--danger-tint);
+}
+.suspension-icon {
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
+  color: var(--danger);
+}
+.suspension-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.suspension h2 {
+  margin: 0;
+  color: var(--text-1);
+  font-size: var(--fs-15);
+  line-height: 22px;
+  font-weight: 600;
+}
+.suspension p {
+  margin: 0;
+  color: var(--text-1);
+  font-size: var(--fs-15);
+  line-height: 22px;
+}
+.suspension .suspension-effect {
+  color: var(--text-2);
+  font-size: var(--fs-13);
+  line-height: 20px;
+}
+.suspension .btn {
+  align-self: center;
+}
+@media (max-width: 760px) {
+  .suspension {
+    grid-template-columns: 22px minmax(0, 1fr);
+  }
+  .suspension .btn {
+    grid-column: 2;
+    justify-self: start;
+    margin-top: 8px;
+  }
+}
+
+/* An approval the re-check stopped: why, and the signed alternatives Valio Aimo offers instead. */
+.decision-stopped {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: var(--r-control);
+  background: var(--danger-tint);
+  color: var(--text-1);
+  font-size: var(--fs-13);
+  line-height: 19px;
+}
+.decision-stopped p {
+  margin: 0;
+}
+.decision-stopped .decision-stopped-lead {
+  color: var(--text-2);
+}
+.decision-stopped ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.decision-stopped li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0 12px;
+}
+.decision-stopped li .sub {
+  grid-column: 1 / -1;
+  color: var(--text-2);
+}
+.decision-stopped .btn {
+  justify-self: start;
 }

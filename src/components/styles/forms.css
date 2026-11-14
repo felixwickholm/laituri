@@ -31,21 +31,28 @@
 }
 .rule-group-head h2 {
   margin: 0;
-  font-size: 18px;
+  font-size: var(--fs-18);
   line-height: 24px;
-  font-weight: 650;
-  letter-spacing: -0.015em;
+  font-weight: 600;
 }
 .strength {
   display: inline-flex;
   align-items: center;
-  height: 22px;
-  padding: 0 8px;
+  height: 26px;
+  padding: 0 10px;
   border-radius: var(--r-full);
   background: var(--surface-2);
   color: var(--text-2);
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--fs-13);
+  font-weight: 500;
+}
+.strength[data-strength="alone"] {
+  background: var(--success-tint);
+  color: color-mix(in srgb, var(--success) 80%, var(--text-1));
+}
+.strength[data-strength="ask"] {
+  background: var(--warn-tint);
+  color: color-mix(in srgb, var(--warn) 80%, var(--text-1));
 }
 .strength[data-strength="hard"] {
   background: var(--danger-tint);
@@ -54,7 +61,7 @@
 .rule-group-note {
   margin: 6px 0 8px;
   color: var(--text-3);
-  font-size: 14px;
+  font-size: var(--fs-13);
   line-height: 20px;
 }
 .rules {
@@ -71,16 +78,20 @@
 .rule-text {
   margin: 0;
   color: var(--text-1);
-  font-size: 15px;
+  font-size: var(--fs-15);
   line-height: 34px;
 }
 .rule-detail {
   margin-top: 8px;
 }
+.toggle-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
 .toggle-word {
-  margin-left: 8px;
-  color: var(--text-3);
-  font-size: 14px;
+  color: var(--text-2);
+  font-size: var(--fs-13);
 }
 
 /* An editable value inside a sentence: tinted with the accent so it reads as something to change. */
@@ -95,7 +106,7 @@
   background: var(--accent-tint);
   color: var(--accent);
   font: inherit;
-  font-size: 15px;
+  font-size: var(--fs-15);
   font-weight: 600;
   vertical-align: baseline;
   transition: background-color var(--d-hover) var(--ease-hover);
@@ -132,7 +143,7 @@ input.value-chip::-webkit-outer-spin-button {
   align-items: center;
   gap: 12px;
   color: var(--text-3);
-  font-size: 13px;
+  font-size: var(--fs-13);
   font-variant-numeric: tabular-nums;
 }
 .usage .meter {
@@ -140,34 +151,58 @@ input.value-chip::-webkit-outer-spin-button {
   flex: none;
 }
 
-.kv {
+/* The signed mandate, summed up in two sentences and the browser's verdict. */
+.signature-card {
   display: grid;
-  grid-template-columns: 96px minmax(0, 1fr);
-  gap: 10px 14px;
+  gap: 8px;
+}
+.signature-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.signature-head .card-title {
   margin: 0;
-  font-size: 14px;
+}
+.signature-version {
+  color: var(--text-3);
+  font-size: var(--fs-13);
+  font-variant-numeric: tabular-nums;
+}
+.signature-who,
+.signature-when {
+  margin: 0;
+  font-size: var(--fs-13);
   line-height: 20px;
 }
-.kv dt {
-  color: var(--text-3);
-}
-.kv dd {
-  min-width: 0;
-  margin: 0;
+.signature-who {
   color: var(--text-1);
 }
-.kv .id-cell {
+.signature-when {
+  color: var(--text-2);
+}
+.signature-verdict-line {
   display: flex;
   align-items: center;
-  gap: 2px;
-  margin: -8px 0;
+  gap: 6px;
+  margin: 4px 0 0;
+  color: var(--text-2);
+  font-size: var(--fs-13);
+  font-weight: 500;
 }
-.id-cell .mono {
-  min-width: 0;
-  overflow: hidden;
-  font-size: 12px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.signature-verdict-line svg {
+  width: 16px;
+  height: 16px;
+}
+.signature-verdict-line[data-state="valid"] svg {
+  color: var(--success);
+}
+.signature-verdict-line[data-state="invalid"] {
+  color: var(--danger);
+}
+.signature-card .tech-details {
+  margin-top: 4px;
 }
 
 .save-card {
@@ -184,17 +219,17 @@ input.value-chip::-webkit-outer-spin-button {
   margin: 0;
 }
 .save-status strong {
-  font-size: 15px;
+  font-size: var(--fs-15);
   font-weight: 600;
 }
 .save-status span {
   color: var(--text-3);
-  font-size: 13px;
+  font-size: var(--fs-13);
   line-height: 19px;
 }
 .save-actions {
-  display: grid;
-  grid-template-columns: auto 1fr;
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -223,7 +258,7 @@ input.value-chip::-webkit-outer-spin-button {
     padding: 18px 16px 4px;
   }
   .rule-text {
-    font-size: 15px;
+    font-size: var(--fs-15);
     line-height: 34px;
   }
   .usage {

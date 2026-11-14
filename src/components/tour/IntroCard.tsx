@@ -20,10 +20,10 @@ export function IntroCard({ starting, error, steps, onStart, onClose }: IntroCar
         <X aria-hidden="true" />
       </button>
       <h2 id="tour-title" className="tour-title tour-title-big">
-        Watch an AI agent buy milk from Valio Aimo, inside rules a person signed.
+        Watch an AI agent buy from Valio Aimo, inside rules a person signed.
       </h2>
       <p id="tour-detail" className="tour-detail">
-        {STEP_WORDS[steps] ?? steps} short steps, about two minutes. The tour works the real product; you only press Next.
+        {STEP_WORDS[steps] ?? steps} short steps, about two minutes. You only press Next.
       </p>
       <div className="tour-intro-actions">
         <button type="button" className="btn btn-primary big tour-start" onClick={onStart} disabled={starting} data-tour-next>
@@ -31,11 +31,8 @@ export function IntroCard({ starting, error, steps, onStart, onClose }: IntroCar
           {starting ? "Getting the demo ready…" : "Start"}
           {starting ? null : <ArrowRight aria-hidden="true" />}
         </button>
-        <p className="tour-fine">This is your own private copy of the demo. Nothing you do here affects anyone else.</p>
+        <p className="tour-fine">The scenes are scripted so they run the same every time. This is your own copy of the demo.</p>
       </div>
-      <p className="tour-fine tour-engine">
-        The three demo scenes use a scripted agent so they run the same every time. Type your own request and a live AI model handles it when one is connected.
-      </p>
       {error ? (
         <p className="tour-error" role="alert">
           {error}

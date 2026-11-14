@@ -3,21 +3,26 @@ import type { AuditEntry, Order } from "@/lib/contracts";
 import { eur } from "@/lib/console/format/money";
 import { blockedLine, shortName } from "@/lib/console/format/rules";
 import { day, hourMinute } from "@/lib/console/format/time";
-import type { OrderPhase } from "./phone-order";
+import { deadline, type OrderPhase } from "./phone-order";
 
 interface PhoneResultProps {
   order: Order;
   state: Exclude<OrderPhase, "pending">;
   entry?: AuditEntry;
+  /** The person approved, but the re-check at approval stopped the order. */
+  stopped?: boolean;
 }
 
-function view({ order, state }: PhoneResultProps): { tone: "success" | "neutral" | "danger"; word: string; line: string } {
-  if (state === "blocked") return { tone: "danger", word: "Blocked by the rules", line: blockedLine(order).replace(/^Blocked\.\s*/, "") };
+function view({ order, state, stopped }: PhoneResultProps): { tone: "success" | "neutral" | "danger"; word: string; line: string } {
+  if (order.refusal) return { tone: "danger", word: "Refused", line: order.refusal.message };
+  const reason = blockedLine(order).replace(/^Blocked\.\s*/, "");
+  if (stopped) return { tone: "danger", word: "Not ordered", line: `It changed while it waited. ${reason} Nothing was ordered.` };
+  if (state === "blocked") return { tone: "danger", word: "Blocked by the rules", line: reason };
   if (state === "expired") {
     return {
       tone: "neutral",
       word: "The offer expired",
-      line: `Valio Aimo’s price held until ${hourMinute(order.offer.expiresAt)}. Nothing was ordered. The agent can ask for a new offer.`,
+      line: `Valio Aimo’s price held until ${hourMinute(deadline(order))}. Nothing was ordered. The agent can ask for a new offer.`,
     };
   }
   if (order.status === "confirmed") {

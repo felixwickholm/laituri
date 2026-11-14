@@ -92,3 +92,20 @@ export function substitutionReason(order: Order | undefined): string | undefined
   const choice = substitutionChoice(order);
   return line && choice ? `${shortfall(line)} ${choice}` : undefined;
 }
+
+/** The maker's name, the first word of a product name once the trademark marks are gone: "Arla", "Valio". */
+export function brandOf(name: string): string {
+  return name.replace(/[®™©]/g, "").trim().split(/\s+/)[0]?.toLowerCase() ?? "";
+}
+
+export type SubstitutionTag = "Brand changed" | "Substituted";
+
+/**
+ * The tag on an order whose product is not the one asked for: "Brand changed" when the substitute is another
+ * maker's, "Substituted" for the same maker's other product. Undefined when every line is what was asked.
+ */
+export function substitutionTag(order: Pick<Order, "offer"> | undefined): SubstitutionTag | undefined {
+  const lines = order?.offer.lines.filter((line) => line.substituteFor && line.quantity > 0) ?? [];
+  if (lines.length === 0) return undefined;
+  return lines.some((line) => brandOf(line.name) !== brandOf(line.substituteFor?.name ?? "")) ? "Brand changed" : "Substituted";
+}

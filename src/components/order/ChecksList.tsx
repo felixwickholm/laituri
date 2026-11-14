@@ -21,8 +21,8 @@ function Row({ check }: { check: PolicyCheck }) {
       ) : (
         <Minus aria-hidden="true" />
       )}
-      <span className="rule">{ruleName(check.rule)}</span>
-      <span className="msg">{detail(check)}</span>
+      <span className="check-rule">{ruleName(check.rule)}</span>
+      <span className="check-msg">{detail(check)}</span>
     </li>
   );
 }

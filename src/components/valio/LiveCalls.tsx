@@ -1,22 +1,22 @@
 "use client";
 
+import { Radio } from "lucide-react";
 import { useMemo } from "react";
-import { clock } from "@/lib/console/format/time";
-import { withEuroSign } from "@/lib/console/format/money";
-import { tidyProductText } from "@/lib/console/format/product";
-import { ago, liveCalls, toolVerb } from "@/lib/supplier-console/format";
+import { callLine, offerNets } from "@/lib/supplier-console/calls";
+import { ago, callTime, liveCalls } from "@/lib/supplier-console/format";
 import { useAllActivity } from "@/lib/supplier-console/hooks";
-import { DemoTag } from "../ui/DemoTag";
-import { agentName, clientName } from "@/lib/supplier-console/names";
+import { agentName } from "@/lib/supplier-console/names";
+import { HistoryNote } from "../ui/HistoryNote";
+import { EmptyState } from "./bits";
 
-const STATUS_WORD = { ok: "", waiting: "Held", blocked: "Blocked", error: "Failed" } as const;
-
-/** Calls from any buyer's agent as they reach Valio Aimo, newest on top. New rows slide in. */
-export function LiveCalls({ now, limit = 6 }: { now: number; limit?: number }) {
-  const { data, error } = useAllActivity();
+/** Calls from any buyer's agent as they reach Valio Aimo, newest on top, each as one short line. New rows slide in. */
+export function LiveCalls({ now, limit = 7 }: { now: number; limit?: number }) {
+  const { data, error, locked } = useAllActivity();
   const calls = useMemo(() => liveCalls([data ?? []], limit), [data, limit]);
+  const nets = useMemo(() => offerNets(data ?? []), [data]);
   const newest = calls[0];
   const live = newest ? now - Date.parse(newest.at) < 10 * 60 * 1000 : false;
+  if (locked) return null;
 
   return (
     <section className="block" aria-labelledby="live-title">
@@ -27,33 +27,38 @@ export function LiveCalls({ now, limit = 6 }: { now: number; limit?: number }) {
           {newest ? `Last call ${ago(newest.at, now)}` : "Waiting for calls"}
         </span>
       </header>
-      <div className="card live-card">
-        {calls.length === 0 ? (
-          <p className="live-empty">{error ? `Could not read agent calls: ${error}` : data ? "No agent has called yet." : "Loading calls…"}</p>
-        ) : (
+      {calls.length === 0 ? (
+        <EmptyState
+          icon={Radio}
+          text={error ? `Could not read agent calls: ${error}` : data ? "No agent has called yet." : "Loading calls…"}
+          action={data && !error ? { href: "/connect", label: "Connect an agent" } : undefined}
+        />
+      ) : (
+        <div className="card live-card">
           <ol className="live-list" aria-live="polite" aria-relevant="additions">
-            {calls.map((call) => (
-              <li key={call.id} className="live-row" data-status={call.status}>
-                <span className="live-verb">{toolVerb(call.tool)}</span>
-                <span className="live-body">
-                  <span className="live-title">{tidyProductText(call.title)}</span>
-                  <span className="live-sub">
-                    {agentName(call.agent)}
-                    {call.buyer ? ` · ${call.buyer.name}` : ""}
-                    {call.client ? ` · ${clientName(call.client)}` : ""}
-                    {call.detail ? ` · ${withEuroSign(call.detail)}` : ""}
+            {calls.map((call) => {
+              const line = callLine(call, nets);
+              return (
+                <li key={call.id} className="live-row" data-tone={line.tone}>
+                  <span className="live-body">
+                    <span className="live-title">{line.sentence}</span>
+                    <span className="live-sub">
+                      <span>{agentName(call.agent)}</span>
+                      {call.buyer ? <span>{call.buyer.name}</span> : null}
+                    </span>
                   </span>
-                </span>
-                <span className="live-when">
-                  <time dateTime={call.at}>{clock(call.at)}</time>
-                  {STATUS_WORD[call.status] ? <span className="live-state">{STATUS_WORD[call.status]}</span> : null}
-                  {call.seeded ? <DemoTag /> : null}
-                </span>
-              </li>
-            ))}
+                  <time className="live-when" dateTime={call.at}>
+                    {callTime(call.at, now)}
+                  </time>
+                </li>
+              );
+            })}
           </ol>
-        )}
-      </div>
+          <div className="live-foot">
+            <HistoryNote show={calls.some((call) => call.seeded)} />
+          </div>
+        </div>
+      )}
     </section>
   );
 }

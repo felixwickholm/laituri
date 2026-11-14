@@ -6,11 +6,9 @@ const STANDARDS = "MCP, OpenAPI 3.1, JWS/JWKS, AP2-shaped mandate, UCP terms, Pe
 export function LandingFooter() {
   return (
     <footer className="lp-footer">
-      <p className="lp-footer-name" aria-hidden="true">
-        Laituri
-      </p>
+      <p className="lp-footer-name">Laituri</p>
       <div className="lp-footer-grid">
-        <p className="lp-footer-line">The loading dock for AI agents. Laituri is Finnish for pier.</p>
+        <p className="lp-footer-line">The loading dock for AI agents. Laituri is Finnish for a dock.</p>
         <dl className="lp-footer-facts">
           <div>
             <dt>Open standards</dt>

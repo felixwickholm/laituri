@@ -1,6 +1,9 @@
 import { useId } from "react";
+import { ShieldCheck } from "lucide-react";
 import { count } from "@/lib/console/format/money";
+import { ruleTitle } from "@/lib/supplier-console/format";
 import type { RuleStat } from "@/lib/supplier-console/types";
+import { EmptyState } from "./bits";
 
 const TIER_WORD = { ask: "Asked the buyer", block: "Blocked" } as const;
 
@@ -26,14 +29,14 @@ export function RuleBars({ rules, title = "Rules that fired" }: { rules: RuleSta
         </span>
       </header>
       {rules.length === 0 ? (
-        <p className="empty-frame">No rule has held or stopped an order.</p>
+        <EmptyState icon={ShieldCheck} text="No buyer rule has held or stopped an order yet." />
       ) : (
         <div className="card">
           <ol className="bar-list">
             {rules.map((rule) => (
               <li key={`${rule.rule}:${rule.tier}`} className="bar-row">
                 <span className="bar-name">
-                  {rule.title}
+                  {ruleTitle(rule)}
                   <span className="sub">{TIER_WORD[rule.tier]}</span>
                 </span>
                 <span className="bar-lane">

@@ -1,9 +1,10 @@
 import { eur } from "@/lib/console/format/money";
 import { day, hourMinute } from "@/lib/console/format/time";
-import { conceptLabel, quantityText, reasonLabel } from "@/lib/supplier-console/format";
-import type { UnmetRequest } from "@/lib/supplier-console/types";
-import { DemoTag } from "../ui/DemoTag";
+import { conceptLabel, quantityText } from "@/lib/supplier-console/format";
 import { agentName, clientName } from "@/lib/supplier-console/names";
+import type { UnmetRequest } from "@/lib/supplier-console/types";
+import { Dash } from "../ui/Dash";
+import { ReasonTag } from "./bits";
 
 /** Every unserved request: when, who, the buyer's own words, how much, by when, why, and what it was worth. */
 export function UnmetTable({ rows, filtered }: { rows: UnmetRequest[]; filtered: boolean }) {
@@ -46,20 +47,17 @@ export function UnmetTable({ rows, filtered }: { rows: UnmetRequest[]; filtered:
                 <td className="cell-words">
                   <span className="words">
                     {item.words ? `“${item.words}”` : conceptLabel(item.concept)}
-                    {item.seeded ? <DemoTag /> : null}
                   </span>
                   {item.concept && item.words && !item.words.toLowerCase().includes(conceptLabel(item.concept).toLowerCase()) ? (
                     <span className="sub">Read as {conceptLabel(item.concept).toLowerCase()}</span>
                   ) : null}
                 </td>
                 <td className="cell-qty num">{quantityText(item.quantity)}</td>
-                <td className="cell-by">{item.deliverBy ? day(item.deliverBy) : <span className="dim">–</span>}</td>
+                <td className="cell-by">{item.deliverBy ? day(item.deliverBy) : <Dash />}</td>
                 <td className="cell-reason">
-                  <span className="reason-tag" data-reason={item.reason}>
-                    {reasonLabel(item.reason)}
-                  </span>
+                  <ReasonTag reason={item.reason} />
                 </td>
-                <td className="cell-lost num">{item.estimatedLostNet === undefined ? <span className="dim">No price</span> : eur(item.estimatedLostNet)}</td>
+                <td className="cell-lost num">{item.estimatedLostNet === undefined ? <Dash reason="no price" /> : eur(item.estimatedLostNet)}</td>
               </tr>
             ))
           )}

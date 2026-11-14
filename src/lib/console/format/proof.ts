@@ -1,6 +1,7 @@
 import type { Offer, OfferLine, Order, RequestCheck, RequestCheckResult } from "@/lib/contracts";
 import { packText } from "./packs";
 import { shortProductName } from "./product";
+import { plainSentence } from "./sentence";
 import { day } from "./time";
 
 /** "1,000 × Valio Eila 1 l = 1,000 l"; "3 cases of Dafgårds ciabatta 58g = 13.92 kg" */
@@ -35,7 +36,7 @@ export function offeredShort(offer: Offer): string {
 export interface MatchedFact {
   label: string;
   detail: string;
-  /** met, unmet or unchecked, exactly as the wholesaler signed it in the offer. */
+  /** met, unmet, unchecked or substituted, exactly as the wholesaler signed it in the offer. */
   result: RequestCheckResult;
   /** True only for a requirement the offer meets. */
   ok: boolean;
@@ -44,6 +45,8 @@ export interface MatchedFact {
 const LABEL: Record<RequestCheck["requirement"], string> = {
   product: "Product",
   claim: "Claim",
+  brand: "Brand",
+  attribute: "Attribute",
   wording: "Other words",
   quantity: "Quantity",
   date: "Date",
@@ -56,10 +59,19 @@ function joinUnits(text: string): string {
   return text.replace(/(\d) (l|kg|units)\b/g, "$1\u00a0$2");
 }
 
-function fact(check: RequestCheck): MatchedFact {
-  const detail = check.result === "unchecked"
-    ? `Not checked: ${check.offered}`
-    : `Asked ${check.asked} · offered ${check.offered}`;
+/** What the order's substitution rule said, to stand beside a requirement the offer met with a substitute. */
+function substitutionSentence(order: Order): string | undefined {
+  const rule = order.decision.checks.find((check) => check.rule === "substitution.policy");
+  return rule ? plainSentence(rule.message) : undefined;
+}
+
+function fact(check: RequestCheck, order: Order): MatchedFact {
+  let detail = `Asked ${check.asked} · offered ${check.offered}`;
+  if (check.result === "unchecked") detail = `Not checked: ${check.offered}`;
+  if (check.result === "substituted") {
+    const rule = substitutionSentence(order);
+    detail = `Asked ${check.asked} · substituted with ${check.offered}${rule ? `. ${rule.replace(/\.$/, "")}` : ""}`;
+  }
   return { label: LABEL[check.requirement], detail: joinUnits(detail), result: check.result, ok: check.result === "met" };
 }
 
@@ -72,5 +84,5 @@ export function matchedFacts(order: Order): MatchedFact[] {
   if (!checks?.length) {
     return [{ label: "Request", result: "unchecked", ok: false, detail: "Not checked: the agent sent no buyer's words to compare" }];
   }
-  return checks.map(fact);
+  return checks.map((check) => fact(check, order));
 }

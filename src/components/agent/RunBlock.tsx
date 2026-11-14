@@ -2,14 +2,16 @@
 
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { runOutcome, runReason, runTitle, type RunContext } from "@/lib/console/format/run-view";
-import { plainSentence } from "@/lib/console/format/sentence";
-import { duration, hourMinute } from "@/lib/console/format/time";
+import { runOutcome, runReason, runTitle, stepText, type RunContext } from "@/lib/console/format/run-view";
+import { shortName } from "@/lib/console/format/rules";
+import { substitutionTag } from "@/lib/console/format/substitution";
+import { duration, feedTime } from "@/lib/console/format/time";
 import type { RunBlock as Run, RunStep } from "@/lib/console/runs";
-import { DemoTag } from "../ui/DemoTag";
 import { StateWord } from "../ui/StateWord";
+import { useNow } from "../ui/useNow";
+import { TechDetails } from "../ui/TechDetails";
 import { Attempts } from "./Attempts";
-import { ToolRows } from "./ToolRows";
+import { RuleChecks } from "./RuleChecks";
 
 const TELLING = 4;
 /** Notes about an exception: short stock, a skipped product, a counter-offer, a limit. */
@@ -30,23 +32,28 @@ export function tellingSteps(steps: RunStep[]): RunStep[] {
   return steps.filter((step) => picks.has(step));
 }
 
+/** "search_catalog ×2 · request_quote · place_order": the raw calls behind a run, for the technical details. */
+function callTally(tools: { tool?: string }[]): string {
+  const tally = new Map<string, number>();
+  for (const { tool } of tools) if (tool) tally.set(tool, (tally.get(tool) ?? 0) + 1);
+  return [...tally].map(([tool, n]) => (n > 1 ? `${tool} ×${n}` : tool)).join(" · ");
+}
+
 interface RunBlockProps {
   run: Run;
   ctx: RunContext;
   newest: boolean;
   /** The id of the demo run this browser started that the block belongs to, for the walkthrough to point at. */
   demoRun?: string;
-  seeded: boolean;
   onOpenOrder: (orderId: string) => void;
 }
 
 /** One buyer request: their words, the steps in plain sentences, how it ended and how long it took. */
-export function RunBlock({ run, ctx, newest, demoRun, seeded, onOpenOrder }: RunBlockProps) {
+export function RunBlock({ run, ctx, newest, demoRun, onOpenOrder }: RunBlockProps) {
   const [expandedByUser, setExpanded] = useState<boolean | null>(null);
   const [allSteps, setAllSteps] = useState(false);
-  const [toolsByUser, setTools] = useState<boolean | null>(null);
+  const now = useNow(60_000);
   const expanded = expandedByUser ?? (newest || ctx.active);
-  const showTools = toolsByUser ?? ctx.active;
   const outcome = runOutcome(run, ctx);
   const title = runTitle(run, ctx);
   const reason = runReason(run, ctx);
@@ -57,25 +64,27 @@ export function RunBlock({ run, ctx, newest, demoRun, seeded, onOpenOrder }: Run
   const stepCount = run.steps.length + run.attempts.length;
   const took = Date.parse(run.endedAt) - Date.parse(run.startedAt);
   const bodyId = `run-${run.id}`;
+  const swap = substitutionTag(order);
+  const calls = callTally([...run.steps.flatMap((step) => step.tools), ...run.attempts.flatMap((attempt) => attempt.tools)]);
 
   useEffect(() => {
     if (!ctx.active) return;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     lastStep.current?.scrollIntoView({ block: "nearest", inline: "nearest", behavior: reduce ? "auto" : "smooth" });
-  }, [ctx.active, stepCount, showTools]);
+  }, [ctx.active, stepCount]);
 
   return (
     <article className="run" data-active={ctx.active} data-demo-run={demoRun} data-expanded={expanded} aria-label={title}>
       <button type="button" className="run-head" aria-expanded={expanded} aria-controls={bodyId} onClick={() => setExpanded(!expanded)}>
         <span className="run-title">{run.kind === "attempts" ? title : `“${title}”`}</span>
         <span className="run-time">
-          <time dateTime={run.startedAt}>{hourMinute(run.startedAt)}</time>
+          <time dateTime={run.startedAt}>{feedTime(run.startedAt, now)}</time>
           {ctx.active ? " · working" : ` · took ${duration(took)}`}
         </span>
         <span className="run-outcome">
           <StateWord word={outcome.word} tone={outcome.tone} />
+          {swap ? <StateWord word={swap} tone="waiting" /> : null}
           {outcome.detail ? <span className="run-detail">{outcome.detail}</span> : null}
-          {seeded ? <DemoTag /> : null}
         </span>
         <ChevronDown className="run-chevron" aria-hidden="true" />
       </button>
@@ -88,26 +97,21 @@ export function RunBlock({ run, ctx, newest, demoRun, seeded, onOpenOrder }: Run
             </p>
           ) : null}
           {run.kind === "attempts" ? (
-            <Attempts attempts={run.attempts} showTools={showTools} onOpenOrder={onOpenOrder} lastRef={lastStep} />
+            <Attempts attempts={run.attempts} onOpenOrder={onOpenOrder} lastRef={lastStep} />
           ) : (
             <ol className="steps">
               {steps.map((step, index) => (
                 <li key={step.id} ref={index === steps.length - 1 ? lastStep : undefined} className="step" data-status={step.status}>
-                  <span className="step-text">{plainSentence(step.text)}</span>
-                  {showTools ? <ToolRows tools={step.tools} /> : null}
+                  <span className="step-text">{stepText(step.text)}</span>
                 </li>
               ))}
             </ol>
           )}
+          {order && order.decision.checks.length > 0 && !ctx.active ? <RuleChecks order={order} approver={shortName(ctx.approver ?? "a person")} /> : null}
           <div className="run-foot">
             {hidden > 0 ? (
               <button type="button" className="text-link" onClick={() => setAllSteps(true)}>
                 Show all {run.steps.length} steps
-              </button>
-            ) : null}
-            {run.toolCount > 0 ? (
-              <button type="button" className="text-link quiet" aria-expanded={showTools} onClick={() => setTools(!showTools)}>
-                {showTools ? "Hide" : "Show"} {run.toolCount === 1 ? "1 call" : `${run.toolCount} calls`}
               </button>
             ) : null}
             {order ? (
@@ -117,6 +121,13 @@ export function RunBlock({ run, ctx, newest, demoRun, seeded, onOpenOrder }: Run
               </button>
             ) : null}
           </div>
+          <TechDetails
+            rows={[
+              { label: run.toolCount === 1 ? "1 call" : `${run.toolCount} calls`, value: calls, mono: true },
+              { label: "Order", value: run.orderIds.join(", "), mono: true },
+              { label: "Run", value: run.runId, mono: true },
+            ]}
+          />
         </div>
       ) : null}
     </article>

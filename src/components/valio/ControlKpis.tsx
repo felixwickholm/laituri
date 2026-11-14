@@ -4,27 +4,20 @@ import { count, eur } from "@/lib/console/format/money";
 import { ago, isActiveAgent, percent, plural, unmetInWeek, unmetNet, weekFigures } from "@/lib/supplier-console/format";
 import type { ControlOverview } from "@/lib/supplier-console/types";
 import { CountUp } from "../ui/CountUp";
+import { Dash } from "../ui/Dash";
 
-/** A KPI's name, and under it the window and what it counts. */
-function Term({ href, name, window }: { href?: string; name: string; window: string }) {
-  return (
-    <dt>
-      {href ? (
-        <Link href={href} className="kpi-link">
-          {name}
-        </Link>
-      ) : (
-        name
-      )}
-      <span className="kpi-window">{window}</span>
-    </dt>
-  );
-}
-
-function Kpi({ term, value, sub, lead }: { term: ReactNode; value: ReactNode; sub: ReactNode; lead?: boolean }) {
+function Kpi({ name, href, value, sub, lead }: { name: string; href?: string; value: ReactNode; sub: ReactNode; lead?: boolean }) {
   return (
     <div className="kpi" data-lead={lead || undefined}>
-      {term}
+      <dt>
+        {href ? (
+          <Link href={href} className="kpi-link">
+            {name}
+          </Link>
+        ) : (
+          name
+        )}
+      </dt>
       <dd>
         <span className="kpi-value">{value}</span>
         <span className="kpi-sub">{sub}</span>
@@ -34,8 +27,8 @@ function Kpi({ term, value, sub, lead }: { term: ReactNode; value: ReactNode; su
 }
 
 /**
- * Five figures, each naming its window and what it counts. Requests, confirmed orders and unserved demand share the
- * same seven Helsinki days, and the orders shown beside requests are the requests that led to one, so they never exceed them.
+ * Five figures: one label, one large figure, one short line. The period sits once above the strip. Requests,
+ * confirmed orders and unserved demand share the same seven Helsinki days; a zero or missing figure is a dash.
  */
 export function ControlKpis({ overview, now }: { overview: ControlOverview; now: number }) {
   const week = weekFigures(overview.daily);
@@ -47,42 +40,52 @@ export function ControlKpis({ overview, now }: { overview: ControlOverview; now:
   const unpriced = unmet.filter((item) => item.estimatedLostNet === undefined).length;
 
   return (
-    <dl className="kpis control-kpis" aria-label="Valio Aimo figures">
+    <dl className="kpis control-kpis" aria-label="Valio Aimo figures, last 7 days">
       <Kpi
-        term={<Term href="/valio/agents" name="Connected agents" window="Active: a call in the last 24 h" />}
-        value={
-          <>
-            {count(active)}
-            <span className="kpi-of">/ {count(overview.agents.length)} active</span>
-          </>
-        }
+        name="Active agents"
+        href="/valio/agents"
+        value={overview.agents.length === 0 ? <Dash reason="none connected" /> : count(active)}
         sub={
-          <>
-            {suspended > 0 ? <span className="tone-danger">{plural(suspended, "suspended", "suspended")} · </span> : null}
-            Last call {ago(lastSeen, now)}
-          </>
+          overview.agents.length === 0 ? (
+            "Connect one to start"
+          ) : (
+            <>
+              of {count(overview.agents.length)} connected{suspended > 0 ? <span className="tone-danger"> · {count(suspended)} suspended</span> : null} · last
+              call {ago(lastSeen, now)}
+            </>
+          )
         }
       />
       <Kpi
-        term={<Term href="/valio/demand" name="Requests" window="Last 7 days · products asked for" />}
-        value={<CountUp value={week.requests} format={count} />}
-        sub={`${count(week.ordered)} led to an order · ${count(week.today?.requests ?? 0)} today`}
+        name="Requests"
+        href="/valio/demand"
+        value={week.requests === 0 ? <Dash reason="none yet" /> : <CountUp value={week.requests} format={count} />}
+        sub={`${count(week.ordered)} led to an order`}
       />
       <Kpi
-        term={<Term name="Offer to order" window="All signed offers" />}
-        value={overview.offers.signed > 0 ? percent(overview.offers.conversionRate) : "–"}
-        sub={`${count(overview.offers.ordered)} of ${plural(overview.offers.signed, "signed offer")} ordered`}
+        name="Offer to order"
+        value={overview.offers.signed > 0 ? percent(overview.offers.conversionRate) : <Dash reason="no offers signed" />}
+        sub={`${count(overview.offers.ordered)} of ${plural(overview.offers.signed, "signed offer")}`}
       />
       <Kpi
         lead
-        term={<Term name="Confirmed net" window="Last 7 days · confirmed orders" />}
-        value={<CountUp value={week.confirmedNet} format={eur} />}
+        name="Confirmed, net"
+        value={week.confirmedNet > 0 ? <CountUp value={week.confirmedNet} format={eur} /> : <Dash reason="nothing confirmed" />}
         sub={plural(week.confirmed, "confirmed order")}
       />
       <Kpi
-        term={<Term href="/valio/demand#unserved" name="Unserved demand" window="Last 7 days · not met in full" />}
-        value={<CountUp value={lost} format={eur} />}
-        sub={unmet.length === 0 ? "Every request served" : `${plural(unmet.length, "request")}${unpriced > 0 ? ` · ${unpriced} without a price` : ""}`}
+        name="Unserved demand, net"
+        href="/valio/demand#unserved"
+        value={
+          unmet.length === 0 ? (
+            <Dash reason="every request served" />
+          ) : lost > 0 ? (
+            <CountUp value={lost} format={eur} />
+          ) : (
+            <Dash reason={`${plural(unmet.length, "request")} · no price`} />
+          )
+        }
+        sub={unmet.length === 0 ? "On time and in full" : `${plural(unmet.length, "request")}${unpriced > 0 && lost > 0 ? ` · ${unpriced} without a price` : ""}`}
       />
     </dl>
   );

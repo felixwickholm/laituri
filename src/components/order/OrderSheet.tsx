@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import type { Order } from "@/lib/contracts";
+import { APPROVAL_BLOCKED, ApiError } from "@/lib/console/api";
+import { stoppedApproval } from "@/lib/console/format/approval";
 import { eur } from "@/lib/console/format/money";
 import { isSeeded } from "@/lib/console/format/orders";
 import { blockedLine, shortName } from "@/lib/console/format/rules";
@@ -39,6 +42,12 @@ export function OrderSheet({ orderId, onClose }: { orderId: string | null; onClo
         toast(decided.status === "confirmed" ? `Approved. Signed by ${who}.` : `Rejected. Signed by ${who}.`, decided.status === "confirmed" ? "success" : "neutral");
       }
     } catch (error) {
+      const stopped = error instanceof ApiError && error.code === APPROVAL_BLOCKED ? stoppedApproval(error.body) : undefined;
+      if (stopped && error instanceof ApiError) {
+        consoleStore.apply((error.body as { order: Order }).order);
+        toast(stopped.alternatives.length ? `${stopped.reason} Valio Aimo signed ${stopped.alternatives.length === 1 ? "an alternative" : `${stopped.alternatives.length} alternatives`}.` : stopped.reason, "danger");
+        return;
+      }
       toast(pausedMessage(error) ?? (error instanceof Error ? error.message : "The decision was not saved."), "danger");
     } finally {
       setBusy(false);
@@ -52,7 +61,7 @@ export function OrderSheet({ orderId, onClose }: { orderId: string | null; onClo
       open={Boolean(orderId)}
       onClose={onClose}
       kicker={order && isSeeded(order) ? "Simulated order · demo history" : "Simulated order"}
-      title={order ? `${order.buyer.name} · ${eur(order.offer.totals.net.amount)}` : "Order"}
+      title={order ? `${order.buyer.name} · ${eur(order.offer.totals.net.amount)} net` : "Order"}
       lede={order ? `Placed by ${order.agent.name} · ${dayAndTime(order.createdAt)}` : undefined}
       footer={
         pending ? (

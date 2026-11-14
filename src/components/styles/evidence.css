@@ -8,19 +8,84 @@
 }
 
 .ev-bar,
-.ev-main,
+.ev-layout,
 .ev-foot {
-  max-width: calc(1120px + 2 * var(--gutter));
+  max-width: calc(var(--content) + 2 * var(--gutter));
   margin-inline: auto;
   padding-inline: var(--gutter);
+}
+
+/* Desktop: the table of contents stays in view on the left while the evidence scrolls on the right. */
+.ev-layout {
+  display: grid;
+  grid-template-columns: 224px minmax(0, 1fr);
+  gap: 56px;
+  align-items: start;
+}
+.ev-main {
+  min-width: 0;
+  max-width: 1040px;
+}
+.ev-toc {
+  position: sticky;
+  top: 24px;
+  max-height: calc(100svh - 48px);
+  overflow-y: auto;
+  padding-top: 64px;
+}
+.ev-toc-title {
+  margin: 0 0 10px;
+  color: var(--text-3);
+  font-size: var(--fs-13);
+  font-weight: 500;
+}
+.ev-toc ul {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ev-toc a {
+  display: block;
+  padding: 6px 10px;
+  margin-left: -10px;
+  border-radius: var(--r-control);
+  color: var(--text-2);
+  font-size: var(--fs-13);
+  line-height: 1.4;
+  text-decoration: none;
+  transition:
+    color var(--d-hover) var(--ease-hover),
+    background-color var(--d-hover) var(--ease-hover);
+}
+.ev-toc li[data-sub] a {
+  padding-left: 22px;
+  color: var(--text-3);
+}
+@media (hover: hover) and (pointer: fine) {
+  .ev-toc a:hover {
+    background: var(--surface-3);
+    color: var(--text-1);
+  }
+}
+.ev-h2,
+.ev-criterion {
+  scroll-margin-top: 24px;
 }
 
 /* Bar */
 .ev-bar {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
   height: 64px;
+}
+.ev-tagline {
+  margin: 0;
+  color: var(--text-3);
+  font-size: var(--fs-13);
+  white-space: nowrap;
 }
 .ev-home {
   display: inline-flex;
@@ -38,9 +103,9 @@
 }
 .ev-nav-link {
   padding: 8px 12px;
-  border-radius: var(--r-md);
+  border-radius: var(--r-control);
   color: var(--text-2);
-  font-size: 14px;
+  font-size: var(--fs-13);
   font-weight: 500;
   white-space: nowrap;
   text-decoration: none;
@@ -53,7 +118,7 @@
   display: none;
 }
 .ev-nav-link:active {
-  transform: scale(0.97);
+  transform: var(--press);
 }
 @media (hover: hover) and (pointer: fine) {
   .ev-nav-link:hover {
@@ -69,39 +134,34 @@
 .ev-intro {
   padding: 56px 0 24px;
 }
-.ev-kicker {
-  margin: 0 0 16px;
-  color: var(--text-3);
-  font-size: 14px;
-  font-weight: 500;
-}
 .ev-h1 {
-  max-width: 18em;
+  max-width: 24em;
   margin: 0;
-  font-size: clamp(32px, 4vw, 52px);
-  font-weight: 580;
-  line-height: 1.04;
-  letter-spacing: -0.04em;
+  font-size: var(--fs-title);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: var(--track-title);
   text-wrap: balance;
 }
 .ev-lede {
   max-width: 40em;
-  margin: 24px 0 0;
+  margin: 16px 0 0;
   color: var(--text-2);
-  font-size: clamp(17px, 1.3vw, 19px);
+  font-size: var(--fs-18);
   line-height: 1.6;
 }
 .ev-note {
-  max-width: 46em;
+  max-width: 52em;
   margin: 16px 0 0;
   color: var(--text-3);
-  font-size: 14px;
+  font-size: var(--fs-13);
   line-height: 1.6;
 }
 
+/* The tiles wrap and the last row stretches, so no row ends in an empty cell. */
 .ev-numbers {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   margin: 40px 0 0;
   padding: 0;
   overflow: hidden;
@@ -111,6 +171,7 @@
   list-style: none;
 }
 .ev-numbers li {
+  flex: 1 1 136px;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -118,14 +179,14 @@
   box-shadow: 1px 0 0 var(--line), 0 1px 0 var(--line);
 }
 .ev-number {
-  font-size: 26px;
+  font-size: var(--fs-title);
   font-weight: 600;
   letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
 }
 .ev-number-label {
   color: var(--text-3);
-  font-size: 13px;
+  font-size: var(--fs-13);
 }
 
 .ev-live {
@@ -135,7 +196,7 @@
   gap: 6px 10px;
   margin: 16px 0 0;
   color: var(--text-2);
-  font-size: 14px;
+  font-size: var(--fs-13);
 }
 .ev-live-dot {
   width: 8px;
@@ -156,14 +217,14 @@
 }
 .ev-h2 {
   margin: 0 0 24px;
-  font-size: clamp(26px, 2.6vw, 36px);
-  font-weight: 580;
-  line-height: 1.1;
-  letter-spacing: -0.035em;
+  font-size: var(--fs-title);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: var(--track-title);
 }
 .ev-h3 {
   margin: 0;
-  font-size: 18px;
+  font-size: var(--fs-18);
   font-weight: 600;
   line-height: 1.3;
   letter-spacing: -0.015em;
@@ -174,11 +235,9 @@
 }
 .ev-h4 {
   margin: 20px 0 8px;
-  color: var(--label);
-  font-size: 12px;
+  color: var(--text-2);
+  font-size: var(--fs-13);
   font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
 .ev-h4:first-child {
   margin-top: 0;
@@ -190,11 +249,11 @@
   margin-bottom: 24px;
 }
 .ev-weights span {
-  padding: 8px 10px;
-  border-radius: var(--r-sm);
+  padding: 8px 12px;
+  border-radius: var(--r-md);
   background: var(--accent-tint);
   color: var(--accent);
-  font-size: 13px;
+  font-size: var(--fs-13);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
@@ -220,18 +279,15 @@
 }
 .ev-weight {
   color: var(--accent);
-  font-size: 15px;
-  font-weight: 650;
+  font-size: var(--fs-15);
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
-}
-.ev-criterion .ev-h3 {
-  font-size: clamp(19px, 1.8vw, 23px);
 }
 .ev-claim {
   max-width: 52em;
   margin: 12px 0 0;
   color: var(--text-2);
-  font-size: 16px;
+  font-size: var(--fs-15);
   line-height: 1.6;
 }
 .ev-grid {
@@ -249,7 +305,7 @@
   padding-left: 18px;
   list-style: disc;
   color: var(--text-1);
-  font-size: 15px;
+  font-size: var(--fs-15);
   line-height: 1.55;
 }
 .ev-list li::marker {
@@ -263,7 +319,7 @@
 .ev-limit {
   margin: 0;
   color: var(--text-2);
-  font-size: 14px;
+  font-size: var(--fs-13);
   line-height: 1.55;
 }
 
@@ -285,7 +341,7 @@
   background: var(--surface-2);
   color: var(--text-1);
   font-family: var(--font-mono);
-  font-size: 12.5px;
+  font-size: var(--fs-12);
   line-height: 1.6;
   overflow-wrap: anywhere;
 }
@@ -323,7 +379,7 @@ a.ev-code.ev-link {
 .ev-req > p {
   margin: 10px 0 0;
   color: var(--text-2);
-  font-size: 15px;
+  font-size: var(--fs-15);
   line-height: 1.6;
 }
 .ev-req-head {
@@ -332,17 +388,20 @@ a.ev-code.ev-link {
   gap: 12px;
 }
 .ev-quote {
-  font-size: 15px;
+  font-size: var(--fs-15);
   font-weight: 550;
   line-height: 1.5;
   quotes: "\201C" "\201D";
 }
 .ev-status {
+  display: inline-flex;
+  align-items: center;
   flex: none;
-  padding: 2px 8px;
+  height: 26px;
+  padding: 0 10px;
   border-radius: var(--r-full);
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--fs-13);
+  font-weight: 500;
   white-space: nowrap;
 }
 .ev-status-covered {
@@ -369,8 +428,8 @@ a.ev-code.ev-link {
   align-items: baseline;
 }
 .ev-meta dt {
-  color: var(--label);
-  font-size: 12px;
+  color: var(--text-2);
+  font-size: var(--fs-12);
   font-weight: 600;
 }
 .ev-meta dd {
@@ -391,13 +450,13 @@ a.ev-code.ev-link {
   border-bottom: 1px solid var(--line);
 }
 .ev-assumptions dt {
-  font-size: 14px;
+  font-size: var(--fs-13);
   font-weight: 600;
 }
 .ev-assumptions dd {
   margin: 0;
   color: var(--text-2);
-  font-size: 15px;
+  font-size: var(--fs-15);
   line-height: 1.6;
 }
 .ev-steps {
@@ -407,7 +466,7 @@ a.ev-code.ev-link {
   padding-left: 22px;
   list-style: decimal;
   color: var(--text-2);
-  font-size: 15px;
+  font-size: var(--fs-15);
   line-height: 1.6;
 }
 .ev-steps strong {
@@ -431,7 +490,7 @@ a.ev-code.ev-link {
 }
 .ev-links span {
   color: var(--text-3);
-  font-size: 14px;
+  font-size: var(--fs-13);
   line-height: 1.5;
 }
 
@@ -440,7 +499,57 @@ a.ev-code.ev-link {
   padding-bottom: 48px;
   border-top: 1px solid var(--line);
   color: var(--text-3);
-  font-size: 13px;
+  font-size: var(--fs-13);
+}
+
+/* Below desktop the contents become one sticky row of jump links under the bar. */
+@media (max-width: 1023px) {
+  .ev-tagline {
+    display: none;
+  }
+  .ev-layout {
+    display: block;
+  }
+  .ev-toc {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    max-height: none;
+    margin: 0 calc(-1 * var(--gutter));
+    padding: 8px var(--gutter);
+    overflow-x: auto;
+    background: var(--bg);
+    box-shadow: 0 1px 0 var(--line);
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: var(--gutter);
+    mask-image: linear-gradient(90deg, #000 88%, transparent);
+  }
+  .ev-toc-title {
+    display: none;
+  }
+  .ev-toc ul {
+    display: flex;
+    gap: 6px;
+  }
+  .ev-toc li[data-sub] {
+    display: none;
+  }
+  .ev-toc a {
+    display: inline-flex;
+    align-items: center;
+    height: 32px;
+    margin: 0;
+    padding: 0 12px;
+    border-radius: var(--r-full);
+    background: var(--surface-2);
+    white-space: nowrap;
+    scroll-snap-align: start;
+  }
+  .ev-h2,
+  .ev-criterion {
+    scroll-margin-top: 64px;
+  }
 }
 
 @media (max-width: 760px) {
@@ -459,7 +568,6 @@ a.ev-code.ev-link {
   }
   .ev-weights span {
     padding: 6px 4px;
-    font-size: 12px;
     text-align: center;
   }
   .ev-nav-link {
@@ -478,6 +586,6 @@ a.ev-code.ev-link {
     padding: 14px 14px;
   }
   .ev-number {
-    font-size: 21px;
+    font-size: var(--fs-18);
   }
 }

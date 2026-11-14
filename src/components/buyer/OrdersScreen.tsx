@@ -2,12 +2,14 @@
 
 import { useMemo, useState } from "react";
 import { count, eur } from "@/lib/console/format/money";
-import { buyerOrders, newestFirst, orderOutcome, OUTCOME_FILTERS, weekStats, type OutcomeKey } from "@/lib/console/format/orders";
+import { buyerOrders, isSeeded, newestFirst, orderOutcome, OUTCOME_FILTERS, weekStats, type OutcomeKey } from "@/lib/console/format/orders";
+import { LOCKED_NOTE } from "@/lib/console/paused";
 import { useConsole } from "@/lib/console/store";
 import { PageHeader } from "../shell/PageHeader";
 import { useUi } from "../shell/ui-context";
 import { useNow } from "../ui/useNow";
 import { OrdersTable } from "../order/OrdersTable";
+import { HistoryNote } from "../ui/HistoryNote";
 
 type Filter = OutcomeKey | "all";
 
@@ -19,7 +21,7 @@ export function OrdersScreen() {
   const [filter, setFilter] = useState<Filter>("all");
   const orders = useMemo(() => newestFirst(buyerOrders(snapshot.orders, snapshot.mandate)), [snapshot.orders, snapshot.mandate]);
   const counts = useMemo(() => {
-    const tally: Record<OutcomeKey, number> = { auto: 0, approved: 0, waiting: 0, rejected: 0, blocked: 0 };
+    const tally: Record<OutcomeKey, number> = { auto: 0, approved: 0, waiting: 0, rejected: 0, blocked: 0, refused: 0 };
     for (const order of orders) tally[orderOutcome(order).key] += 1;
     return tally;
   }, [orders]);
@@ -32,12 +34,14 @@ export function OrdersScreen() {
         title="Orders"
         meta={`${count(orders.length)} ${orders.length === 1 ? "order" : "orders"}`}
         lede={
-          snapshot.ready
+          snapshot.locked
+            ? LOCKED_NOTE
+            : snapshot.ready
             ? `${eur(week.spent)} net confirmed this week. ${counts.waiting > 0 ? `${counts.waiting} ${counts.waiting === 1 ? "waits" : "wait"} for you.` : "Nothing waits for you."}`
             : "Loading orders…"
         }
       />
-      <div className="filter-row" role="group" aria-label="Filter by outcome">
+      <div className="filter-row chip-scroll" role="group" aria-label="Filter by outcome">
         <button type="button" className="filter-chip" aria-pressed={filter === "all"} onClick={() => setFilter("all")}>
           All <span className="count">{orders.length}</span>
         </button>
@@ -47,7 +51,10 @@ export function OrdersScreen() {
           </button>
         ))}
       </div>
-      <OrdersTable orders={shown} ready={snapshot.ready} filtered={filter !== "all"} onOpen={ui.openOrder} />
+      <div className="log-list">
+        <HistoryNote show={shown.some(isSeeded)} />
+        <OrdersTable orders={shown} ready={snapshot.ready} filtered={filter !== "all"} onOpen={ui.openOrder} />
+      </div>
     </div>
   );
 }

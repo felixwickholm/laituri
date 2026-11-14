@@ -30,8 +30,8 @@ describe("auditDetail", () => {
     const { pendingOrder } = await import("./fixtures");
     const order = pendingOrder();
     expect(auditDetail({ ...base, event: "catalog.searched", data: { query: "lactose-free milk", previews: 10 } })).toBe("Found 10 products for 'lactose-free milk'");
-    expect(auditDetail({ ...base, event: "policy.evaluated", data: { outcome: "auto_approved", checks: [] } })).toBe("All 15 checks passed");
-    expect(auditDetail({ ...base, event: "policy.evaluated", data: { outcome: "needs_approval", checks: [{ status: "ask" }] } })).toBe("1 of 15 checks needs a person");
+    expect(auditDetail({ ...base, event: "policy.evaluated", data: { outcome: "auto_approved", checks: [] } })).toBe("All 17 checks passed");
+    expect(auditDetail({ ...base, event: "policy.evaluated", data: { outcome: "needs_approval", checks: [{ status: "ask" }] } })).toBe("1 of 17 checks needs a person");
     expect(auditDetail({ ...base, event: "order.confirmed", refs: { orderId: "ord_1" }, data: {} }, [order])).toBe("1,800 × Arki Eila 1 l = 1,800 l · €1,818.00 net");
     expect(auditDetail({ ...base, event: "approval.requested", refs: { orderId: "ord_1" }, data: {} }, [order])).toBe("€318.00 over the €1,500.00 per-order limit.");
   });

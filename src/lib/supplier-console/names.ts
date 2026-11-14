@@ -1,4 +1,4 @@
-import { UNKNOWN_CLIENT } from "@/lib/http/client-app";
+import { SCRIPTED_CLIENT, UNKNOWN_CLIENT } from "@/lib/http/client-app";
 
 /** The id every call made without a key is logged under (ANONYMOUS_AGENT in src/lib/http/agent.ts). */
 export const KEYLESS_AGENT_ID = "agent:anonymous";
@@ -6,13 +6,17 @@ export const KEYLESS_AGENT_ID = "agent:anonymous";
 /** The name such a caller is logged under when it gave none of its own. */
 const KEYLESS_DEFAULT_NAME = "Unidentified agent";
 
-/** The client labels the server records, in words a buyer or a wholesaler reads without a glossary. */
+/**
+ * The client labels the server records, in words a buyer or a wholesaler reads without a glossary. The demo's own
+ * scripted agent reads as a neutral "Demo agent"; its exact label stays in the agent sheet's technical details.
+ */
 const CLIENT_NAMES: Record<string, string> = {
-  curl: "Command line (curl)",
+  curl: "Command line",
   [UNKNOWN_CLIENT]: "Unknown app",
+  [SCRIPTED_CLIENT]: "Demo agent",
 };
 
-/** "curl" -> "Command line (curl)", "Unknown client" -> "Unknown app"; any other app keeps its own name. */
+/** "curl" -> "Command line", "Unknown client" -> "Unknown app", the scripted agent -> "Demo agent"; any other app keeps its own name. */
 export function clientName(client: string): string {
   return CLIENT_NAMES[client] ?? client;
 }

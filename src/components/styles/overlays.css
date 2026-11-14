@@ -1,4 +1,4 @@
-/* Things that float: the sign-in popover and the toasts. They scale or rise from where they belong. */
+/* Things that float: the sign-in popover, the demo menu and the toasts. They scale or rise from where they belong. */
 
 .popover {
   position: absolute;
@@ -9,14 +9,14 @@
   background: var(--surface-1);
   box-shadow: var(--shadow-float);
   color: var(--text-2);
-  font-size: 14px;
+  font-size: var(--fs-13);
   line-height: 20px;
   transition:
-    opacity var(--d-base) var(--ease-out),
-    transform var(--d-base) var(--ease-out);
+    opacity 180ms var(--ease-out),
+    transform 180ms var(--ease-out);
   @starting-style {
     opacity: 0;
-    transform: scale(0.96);
+    transform: scale(0.97);
   }
 }
 .popover h3 {
@@ -25,9 +25,9 @@
   gap: 8px;
   margin: 0 32px 6px 0;
   color: var(--text-1);
-  font-size: 16px;
+  font-size: var(--fs-15);
   line-height: 22px;
-  font-weight: 650;
+  font-weight: 600;
 }
 .popover h3 svg {
   flex: none;
@@ -58,7 +58,7 @@
 }
 .fine {
   color: var(--text-3);
-  font-size: 13px;
+  font-size: var(--fs-13);
   line-height: 19px;
 }
 .popover .fine.tone-danger {
@@ -66,60 +66,100 @@
   color: var(--danger);
 }
 
-/* The session block in the sidebar: one-click demo access, or who is signed in. */
-.session {
+/* The demo menu: grows from the "Demo" line in the sidebar; laid out in full in the phone's More sheet. */
+.demo-pop {
+  padding: 6px;
+  box-shadow: var(--shadow-2);
+  transform-origin: bottom left;
+}
+.demo-panel {
   display: grid;
+}
+.demo-section {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+.demo-section + .demo-section {
+  border-top: 1px solid var(--line);
+}
+.demo-ws {
+  display: flex;
+  align-items: flex-start;
   gap: 8px;
-  min-width: 0;
+  margin: 0;
+  color: var(--text-2);
+  font-size: var(--fs-13);
+  line-height: 18px;
 }
-.session-demo {
-  width: 100%;
-}
-.session-note {
-  padding: 0 2px;
-  color: var(--text-3);
-  font-size: 12px;
-  line-height: 17px;
-}
-.session-passcode {
-  justify-self: start;
-  font-size: 13px;
-}
-.session-passcode svg {
+.demo-ws svg {
+  flex: none;
   width: 14px;
   height: 14px;
+  margin-top: 2px;
+  color: var(--text-3);
 }
-.session[data-signed-in="true"] {
-  grid-template-columns: 32px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 10px;
-}
-.avatar {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--r-full);
-  background: var(--accent-tint);
-  color: var(--accent);
-  font-size: 12px;
-  font-weight: 650;
-}
-.session-who {
+.demo-ws > span {
   display: grid;
   min-width: 0;
 }
-.session-name {
-  overflow: hidden;
+.demo-ws strong {
   color: var(--text-1);
-  font-size: 14px;
   font-weight: 600;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
-.session-role {
+.demo-ws[data-shared="true"] svg {
+  color: var(--warn);
+}
+.demo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.demo-title {
+  margin: 0;
+  color: var(--text-1);
+  font-size: var(--fs-13);
+  font-weight: 600;
+  line-height: 18px;
+}
+.demo-facts {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+}
+.demo-facts div {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr);
+  gap: 8px;
+  font-size: var(--fs-12);
+  line-height: 17px;
+}
+.demo-facts dt {
   color: var(--text-3);
-  font-size: 12px;
+}
+.demo-facts dd {
+  margin: 0;
+  color: var(--text-1);
+}
+.demo-engine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.demo-signin {
+  justify-items: start;
+}
+.sheet-body .demo-panel {
+  border-radius: var(--r-card);
+  background: var(--surface-2);
+}
+.sheet-body .demo-section + .demo-section {
+  border-top-color: var(--line-strong);
+}
+.sheet-body .demo-facts div {
+  grid-template-columns: 128px minmax(0, 1fr);
+  font-size: var(--fs-13);
 }
 
 /* Toasts rise from the bottom of the canvas, clear of the sidebar and the phone tab bar. */
@@ -151,7 +191,7 @@
   background: var(--surface-inverse);
   color: var(--text-inverse);
   box-shadow: var(--shadow-2);
-  font-size: 14px;
+  font-size: var(--fs-13);
   font-weight: 550;
   transition:
     opacity var(--d-base) var(--ease-out),
@@ -194,14 +234,11 @@
   }
 }
 
-/* Your demo workspace: a quiet line in the shell footer, a small panel on the connect page. */
+/* Your demo workspace as a small panel on the connect page. */
 .ws-indicator {
   display: grid;
   gap: 4px;
   min-width: 0;
-  padding: 0 8px;
-}
-.ws-indicator[data-variant="panel"] {
   padding: 12px 14px;
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
@@ -213,7 +250,7 @@
   gap: 8px;
   margin: 0;
   color: var(--text-2);
-  font-size: 12px;
+  font-size: var(--fs-12);
   line-height: 17px;
 }
 .ws-line svg {
@@ -238,7 +275,7 @@
 .ws-switch {
   justify-self: start;
   margin-left: 22px;
-  font-size: 12px;
+  font-size: var(--fs-12);
 }
 .ws-indicator[data-shared="true"] .ws-line svg {
   color: var(--warn);
@@ -250,22 +287,64 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 10px 14px;
-  margin: 0 0 16px;
-  padding: 12px 16px;
-  border: 1px solid color-mix(in srgb, var(--warn) 30%, transparent);
-  border-radius: var(--r-lg);
-  background: var(--warn-tint);
-  color: var(--text-1);
-  font-size: 14px;
-  line-height: 20px;
+  margin: 0 auto 20px;
+  max-width: 1280px;
+  padding: 8px 8px 8px 14px;
+  border-radius: var(--r-card);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: var(--fs-13);
+  line-height: 18px;
 }
 .ws-banner > svg {
   flex: none;
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   color: var(--warn);
+}
+.ws-banner strong {
+  color: var(--text-1);
+  font-weight: 600;
 }
 .ws-banner p {
   flex: 1 1 260px;
   margin: 0;
+}
+.sheet-body .demo-engine .state {
+  background: var(--surface-1);
+}
+
+/* The shared workspace without a passcode session: one calm state in place of the page. */
+.shared-lock {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  max-width: 440px;
+  margin: 12vh auto 0;
+  padding: 0 16px;
+  text-align: center;
+}
+.shared-lock-icon {
+  width: 28px;
+  height: 28px;
+  margin-bottom: 4px;
+  stroke-width: 1.75;
+  color: var(--text-3);
+}
+.shared-lock h1 {
+  margin: 0;
+  font-size: var(--fs-18);
+  line-height: 24px;
+  font-weight: 600;
+}
+.shared-lock p {
+  margin: 0 0 12px;
+  color: var(--text-2);
+  font-size: var(--fs-15);
+}
+.shared-lock-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
 }

@@ -1,9 +1,13 @@
+import { PackageOpen } from "lucide-react";
+import Link from "next/link";
 import type { Order } from "@/lib/contracts";
 import { eur } from "@/lib/console/format/money";
-import { isSeeded, orderOutcome } from "@/lib/console/format/orders";
+import { orderOutcome } from "@/lib/console/format/orders";
+import { roundingNote } from "@/lib/console/format/packs";
+import { shortProductName } from "@/lib/console/format/product";
 import { offerSubject } from "@/lib/console/format/proof";
+import { substitutionTag } from "@/lib/console/format/substitution";
 import { day, hourMinute } from "@/lib/console/format/time";
-import { DemoTag } from "../ui/DemoTag";
 import { StateWord } from "../ui/StateWord";
 
 interface OrdersTableProps {
@@ -34,14 +38,29 @@ export function OrdersTable({ orders, ready, filtered, onOpen }: OrdersTableProp
           {orders.length === 0 ? (
             <tr className="empty-row">
               <td colSpan={6}>
-                {!ready ? "Loading orders…" : filtered ? "No orders with this outcome." : "No orders yet. When your agent buys something, it appears here."}
+                {!ready ? (
+                  "Loading orders…"
+                ) : (
+                  <span className="empty-note">
+                    <PackageOpen aria-hidden="true" />
+                    {filtered ? "No orders with this outcome." : "No orders yet."}
+                    {filtered ? null : (
+                      <Link href="/buyer" className="text-link strong">
+                        Ask your agent for something
+                      </Link>
+                    )}
+                  </span>
+                )}
               </td>
             </tr>
           ) : (
             orders.map((order) => {
               const outcome = orderOutcome(order);
-              const ordered = offerSubject(order.offer);
+              const rounding = roundingNote(order.offer);
+              // With a rounding note the packs are counted in the note, so the line names the product alone.
+              const ordered = rounding ? order.offer.lines.map((line) => shortProductName(line.name)).join("; ") : offerSubject(order.offer);
               const asked = order.offer.intent?.trim() || ordered;
+              const swap = substitutionTag(order);
               return (
                 <tr key={order.id} data-outcome={outcome.key}>
                   <td className="cell-when">
@@ -52,10 +71,15 @@ export function OrdersTable({ orders, ready, filtered, onOpen }: OrdersTableProp
                     <button type="button" className="row-open" onClick={() => onOpen(order.id)}>
                       {asked}
                     </button>
-                    {isSeeded(order) ? <DemoTag /> : null}
                   </td>
-                  <td className="cell-ordered" data-same={asked === ordered}>
+                  <td className="cell-ordered" data-same={asked === ordered && !swap && !rounding}>
                     {ordered}
+                    {swap ? (
+                      <span className="order-tag">
+                        <StateWord word={swap} tone="waiting" />
+                      </span>
+                    ) : null}
+                    {rounding ? <span className="sub">{rounding}</span> : null}
                     <span className="sub delivery-inline">Delivers {day(order.offer.deliveryDate)}</span>
                   </td>
                   <td className="cell-delivery">{day(order.offer.deliveryDate)}</td>

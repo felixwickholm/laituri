@@ -4,15 +4,14 @@
  * here enters on opacity and transform, and reduced motion keeps the fades without the travel.
  */
 
-/* Measured on screenshots: the dimmed page keeps under a third of its brightness, so only the target, the card and
-   the phone read as lit. */
+/* A light scrim: the page behind stays readable as the product, and the lit target and card still lead. */
 :root {
-  --tour-dim: rgba(7, 11, 20, 0.72);
-  --tour-card-w: 520px;
+  --tour-dim: rgba(11, 18, 32, 0.45);
+  --tour-card-w: 460px;
   --tour-bezel: #0b0f17;
 }
 :root[data-theme="dark"] {
-  --tour-dim: rgba(0, 1, 4, 0.8);
+  --tour-dim: rgba(0, 2, 8, 0.55);
   --tour-bezel: #000000;
 }
 
@@ -63,6 +62,13 @@
   animation: tour-rise var(--d-sheet) var(--ease-out) both;
 }
 
+/* On the dark page the card's shadow has nothing to fall on; a hairline of light keeps its edge. */
+:root[data-theme="dark"] .tour-card {
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    var(--shadow-float);
+}
+
 .tour-card-top {
   display: flex;
   align-items: center;
@@ -73,9 +79,10 @@
 .tour-count {
   margin: 0;
   color: var(--text-2);
-  font-size: 14px;
-  line-height: 20px;
-  font-weight: 600;
+  font-size: var(--fs-13);
+  line-height: 18px;
+  font-weight: 550;
+  font-variant-numeric: tabular-nums;
 }
 .tour-close {
   flex: none;
@@ -124,24 +131,26 @@
   animation: tour-swap var(--d-base) var(--ease-out) both;
 }
 .tour-title {
-  margin: 16px 0 0;
-  font-size: 22px;
-  line-height: 30px;
-  font-weight: 650;
-  letter-spacing: -0.016em;
+  margin: 14px 0 0;
+  font-size: var(--fs-18);
+  line-height: 26px;
+  font-weight: 600;
+  letter-spacing: -0.012em;
   text-wrap: pretty;
 }
 .tour-title-big {
   margin: 4px 40px 0 0;
-  font-size: 28px;
-  line-height: 34px;
-  letter-spacing: -0.022em;
+  font-size: var(--fs-title);
+  line-height: 36px;
+  letter-spacing: var(--track-title);
+  text-wrap: balance;
 }
 .tour-detail {
-  margin: 8px 0 0;
+  margin: 6px 0 0;
   color: var(--text-2);
-  font-size: 16px;
-  line-height: 24px;
+  font-size: var(--fs-15);
+  line-height: 22px;
+  text-wrap: pretty;
 }
 .tour-detail[data-note="true"] {
   color: var(--warn);
@@ -150,17 +159,17 @@
 .tour-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-top: 22px;
+  gap: 8px;
+  margin-top: 20px;
 }
 .tour-keys {
   margin: 0 auto 0 0;
   color: var(--text-3);
-  font-size: 13px;
-  line-height: 18px;
+  font-size: var(--fs-12);
+  line-height: 16px;
 }
 .tour-next {
-  min-width: 140px;
+  min-width: 132px;
 }
 .tour-next[aria-disabled="true"] {
   opacity: 0.72;
@@ -172,6 +181,21 @@
 .tour-next[data-busy="true"] {
   background: var(--surface-3);
   color: var(--text-1);
+}
+/* While the card is being read, Next fills from the left over the reading time, so the wait explains itself. */
+.tour-next {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.tour-next-fill {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: color-mix(in srgb, var(--on-accent) 24%, transparent);
+  transform: scaleX(0);
+  transform-origin: left center;
+  animation: tour-read var(--read-ms) linear forwards;
 }
 
 /* The intro and the end: centred, with the page dimmed behind and no cut-out. */
@@ -191,32 +215,28 @@
   pointer-events: auto;
 }
 .tour-intro .tour-detail {
-  font-size: 17px;
-  line-height: 26px;
+  margin-top: 10px;
 }
 .tour-intro-actions {
   display: grid;
   justify-items: start;
   gap: 12px;
-  margin-top: 28px;
+  margin-top: 24px;
 }
 .tour-start {
-  min-width: 180px;
-  height: 52px;
-  padding: 0 22px;
-  font-size: 16px;
+  min-width: 160px;
 }
 .tour-fine {
   margin: 0;
   color: var(--text-3);
-  font-size: 13px;
-  line-height: 19px;
+  font-size: var(--fs-13);
+  line-height: 18px;
 }
 .tour-error {
   margin: 14px 0 0;
   color: var(--danger);
-  font-size: 14px;
-  line-height: 20px;
+  font-size: var(--fs-13);
+  line-height: 18px;
 }
 
 .tour-center > .tour-end {
@@ -236,13 +256,13 @@
 }
 .tour-recap p {
   margin: 0;
-  font-size: 16px;
-  line-height: 23px;
+  font-size: var(--fs-15);
+  line-height: 22px;
 }
 .tour-recap .tour-criteria {
   margin-top: 2px;
   color: var(--text-3);
-  font-size: 13px;
+  font-size: var(--fs-13);
   line-height: 18px;
 }
 .tour-end-actions {
@@ -253,24 +273,11 @@
 }
 .tour-end-actions > :first-child {
   grid-column: 1 / -1;
-  height: 52px;
-  font-size: 16px;
 }
 .tour-end-foot {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 14px;
-}
-.tour-end-back {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-.tour-end-back svg {
-  width: 16px;
-  height: 16px;
+  justify-content: flex-end;
+  margin-top: 12px;
 }
 
 /* Maria's phone, beside the card. */
@@ -332,52 +339,101 @@
   background: var(--bg);
 }
 
-/* After Escape: a quiet way back in. */
+/* After Escape: a quiet way back in, docked in the shell's own slot so it never covers the page. */
 .tour-resume {
-  position: fixed;
-  right: 24px;
-  bottom: 24px;
-  z-index: 95;
   display: flex;
   align-items: center;
   gap: 2px;
-  padding: 4px 4px 4px 6px;
-  border-radius: var(--r-full);
-  background: var(--surface-inverse);
-  color: var(--text-inverse);
-  box-shadow: var(--shadow-float);
+  border-radius: var(--r-control);
   animation: tour-rise var(--d-sheet) var(--ease-out) both;
 }
 .tour-resume-go {
   display: inline-flex;
+  flex: 1;
+  min-width: 0;
   align-items: center;
   gap: 8px;
-  height: 40px;
-  padding: 0 12px;
+  height: var(--control-h);
+  padding: 0 10px;
   border: 0;
-  border-radius: var(--r-full);
+  border-radius: var(--r-control);
   background: none;
   color: inherit;
   font: inherit;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--fs-13);
+  font-weight: 550;
   cursor: pointer;
   transition: transform var(--d-press) var(--ease-out);
 }
+.tour-resume-go:focus:not(:focus-visible) {
+  outline: none;
+}
 .tour-resume-go:active {
-  transform: scale(0.97);
+  transform: var(--press);
 }
 .tour-resume-go svg {
-  width: 18px;
-  height: 18px;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--accent);
+}
+.tour-resume-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .tour-resume-step {
+  margin-left: auto;
+  color: var(--text-3);
   font-weight: 450;
-  opacity: 0.7;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
-.tour-resume .icon-btn {
+.tour-resume-end {
+  color: inherit;
+}
+/* In the sidebar: a row like its neighbours, one tone step up. */
+.tour-resume[data-dock="side"] {
+  background: var(--surface-2);
+  color: var(--text-1);
+}
+/* Above the phone tab bar: a slim bar across the width, and the page ends that much later so it covers nothing. */
+.tour-resume[data-dock="phone"] {
+  flex: 1;
+  max-width: 480px;
+  padding-right: 2px;
+  background: var(--surface-inverse);
+  color: var(--text-inverse);
+}
+body:has(.tour-resume[data-dock="phone"]) main#main::after {
+  content: "";
+  display: block;
+  height: 52px;
+}
+.tour-resume[data-dock="phone"] .tour-resume-go svg,
+.tour-resume[data-dock="phone"] .tour-resume-step {
   color: inherit;
   opacity: 0.75;
+}
+/* In the landing page's top bar: a quiet control among its links. */
+.tour-resume[data-dock="bar"] {
+  background: var(--surface-2);
+  color: var(--text-1);
+}
+/* No slot on the page: the bottom-left corner, inside the page's own margin. */
+.tour-resume[data-dock="float"] {
+  position: fixed;
+  left: var(--gutter);
+  bottom: 16px;
+  z-index: 95;
+  padding: 2px;
+  background: var(--surface-inverse);
+  color: var(--text-inverse);
+  box-shadow: var(--shadow-float);
+}
+.tour-resume[data-dock="float"] .tour-resume-step {
+  color: inherit;
+  opacity: 0.7;
 }
 
 /* Tablets: the phone above, the card as a sheet below it. */
@@ -420,17 +476,7 @@
     margin-right: -6px;
   }
   .tour-title {
-    margin-top: 12px;
-    font-size: 19px;
-    line-height: 26px;
-  }
-  .tour-title-big {
-    font-size: 24px;
-    line-height: 30px;
-  }
-  .tour-detail {
-    font-size: 15px;
-    line-height: 22px;
+    margin-top: 10px;
   }
   .tour-keys {
     display: none;
@@ -471,9 +517,13 @@
   .tour-phone-screen {
     border-radius: 0;
   }
-  .tour-resume {
-    right: 16px;
-    bottom: calc(76px + env(safe-area-inset-bottom));
+  /* Beside the phone's own page the card keeps to its sentence, so the order's lines stay in view above it. */
+  .tour-phone-layout .tour-progress {
+    display: none;
+  }
+  .tour-resume[data-dock="float"] {
+    left: 16px;
+    bottom: max(16px, env(safe-area-inset-bottom));
   }
 }
 
@@ -483,6 +533,11 @@
   }
 }
 
+@keyframes tour-read {
+  to {
+    transform: scaleX(1);
+  }
+}
 @keyframes tour-fade {
   from {
     opacity: 0;
@@ -522,7 +577,7 @@
   .tour-progress li::after {
     transition: none;
   }
-}
-.tour-intro .tour-engine {
-  margin-top: 14px;
+  .tour-next-fill {
+    animation: none;
+  }
 }

@@ -26,13 +26,13 @@ export function AgentsFragment() {
               {agent.name}
               <span className="ui-muted">{agent.buyer}</span>
             </span>
-            <span className="ui-tag">{agent.via}</span>
+            <span className="state">{agent.via}</span>
             <span className="ui-agent-orders">{agent.orders}</span>
           </li>
         ))}
       </ul>
       <div className="ui-unmet">
-        <span className="ui-pill" data-tone="warn">
+        <span className="state" data-tone="waiting">
           Unmet demand
         </span>
         <p>

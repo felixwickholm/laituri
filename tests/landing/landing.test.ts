@@ -1,12 +1,9 @@
 import { describe, expect, it } from "vitest";
-import type { AuditEntry, SupplierOverview } from "@/lib/contracts";
+import type { SupplierOverview } from "@/lib/contracts";
+import { demandFlow } from "@/lib/supplier-console/flow";
 import { FALLBACK_AGENTS, agentsView } from "@/components/landing/agent-rows";
-import { landingCounts } from "@/components/landing/counts";
-import { pendingOrder } from "../console/fixtures";
-
-function entry(seq: number, event: string, actor: AuditEntry["actor"]): AuditEntry {
-  return { seq, event, actor } as unknown as AuditEntry;
-}
+import { landingFigures, shown } from "@/components/landing/counts";
+import { demandKey } from "@/components/landing/demand-key";
 
 function agent(name: string, calls: number, extra: Partial<SupplierOverview["agents"][number]> = {}): SupplierOverview["agents"][number] {
   return {
@@ -17,7 +14,7 @@ function agent(name: string, calls: number, extra: Partial<SupplierOverview["age
     lastSeen: "2026-11-14T07:00:00.000Z",
     calls,
     quotes: 1,
-    orders: { confirmed_auto: 2, confirmed_after_approval: 1, waiting: 0, rejected: 0, blocked: 1 },
+    orders: { confirmed_auto: 2, confirmed_after_approval: 1, waiting: 0, rejected: 0, blocked: 1, refused: 0 },
     confirmedNet: 100,
     status: "active",
     ...extra,
@@ -51,6 +48,7 @@ function overview(patch: Partial<SupplierOverview> = {}): SupplierOverview {
         waiting: { count: 0, net: 0 },
         rejected: { count: 0, net: 0 },
         blocked: { count: 0, net: 0 },
+        refused: { count: 0, net: 0 },
       },
     },
     rules: [],
@@ -59,31 +57,48 @@ function overview(patch: Partial<SupplierOverview> = {}): SupplierOverview {
   };
 }
 
-describe("landingCounts", () => {
-  const agentActor = { type: "agent" as const, id: "agent:a", name: "A" };
-  const other = { type: "agent" as const, id: "agent:b", name: "B" };
-  const supplier = { type: "supplier" as const, id: "valio", name: "Valio Aimo" };
-  const audit = [entry(1, "offer.issued", supplier), entry(2, "order.requested", agentActor), entry(3, "offer.issued", supplier), entry(4, "catalog.searched", other)];
+function day(date: string, requests: number, ordered: number, confirmed: number, confirmedNet: number) {
+  return { date, requests, ordered, orders: confirmed, confirmed, confirmedNet };
+}
 
-  it("counts offers, confirmed orders, log steps and agents from the log when the overview is missing", () => {
-    const confirmed = { ...pendingOrder(), status: "confirmed" as const };
-    expect(landingCounts({ orders: [confirmed, pendingOrder()], audit })).toEqual({
-      signedOffers: 2,
-      ordersConfirmed: 1,
-      logSteps: 4,
-      connectedAgents: 2,
-      secondsToOrder: undefined,
+describe("landingFigures", () => {
+  const week = [day("2026-11-08", 4, 3, 2, 300.1), day("2026-11-09", 0, 0, 0, 0), day("2026-11-14", 6, 5, 4, 1000.2)];
+
+  it("counts the same seven days as the Valio Aimo overview: agents, requests, confirmed orders and their net", () => {
+    expect(landingFigures(overview({ daily: week }))).toEqual({ agents: 4, requests: 10, ordersConfirmed: 6, confirmedNet: 1300.3 });
+  });
+
+  it("does not count orders from outside the seven days, even when the all-time outcome counts are higher", () => {
+    const allTime = overview({ daily: week }).orders;
+    allTime.byOutcome.confirmed_auto = { count: 22, net: 9000 };
+    expect(landingFigures(overview({ daily: week, orders: allTime })).ordersConfirmed).toBe(6);
+  });
+
+  it("gives nothing when the overview did not answer", () => {
+    expect(landingFigures(undefined)).toEqual({});
+  });
+
+  it("shows a figure only when it is a positive number; zero and missing become a dash", () => {
+    expect(shown(3)).toBe(true);
+    expect(shown(0)).toBe(false);
+    expect(shown(undefined)).toBe(false);
+    expect(shown(Number.NaN)).toBe(false);
+  });
+});
+
+describe("demandKey", () => {
+  it("reads served, unserved with its estimated net, and requests that led to an order from the flow", () => {
+    const model = demandFlow({
+      requests: 10,
+      ordered: 5,
+      unmet: [
+        { ...overview().unmet[0], reason: "short_stock", estimatedLostNet: 120.5 },
+        { ...overview().unmet[0], requestId: "req_2", reason: "not_found" },
+      ],
+      orders: overview().orders.byOutcome,
+      week: { orders: 0, confirmed: 0, confirmedNet: 0 },
     });
-  });
-
-  it("reads connected agents and the median seconds to order from the supplier overview", () => {
-    const counts = landingCounts({ audit, overview: overview() });
-    expect(counts.connectedAgents).toBe(4);
-    expect(counts.secondsToOrder).toBe(35);
-  });
-
-  it("leaves a figure out when its source did not answer", () => {
-    expect(Object.values(landingCounts({})).every((value) => value === undefined)).toBe(true);
+    expect(demandKey(model)).toEqual({ served: 8, unserved: 2, unservedNet: 120.5, ordered: 5 });
   });
 });
 

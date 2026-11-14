@@ -14,8 +14,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Laituri · agent ordering for Valio Aimo",
-  description: "The front door that lets a purchasing agent buy from Valio Aimo inside limits a person signed, with a log anyone can verify.",
+  title: "Laituri · The loading dock for AI agents",
+  description:
+    "The loading dock for AI agents: a kitchen's own purchasing agent buys from Valio Aimo at signed fixed prices, inside limits a person signed, with a log anyone can verify.",
 };
 
 export const viewport: Viewport = {

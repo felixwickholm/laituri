@@ -17,6 +17,7 @@ class WorkspaceStore {
   private info: WorkspaceInfo | undefined;
   private listeners = new Set<Listener>();
   private timer: ReturnType<typeof setInterval> | undefined;
+  private loading: Promise<void> | undefined;
 
   subscribe = (listener: Listener): (() => void) => {
     this.listeners.add(listener);
@@ -38,12 +39,16 @@ class WorkspaceStore {
     for (const listener of this.listeners) listener();
   }
 
-  async refresh(): Promise<void> {
-    try {
-      this.set(await api.workspace());
-    } catch {
-      // Keep the last known workspace; the next refresh tries again.
-    }
+  /** Joins a read already on its way, so a remount in the same moment does not ask twice. */
+  refresh(): Promise<void> {
+    this.loading ??= api
+      .workspace()
+      .then((info) => this.set(info))
+      .catch(() => undefined)
+      .finally(() => {
+        this.loading = undefined;
+      });
+    return this.loading;
   }
 
   /** Switches the browser's view and returns the workspace it now looks at. */

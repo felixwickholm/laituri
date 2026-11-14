@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { CLOSED, canGoNext, fromUrl, pressPending, reduce, restore, type PlanStep, type TourEvent, type TourState } from "@/lib/tour/machine";
-import { STEPS } from "@/lib/tour/steps";
+import { CLOSED, canGoNext, fromUrl, pressPending, pressSettles, readKey, readMsOf, reduce, restore, type PlanStep, type TourEvent, type TourState } from "@/lib/tour/machine";
+import { STEPS, copyOf, spotOf } from "@/lib/tour/steps";
+import { storyFacts } from "@/lib/tour/facts";
 
 const PLAN: PlanStep[] = [{ id: "a" }, { id: "b", press: true }, { id: "c" }];
 
@@ -66,7 +67,8 @@ describe("tour machine", () => {
     const last = { ...state, index: 2, outcomes: { ...state.outcomes, c: "done" as const } };
     const end = run([{ type: "next" }], last);
     expect(end.status).toBe("end");
-    expect(run([{ type: "back" }], end)).toMatchObject({ status: "step", index: 2 });
+    expect(run([{ type: "back" }], end)).toBe(end);
+    expect(run([{ type: "close" }], end)).toEqual({ ...CLOSED });
   });
 
   it("pauses on close mid-story and resumes at the same step", () => {
@@ -123,6 +125,56 @@ describe("tour resume", () => {
     expect(fromUrl(PLAN, atA, null)).toBe(atA);
     expect(fromUrl(PLAN, { ...atA, status: "end" }, "start").status).toBe("intro");
   });
+
+  it("shows the end card once: a saved or addressed end never brings it back", () => {
+    const ended = { ...run(started), status: "end" as const, tampered: true };
+    expect(restore(PLAN, JSON.parse(JSON.stringify(ended)))).toEqual({ ...CLOSED, tampered: true });
+    expect(fromUrl(PLAN, CLOSED, "end")).toBe(CLOSED);
+    expect(fromUrl(PLAN, restore(PLAN, ended), "end").status).toBe("closed");
+    expect(fromUrl(PLAN, CLOSED, "start").status).toBe("intro");
+  });
+});
+
+describe("reading time", () => {
+  const READ: PlanStep[] = [{ id: "a", readMs: 5000 }, { id: "b", press: true, readMs: 4000, pressReadMs: 3000 }, { id: "c" }];
+  const go = (events: TourEvent[], from: TourState = CLOSED) => events.reduce((state, event) => reduce(READ, state, event), from);
+
+  it("keeps Next waiting until the card has been read, even with the outcome in", () => {
+    const done = go([...started, { type: "outcome", step: "a", outcome: "done" }]);
+    expect(readMsOf(READ[0], done)).toBe(5000);
+    expect(canGoNext(READ, done)).toBe(false);
+    const read = go([{ type: "read", key: "a" }], done);
+    expect(readMsOf(READ[0], read)).toBe(0);
+    expect(canGoNext(READ, read)).toBe(true);
+  });
+
+  it("asks for a second read once a press has settled, under its own key", () => {
+    let state = go([...started, { type: "outcome", step: "a", outcome: "done" }, { type: "read", key: "a" }, { type: "next" }, { type: "outcome", step: "b", outcome: "done" }, { type: "read", key: "b" }]);
+    expect(readKey(READ[1], state)).toBe("b");
+    state = go([{ type: "next" }, { type: "settled", step: "b" }], state);
+    expect(readKey(READ[1], state)).toBe("b:press");
+    expect(canGoNext(READ, state)).toBe(false);
+    state = go([{ type: "read", key: "b:press" }], state);
+    expect(go([{ type: "next" }], state).index).toBe(2);
+  });
+
+  it("asks nothing of a step without a reading time", () => {
+    expect(readMsOf(READ[2], { settled: [], read: [] })).toBe(0);
+  });
+});
+
+describe("press actions", () => {
+  it("settles when its outcome is in, or after a press that ran out of time", () => {
+    expect(pressSettles({}, false, true, false)).toBe(true);
+    expect(pressSettles({}, false, false, true)).toBe(false);
+    expect(pressSettles({}, true, false, true)).toBe(true);
+    expect(pressSettles({}, true, false, false)).toBe(false);
+  });
+
+  it("waits for Next when only Next may settle it", () => {
+    expect(pressSettles({ requirePress: true }, false, true, false)).toBe(false);
+    expect(pressSettles({ requirePress: true }, true, true, false)).toBe(true);
+  });
 });
 
 describe("the walkthrough's steps", () => {
@@ -133,5 +185,25 @@ describe("the walkthrough's steps", () => {
       expect(step.target.length).toBeGreaterThan(0);
       expect(step.route.startsWith("/")).toBe(true);
     }
+  });
+
+  it("tells eight beats in order, the cheating scene before the edited log", () => {
+    expect(STEPS.map((step) => step.id)).toEqual(["request", "offer", "rules", "phone", "stock", "valio", "cheat", "log"]);
+    expect(STEPS[0]).toMatchObject({ pinTop: true, nextLabel: "Send it" });
+    expect(STEPS.find((step) => step.id === "cheat")).toMatchObject({ enter: "startBreakMandate", until: "rulesRefused" });
+  });
+
+  it("moves Valio Aimo's spotlight from the agents to the demand only after Next, with the sentence to match", () => {
+    const valio = STEPS.find((step) => step.id === "valio");
+    if (!valio) throw new Error("no valio step");
+    const facts = storyFacts({ ready: true, online: true, activity: [], orders: [], audit: [], chain: { state: "empty" } });
+    const before = { outcomes: {}, settled: [] as string[] };
+    const after = { outcomes: {}, settled: ["valio"] };
+    expect(spotOf(valio, before).target[0]).toBe('[data-tour="valio-agents"]');
+    expect(spotOf(valio, after).target[0]).toBe('[data-tour="valio-flow"]');
+    expect(spotOf(valio, after).target).toContain('[data-tour="valio-unserved"]');
+    expect(copyOf(valio, before, facts).title).toMatch(/every agent/);
+    expect(copyOf(valio, after, facts).title).toMatch(/could not serve/);
+    expect(valio.pressAction?.requirePress).toBe(true);
   });
 });

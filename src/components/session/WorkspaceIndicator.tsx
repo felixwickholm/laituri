@@ -25,10 +25,10 @@ export function useViewSwitch(): { busy: boolean; switchTo: (view: "shared" | "s
 }
 
 /**
- * "Your demo workspace": its label, that it is private to this browser, the time left before an unused one is
- * replaced, and the way to look at the shared workspace instead.
+ * "Your demo workspace" as a small panel on the connect page: its label, that it is private to this browser, the time
+ * left before an unused one is replaced, and the way to look at the shared workspace instead.
  */
-export function WorkspaceIndicator({ variant = "line" }: { variant?: "line" | "panel" }) {
+export function WorkspaceIndicator({ variant = "panel" }: { variant?: "panel" }) {
   const info = useWorkspace();
   const now = useNow(30_000);
   const { busy, switchTo } = useViewSwitch();
@@ -42,9 +42,7 @@ export function WorkspaceIndicator({ variant = "line" }: { variant?: "line" | "p
         <Icon aria-hidden="true" />
         <span>
           <span className="ws-title">{line.shared ? line.label : "Your demo workspace"}</span>
-          <span className="ws-meta">
-            {line.shared ? line.privacy : [line.label, line.privacy, line.timeLeft].filter(Boolean).join(" · ")}
-          </span>
+          <span className="ws-meta">{line.shared ? line.privacy : [line.label, line.privacy, line.timeLeft].filter(Boolean).join(" · ")}</span>
         </span>
       </p>
       <button type="button" className="text-link ws-switch" disabled={busy} onClick={() => void switchTo(line.shared ? "sandbox" : "shared")}>
@@ -63,10 +61,9 @@ export function SharedViewBanner() {
     <div className="ws-banner" role="status">
       <Eye aria-hidden="true" />
       <p>
-        <strong>You are viewing the shared workspace.</strong> It is read-only here: every visitor sees it, so nothing can be changed
-        without the passcode.
+        <strong>You are viewing the shared workspace.</strong> Every visitor sees it, so it is read-only here.
       </p>
-      <button type="button" className="btn btn-secondary" disabled={busy} onClick={() => void switchTo("sandbox")}>
+      <button type="button" className="btn btn-quiet" disabled={busy} onClick={() => void switchTo("sandbox")}>
         Back to my workspace
       </button>
     </div>

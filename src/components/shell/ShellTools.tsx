@@ -1,51 +1,56 @@
 import Link from "next/link";
 import { CirclePlay, PlugZap } from "lucide-react";
-import type { Health } from "@/lib/console/types";
-import { SessionControl } from "../session/SessionControl";
-import { WorkspaceIndicator } from "../session/WorkspaceIndicator";
+import type { SessionRole } from "@/lib/console/types";
+import { AccountRow } from "../session/AccountRow";
 import { TourLink } from "../tour/TourLink";
-import { ThemeToggle } from "../ui/ThemeToggle";
 import type { Side } from "./nav";
-import { ResetButton } from "./ResetButton";
+import { DemoMenu } from "./DemoMenu";
+import { DemoPanel } from "./DemoPanel";
 
-function honestStatus(health: Health | undefined): string {
-  const prices = health?.mode === "recorded" ? "Recorded prices" : "Live prices";
-  return `${prices} · simulated orders · demo data`;
+function roleOf(side: Side): SessionRole {
+  return side === "buyer" ? "approver" : "operator";
+}
+
+function ExtraLinks() {
+  return (
+    <ul className="nav-list">
+      <li>
+        <Link href="/connect" className="nav-item">
+          <PlugZap aria-hidden="true" />
+          <span className="nav-label">Connect an agent</span>
+        </Link>
+      </li>
+      <li>
+        <TourLink className="nav-item">
+          <CirclePlay aria-hidden="true" />
+          <span className="nav-label">See it in 2 minutes</span>
+        </TourLink>
+      </li>
+    </ul>
+  );
 }
 
 /**
- * What both sides share: connecting an agent, the tour, reset, who acts for this side, the theme, which workspace
- * this is and what is real.
+ * The foot of the sidebar: two more links, the slot the paused tour docks into, the quiet demo menu and the account
+ * row. In the phone's More sheet the demo menu is laid out in full instead.
  */
-export function ShellTools({ health, side }: { health?: Health; side: Side }) {
-  return (
-    <div className="shell-tools">
-      <ul className="nav-list">
-        <li>
-          <Link href="/connect" className="nav-item">
-            <PlugZap aria-hidden="true" />
-            <span className="nav-label">Connect an agent</span>
-          </Link>
-        </li>
-        <li>
-          <TourLink className="nav-item">
-            <CirclePlay aria-hidden="true" />
-            <span className="nav-label">See it in 2 minutes</span>
-          </TourLink>
-        </li>
-        <li>
-          <ResetButton />
-        </li>
-      </ul>
-      <div className="session-row">
-        <SessionControl role={side === "buyer" ? "approver" : "operator"} />
-        <ThemeToggle />
+export function ShellTools({ side, variant }: { side: Side; variant: "sidebar" | "sheet" }) {
+  const role = roleOf(side);
+  if (variant === "sheet") {
+    return (
+      <div className="shell-tools" data-variant="sheet">
+        <ExtraLinks />
+        <AccountRow role={role} />
+        <DemoPanel role={role} />
       </div>
-      <WorkspaceIndicator />
-      <p className="honest-status" title="Prices and stock come from Valio Aimo. There is no order endpoint, so orders are confirmed here and marked simulated.">
-        <span className="dot" data-live={health?.mode !== "recorded"} aria-hidden="true" />
-        {honestStatus(health)}
-      </p>
+    );
+  }
+  return (
+    <div className="shell-tools" data-variant="sidebar">
+      <ExtraLinks />
+      <div data-tour-dock="side" />
+      <DemoMenu role={role} />
+      <AccountRow role={role} />
     </div>
   );
 }

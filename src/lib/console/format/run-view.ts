@@ -72,6 +72,7 @@ export function runOutcome(run: RunBlock, ctx: RunContext): RunOutcome {
       case "pending_approval":
         return { word: `Waiting for ${shortName(ctx.approver ?? "a person")}`, detail: `${eur(totals.net.amount)}\u00a0net`, tone: "waiting" };
       case "blocked": {
+        if (order.refusal) return { word: "Refused", detail: plainSentence(order.refusal.message.replace(/^Refused:?\s*/i, "")), tone: "danger" };
         const block = order.decision.checks.find((check) => check.status === "block");
         return { word: "Stopped", detail: block ? blockSentence(block) : "Outside the mandate", tone: "danger" };
       }
@@ -105,4 +106,30 @@ export function toolLine(tool: { tool?: string; detail?: string; title: string; 
   const parts = [tool.tool ?? "call", plainSentence(tool.detail ?? tool.title)];
   if (tool.durationMs !== undefined) parts.push(`${tool.durationMs} ms`);
   return parts.join(" · ");
+}
+
+const CALL_WORDS: [RegExp, string][] = [
+  [/search_catalog|\/catalog|\/search/, "a catalogue search"],
+  [/get_product|\/products/, "a product lookup"],
+  [/request_quote|\/quotes/, "a quote request"],
+  [/get_order|GET \/api\/v1\/orders/, "an order lookup"],
+  [/place_order|\/orders/, "an order"],
+];
+const REFUSED_CALL = /^Refused ([a-z_]+|[A-Z]+ \S+): (.*?)\.?$/;
+
+/** A call in a purchasing lead's words: "search_catalog" -> "a catalogue search". */
+export function callWords(call: string): string {
+  return CALL_WORDS.find(([pattern]) => pattern.test(call))?.[1] ?? "a call";
+}
+
+const WITH_VAT = /,?\s*€[\d,.]+\s+with VAT/g;
+
+/**
+ * A step in plain words, with no tool names and no VAT, which only the order sheet shows:
+ * "Refused search_catalog: the agent is suspended" -> "Valio Aimo refused a catalogue search: the agent is suspended."
+ */
+export function stepText(text: string): string {
+  const refused = text.match(REFUSED_CALL);
+  if (refused) return plainSentence(`Valio Aimo refused ${callWords(refused[1])}: ${refused[2]}.`);
+  return plainSentence(text).replace(WITH_VAT, "");
 }

@@ -69,7 +69,7 @@
   --r-control: 10px;
   --r-full: 999px;
 
-  --ease-out: cubic-bezier(0.33, 1, 0.68, 1);
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-hover: cubic-bezier(0.25, 0.46, 0.45, 0.94);
   --ease-sheet: cubic-bezier(0.32, 0.72, 0, 1);
   --d-press: 120ms;
@@ -78,6 +78,20 @@
   --d-base: 220ms;
   --d-sheet: 320ms;
   --d-orb: 600ms;
+
+  /* Type: four text sizes, two title sizes. Nothing else. */
+  --fs-12: 12px;
+  --fs-13: 13px;
+  --fs-15: 15px;
+  --fs-18: 18px;
+  --fs-title: 30px;
+  --fs-display: clamp(40px, 2.4vw + 22px, 56px);
+  --track-title: -0.03em;
+
+  /* Controls: one radius, two heights, one press. */
+  --control-h: 36px;
+  --control-h-big: 44px;
+  --press: scale(0.97);
 
   --hit: 44px;
   --topbar: 56px;
@@ -129,6 +143,13 @@
   --shadow-float: 0 40px 90px -35px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 
+/* Phones get the 44px control everywhere. */
+@media (max-width: 719px) {
+  :root {
+    --control-h: var(--control-h-big);
+  }
+}
+
 @theme inline {
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
@@ -143,7 +164,7 @@ body {
 
 body {
   font-family: var(--font-sans);
-  font-size: 15px;
+  font-size: var(--fs-15);
   line-height: 22px;
   letter-spacing: -0.006em;
   font-variant-numeric: tabular-nums;

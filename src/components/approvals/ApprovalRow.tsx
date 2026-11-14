@@ -3,6 +3,8 @@
 import { Check, ChevronRight, X } from "lucide-react";
 import { useRef, useState } from "react";
 import type { Order } from "@/lib/contracts";
+import { APPROVAL_BLOCKED, ApiError } from "@/lib/console/api";
+import { priceHoldLine, stoppedApproval, type StoppedApproval } from "@/lib/console/format/approval";
 import { eur } from "@/lib/console/format/money";
 import { askedLine, matchedFacts, offeredShort } from "@/lib/console/format/proof";
 import { askReasons, shortName } from "@/lib/console/format/rules";
@@ -26,7 +28,9 @@ const COLLAPSE_MS = 240;
 export function ApprovalRow({ order, now, paused, onOpen }: ApprovalRowProps) {
   const [busy, setBusy] = useState<"approved" | "rejected" | null>(null);
   const [leaving, setLeaving] = useState(false);
+  const [stopped, setStopped] = useState<{ view: StoppedApproval; order: Order } | null>(null);
   const inFlight = useRef(false);
+  const hold = priceHoldLine(order);
   const reasons = askReasons(order);
   const matches = matchedFacts(order).every((fact) => fact.ok);
 
@@ -45,6 +49,11 @@ export function ApprovalRow({ order, now, paused, onOpen }: ApprovalRowProps) {
       else if (decision === "rejected") toast(`Rejected. Signed by ${who}.`, "neutral");
       else toast("The offer expired before approval. Order not placed.", "danger");
     } catch (error) {
+      const view = error instanceof ApiError && error.code === APPROVAL_BLOCKED ? stoppedApproval(error.body) : undefined;
+      if (view && error instanceof ApiError) {
+        setStopped({ view, order: (error.body as { order: Order }).order });
+        return;
+      }
       toast(pausedMessage(error) ?? (error instanceof Error ? error.message : "The decision was not saved."), "danger");
     } finally {
       inFlight.current = false;
@@ -62,7 +71,7 @@ export function ApprovalRow({ order, now, paused, onOpen }: ApprovalRowProps) {
               <CountUp value={order.offer.totals.net.amount} format={eur} />
             </span>
             <span className="net">net</span>
-            <span className="age">{age(order.createdAt, now) === "now" ? "just now" : `${age(order.createdAt, now)} ago`}</span>
+            <span className="age">{hold ?? (age(order.createdAt, now) === "now" ? "just now" : `${age(order.createdAt, now)} ago`)}</span>
           </div>
           {reasons.length > 1 ? (
             <ul className="decision-more">
@@ -81,20 +90,43 @@ export function ApprovalRow({ order, now, paused, onOpen }: ApprovalRowProps) {
               <span>{offeredShort(order.offer)}</span>
             </li>
           </ul>
-          <div className="decide">
-            <button
-              type="button"
-              className="btn btn-primary big"
-              data-paused={paused}
-              disabled={busy !== null || paused}
-              onClick={(event) => decide("approved", event.currentTarget)}
-            >
-              {paused ? PAUSED_LABEL : busy === "approved" ? "Signing…" : "Approve"}
-            </button>
-            <button type="button" className="btn btn-secondary big" disabled={busy !== null} onClick={(event) => decide("rejected", event.currentTarget)}>
-              {busy === "rejected" ? "Signing…" : "Reject"}
-            </button>
-          </div>
+          {stopped ? (
+            <div className="decision-stopped" role="alert">
+              <p>{stopped.view.reason}</p>
+              {stopped.view.alternatives.length > 0 ? (
+                <>
+                  <p className="decision-stopped-lead">Valio Aimo offers instead, signed:</p>
+                  <ul>
+                    {stopped.view.alternatives.map((alternative) => (
+                      <li key={alternative.id}>
+                        <span>{alternative.what}</span>
+                        <span className="num">{alternative.net}</span>
+                        <span className="sub">{alternative.tradeoff}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : null}
+              <button type="button" className="btn btn-secondary" onClick={() => consoleStore.apply(stopped.order)}>
+                Done
+              </button>
+            </div>
+          ) : (
+            <div className="decide">
+              <button
+                type="button"
+                className="btn btn-primary big"
+                data-paused={paused}
+                disabled={busy !== null || paused}
+                onClick={(event) => decide("approved", event.currentTarget)}
+              >
+                {paused ? PAUSED_LABEL : busy === "approved" ? "Signing…" : "Approve"}
+              </button>
+              <button type="button" className="btn btn-secondary big" disabled={busy !== null} onClick={(event) => decide("rejected", event.currentTarget)}>
+                {busy === "rejected" ? "Signing…" : "Reject"}
+              </button>
+            </div>
+          )}
           {paused ? <p className="paused-note">{PAUSED_NOTE}</p> : null}
           <button type="button" className="text-link strong" onClick={() => onOpen(order.id)}>
             See the full check

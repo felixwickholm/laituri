@@ -27,6 +27,34 @@ const NAV = [
   { href: "/connect", label: "Connect an agent", short: "Connect" },
 ];
 
+/** The page's own table of contents: the sections, and each criterion on its own. */
+function contents(criteria: { name: string }[]) {
+  return [
+    { href: "#ev-criteria", label: "The five criteria" },
+    ...criteria.map((c, index) => ({ href: `#criterion-${index + 1}`, label: c.name, sub: true })),
+    { href: "#ev-core", label: "The brief, line by line" },
+    { href: "#ev-scenarios", label: "Example scenarios" },
+    { href: "#ev-simulated", label: "Simulated and not built" },
+    { href: "#ev-production", label: "From demo to production" },
+    { href: "#ev-links", label: "Open it yourself" },
+  ];
+}
+
+function Contents({ items }: { items: { href: string; label: string; sub?: boolean }[] }) {
+  return (
+    <nav className="ev-toc" aria-label="On this page">
+      <p className="ev-toc-title">On this page</p>
+      <ul>
+        {items.map((item) => (
+          <li key={item.href} data-sub={item.sub ? "" : undefined}>
+            <a href={item.href}>{item.label}</a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
+
 const STATUS_TEXT: Record<Status, string> = { covered: "Covered", partly: "Partly", "not built": "Not built" };
 
 function StatusTag({ status }: { status: Status }) {
@@ -136,6 +164,7 @@ export default async function EvidencePage() {
         <Link href="/" className="ev-home" aria-label="Laituri home">
           <Wordmark />
         </Link>
+        <p className="ev-tagline">The loading dock for AI agents</p>
         <nav className="ev-nav" aria-label="Main">
           {NAV.map((item) => (
             <Link key={item.href} href={item.href} className="ev-nav-link" aria-label={item.label}>
@@ -149,15 +178,16 @@ export default async function EvidencePage() {
         <ThemeToggle />
       </header>
 
+      <div className="ev-layout">
+      <Contents items={contents(e.criteria)} />
       <main className="ev-main" id="main">
         <section className="ev-intro" aria-labelledby="ev-title">
-          <p className="ev-kicker">Valio Aimo challenge &ldquo;Trusted Trade Agents&rdquo; · Junction 2026</p>
           <h1 id="ev-title" className="ev-h1">
             Evidence for each judging criterion
           </h1>
           <p className="ev-lede">{e.pitch}</p>
           <p className="ev-note">
-            Every number below is measured by <code className="ev-code">npm run evidence</code> from the test run and{" "}
+            Built for the Valio Aimo challenge &ldquo;Trusted Trade Agents&rdquo; at Junction 2026. Every number below is measured by <code className="ev-code">npm run evidence</code> from the test run and{" "}
             <code className="ev-code">evals/report.json</code>. All data is synthetic and orders are simulated; see{" "}
             <a href="#simulated" className="ev-link">
               what is simulated
@@ -197,8 +227,8 @@ export default async function EvidencePage() {
             ))}
           </div>
           <ol className="ev-criteria">
-            {e.criteria.map((c) => (
-              <li key={c.name} className="ev-criterion">
+            {e.criteria.map((c, index) => (
+              <li key={c.name} className="ev-criterion" id={`criterion-${index + 1}`}>
                 <div className="ev-criterion-head">
                   <span className="ev-weight">{c.weight}%</span>
                   <h3 className="ev-h3">{c.name}</h3>
@@ -334,10 +364,11 @@ export default async function EvidencePage() {
           </ul>
         </section>
       </main>
+      </div>
 
       <footer className="ev-foot">
         <p>
-          Laituri · {e.licence} licence · Built for the Valio Aimo challenge at Junction 2026. Product and company names belong to their
+          Laituri, the loading dock for AI agents · {e.licence} licence · Built for the Valio Aimo challenge at Junction 2026. Product and company names belong to their
           owners.
         </p>
       </footer>

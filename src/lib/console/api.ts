@@ -8,6 +8,8 @@ export class ApiError extends Error {
     readonly status: number,
     readonly detail: string,
     readonly code?: string,
+    /** The whole problem body, for answers that carry more than a sentence (an approval the re-check stopped). */
+    readonly body?: unknown,
   ) {
     super(detail);
   }
@@ -17,6 +19,8 @@ export const SIGN_IN_REQUIRED = "approver_sign_in_required";
 export const OPERATOR_SIGN_IN_REQUIRED = "operator_sign_in_required";
 export const SHARED_READ_ONLY = "shared_read_only";
 export const WRONG_PASSCODE = "wrong_passcode";
+export const APPROVAL_BLOCKED = "approval_blocked";
+export const CREDENTIAL_REQUIRED = "credential_required";
 
 /** The one fetch every console call goes through. The approver session travels as a same-origin cookie. */
 async function request(path: string, init: RequestInit = {}): Promise<Response> {
@@ -26,14 +30,16 @@ async function request(path: string, init: RequestInit = {}): Promise<Response> 
   if (!response.ok) {
     let detail = `The server answered ${response.status}.`;
     let code: string | undefined;
+    let problem: unknown;
     try {
       const body = (await response.json()) as { detail?: unknown; code?: unknown };
+      problem = body;
       if (typeof body.detail === "string") detail = body.detail;
       if (typeof body.code === "string") code = body.code;
     } catch {
       // A body that is not JSON keeps the generic sentence.
     }
-    throw new ApiError(response.status, detail, code);
+    throw new ApiError(response.status, detail, code, problem);
   }
   return response;
 }

@@ -8,3 +8,6 @@ export const PAUSED_NOTE = "Press Reset to restore the log.";
 export function pausedMessage(error: unknown): string | undefined {
   return error instanceof ApiError && error.code === AUDIT_BROKEN ? `${PAUSED_LABEL}. ${PAUSED_NOTE}` : undefined;
 }
+
+/** Every read answered 401 credential_required: the shell explains the sign-in once; screens say only this. */
+export const LOCKED_NOTE = "This workspace needs a sign-in to read.";

@@ -8,6 +8,9 @@ const CLOCK = new Intl.DateTimeFormat("en-GB", {
   hourCycle: "h23",
 });
 
+const HELSINKI_DAY = new Intl.DateTimeFormat("en-CA", { timeZone: ZONE, year: "numeric", month: "2-digit", day: "2-digit" });
+const WEEKDAY = new Intl.DateTimeFormat("en-GB", { timeZone: ZONE, weekday: "short" });
+
 const HOUR_MINUTE = new Intl.DateTimeFormat("en-GB", { timeZone: ZONE, hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
 
 const DAY = new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", weekday: "short", day: "numeric", month: "short" });
@@ -97,4 +100,12 @@ export function duration(ms: number): string {
   if (minutes < 60) return seconds % 60 ? `${minutes}\u00a0min ${seconds % 60}\u00a0s` : `${minutes}\u00a0min`;
   const hours = Math.floor(minutes / 60);
   return minutes % 60 ? `${hours}\u00a0h ${minutes % 60}\u00a0min` : `${hours}\u00a0h`;
+}
+
+/** For a feed row: "09:12" today, "Fri 16:35" on an earlier day, both Helsinki time. */
+export function feedTime(iso: string, nowMs: number): string {
+  const date = new Date(iso);
+  if (!valid(date)) return "–";
+  const sameDay = HELSINKI_DAY.format(date) === HELSINKI_DAY.format(new Date(nowMs));
+  return sameDay ? HOUR_MINUTE.format(date) : `${WEEKDAY.format(date)} ${HOUR_MINUTE.format(date)}`;
 }

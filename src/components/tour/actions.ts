@@ -80,6 +80,25 @@ async function sendRequest(): Promise<void> {
   await startScene("milk");
 }
 
+/**
+ * Signs this browser in as the approver with demo access before the over-limit order exists, so the phone opens on
+ * Approve and sign and the first tap is the approval itself. A workspace without demo access keeps the phone's own
+ * sign-in.
+ */
+async function signInApprover(): Promise<void> {
+  if (consoleStore.getSnapshot().session?.signedIn) return;
+  try {
+    await consoleStore.signIn({ demo: true });
+  } catch {
+    return;
+  }
+}
+
+async function startOverLimit(): Promise<void> {
+  await signInApprover();
+  await startScene("over-limit");
+}
+
 /** Taps a button inside the phone frame once it is there and enabled. */
 function tapInPhone(selector: string): () => boolean {
   return () => {
@@ -101,33 +120,46 @@ async function approveOnPhone(): Promise<void> {
   if (await until(approve, 4000)) return;
   const order = consoleStore.getSnapshot().orders.find((item) => item.status === "pending_approval" && !item.seeded);
   if (!order) return;
-  if (!consoleStore.getSnapshot().session?.signedIn) await consoleStore.signIn({ demo: true });
-  consoleStore.apply(await consoleStore.decide(order, { decision: "approved" }));
+  await signInApprover();
+  try {
+    consoleStore.apply(await consoleStore.decide(order, { decision: "approved" }));
+  } catch {
+    // A re-check that stopped the approval (409) stores the order as blocked; the next poll shows it.
+    await consoleStore.tick();
+  }
 }
 
-/** Presses the log page's own tamper control; changes the entry directly if the control is missing. */
-async function tamperLog(): Promise<void> {
-  const button = await element<HTMLButtonElement>('[data-tour="tamper"]', 6000);
-  if (button && !button.disabled) {
-    button.scrollIntoView({ block: "center", behavior: reducedMotion() ? "auto" : "smooth" });
-    await sleep(reducedMotion() ? 200 : 900);
-    button.click();
-  } else if (consoleStore.getSnapshot().chain.state !== "broken") {
-    await consoleStore.tamper();
+const broken = () => consoleStore.getSnapshot().chain.state === "broken";
+
+/**
+ * The cheating scene's last attempt edits a log entry on its own; this waits for the browser to catch it. If the
+ * scene ended without the edit (it was stopped early), the tour makes the same edit so the step still shows it.
+ */
+async function awaitLogEdit(): Promise<void> {
+  if (await until(() => broken() || idle(), 20_000)) {
+    if (await until(broken, 4000)) return;
   }
+  if (idle() && !broken()) await consoleStore.tamper();
+}
+
+/** Waits for a run the tour started to finish, so nothing it changes lands after the tour has cleaned up. */
+export async function runSettled(): Promise<void> {
+  await until(idle, 30_000);
 }
 
 export const ACTIONS: Record<ActionId, () => Promise<void>> = {
   typeRequest,
   sendRequest,
-  startOverLimit: () => startScene("over-limit"),
+  startOverLimit,
   approveOnPhone,
-  tamperLog,
+  showDemand: async () => undefined,
+  startBreakMandate: () => startScene("break-mandate"),
+  awaitLogEdit,
 };
 
 /**
  * Resets this browser's own sandbox, so the story always runs from the same state. No sign-in is needed: the reset
- * touches nobody else's copy. Approving on the phone signs in with demo access when the tour gets there.
+ * touches nobody else's copy. The phone step signs in with demo access when the tour gets there.
  */
 export async function prepareDemo(): Promise<void> {
   await consoleStore.reset();

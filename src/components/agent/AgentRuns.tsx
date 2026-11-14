@@ -1,11 +1,13 @@
 "use client";
 
+import { MessageSquareText } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { Order } from "@/lib/contracts";
 import { isSeeded } from "@/lib/console/format/orders";
 import { buildRuns, demoRunOf, type RunBlock as Run } from "@/lib/console/runs";
 import type { Activity, DemoRun } from "@/lib/console/types";
 import { useUi } from "../shell/ui-context";
+import { HistoryNote } from "../ui/HistoryNote";
 import { RunBlock } from "./RunBlock";
 
 const FIRST = 6;
@@ -42,6 +44,7 @@ export function AgentRuns({ activity, orders, run, approver, ready }: AgentRunsP
   const orderMap = useMemo(() => new Map(orders.map((order) => [order.id, order])), [orders]);
   const activityMap = useMemo(() => new Map(activity.map((item) => [item.id, item])), [activity]);
   const shown = showAll ? runs : runs.slice(0, FIRST);
+  const anySeeded = shown.some((block) => seededRun(block, orderMap, activityMap));
 
   return (
     <section className="block" aria-labelledby="runs-title">
@@ -52,16 +55,28 @@ export function AgentRuns({ activity, orders, run, approver, ready }: AgentRunsP
         <span className="block-meta">{running ? "Working now" : "Newest first"}</span>
       </header>
       {runs.length === 0 ? (
-        <p className="empty-frame">{ready ? "No requests yet. Ask your agent for something, or pick a demo scene." : "Loading what your agent did…"}</p>
+        <p className="empty-frame quiet-empty">
+          {ready ? (
+            <>
+              <MessageSquareText aria-hidden="true" />
+              <span>No requests yet.</span>
+              <a href="#live-agent-ask" className="text-link strong">
+                Ask your agent for something
+              </a>
+            </>
+          ) : (
+            "Loading what your agent did…"
+          )}
+        </p>
       ) : (
         <div className="runs" aria-live="polite" data-tour="runs">
+          <HistoryNote show={anySeeded} />
           {shown.map((block, index) => (
             <RunBlock
               key={block.id}
               run={block}
               newest={index === 0}
               demoRun={demoRunOf(block, run, index)}
-              seeded={seededRun(block, orderMap, activityMap)}
               ctx={{ orders: orderMap, active: running && index === 0, activeRequest: activeRequest(run), approver }}
               onOpenOrder={ui.openOrder}
             />

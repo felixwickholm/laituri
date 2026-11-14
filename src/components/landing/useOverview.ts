@@ -19,13 +19,13 @@ export function loadOverview(): Promise<SupplierOverview | undefined> {
   return pending;
 }
 
-/** The overview once it answers; undefined before that, or when it does not. */
-export function useOverview(): SupplierOverview | undefined {
-  const [overview, setOverview] = useState<SupplierOverview>();
+/** The overview once it answers; undefined while it is on its way, null when it did not answer. */
+export function useOverview(): SupplierOverview | null | undefined {
+  const [overview, setOverview] = useState<SupplierOverview | null>();
   useEffect(() => {
     let cancelled = false;
     void loadOverview().then((value) => {
-      if (!cancelled) setOverview(value);
+      if (!cancelled) setOverview(value ?? null);
     });
     return () => {
       cancelled = true;
