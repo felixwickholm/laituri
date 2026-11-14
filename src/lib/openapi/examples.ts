@@ -11,6 +11,8 @@ export const EXAMPLES = {
       query: "laktoositon maito 1 l",
       filters: { claims: ["lactose_free"], categoryGroup: "dairy" },
       limit: 5,
+      need: { amount: 1000, unit: "l" },
+      deliverBy: MILK.deliverBy,
     },
   },
   quote: {

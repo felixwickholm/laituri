@@ -9,7 +9,8 @@ import { SUPPLIER_ACTOR, agentActor, nonPassing, summaries } from "./summaries";
 import type { Caller, OrderDeps, StoredOrder } from "./types";
 
 export const UNKNOWN_AGENT = { id: "unknown", name: "Unknown agent" };
-const UNKNOWN_BUYER = { id: "unknown", name: "Unknown buyer" };
+/** The offer names no buyer, so an order without a valid mandate cannot say whose it is. */
+const UNVERIFIED_BUYER = { id: "unverified", name: "Unverified buyer" };
 
 /** Retries that arrive while the first attempt is still running share its result. */
 const inFlight = new Map<string, Promise<Order>>();
@@ -59,7 +60,7 @@ async function createOrder(request: PlaceOrderRequest, deps: OrderDeps, caller?:
   const now = deps.now();
   const at = now.toISOString();
   const allOrders = await deps.store.orders.list();
-  const buyerId = mandate?.buyer.id ?? UNKNOWN_BUYER.id;
+  const buyerId = mandate?.buyer.id ?? UNVERIFIED_BUYER.id;
 
   const draft: Order = {
     id: newId("ord_"),
@@ -68,7 +69,7 @@ async function createOrder(request: PlaceOrderRequest, deps: OrderDeps, caller?:
     updatedAt: at,
     mandateId: mandate?.id ?? "unknown",
     agent: caller ?? mandate?.agent ?? UNKNOWN_AGENT,
-    buyer: mandate ? { id: mandate.buyer.id, name: mandate.buyer.name } : UNKNOWN_BUYER,
+    buyer: mandate ? { id: mandate.buyer.id, name: mandate.buyer.name } : UNVERIFIED_BUYER,
     offer: offerRead.offer,
     decision: { outcome: "blocked", checks: [] },
     simulated: true,

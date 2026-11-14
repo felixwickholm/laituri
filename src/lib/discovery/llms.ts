@@ -19,8 +19,9 @@ Header: Authorization: Bearer demo-agent-token (without it you act as an unident
 Tools: search_catalog, get_product, request_quote, get_mandate, place_order, get_order, verify_audit.
 
 ## REST flow: "1,000 litres of lactose-free milk by Monday"
-1. Search. Read interpretation.confidence and each hit's content per sales unit.
-curl -s ${urls.rest}/products/search ${auth} -d '{"query":"laktoositon maito 1 l","filters":{"claims":["lactose_free"]},"limit":5}'
+1. Search. Read interpretation.confidence. Hits carry offerPreview when the wholesaler has a price: indicative live price, stock, delivery date,
+order cut-off and orderable. Pass need and deliverBy to get pack maths (unitsNeeded, estimatedNet). Only a signed offer fixes the price.
+curl -s ${urls.rest}/products/search ${auth} -d '{"query":"laktoositon maito 1 l","filters":{"claims":["lactose_free"]},"limit":5,"need":{"amount":1000,"unit":"l"},"deliverBy":"2026-11-16"}'
 
 2. Quote. Quantities in l or kg are converted to whole sales units. Keep primary.jws exactly as returned.
 curl -s ${urls.rest}/quotes ${auth} -d '{"lines":[{"productId":"464306","quantity":{"amount":1000,"unit":"l"}}],"deliverBy":"2026-11-16","intent":"1,000 litres of lactose-free milk by Monday","matchConfidence":"high"}'

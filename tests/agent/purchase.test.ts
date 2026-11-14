@@ -50,6 +50,39 @@ describe("runPurchase", () => {
     expect(calls.requestQuote).toBeLessThanOrEqual(3);
   });
 
+  it("picks from the search previews and asks for one single-line quote", async () => {
+    const lines: number[] = [];
+    const { transport, calls } = fakeTransport((base) => ({
+      requestQuote: (request) => {
+        lines.push(request.lines.length);
+        return base.requestQuote(request);
+      },
+    }));
+    const result = await runPurchase("100 litres of Eila by Monday", transport, hooks);
+    expect(result.status).toBe("confirmed");
+    expect(calls.requestQuote).toBe(1);
+    expect(lines).toEqual([1]);
+    expect(texts(result)).not.toContain("Compared prices for 4 matches.");
+  });
+
+  it("falls back to a comparison quote when the search has no previews", async () => {
+    const lines: number[] = [];
+    const { transport } = fakeTransport((base) => ({
+      searchCatalog: async (request) => {
+        const response = await base.searchCatalog(request);
+        return { ...response, hits: response.hits.map((hit) => ({ ...hit, offerPreview: undefined })) };
+      },
+      requestQuote: (request) => {
+        lines.push(request.lines.length);
+        return base.requestQuote(request);
+      },
+    }));
+    const result = await runPurchase("100 litres of Eila by Monday", transport, hooks);
+    expect(result.status).toBe("confirmed");
+    expect(lines[0]).toBeGreaterThan(1);
+    expect(texts(result)).toContain("Skipped the 5 l case. Its order cut-off passed.");
+  });
+
   it("takes the wholesaler's signed alternative when the cut-off passed", async () => {
     const { transport } = fakeTransport();
     const result = await runPurchase("2 units of product 465039 by Monday", transport, hooks);
@@ -77,6 +110,9 @@ describe("runPurchase", () => {
     expect(result.status).toBe("blocked");
     expect(result.orderId).toBeDefined();
     expect(calls.placeOrder).toBe(1);
+    const order = await transport.getOrder(result.orderId!);
+    expect(order.buyer.name).toBe("Unverified buyer");
+    expect(order.agent.name).toBe("Harbour purchasing agent");
   });
 
   it("reports when nothing matches", async () => {

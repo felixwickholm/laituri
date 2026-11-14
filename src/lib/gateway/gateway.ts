@@ -12,6 +12,7 @@ import * as orders from "@/lib/orders";
 import { SUPPLIER_ACTOR, agentActor } from "@/lib/orders/summaries";
 import { NotFoundError, ValidationError } from "./errors";
 import { offerSummary, orderDetail, orderStatus, orderTitle, quoteDetail, quoteTitle, searchDetail } from "./describe";
+import { withPreviews } from "./preview";
 import { createRecorder } from "./recorder";
 import type { AgentRef, Deps, Gateway } from "./types";
 
@@ -34,7 +35,7 @@ export function createGateway(deps: Deps): Gateway {
       const agent = caller(agentInput);
       const request = validate(SearchRequest, input, "search request");
       return recorder.track(agent, "search_catalog", `Searched the catalogue for '${request.query}'`, async () => {
-        const response = deps.catalog.search(request);
+        const response = await withPreviews(deps.catalog.search(request), request, deps);
         await deps.audit.append({
           actor: agentActor(agent),
           event: "catalog.searched",
@@ -44,6 +45,8 @@ export function createGateway(deps: Deps): Gateway {
             filters: request.filters ?? {},
             interpretation: response.interpretation,
             hits: response.hits.slice(0, 5).map((hit) => hit.product.id),
+            need: request.need,
+            previews: response.hits.filter((hit) => hit.offerPreview).length,
           },
         });
         return response;

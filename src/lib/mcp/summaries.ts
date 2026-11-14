@@ -1,4 +1,4 @@
-import type { AuditVerification, Offer, Order, Product, QuoteResponse, SearchResponse } from "@/lib/contracts";
+import type { AuditVerification, Offer, OfferPreview, Order, Product, QuoteResponse, SearchResponse } from "@/lib/contracts";
 import type { SignedMandate } from "@/lib/orders/types";
 import { eur } from "@/lib/offers/format";
 
@@ -10,11 +10,21 @@ function productLine(product: Product): string {
   return `${product.id} ${product.name.en || product.name.fi}${content}, lot size ${product.lotSize}${claims}`;
 }
 
+function previewText(preview: OfferPreview | undefined): string {
+  if (!preview) return "";
+  const per = preview.comparisonPrice ? `, ${eur(preview.comparisonPrice.amount)} per ${preview.comparisonPrice.per}` : "";
+  const need = preview.unitsNeeded !== undefined ? `, ${preview.unitsNeeded} units needed` : "";
+  const total = preview.estimatedNet ? ` (about ${eur(preview.estimatedNet.amount)} net)` : "";
+  const when = preview.availability.deliveryDate ? ` for ${preview.availability.deliveryDate}` : "";
+  const status = preview.orderable ? `orderable${when}` : `${preview.availability.status.replace("_", " ")}${when}`;
+  return `; indicative ${eur(preview.unitPrice.amount)} per unit${per}${need}${total}, ${status}`;
+}
+
 export function searchText(response: SearchResponse): string {
   const { interpretation: i } = response;
   const head = `Understood as ${i.concept ?? "no single product type"}${i.claims.length ? ` with ${i.claims.join(", ")}` : ""} (confidence ${i.confidence}).`;
   const note = i.note ? ` ${i.note}` : "";
-  const hits = response.hits.map((hit, n) => `${n + 1}. ${productLine(hit.product)}`);
+  const hits = response.hits.map((hit, n) => `${n + 1}. ${productLine(hit.product)}${previewText(hit.offerPreview)}`);
   if (!hits.length) return `${head}${note} No products matched.`;
   return [`${head}${note}`, ...hits, "Next: call request_quote with a productId and the quantity in l, kg or sales_unit."].join("\n");
 }

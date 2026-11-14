@@ -78,6 +78,7 @@ export async function runPurchase(requestText: string, transport: AgentTransport
     const selection = await selectOffer({
       parsed: { ...parsed, quantity },
       products: candidates.products,
+      hits: candidates.hits,
       confidence: candidates.confidence,
       transport,
       say: (text) => say(text),

@@ -1,4 +1,5 @@
-import type { OfferLine, Quantity } from "@/lib/contracts";
+import type { AvailabilityStatus, Quantity } from "@/lib/contracts";
+import { shortDay } from "./dates";
 
 const whole = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
 const cents = new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -34,30 +35,41 @@ const PACK_NOUN: Record<string, string> = {
   KG: "kilo pack",
 };
 
-/** "the 5 l case", from the line's pack content and sales unit. */
-export function packName(line: OfferLine, packContent?: { amount: number; unit: string }): string {
-  const noun = PACK_NOUN[line.salesUnit] ?? "pack";
-  return packContent ? `the ${amount(packContent.amount)} ${packContent.unit} ${noun}` : `the ${noun} ${line.name}`;
-}
-
 /** "Maria Lind, Head of Purchasing" -> "Maria Lind". */
 export function personName(name: string): string {
   return name.split(",")[0].trim();
 }
 
-/** Why a line cannot be delivered as asked, in one plain sentence about "it". */
-export function lineProblem(line: OfferLine, deliverBy: string): string {
-  const { status, available, deliveryDate } = line.availability;
-  switch (status) {
-    case "cutoff_passed":
-      return "Its order cut-off passed.";
-    case "blocked":
-      return "It is blocked from sale.";
-    case "unavailable":
-      return "It cannot be delivered.";
-    case "partial":
-      return `Only ${amount(available)} are in stock.`;
-    default:
-      return deliveryDate && deliveryDate > deliverBy ? "It arrives too late." : "It cannot cover the need.";
+/** One product as the agent sees it: from a search preview or from an offer line. */
+export interface Situation {
+  name: string;
+  salesUnit: string;
+  status: AvailabilityStatus;
+  available?: number;
+  deliveryDate?: string;
+  /** Net content of one sales unit. */
+  packContent?: { amount: number; unit: string };
+}
+
+/** "the 5 l case", from the pack content and sales unit. */
+export function packName(item: Situation): string {
+  const noun = PACK_NOUN[item.salesUnit] ?? "pack";
+  return item.packContent ? `the ${amount(item.packContent.amount)} ${item.packContent.unit} ${noun}` : `the ${noun} ${item.name}`;
+}
+
+/** Why a product cannot be used as asked, in one or two plain sentences. */
+export function problemNote(item: Situation, deliverBy: string): string {
+  const { status, available, deliveryDate } = item;
+  if (status === "partial") return `${item.name}: only ${amount(available ?? 0)} in stock.`;
+  if (status === "available" && deliveryDate && deliveryDate > deliverBy) {
+    return `${item.name} arrives ${shortDay(deliveryDate)}, after ${shortDay(deliverBy)}.`;
   }
+  const reason = {
+    cutoff_passed: "Its order cut-off passed.",
+    blocked: "It is blocked from sale.",
+    unavailable: "It cannot be delivered.",
+    partial: "",
+    available: "It cannot cover the need.",
+  }[status];
+  return `Skipped ${packName(item)}. ${reason}`;
 }

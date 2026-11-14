@@ -1,14 +1,17 @@
-import type { OfferLine, Product, Quantity, QuoteRequest, SignedOffer } from "@/lib/contracts";
-import { lineOnTime, offerOnTime, offerOnlyLate, pickAlternative, rankByPrice } from "./choose";
+import type { OfferLine, Product, Quantity, QuoteRequest, SearchHit, SignedOffer } from "@/lib/contracts";
+import { lineOnTime, offerOnTime, offerOnlyLate, pickAlternative, rankByPrice, rankHits } from "./choose";
 import { shortDay } from "./dates";
 import type { AgentTransport, ParsedRequest } from "./types";
-import { amount, euro, lineProblem, packName, perUnitWord, quantityText } from "./words";
+import { euro, perUnitWord, problemNote, quantityText, type Situation } from "./words";
 
 const MAX_QUOTES = 3;
+const MAX_SKIP_NOTES = 2;
 
 export interface SelectContext {
   parsed: ParsedRequest & { quantity: Quantity };
   products: Product[];
+  /** Search hits; when they carry previews the agent picks from them without a comparison quote. */
+  hits: SearchHit[];
   confidence: QuoteRequest["matchConfidence"];
   transport: AgentTransport;
   say(text: string): Promise<void>;
@@ -17,14 +20,28 @@ export interface SelectContext {
 
 export type Selection = { signed: SignedOffer } | { failure: string };
 
-/** Why one line is not usable as asked, naming the pack. */
-function problemNote(line: OfferLine, product: Product | undefined, deliverBy: string): string {
+interface Plan {
+  /** Product ids to quote, in order. */
+  order: string[];
+  quotesUsed: number;
+}
+
+function fromLine(line: OfferLine, product: Product | undefined): Situation {
   const { status, available, deliveryDate } = line.availability;
-  if (status === "partial") return `${line.name}: only ${amount(available)} in stock.`;
-  if (status === "available" && deliveryDate && deliveryDate > deliverBy) {
-    return `${line.name} arrives ${shortDay(deliveryDate)}, after ${shortDay(deliverBy)}.`;
-  }
-  return `Skipped ${packName(line, product?.content)}. ${lineProblem(line, deliverBy)}`;
+  return { name: line.name, salesUnit: line.salesUnit, status, available, deliveryDate, packContent: product?.content };
+}
+
+function fromHit(hit: SearchHit): Situation {
+  const { product, offerPreview } = hit;
+  const availability = offerPreview?.availability;
+  return {
+    name: product.name.en || product.name.fi,
+    salesUnit: product.salesUnit,
+    status: availability?.status ?? "unavailable",
+    available: availability?.available,
+    deliveryDate: availability?.deliveryDate,
+    packContent: offerPreview?.contentPerUnit ?? product.content,
+  };
 }
 
 function quoteRequest(ctx: SelectContext, productIds: string[]): QuoteRequest {
@@ -36,23 +53,49 @@ function quoteRequest(ctx: SelectContext, productIds: string[]): QuoteRequest {
   };
 }
 
-/** One quote for every candidate, to compare prices and stock. Returns product ids in the order to try. */
-async function compare(ctx: SelectContext): Promise<string[]> {
+async function announce(ctx: SelectContext, skipped: Situation[], name: string, price: number): Promise<void> {
+  for (const item of skipped.slice(0, MAX_SKIP_NOTES)) await ctx.say(problemNote(item, ctx.parsed.deliverBy));
+  await ctx.say(`Cheapest match: ${name} at ${euro(price)} per ${perUnitWord(ctx.parsed.quantity.unit)}.`);
+}
+
+/** Picks from the live previews on the search hits. Undefined when the hits carry none. */
+async function fromPreviews(ctx: SelectContext): Promise<Plan | undefined> {
+  const ranked = rankHits(ctx.hits, ctx.parsed.quantity);
+  if (ranked.length === 0) return undefined;
+  const late = (r: (typeof ranked)[number]) => r.preview.availability.status === "available";
+  const pick = ranked.find((r) => r.preview.orderable) ?? ranked.find(late) ?? ranked[0];
+  const skipped = ranked.slice(0, ranked.indexOf(pick)).map((r) => fromHit(r.hit));
+  await announce(ctx, skipped, fromHit(pick.hit).name, pick.price);
+  const rest = ranked.filter((r) => r !== pick && r.preview.orderable).map((r) => r.hit.product.id);
+  return { order: [pick.hit.product.id, ...rest], quotesUsed: 0 };
+}
+
+/** Without previews: one quote for every candidate, to compare prices and stock. */
+async function fromComparisonQuote(ctx: SelectContext): Promise<Plan> {
   const { unit } = ctx.parsed.quantity;
   const { deliverBy } = ctx.parsed;
   const response = await ctx.transport.requestQuote(quoteRequest(ctx, ctx.products.map((p) => p.id)));
   await ctx.say(`Compared prices for ${ctx.products.length} matches.`);
   const ranked = rankByPrice(response.primary.offer.lines, unit);
-  if (ranked.length === 0) return ctx.products.map((p) => p.id);
+  if (ranked.length === 0) return { order: ctx.products.map((p) => p.id), quotesUsed: 1 };
   const orderable = (line: OfferLine) => line.availability.status === "available" && line.quantity > 0;
   const pick = ranked.find((r) => lineOnTime(r.line, deliverBy)) ?? ranked.find((r) => orderable(r.line)) ?? ranked[0];
   const byId = new Map(ctx.products.map((p) => [p.id, p]));
-  for (const cheaper of ranked.slice(0, ranked.indexOf(pick)).slice(0, 2)) {
-    await ctx.say(problemNote(cheaper.line, byId.get(cheaper.line.productId), deliverBy));
-  }
-  await ctx.say(`Cheapest match: ${pick.line.name} at ${euro(pick.price)} per ${perUnitWord(unit)}.`);
+  const skipped = ranked.slice(0, ranked.indexOf(pick)).map((r) => fromLine(r.line, byId.get(r.line.productId)));
+  await announce(ctx, skipped, pick.line.name, pick.price);
   const rest = ranked.filter((r) => r !== pick && lineOnTime(r.line, deliverBy)).map((r) => r.line.productId);
-  return [pick.line.productId, ...rest];
+  return { order: [pick.line.productId, ...rest], quotesUsed: 1 };
+}
+
+async function plan(ctx: SelectContext): Promise<Plan> {
+  if (ctx.products.length <= 1) {
+    const [product] = ctx.products;
+    await ctx.say(`Using ${product.name.en || product.name.fi} (product ${product.id}).`);
+    return { order: [product.id], quotesUsed: 0 };
+  }
+  const chosen = (await fromPreviews(ctx)) ?? (await fromComparisonQuote(ctx));
+  await ctx.pause();
+  return chosen;
 }
 
 /**
@@ -61,16 +104,8 @@ async function compare(ctx: SelectContext): Promise<string[]> {
  * so the mandate decides whether a later date is acceptable.
  */
 export async function selectOffer(ctx: SelectContext): Promise<Selection> {
-  let quotes = 0;
-  let order = ctx.products.map((p) => p.id);
-  if (ctx.products.length > 1) {
-    order = await compare(ctx);
-    quotes++;
-    await ctx.pause();
-  } else {
-    await ctx.say(`Using ${ctx.products[0].name.en || ctx.products[0].name.fi} (product ${ctx.products[0].id}).`);
-  }
-
+  const { order, quotesUsed } = await plan(ctx);
+  let quotes = quotesUsed;
   let late: SignedOffer | undefined;
   for (const productId of order) {
     if (quotes >= MAX_QUOTES) break;
@@ -79,8 +114,8 @@ export async function selectOffer(ctx: SelectContext): Promise<Selection> {
     quotes++;
     const { offer } = response.primary;
     if (offerOnTime(offer)) return { signed: response.primary };
-    const line = offer.lines[0];
-    await ctx.say(problemNote(line, ctx.products.find((p) => p.id === productId), ctx.parsed.deliverBy));
+    const product = ctx.products.find((p) => p.id === productId) ?? ctx.hits.find((h) => h.product.id === productId)?.product;
+    await ctx.say(problemNote(fromLine(offer.lines[0], product), ctx.parsed.deliverBy));
     const alternative = pickAlternative(response);
     if (alternative) {
       await ctx.say(`Took the wholesaler's signed alternative. ${alternative.tradeoff}`);

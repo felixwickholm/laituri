@@ -1,4 +1,4 @@
-import type { Offer, OfferLine, Quantity, QuoteResponse, SignedOffer } from "@/lib/contracts";
+import type { Offer, OfferLine, OfferPreview, Quantity, QuoteResponse, SearchHit, SignedOffer } from "@/lib/contracts";
 
 /** Price per litre, kg or unit, as the buyer counts the need. Undefined when it cannot be compared. */
 export function pricePerNeedUnit(line: OfferLine, unit: Quantity["unit"]): number | undefined {
@@ -47,4 +47,28 @@ export function pickAlternative(response: QuoteResponse): { signed: SignedOffer;
     .sort((a, b) => TIER_ORDER[a.tier] - TIER_ORDER[b.tier])
     .find((alt) => offerOnTime(alt.signed.offer));
   return alternative ? { signed: alternative.signed, tradeoff: alternative.tradeoff } : undefined;
+}
+
+export interface RankedHit {
+  hit: SearchHit;
+  preview: OfferPreview;
+  price: number;
+}
+
+/** Indicative price per litre, kg or unit from a search preview. */
+export function previewPrice(preview: OfferPreview, need: Quantity): number | undefined {
+  if (need.unit === "sales_unit") return preview.unitPrice.amount || undefined;
+  if (preview.comparisonPrice?.per === need.unit && preview.comparisonPrice.amount > 0) return preview.comparisonPrice.amount;
+  if (preview.estimatedNet && need.amount > 0) return preview.estimatedNet.amount / need.amount;
+  return undefined;
+}
+
+/** Hits with a comparable preview, cheapest first. */
+export function rankHits(hits: SearchHit[], need: Quantity): RankedHit[] {
+  return hits
+    .flatMap((hit) => {
+      const price = hit.offerPreview ? previewPrice(hit.offerPreview, need) : undefined;
+      return hit.offerPreview && price !== undefined ? [{ hit, preview: hit.offerPreview, price }] : [];
+    })
+    .sort((a, b) => a.price - b.price || a.hit.product.id.localeCompare(b.hit.product.id));
 }

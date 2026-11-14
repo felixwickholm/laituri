@@ -38,7 +38,9 @@ export const TOOLS: ToolDefinition[] = [
       "Use first to turn a buyer's need (Finnish, Swedish or English) into product codes. " +
       "Returns ranked products with net content per sales unit and lot size (for pack maths), claims and allergens, " +
       "and an interpretation with a confidence. If confidence is low or a note is set, ask the human to clarify. " +
-      "Next: request_quote with the chosen productId.",
+      "Hits carry offerPreview when the wholesaler has a price: indicative live net price, stock, delivery date and order cut-off, and whether it is orderable. " +
+      "Pass need ({amount, unit}) and deliverBy to get pack maths (sales units needed, estimated net) for that need. " +
+      "Only a signed offer fixes the price. Next: request_quote with the chosen productId.",
     operationId: "searchCatalog",
     input: SearchRequest,
     output: "SearchResponse",

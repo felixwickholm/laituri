@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { IsoDate, IsoDateTime, Money, Quantity } from "./common";
+import { AvailabilityStatus } from "./offer";
 
 export const Temperature = z.enum(["ambient", "chilled", "frozen"]);
 export type Temperature = z.infer<typeof Temperature>;
@@ -55,13 +57,32 @@ export const SearchRequest = z.object({
   query: z.string().min(1).describe("What the buyer needs, in Finnish, Swedish or English"),
   filters: ProductFilters.optional(),
   limit: z.number().int().min(1).max(50).default(10),
+  need: Quantity.optional().describe("How much is needed. Adds pack maths and an estimated total to each hit"),
+  deliverBy: IsoDate.optional().describe("Latest acceptable delivery date. Defaults to the next working day"),
 });
 export type SearchRequest = z.infer<typeof SearchRequest>;
+
+export const OfferPreview = z.object({
+  unitsNeeded: z.number().optional().describe("Sales units that cover the need, rounded up to the lot size"),
+  contentPerUnit: z.object({ amount: z.number(), unit: z.enum(["l", "kg"]) }).optional(),
+  unitPrice: Money.describe("Net price per sales unit"),
+  comparisonPrice: z.object({ amount: z.number(), per: z.enum(["l", "kg"]) }).optional(),
+  estimatedNet: Money.optional().describe("Net total for the need"),
+  availability: z.object({
+    status: AvailabilityStatus,
+    available: z.number().optional().describe("Sales units in stock; absent when the wholesaler tracks no limit"),
+    deliveryDate: IsoDate.optional(),
+    orderBy: IsoDateTime.optional(),
+  }),
+  orderable: z.boolean().describe("Can be ordered in full for delivery by the date"),
+}).describe("Indicative live price and availability. Only a signed offer from request_quote fixes the price.");
+export type OfferPreview = z.infer<typeof OfferPreview>;
 
 export const SearchHit = z.object({
   product: Product,
   score: z.number(),
   matched: z.array(z.string()).describe("Why this product matched"),
+  offerPreview: OfferPreview.optional(),
 });
 export type SearchHit = z.infer<typeof SearchHit>;
 

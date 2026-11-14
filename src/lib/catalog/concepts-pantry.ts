@@ -56,6 +56,11 @@ export const PANTRY_CONCEPTS: ConceptDef[] = [
     terms: ["crushed tomatoes", "chopped tomatoes", "tomato puree", "tomato paste", "passata", "tomaattimurska", "tomaattimurskaa", "tomaattipyree", "tomaattisose", "krossade tomater"],
     include: /(tomat|tomaatti)/, exclude: /(sun|aurinko|soltork|ketchup|sauce|kastike)/,
   },
+  {
+    id: "nut_butter", label: "nut butter", categories: ["21453"],
+    terms: ["peanut butter", "nut butter", "almond butter", "maapähkinävoi", "maapähkinävoita", "maapähkinätahna", "pähkinävoi", "jordnötssmör"],
+    include: /(peanut butter|nut butter|almond butter|maapähkinävoi|maapähkinätahna|pähkinävoi|mantelivoi|jordnötssmör)/,
+  },
   { id: "ketchup", label: "ketchup", categories: ["21912"], terms: ["ketchup", "ketsuppi", "ketsuppia"], include: /(ketchup|ketsup)/ },
   { id: "mayonnaise", label: "mayonnaise", categories: ["21910"], terms: ["mayonnaise", "mayo", "majoneesi", "majoneesia", "majonnäs"], include: /(mayo|majonee|majonnä)/ },
   { id: "mustard", label: "mustard", categories: ["22610"], terms: ["mustard", "sinappi", "sinappia", "senap"], include: /(mustard|sinappi|senap)/ },
