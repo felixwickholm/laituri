@@ -66,3 +66,17 @@ describe("runBuyerAgent", () => {
     expect(result.status).toBe("confirmed");
   });
 });
+
+describe("engine rest", () => {
+  it("rests a model after a busy answer and wakes it after the rest", async () => {
+    const { clearEngineRest, engineResting, isBusyStatus, restEngine, REST_AFTER_REFUSAL_MS } = await import("@/lib/agent/llm/rest");
+    clearEngineRest();
+    expect(isBusyStatus(429)).toBe(true);
+    expect(isBusyStatus(400)).toBe(false);
+    restEngine("gemini", 1_000);
+    expect(engineResting("gemini", 1_000 + REST_AFTER_REFUSAL_MS - 1)).toBe(true);
+    expect(engineResting("gemini", 1_000 + REST_AFTER_REFUSAL_MS)).toBe(false);
+    expect(engineResting("claude", 1_000)).toBe(false);
+    clearEngineRest();
+  });
+});

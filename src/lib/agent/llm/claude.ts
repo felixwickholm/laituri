@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { isBusyStatus, restEngine } from "./rest";
 import { ProviderError, type ModelProvider, type ModelReply, type ToolOutcome, type ToolSpec } from "./types";
 
 const MAX_TOKENS = 16_000;
@@ -51,7 +52,10 @@ function toReply(message: Message): ModelReply {
 function readable(error: unknown): unknown {
   if (error instanceof Anthropic.APIUserAbortError) return new ProviderError("the request was cancelled.");
   if (error instanceof Anthropic.APIConnectionError) return new ProviderError("Claude could not be reached.");
-  if (error instanceof Anthropic.APIError) return new ProviderError(`Claude answered with status ${error.status}.`);
+  if (error instanceof Anthropic.APIError) {
+    if (typeof error.status === "number" && isBusyStatus(error.status)) restEngine("claude");
+    return new ProviderError(`Claude answered with status ${error.status}.`);
+  }
   return error;
 }
 

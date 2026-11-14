@@ -3,7 +3,8 @@ import type { AgentHooks, AgentTransport, PurchaseResult } from "../types";
 import { admitModelCall } from "./budget";
 import { engineChain, providerFor, selectEngine, type EngineChoice } from "./engine";
 import { runModelPurchase } from "./loop";
-import type { AgentEngine } from "./types";
+import { engineResting } from "./rest";
+import type { AgentEngine, ModelProvider } from "./types";
 
 /** What health reports: the engine that runs free-text requests now, and its model. */
 export function activeEngine(env: Record<string, string | undefined> = process.env): { engine: AgentEngine; model?: string } {
@@ -26,7 +27,10 @@ export async function runBuyerAgent(
 ): Promise<PurchaseResult> {
   const choices = Array.isArray(chain) ? chain : [chain];
   const choice = choices[0] ?? { engine: "scripted" as const };
-  const providers = choices.map((item) => providerFor(item)).filter((item) => item !== undefined);
+  // A model resting after "too many requests" is skipped; the scripted agent is always there behind the models.
+  const providers = choices
+    .map((item) => providerFor(item))
+    .filter((item): item is ModelProvider => item !== undefined && !engineResting(item.engine));
   if (providers.length && admitModelCall()) {
     const runFrom = (index: number): Promise<PurchaseResult> => {
       const later = providers[index + 1];

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isBusyStatus, restEngine } from "./rest";
 import { ProviderError, type ModelProvider, type ModelReply, type ToolCall, type ToolOutcome, type ToolSpec } from "./types";
 
 const API_ROOT = "https://generativelanguage.googleapis.com/v1beta/models";
@@ -58,7 +59,10 @@ async function post(options: GeminiOptions, body: unknown, signal: AbortSignal):
   } catch {
     throw new ProviderError(signal.aborted ? "the request was cancelled." : "Gemini could not be reached.");
   }
-  if (!response.ok) throw new ProviderError(`Gemini answered with status ${response.status}.`);
+  if (!response.ok) {
+    if (isBusyStatus(response.status)) restEngine("gemini");
+    throw new ProviderError(`Gemini answered with status ${response.status}.`);
+  }
   try {
     return await response.json();
   } catch {
