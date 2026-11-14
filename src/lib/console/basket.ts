@@ -116,7 +116,7 @@ export function handoffContext(line: Pick<BasketLine, "words" | "asked" | "state
   return `${head} ${lead}: ${reason[0]?.toLowerCase() ?? ""}${reason.slice(1)}`;
 }
 
-const EVENT_WORDS = /\b(event|events|guests?|wedding|party|parties|banquet|birthday|gala|conference|reception|dinner for|lunch for|buffet|catering|menu for)\b|häät|häihin|juhla|juhliin|vieras|vierasta|illallinen|bröllop|fest|gäster|middag för/i;
+const EVENT_WORDS = /\b(event|events|guests?|wedding|party|parties|banquet|birthday|gala|conference|reception|dinner for|lunch for|buffet|catering|menu for)\b|häät|häihin|juhla|juhliin|vieras|vierasta|illallinen|pikkujoulu|bröllop|fest|gäster|middag för/i;
 const PEOPLE = /\bfor\s+\d+\s*(people|persons|pax|covers)?\b/i;
 
 /** A sentence about an event or guests goes to the menu planner rather than the single-request agent. */

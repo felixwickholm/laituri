@@ -724,3 +724,33 @@
   font: inherit;
   font-size: 16px;
 }
+
+/* Example events under the plan field: one tap asks the assistant. */
+.plan-examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: var(--space-3);
+}
+.plan-example {
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid var(--glass-line);
+  border-radius: 999px;
+  background: var(--glass-fill);
+  color: var(--text-1);
+  font: inherit;
+  font-size: var(--fs-sm);
+  text-align: left;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+  transition: border-color var(--d-hover) var(--ease-hover);
+}
+.plan-example:active {
+  transform: var(--press);
+}
+@media (hover: hover) and (pointer: fine) {
+  .plan-example:hover {
+    border-color: var(--line-strong);
+  }
+}

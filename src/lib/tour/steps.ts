@@ -272,7 +272,7 @@ export const STEPS: readonly TourStep[] = [
     words: {
       shown: {
         title: "What customers wanted, and what was lost.",
-        detail: "Every request is counted: ordered, or lost and why. A webshop never sees the lost demand.",
+        detail: "Every request is counted: ordered, or lost and why. Lost demand is recorded too, not only sales.",
       },
     },
     pick: () => "shown",

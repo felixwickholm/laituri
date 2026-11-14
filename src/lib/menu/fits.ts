@@ -79,10 +79,26 @@ function claimsFit(input: FitInput): Fit | undefined {
   return { ok: false, sentence: `${lacking.size} ${many ? "products are" : "product is"} not labelled ${labels}. Your rules block ${many ? "them" : "it"}.` };
 }
 
+/** Lines that need a product but have none matched or priced yet: the menu's totals leave them out. */
+function unresolved(input: FitInput): number {
+  return input.lines.filter(({ picked, unpriced, line }) => (!picked || unpriced) && line.toOrder.amount > 0).length;
+}
+
+/** A missing ingredient is never hidden behind green checks: it is its own open item, and the totals say they are partial. */
+function unresolvedFit(input: FitInput): Fit | undefined {
+  const open = unresolved(input);
+  if (open === 0) return undefined;
+  return {
+    ok: false,
+    sentence: `${open} ${open === 1 ? "ingredient has" : "ingredients have"} no matching product yet. They are not in the cost; a person picks them before ordering.`,
+  };
+}
+
 function spendFit(input: FitInput): Fit {
   const over = Math.round((input.toOrderNet - input.weekLeft) * 100) / 100;
+  const partial = unresolved(input) > 0;
   return over <= 0
-    ? { ok: true, sentence: "The total is inside your weekly limit." }
+    ? { ok: true, sentence: partial ? "The priced products are inside your weekly limit." : "The total is inside your weekly limit." }
     : { ok: false, sentence: `${eur(over)} over your weekly limit. A person approves it.` };
 }
 
@@ -94,7 +110,10 @@ function categoryFit(input: FitInput): Fit {
 
 function deliveryFit(input: FitInput): Fit {
   const late = input.lines.filter(({ line }) => line.availability !== "ok").length;
-  if (late === 0) return { ok: true, sentence: `Everything can arrive by ${day(input.deliverBy)}.` };
+  if (late === 0) {
+    const what = unresolved(input) > 0 ? "Every matched product" : "Everything";
+    return { ok: true, sentence: `${what} can arrive by ${day(input.deliverBy)}.` };
+  }
   return { ok: false, sentence: `${late} ${late === 1 ? "item cannot" : "items cannot"} arrive in full by ${day(input.deliverBy)}.` };
 }
 
@@ -102,13 +121,14 @@ function budgetFit(input: FitInput): Fit | undefined {
   if (input.budgetPerGuest === undefined) return undefined;
   const over = Math.round((input.costPerGuest - input.budgetPerGuest) * 100) / 100;
   return over <= 0
-    ? { ok: true, sentence: `Under your ${eur(input.budgetPerGuest)} per guest.` }
+    ? { ok: true, sentence: unresolved(input) > 0 ? `Priced products: under your ${eur(input.budgetPerGuest)} per guest so far.` : `Under your ${eur(input.budgetPerGuest)} per guest.` }
     : { ok: false, sentence: `${eur(over)} per guest over your budget.` };
 }
 
 /** Checked facts about one menu, each one plain sentence, true or honestly false. */
 export function menuFits(input: FitInput): Fit[] {
   return [
+    unresolvedFit(input),
     ...input.needs.map((need) => needFit(need, input)),
     mandateFit(input),
     claimsFit(input),

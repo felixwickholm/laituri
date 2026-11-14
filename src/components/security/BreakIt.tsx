@@ -58,7 +58,7 @@ export function BreakIt() {
       <div className="verdict">
         <p className="verdict-label">Security</p>
         <h2 id="sec-title" className="verdict-title">
-          Every order is safe.
+          Every order is checked.
         </h2>
         <p className="verdict-line">
           Each order is checked against the customer&rsquo;s limits and Valio Aimo&rsquo;s signed price. If something unusual happens, it is

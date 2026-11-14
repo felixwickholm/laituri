@@ -32,7 +32,7 @@ export function DemandScreen() {
               <h2 className="verdict-title" id="unmet-title">
                 {unmet.length === 0 ? "Every request was served." : lost > 0 ? `${eur(lost)} we could not sell.` : `${count(unmet.length)} requests we could not serve.`}
               </h2>
-              {unmet.length > 0 ? <p className="verdict-line">A webshop never sees this.</p> : null}
+              {unmet.length > 0 ? <p className="verdict-line">Demand that a plain webshop does not record.</p> : null}
             </div>
             <div className="count-tiles" role="group" aria-label="Filter by reason">
               <button type="button" className="count-tile" aria-pressed={filter === "all"} onClick={() => setFilter("all")}>
