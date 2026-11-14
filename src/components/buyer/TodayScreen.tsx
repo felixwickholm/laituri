@@ -76,7 +76,8 @@ export function TodayScreen({ basketId }: { basketId?: string }) {
           <AgentAsk query={query} onSent={() => setQuery("")} />
           <MilkExample />
         </section>
-        <QuickCatalogue query={query} />
+        {/* A whole sentence goes to the agent (the chip above); product search is for a few words. */}
+        <QuickCatalogue query={query.trim().split(/\s+/).length >= 4 ? "" : query} />
         <section className="glass today-choice" data-choice="plan" aria-labelledby="choice-plan">
           <h2 id="choice-plan" className="today-choice-title">
             <CalendarHeart aria-hidden="true" />

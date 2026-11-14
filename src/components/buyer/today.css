@@ -225,9 +225,9 @@
   padding: var(--space-3) var(--space-3) var(--space-3) var(--space-5);
   border: 1px solid var(--glass-line);
   border-radius: var(--r-lg);
-  background: var(--glass-fill-strong);
-  -webkit-backdrop-filter: var(--glass-blur);
-  backdrop-filter: var(--glass-blur);
+  /* Opaque: rows scroll under the sticky bar, and their text must not show through. */
+  background: var(--surface-1);
+  box-shadow: var(--glass-shadow-soft);
   box-shadow: var(--glass-edge), var(--glass-shadow-soft);
 }
 .quick-cart-sum {

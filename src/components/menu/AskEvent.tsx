@@ -4,9 +4,14 @@ import { ArrowRight, Mic, Square } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { useVoice } from "@/components/orb/useVoice";
 import type { PlanDetails, PlanRequest } from "@/lib/menu-console/types";
+import { VoiceSoon } from "../ui/VoiceSoon";
 import { DetailsForm } from "./DetailsForm";
 
-const STARTERS = ["Wedding dinner for 80", "Lunch for 120 tomorrow", "School lunch for 150, no nuts or sesame"];
+const STARTERS = [
+  "Wedding dinner for 80",
+  "Lunch for 120 tomorrow",
+  "School lunch for 150, no nuts or sesame",
+];
 
 interface AskEventProps {
   /** What the field holds when the screen opens again through "Edit". */
@@ -16,9 +21,16 @@ interface AskEventProps {
 
 /** One question, one field, three taps. The details form waits behind a quiet link. */
 export function AskEvent({ initial, onPlan }: AskEventProps) {
-  const [words, setWords] = useState(initial && "words" in initial ? initial.words : "");
-  const [detailsOpen, setDetailsOpen] = useState(Boolean(initial && !("words" in initial)));
-  const voice = useVoice({ onTranscript: setWords, onRequest: (text) => onPlan({ words: text }) });
+  const [words, setWords] = useState(
+    initial && "words" in initial ? initial.words : "",
+  );
+  const [detailsOpen, setDetailsOpen] = useState(
+    Boolean(initial && !("words" in initial)),
+  );
+  const voice = useVoice({
+    onTranscript: setWords,
+    onRequest: (text) => onPlan({ words: text }),
+  });
 
   function submit(event: FormEvent): void {
     event.preventDefault();
@@ -53,10 +65,21 @@ export function AskEvent({ initial, onPlan }: AskEventProps) {
             aria-label={voice.listening ? "Stop listening" : "Say it"}
             aria-pressed={voice.listening}
           >
-            {voice.listening ? <Square size={18} aria-hidden /> : <Mic size={22} aria-hidden />}
+            {voice.listening ? (
+              <Square size={18} aria-hidden />
+            ) : (
+              <Mic size={22} aria-hidden />
+            )}
           </button>
-        ) : null}
-        <button type="submit" className="ask-go" disabled={!words.trim()} aria-label="Plan it">
+        ) : (
+          <VoiceSoon className="ask-mic" />
+        )}
+        <button
+          type="submit"
+          className="ask-go"
+          disabled={!words.trim()}
+          aria-label="Plan it"
+        >
           <ArrowRight size={22} aria-hidden />
         </button>
       </form>
@@ -68,17 +91,33 @@ export function AskEvent({ initial, onPlan }: AskEventProps) {
       <ul className="ask-starters" aria-label="Or tap one">
         {STARTERS.map((starter) => (
           <li key={starter}>
-            <button type="button" className="ask-chip" onClick={() => onPlan({ words: starter })}>
+            <button
+              type="button"
+              className="ask-chip"
+              onClick={() => onPlan({ words: starter })}
+            >
               {starter}
             </button>
           </li>
         ))}
       </ul>
-      <button type="button" className="ask-details-toggle" aria-expanded={detailsOpen} onClick={() => setDetailsOpen((open) => !open)}>
+      <button
+        type="button"
+        className="ask-details-toggle"
+        aria-expanded={detailsOpen}
+        onClick={() => setDetailsOpen((open) => !open)}
+      >
         {detailsOpen ? "Hide details" : "Details"}
       </button>
       {detailsOpen ? (
-        <DetailsForm initial={initial && !("words" in initial) ? (initial as PlanDetails) : undefined} onPlan={onPlan} />
+        <DetailsForm
+          initial={
+            initial && !("words" in initial)
+              ? (initial as PlanDetails)
+              : undefined
+          }
+          onPlan={onPlan}
+        />
       ) : null}
     </section>
   );

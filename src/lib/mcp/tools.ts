@@ -56,7 +56,11 @@ export const TOOLS: ToolDefinition[] = [
     operationId: "searchCatalog",
     input: SearchRequest,
     output: "SearchResponse",
-    run: (agent, input) => gateway().searchCatalog(agent, input),
+    // Like REST, a search, a quote or an order needs a key: without one the call answers credential_required.
+    run: (agent, input) => {
+      keyBuyer(agent, "a search");
+      return gateway().searchCatalog(agent, input);
+    },
     summarize: searchText,
   }),
   define({
@@ -81,7 +85,10 @@ export const TOOLS: ToolDefinition[] = [
     operationId: "requestQuote",
     input: QuoteRequest,
     output: "QuoteResponse",
-    run: (agent, input) => gateway().requestQuote(agent, input),
+    run: (agent, input) => {
+      keyBuyer(agent, "a quote");
+      return gateway().requestQuote(agent, input);
+    },
     summarize: quoteText,
   }),
   define({
@@ -107,7 +114,10 @@ export const TOOLS: ToolDefinition[] = [
     operationId: "placeOrder",
     input: PlaceOrderRequest,
     output: "Order",
-    run: (agent, input) => gateway().placeOrder(agent, input),
+    run: (agent, input) => {
+      keyBuyer(agent, "an order");
+      return gateway().placeOrder(agent, input);
+    },
     summarize: orderText,
   }),
   define({

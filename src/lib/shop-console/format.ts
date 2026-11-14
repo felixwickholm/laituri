@@ -59,7 +59,7 @@ export function availabilityText(preview: Pick<OfferPreview, "availability"> | u
   const { status, available } = preview.availability;
   if (status === "unavailable") return { word: "Out of stock", tone: "danger" };
   if (status === "blocked") return { word: "Not for sale now", tone: "danger" };
-  if (status === "cutoff_passed") return { word: "Too late for this day", tone: "waiting" };
+  if (status === "cutoff_passed") return { word: "Next delivery day", tone: "waiting" };
   if (available === undefined) return { word: "Stock not counted", tone: "neutral" };
   if (status === "partial" || available < LOW_STOCK) return { word: `${count(available)} left`, tone: "waiting" };
   return { word: "In stock", tone: "success" };
@@ -72,7 +72,8 @@ export function deliveryText(preview: Pick<OfferPreview, "availability"> | undef
   const { deliveryDate, orderBy } = preview?.availability ?? {};
   const parts: string[] = [];
   if (deliveryDate) parts.push(`Arrives ${day(deliveryDate)}.`);
-  if (orderBy && !Number.isNaN(Date.parse(orderBy))) parts.push(`Order by ${WEEKDAY.format(new Date(orderBy))} ${hourMinute(orderBy)}.`);
+  // An order time already gone says nothing useful next to the day it arrives.
+  if (orderBy && !Number.isNaN(Date.parse(orderBy)) && Date.parse(orderBy) > Date.now()) parts.push(`Order by ${WEEKDAY.format(new Date(orderBy))} ${hourMinute(orderBy)}.`);
   return parts.length ? parts.join(" ") : undefined;
 }
 

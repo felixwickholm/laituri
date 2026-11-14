@@ -730,3 +730,9 @@
     animation: none;
   }
 }
+
+/* "Voice coming soon": the mic's place, quieter, so nobody expects it to listen. */
+.voice-soon {
+  opacity: 0.55;
+  cursor: help;
+}

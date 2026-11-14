@@ -3,6 +3,7 @@
 import { ArrowUp, Mic, MicOff } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { useVoice } from "../orb/useVoice";
+import { VoiceSoon } from "../ui/VoiceSoon";
 
 /** Three ways a kitchen might say it, in English and Finnish, the languages the assistant reads. */
 const EXAMPLES = [
@@ -55,7 +56,9 @@ export function PlanEventChoice({ onAsk }: { onAsk: (words: string) => void }) {
               <Mic aria-hidden="true" />
             )}
           </button>
-        ) : null}
+        ) : (
+          <VoiceSoon className="icon-btn plan-mic" />
+        )}
         <button
           type="submit"
           className="plan-go"

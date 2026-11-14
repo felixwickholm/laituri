@@ -143,13 +143,15 @@ export const STEPS: readonly TourStep[] = [
     target: ['[data-tour="basket-line"][data-state="orange"]', '[data-tour="basket"]'],
     also: ['[data-tour="basket-line"][data-state="orange"] ~ [data-tour="basket-line"][data-state="orange"]'],
     view: "spotlight",
-    until: "needsPerson",
+    // The count is read once the agent has finished every line, so it never says 1 and then 2.
+    until: "basketDone",
     timeoutMs: 20_000,
     words: {
       waiting: { title: "Some lines need a person.", detail: "The agent is still working. Orange means a person decides." },
       shown: { title: "Why {needed} {needed?line needs:lines need} a person", detail: "{needWhy}" },
+      none: { title: "No line needs a person this time.", detail: "Everything fit the customer’s limits. Press Next." },
     },
-    pick: (facts) => (facts.needed ? "shown" : "waiting"),
+    pick: (facts) => (!facts.done ? "waiting" : facts.needed ? "shown" : "none"),
     late: "No line needs a person yet. Press Next.",
     flow: () => "approval",
   },
