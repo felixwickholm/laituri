@@ -23,7 +23,7 @@ export function defaultMandate(): Mandate {
       perWeek: { amount: 5000, currency: "EUR" },
     },
     categories: {
-      allowed: ["dairy", "cheese", "bakery", "produce", "dry goods", "beverages", "eggs"],
+      allowed: ["dairy", "cheese", "bakery", "produce", "dry_goods", "beverages", "eggs"],
     },
     dietary: {
       excludeAllergens: ["peanut", "nuts"],

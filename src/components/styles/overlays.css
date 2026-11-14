@@ -1,0 +1,213 @@
+/* Popovers and menus: glass, scale from the trigger. */
+.popover {
+  position: absolute;
+  z-index: 40;
+  width: max-content;
+  max-width: 300px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--text-2);
+  transform-origin: top right;
+  transition:
+    opacity var(--d-base) var(--ease-out),
+    transform var(--d-base) var(--ease-out);
+  @starting-style {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+.popover h3 {
+  margin: 0 0 4px;
+  color: var(--text-1);
+  font-size: 14px;
+  font-weight: 590;
+}
+.popover p {
+  margin: 0;
+}
+.popover p + p {
+  margin-top: 6px;
+}
+
+.menu {
+  position: absolute;
+  z-index: 40;
+  min-width: 220px;
+  padding: 4px;
+  border-radius: var(--r-lg);
+  transform-origin: top right;
+  transition:
+    opacity var(--d-fast) var(--ease-out),
+    transform var(--d-fast) var(--ease-out);
+  @starting-style {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+.menu button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 40px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--r-md);
+  background: transparent;
+  color: var(--text-1);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.menu button svg {
+  width: 15px;
+  height: 15px;
+  stroke-width: 1.75;
+  color: var(--text-3);
+}
+.menu button:hover,
+.menu button:focus-visible {
+  background: rgba(255, 255, 255, 0.06);
+}
+.menu .hint {
+  padding: 6px 10px 8px;
+  color: var(--text-3);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+/* Toasts: bottom centre above the dock, in from 8px below. */
+.toasts {
+  position: fixed;
+  z-index: 70;
+  left: 50%;
+  bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+@media (max-width: 1099px) {
+  .toasts {
+    bottom: calc(140px + env(safe-area-inset-bottom, 0px));
+  }
+}
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: var(--r-full);
+  font-size: 13px;
+  font-weight: 510;
+  white-space: nowrap;
+  transition:
+    opacity var(--d-base) var(--ease-out),
+    transform var(--d-base) var(--ease-out);
+  @starting-style {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+.toast svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2;
+}
+.toast[data-tone="success"] svg {
+  color: var(--success);
+}
+.toast[data-tone="danger"] svg {
+  color: var(--danger);
+}
+
+/* Guide: a spotlight ring and a TipKit-style popover. */
+.guide-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+}
+.guide-ring {
+  position: fixed;
+  z-index: 81;
+  border-radius: 14px;
+  box-shadow:
+    0 0 0 2px var(--accent),
+    0 0 0 9999px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  transition:
+    transform 300ms var(--ease-sheet),
+    width 300ms var(--ease-sheet),
+    height 300ms var(--ease-sheet);
+}
+.tip {
+  position: fixed;
+  z-index: 82;
+  width: min(320px, calc(100vw - 32px));
+  padding: 16px;
+  border-radius: 14px;
+  transition:
+    opacity var(--d-base) var(--ease-out),
+    transform var(--d-base) var(--ease-out);
+  @starting-style {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+.tip h2 {
+  margin: 0 28px 4px 0;
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 590;
+}
+.tip p {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 18px;
+}
+.tip .close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+.tip footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+.tip footer .step {
+  color: var(--text-3);
+  font-size: 12px;
+}
+.tip footer .keys {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .popover,
+  .menu,
+  .tip,
+  @media (max-width: 1099px) {
+  .toasts {
+    bottom: calc(140px + env(safe-area-inset-bottom, 0px));
+  }
+}
+.toast {
+    @starting-style {
+      transform: none;
+    }
+  }
+  .guide-ring {
+    transition: none;
+  }
+}

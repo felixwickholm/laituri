@@ -1,0 +1,408 @@
+/* Pane 1: the live stream. A pinned live row, then one row per call joined by a vertical rail. */
+.live-row {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 16px;
+  background: #07111c;
+  color: var(--text-2);
+  font-size: 13px;
+  border-bottom: 1px solid var(--line);
+}
+.live-row strong {
+  color: var(--text-1);
+  font-weight: 510;
+}
+.live-row .meta {
+  margin-left: auto;
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.stream {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0 0;
+}
+.act {
+  position: relative;
+  display: grid;
+  grid-template-columns: 64px 16px minmax(0, 1fr) auto;
+  column-gap: 10px;
+  align-items: start;
+  padding: 9px 16px 9px 16px;
+  transition:
+    opacity 200ms var(--ease-out),
+    transform 200ms var(--ease-out);
+  @starting-style {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+.act::before {
+  content: "";
+  position: absolute;
+  left: calc(16px + 64px + 10px + 7.5px);
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--line);
+}
+.act:first-child::before {
+  top: 18px;
+}
+.act:last-child::before {
+  bottom: calc(100% - 18px);
+}
+.act time {
+  color: var(--text-3);
+  font-size: 12px;
+  line-height: 18px;
+}
+.act .glyph {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 18px;
+  background: var(--surface-1);
+  color: var(--text-3);
+}
+.act .glyph svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 1.75;
+}
+.act .text {
+  min-width: 0;
+}
+.act .title {
+  display: block;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 510;
+  color: var(--text-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.act .detail {
+  display: block;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.act .result {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.act[data-note="true"] .title {
+  color: var(--text-2);
+  font-weight: 400;
+}
+.act .open {
+  all: unset;
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 510;
+  color: var(--text-1);
+  cursor: pointer;
+}
+.act .open::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+.act .open:focus-visible::after {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  border-radius: var(--r-sm);
+}
+@media (max-width: 640px) {
+  .act {
+    grid-template-columns: 40px 16px minmax(0, 1fr) auto;
+    column-gap: 8px;
+  }
+  .act::before {
+    left: calc(16px + 40px + 8px + 7.5px);
+  }
+  .act .sec {
+    display: none;
+  }
+}
+
+/* Pane 3: the chain state, pinned like the live row in pane 1. */
+.chain-row {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 8px 0 12px;
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--line);
+}
+.chain-row .meta {
+  color: var(--text-3);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.chain-row > div {
+  margin-left: auto;
+}
+.chain-row[data-state="broken"] {
+  background: #170807;
+}
+
+/* Pane 2: approval rows and handled rows. */
+.pane-tabs {
+  padding: 12px 16px 4px;
+}
+.inbox {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.approval {
+  display: grid;
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transition:
+    grid-template-rows var(--d-base) var(--ease-out),
+    opacity var(--d-base) var(--ease-out);
+  @starting-style {
+    opacity: 0;
+  }
+}
+.approval[data-leaving="true"] {
+  grid-template-rows: 0fr;
+  opacity: 0;
+}
+.approval > div {
+  min-height: 0;
+  overflow: hidden;
+}
+.approval-inner {
+  padding: 16px;
+  border-bottom: 1px solid var(--line);
+}
+.approval .flag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 590;
+  color: var(--warn);
+}
+.approval .head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 6px;
+}
+.approval .who {
+  font-size: 14px;
+  font-weight: 510;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.approval .total {
+  font-size: 14px;
+  font-weight: 590;
+  margin-left: auto;
+}
+.approval .age {
+  color: var(--text-3);
+  font-size: 12px;
+}
+.approval .reasons {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--text-2);
+}
+.approval .compare {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text-3);
+}
+.approval .row-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.approval .row-actions .details {
+  margin-left: auto;
+}
+
+.handled {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 12px;
+  width: 100%;
+  padding: 12px 16px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.handled .what {
+  font-size: 13px;
+  font-weight: 510;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.handled .amount {
+  font-size: 13px;
+  text-align: right;
+}
+.handled .why {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (hover: hover) and (pointer: fine) {
+  .handled:hover {
+    background: var(--surface-2);
+  }
+}
+
+/* Pane 3: the audit list. Two lines: event in mono, plain sentence. */
+.chain-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: var(--r-sm);
+  font-size: 12px;
+  font-weight: 510;
+  white-space: nowrap;
+  color: var(--text-3);
+}
+.chain-badge svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2;
+}
+.chain-badge[data-state="verified"] {
+  color: var(--success);
+  background: var(--success-tint);
+}
+.chain-badge[data-state="broken"] {
+  color: var(--danger);
+  background: var(--danger-tint);
+}
+.audit-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.audit {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 12px;
+  width: 100%;
+  padding: 10px 16px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  transition:
+    opacity 200ms var(--ease-out),
+    transform 200ms var(--ease-out);
+  @starting-style {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+.audit[data-clickable="true"] {
+  cursor: pointer;
+}
+.audit .event {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 18px;
+  color: var(--text-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.audit .seq {
+  color: var(--text-4);
+  margin-right: 8px;
+}
+.audit time {
+  font-size: 12px;
+  color: var(--text-3);
+  text-align: right;
+}
+.audit .sentence {
+  grid-column: 1 / -1;
+  font-size: 12px;
+  line-height: 17px;
+  color: var(--text-2);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.audit[data-broken="true"] {
+  background: var(--danger-tint);
+  box-shadow: inset 2px 0 0 var(--danger);
+}
+.audit[data-broken="true"] .event,
+.audit[data-broken="true"] .sentence {
+  color: var(--danger);
+}
+.audit[data-after-break="true"] {
+  opacity: 0.5;
+}
+@media (hover: hover) and (pointer: fine) {
+  .audit[data-clickable="true"]:hover,
+  .act[data-clickable="true"]:hover {
+    background: var(--surface-2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .act,
+  .audit {
+    @starting-style {
+      transform: none;
+    }
+  }
+}

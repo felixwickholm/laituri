@@ -1,0 +1,223 @@
+/* The floating capsule dock: scenes, a free request and reset. */
+.dock {
+  position: fixed;
+  z-index: 50;
+  left: 50%;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: calc(100vw - 32px);
+  padding: 6px;
+  border-radius: var(--r-full);
+  transform: translateX(-50%);
+  overflow: hidden;
+}
+.dock .scenes {
+  display: flex;
+  gap: 2px;
+  flex: none;
+}
+.scene {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 14px 0 8px;
+  border: 0;
+  border-radius: var(--r-full);
+  background: transparent;
+  color: var(--text-1);
+  font-size: 13px;
+  font-weight: 510;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--d-hover) var(--ease-hover),
+    transform var(--d-fast) var(--ease-out),
+    opacity var(--d-fast) var(--ease-out);
+}
+.scene .n {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--r-full);
+  background: rgba(255, 255, 255, 0.08);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-2);
+}
+.scene:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.scene:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.scene[data-active="true"] {
+  background: rgba(255, 255, 255, 0.1);
+}
+.scene[data-active="true"] .n {
+  background: var(--accent);
+  color: #fff;
+}
+.scene[data-hint="true"] .n {
+  box-shadow: 0 0 0 2px var(--accent);
+  animation: scene-hint 2s var(--ease-out) infinite;
+}
+@keyframes scene-hint {
+  50% {
+    box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.25);
+  }
+}
+@media (hover: hover) and (pointer: fine) {
+  .scene:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.07);
+  }
+}
+
+.dock .divider {
+  width: 1px;
+  height: 24px;
+  margin: 0 4px;
+  background: var(--line-strong);
+  flex: none;
+}
+.ask {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 44px;
+  min-width: 0;
+  padding: 0 4px 0 14px;
+  border-radius: var(--r-full);
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--line);
+}
+.ask input {
+  width: 260px;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text-1);
+  font: inherit;
+  font-size: 13px;
+}
+.ask input::placeholder {
+  color: var(--text-3);
+}
+.ask:focus-within {
+  border-color: var(--accent);
+}
+.ask .send {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r-full);
+  background: var(--accent);
+  color: #fff;
+}
+.ask .send:disabled {
+  background: var(--surface-4);
+  color: var(--text-3);
+}
+.dock .reset {
+  height: 44px;
+  border-radius: var(--r-full);
+}
+
+.dock-progress {
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  top: 0;
+  height: 2px;
+  overflow: hidden;
+  border-radius: var(--r-full);
+  opacity: 0;
+  transition: opacity var(--d-base) var(--ease-out);
+}
+.dock-progress[data-on="true"] {
+  opacity: 1;
+}
+.dock-progress::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 30%;
+  background: var(--accent);
+  border-radius: inherit;
+  animation: dock-run 1.4s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+@keyframes dock-run {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(340%);
+  }
+}
+.dock-status {
+  position: fixed;
+  z-index: 49;
+  left: 50%;
+  bottom: calc(86px + env(safe-area-inset-bottom, 0px));
+  max-width: min(560px, calc(100vw - 32px));
+  transform: translateX(-50%);
+  color: var(--text-3);
+  font-size: 12px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+@media (max-width: 1099px) {
+  .dock {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-width: none;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px));
+    border-radius: var(--r-xl) var(--r-xl) 0 0;
+    border-width: 1px 0 0;
+    transform: none;
+  }
+  .dock .scenes {
+    flex: 1 1 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+    order: 1;
+  }
+  .dock .divider {
+    display: none;
+  }
+  .ask {
+    flex: 1;
+    order: 2;
+  }
+  .ask input {
+    width: 100%;
+  }
+  .dock .reset {
+    order: 3;
+  }
+  .dock-status {
+    bottom: calc(128px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dock-progress::after {
+    animation-duration: 3s;
+  }
+  .scene[data-hint="true"] .n {
+    animation: none;
+  }
+}

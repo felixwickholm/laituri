@@ -1,0 +1,133 @@
+import { describe, expect, it } from "vitest";
+import { activityView, shortHash } from "@/lib/console/format/activity";
+import { eur, parseEur, percentOf, withEuroSign } from "@/lib/console/format/money";
+import { askedLine, compareLine, matchedFacts, offeredLine } from "@/lib/console/format/proof";
+import { askReasons, blockedLine, handledState, ruleName, shortName } from "@/lib/console/format/rules";
+import { age, clock, day } from "@/lib/console/format/time";
+import { weekSpend, weekStart } from "@/lib/console/format/week";
+import { blockedOrder, pendingOrder } from "./fixtures";
+
+describe("money", () => {
+  it("formats euros with cents", () => {
+    expect(eur(1812)).toBe("€1,812.00");
+    expect(eur(0.98)).toBe("€0.98");
+  });
+
+  it("reads and rewrites the server's EUR form", () => {
+    expect(parseEur("1,818.00 EUR")).toBe(1818);
+    expect(parseEur("no amount")).toBeUndefined();
+    expect(withEuroSign("Confirmed, 1,010.00 EUR net")).toBe("Confirmed, €1,010.00 net");
+  });
+
+  it("clamps percentages", () => {
+    expect(percentOf(318, 1500)).toBe(21);
+    expect(percentOf(5, 0)).toBe(0);
+  });
+});
+
+describe("time", () => {
+  it("uses Helsinki time and short day names", () => {
+    expect(clock("2026-11-14T07:05:09.000Z")).toBe("09:05:09");
+    expect(day("2026-11-16")).toBe("Mon 16 Nov");
+    expect(day("2026-11-16T08:00:00.000Z")).toBe("Mon 16 Nov");
+  });
+
+  it("gives short ages", () => {
+    const at = Date.parse("2026-11-14T07:00:00.000Z");
+    expect(age("2026-11-14T07:00:00.000Z", at + 10_000)).toBe("now");
+    expect(age("2026-11-14T07:00:00.000Z", at + 4 * 60_000)).toBe("4m");
+    expect(age("2026-11-14T07:00:00.000Z", at + 3 * 3_600_000)).toBe("3h");
+  });
+});
+
+describe("reasons", () => {
+  it("writes the per-order reason with both figures and the overrun", () => {
+    expect(askReasons(pendingOrder())).toEqual(["€1,818.00 is over the per-order limit of €1,500.00 (+21%)."]);
+  });
+
+  it("writes a blocked allergen as a rule", () => {
+    expect(blockedLine(blockedOrder())).toBe("Blocked. Contains nuts. The mandate forbids nuts.");
+  });
+
+  it("names rules and states in plain words", () => {
+    expect(ruleName("spend.per_week")).toBe("Weekly limit");
+    expect(handledState(blockedOrder())).toBe("blocked");
+    expect(handledState(pendingOrder({ status: "confirmed" }))).toBe("auto");
+    expect(shortName("Maria Lind, Head of Purchasing")).toBe("Maria Lind");
+  });
+});
+
+describe("request versus offer", () => {
+  it("shows what was asked and what was offered", () => {
+    const { offer } = pendingOrder();
+    expect(askedLine(offer)).toBe("Asked: 1,800 l lactose-free milk by Mon 16 Nov");
+    expect(offeredLine(offer)).toBe("Offered: 1,800 × Valio Arki Eila 1 l = 1,800 l, Mon 16 Nov");
+    expect(compareLine(offer)).toBe("Asked by Mon 16 Nov · Offered Mon 16 Nov, €1,818.00 net");
+  });
+
+  it("marks each matched fact", () => {
+    const facts = matchedFacts(pendingOrder());
+    expect(facts.map((fact) => [fact.label, fact.ok])).toEqual([
+      ["Quantity", true],
+      ["Claim", true],
+      ["Date", true],
+      ["Price", true],
+    ]);
+    expect(facts[3].detail).toBe("€1,818.00 net, fixed until 09:15");
+  });
+
+  it("flags a short delivery", () => {
+    const order = pendingOrder();
+    order.offer.lines[0].availability.available = 51;
+    expect(matchedFacts(order)[0]).toMatchObject({ ok: false, detail: "51 of 1,800 available" });
+  });
+});
+
+describe("activity rows", () => {
+  it("puts the amount on the right and colours only waiting and failures", () => {
+    const view = activityView({
+      id: "a1",
+      at: "2026-11-14T07:00:00.000Z",
+      agent: { id: "x", name: "Agent" },
+      kind: "tool",
+      title: "Placed an order for milk",
+      detail: "Waiting for approval: Order total 1,818.00 EUR is over the 1,500.00 EUR limit.",
+      status: "waiting",
+    });
+    expect(view.tone).toBe("waiting");
+    expect(view.result).toBe("Waiting");
+    expect(view.detail).toContain("€1,818.00");
+  });
+
+  it("truncates hashes to 8 + 6", () => {
+    expect(shortHash("1b090c55273ad706db8a193129023cec24b7c2d15e9a0f769b4853a29c084a58")).toBe("1b090c55…084a58");
+  });
+});
+
+describe("weekly spend", () => {
+  it("sums confirmed orders from Monday in Helsinki", () => {
+    const now = Date.parse("2026-11-14T10:00:00.000Z");
+    expect(weekStart(now)).toBe("2026-11-09");
+    const orders = [pendingOrder({ status: "confirmed" }), pendingOrder({ id: "old", status: "confirmed", createdAt: "2026-11-08T10:00:00.000Z" }), pendingOrder()];
+    expect(weekSpend(orders, now)).toBe(1818);
+  });
+});
+
+describe("plain sentences", () => {
+  it("rewrites amounts and ISO dates", async () => {
+    const { plainSentence } = await import("@/lib/console/format/sentence");
+    expect(plainSentence("Delivery on 2026-11-16 meets the 2026-11-16 deadline, 1,010.00 EUR.")).toBe(
+      "Delivery on Mon 16 Nov meets the Mon 16 Nov deadline, €1,010.00.",
+    );
+  });
+
+  it("does not repeat the deadline when the request already names one", () => {
+    const { offer } = pendingOrder();
+    expect(askedLine({ ...offer, intent: "1,600 litres of milk by Monday" })).toBe("Asked: 1,600 litres of milk by Monday");
+  });
+
+  it("shows no result word for a plain successful call", () => {
+    const view = activityView({ id: "a", at: "2026-11-14T07:00:00Z", agent: { id: "x", name: "A" }, kind: "note", title: "Asked for a fixed-price offer.", status: "ok", durationMs: 3 });
+    expect(view.result).toBe("");
+  });
+});

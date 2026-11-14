@@ -1,0 +1,235 @@
+/* Buttons: 32px visual, 44px hit area through an inset pseudo element. */
+.btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--text-1);
+  font-size: 13px;
+  font-weight: 510;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--d-hover) var(--ease-hover),
+    border-color var(--d-hover) var(--ease-hover),
+    transform var(--d-fast) var(--ease-out),
+    opacity var(--d-fast) var(--ease-out);
+}
+.btn::after {
+  content: "";
+  position: absolute;
+  inset: -6px -2px;
+}
+.btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.btn svg {
+  width: 15px;
+  height: 15px;
+  stroke-width: 1.75;
+  flex: none;
+}
+.btn-primary {
+  background: var(--accent);
+  border-color: transparent;
+  color: #fff;
+}
+.btn-quiet {
+  border-color: transparent;
+  color: var(--text-2);
+}
+.btn-danger {
+  color: var(--danger);
+}
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover:not(:disabled) {
+    background: var(--surface-3);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: #2b95ff;
+  }
+}
+
+.icon-btn {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-md);
+  border: 0;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  transition:
+    background-color var(--d-hover) var(--ease-hover),
+    color var(--d-hover) var(--ease-hover),
+    transform var(--d-fast) var(--ease-out);
+}
+.icon-btn::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+}
+.icon-btn svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 1.75;
+}
+.icon-btn:active {
+  transform: scale(0.97);
+}
+@media (hover: hover) and (pointer: fine) {
+  .icon-btn:hover {
+    background: var(--surface-3);
+    color: var(--text-1);
+  }
+}
+
+/* Chips: 28px, written as rules. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 6px 0 10px;
+  border-radius: var(--r-sm);
+  background: var(--surface-3);
+  color: var(--text-1);
+  font-size: 13px;
+  font-weight: 510;
+  white-space: nowrap;
+  flex: none;
+}
+.chip button {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 0;
+  border-radius: var(--r-xs);
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+}
+.chip button::after {
+  content: "";
+  position: absolute;
+  inset: -13px -10px;
+}
+.chip-add {
+  background: transparent;
+  border: 1px dashed var(--line-strong);
+  color: var(--text-3);
+  padding: 0 10px;
+  cursor: pointer;
+}
+
+/* Segmented control: pills with the count after the label. */
+.segmented {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  border-radius: var(--r-full);
+  border: 1px solid var(--line);
+  background: var(--surface-1);
+}
+.segmented button {
+  position: relative;
+  height: 28px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--r-full);
+  background: transparent;
+  color: var(--text-3);
+  font-size: 13px;
+  font-weight: 510;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--d-hover) var(--ease-hover),
+    color var(--d-hover) var(--ease-hover);
+}
+.segmented button::after {
+  content: "";
+  position: absolute;
+  inset: -8px -2px;
+}
+.segmented button[aria-pressed="true"],
+.segmented button[aria-selected="true"] {
+  background: var(--surface-3);
+  color: var(--text-1);
+}
+.segmented .count {
+  margin-left: 6px;
+  color: var(--text-3);
+}
+
+.state-word {
+  font-size: 12px;
+  font-weight: 510;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.tone-waiting {
+  color: var(--warn);
+}
+.tone-danger {
+  color: var(--danger);
+}
+.tone-success {
+  color: var(--success);
+}
+
+.kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: var(--r-xs);
+  border: 1px solid var(--line-strong);
+  color: var(--text-3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.code-chip {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 1px 5px;
+  border-radius: var(--r-xs);
+  background: var(--surface-3);
+  border: 1px solid var(--line);
+  color: var(--text-2);
+}
+
+.live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--r-full);
+  background: var(--accent);
+  flex: none;
+  animation: live-pulse 2s ease-in-out infinite;
+}
+.live-dot[data-idle="true"] {
+  background: var(--text-4);
+  animation: none;
+}
+@keyframes live-pulse {
+  50% {
+    opacity: 0.4;
+  }
+}
