@@ -10,7 +10,8 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "eval": "tsx evals/run.ts"
+    "eval": "tsx evals/run.ts",
+    "evidence": "tsx scripts/evidence.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.8.0",
