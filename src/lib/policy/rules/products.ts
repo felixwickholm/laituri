@@ -26,6 +26,14 @@ function productsOf(ctx: FullContext): { line: OfferLine; product?: Product }[] 
   return ctx.offer.lines.map((line) => ({ line, product: ctx.products.get(line.productId) }));
 }
 
+/** Fresh produce carries no allergen declaration by nature; every other food without one is unknown, not safe. */
+const UNPROCESSED_GROUPS = new Set(["produce"]);
+
+function hasNoDeclaration(product: Product): boolean {
+  const { contains, mayContain, freeFrom } = product.allergens;
+  return contains.length + mayContain.length + freeFrom.length === 0;
+}
+
 export const dietaryAllergens: Rule = {
   id: "dietary.allergens",
   needs: "both",
@@ -36,10 +44,12 @@ export const dietaryAllergens: Rule = {
       return check("dietary.allergens", "pass", "The mandate excludes no allergens.", { limit });
     }
     let traces = 0;
+    let undeclared: OfferLine | undefined;
     for (const { line, product } of productsOf(ctx)) {
       if (!product) {
         return check("dietary.allergens", "block", `Allergen data is missing for ${line.name}.`, { observed: line.productId, limit });
       }
+      if (!undeclared && hasNoDeclaration(product) && !UNPROCESSED_GROUPS.has(line.categoryGroup)) undeclared = line;
       const contains = excluded.filter((a) => product.allergens.contains.includes(a));
       if (contains.length) {
         return check("dietary.allergens", "block", `${line.name} contains ${listText(contains)}.`, { observed: contains.join(", "), limit });
@@ -49,6 +59,12 @@ export const dietaryAllergens: Rule = {
         return check("dietary.allergens", "block", `${line.name} may contain ${listText(may)}.`, { observed: may.join(", "), limit });
       }
       if (may.length) traces += 1;
+    }
+    if (undeclared) {
+      return check("dietary.allergens", "ask", `${undeclared.name} has no allergen declaration. A person must check it.`, {
+        observed: "no declaration",
+        limit,
+      });
     }
     const note = traces ? ` ${plural(traces, "line")} may contain traces.` : "";
     return check("dietary.allergens", "pass", `No line contains ${listText(excluded)}.${note}`, { observed: "none", limit });

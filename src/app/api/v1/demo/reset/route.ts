@@ -1,3 +1,4 @@
+import { resetDemo } from "@/lib/demo";
 import { gateway } from "@/lib/gateway";
 import { refuseAgents } from "@/lib/http/agent";
 import { route } from "@/lib/http/handler";
@@ -9,5 +10,6 @@ export const runtime = "nodejs";
 export const POST = route(async (request) => {
   refuseAgents(request.headers);
   await gateway().reset();
+  resetDemo();
   return json({ ok: true, detail: "Orders, audit log and activity were cleared." });
 });
