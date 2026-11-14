@@ -1,0 +1,66 @@
+import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
+import { resolveAgent } from "@/lib/http/agent";
+import { errorResponse } from "@/lib/http/respond";
+import { createMcpServer } from "./server";
+
+export const CORS_HEADERS: Record<string, string> = {
+  "access-control-allow-origin": "*",
+  "access-control-allow-methods": "POST, GET, DELETE, OPTIONS",
+  "access-control-allow-headers":
+    "content-type, accept, authorization, mcp-protocol-version, mcp-session-id, last-event-id, x-agent-name",
+  "access-control-expose-headers": "mcp-session-id, mcp-protocol-version",
+  "access-control-max-age": "86400",
+};
+
+export function withCors(response: Response): Response {
+  const headers = new Headers(response.headers);
+  for (const [key, value] of Object.entries(CORS_HEADERS)) headers.set(key, value);
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
+
+/** The transport insists on both types; plain HTTP clients often send neither. Responses are always JSON here. */
+function withAcceptHeader(request: Request, body: string): Request {
+  const headers = new Headers(request.headers);
+  headers.set("accept", "application/json, text/event-stream");
+  return new Request(request.url, { method: "POST", headers, body });
+}
+
+/** Handles one stateless MCP POST: a fresh server and transport per request, JSON responses, no sessions. */
+export async function handleMcpPost(request: Request): Promise<Response> {
+  let agent;
+  try {
+    agent = await resolveAgent(request.headers);
+  } catch (error) {
+    return withCors(errorResponse(error));
+  }
+  const server = createMcpServer(agent);
+  const transport = new WebStandardStreamableHTTPServerTransport({
+    sessionIdGenerator: undefined,
+    enableJsonResponse: true,
+  });
+  try {
+    await server.connect(transport);
+    const response = await transport.handleRequest(withAcceptHeader(request, await request.text()));
+    return withCors(response);
+  } finally {
+    await transport.close();
+    await server.close();
+  }
+}
+
+export function mcpMethodNotAllowed(): Response {
+  return withCors(
+    new Response(
+      JSON.stringify({
+        jsonrpc: "2.0",
+        error: { code: -32000, message: "This server is stateless. Send JSON-RPC requests with POST." },
+        id: null,
+      }),
+      { status: 405, headers: { "content-type": "application/json", allow: "POST, OPTIONS" } },
+    ),
+  );
+}
+
+export function mcpPreflight(): Response {
+  return withCors(new Response(null, { status: 204 }));
+}
