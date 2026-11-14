@@ -15,7 +15,7 @@ import { toast } from "../ui/toast";
 export const MILK_REQUEST = "I need 1,000 litres of lactose-free milk by Monday.";
 
 /** The approval step in the challenge's words: ordered alone inside the limits, or who waits and why. */
-function approvalInWords(order: Order, step: FlowStep): FlowStep {
+export function approvalInWords(order: Order, step: FlowStep): FlowStep {
   if (order.status === "confirmed" && !order.approval) return { ...step, sentence: "Inside your limits: ordered alone." };
   if (order.status === "pending_approval") {
     const [first] = asks(order);

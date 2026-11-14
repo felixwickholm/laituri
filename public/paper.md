@@ -4,7 +4,7 @@ A design paper for the Valio Aimo challenge "Trusted Trade Agents" at Junction 2
 
 ## Abstract
 
-Laituri is an open front door through which a hotel's or a kitchen's own purchasing agent buys from the food-service wholesaler Valio Aimo over MCP or REST: it searches the catalogue, receives a fixed-price offer signed by the wholesaler, and orders inside a mandate the buyer signed. Every order is checked by 18 named rules in three tiers (the agent orders alone, a named person approves, or the order is refused), and a buyer can let the agent reorder alone what it bought before while a new product waits for a person. When stock is short, the order cut-off has passed or delivery would be late, the wholesaler returns signed counter-offers ranked good, better and best, and in a menu plan an ingredient is swapped by its role in the recipe. Every step is a signed entry in a hash-chained log that the buyer, the wholesaler and any outside agent can verify with the published public keys. On recorded data with a fixed clock, 101 of 101 eval cases and 3638 of 3638 unit and integration tests pass; orders are simulated, because the challenge's mock API has no order endpoint.
+Laituri is an open front door through which a hotel's or a kitchen's own purchasing agent buys from the food-service wholesaler Valio Aimo over MCP or REST: it searches the catalogue, receives a fixed-price offer signed by the wholesaler, and orders inside a mandate the buyer signed. Every order is checked by 18 named rules in three tiers (the agent orders alone, a named person approves, or the order is refused), and a buyer can let the agent reorder alone what it bought before while a new product waits for a person. When stock is short, the order cut-off has passed or delivery would be late, the wholesaler returns signed counter-offers ranked good, better and best, and in a menu plan an ingredient is swapped by its role in the recipe. Every step is a signed entry in a hash-chained log that the buyer, the wholesaler and any outside agent can verify with the published public keys. On recorded data with a fixed clock, 101 of 101 eval cases and 3643 of 3643 unit and integration tests pass; orders are simulated, because the challenge's mock API has no order endpoint.
 
 ## The problem, in the brief's words
 
@@ -79,7 +79,7 @@ The request and response schemas are written once, in zod (`src/lib/contracts`).
 
 Measured by `npm run evidence` (numbers in `src/lib/evidence/facts.json`):
 
-- Unit and integration tests: 3638/3638 pass in 155 files.
+- Unit and integration tests: 3643/3643 pass in 155 files.
 - Eval suites (`npm run eval`, recorded data, fixed clock): Scenarios 38/38, Guardrails 38/38, Trust 17/17, Openness 8/8; 101/101 cases in all.
 - 18 mandate rules, 11 MCP tools, 41 REST operations on 35 paths, 6 discovery documents, 3 signing keys.
 - 3 demo buyers; 31 seeded requests (24 of them place an order); recorded answers for 255 products.
@@ -193,7 +193,7 @@ One set of zod schemas produces the MCP tools, the REST routes and the OpenAPI 3
 
 **Verify.** `npm run eval -- --suite openness`; `/api/v1/openapi.json` on the live demo; `/.well-known/jwks.json` on the live demo; `/llms.txt` on the live demo.
 
-**Measured.** Openness eval suite: 8/8 cases pass (bar 100%); Unit and integration tests: 3638/3638 pass in 155 files.
+**Measured.** Openness eval suite: 8/8 cases pass (bar 100%); Unit and integration tests: 3643/3643 pass in 155 files.
 
 **Known limit.** Agents use demo bearer tokens, not OAuth 2.1. AP2, UCP and Peppol are followed in names and shapes; no Peppol UBL document is produced.
 
@@ -273,7 +273,7 @@ Four suites run on recorded upstream answers with a fixed clock, so every result
 | Trust (`trust`) | 17/17 | 100% | met | Every signature verifies with the published keys, and any changed, deleted, reordered or cut entry is detected. |
 | Openness (`openness`) | 8/8 | 100% | met | The OpenAPI document and MCP tools are complete and callable, discovery documents are served, and an agent that reads llms.txt over HTTP buys by following its REST flow. |
 
-Unit and integration tests: 3638/3638 pass in 155 files (`npm test`).
+Unit and integration tests: 3643/3643 pass in 155 files (`npm test`).
 
 ## What is simulated and assumed
 

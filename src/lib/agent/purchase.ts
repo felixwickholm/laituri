@@ -54,6 +54,40 @@ function outcome(order: Order, mandate: Mandate): { status: PurchaseStatus; note
   return { status: "blocked", note: `Blocked. ${reason}`, summary: `Order ${order.id} was blocked: ${reason} Nothing was ordered.` };
 }
 
+type Lang = "fi" | "sv" | "en";
+
+/** A rough guess from common words; the question back is asked in the buyer's language. */
+export function languageOf(text: string): Lang {
+  const words = text.toLowerCase();
+  if (/\b(jag|vi|behöver|och|till|smör|mjölk|grädde|beställ|kan|för|på)\b|[å]/.test(words)) return "sv";
+  if (/\b(tarvitsen|tarvitaan|tilaa|ja|maitoa?|voita?|kermaa?|litraa|kiloa|mennessä|huomenna|meille|haluan)\b|maanantai|tiistai|keskiviikko|torstai|perjantai/.test(words) || /[äö]/.test(words)) return "fi";
+  return "en";
+}
+
+const ASK: Record<Lang, { which: string; offTask: string; howMuch: (what: string) => string; tooSmall: (what: string) => string }> = {
+  en: {
+    which: "Which product do you need?",
+    offTask: "I can only search, get signed prices and order products for your kitchen. A person approves orders and sets the limits.",
+    howMuch: (what) => `How much ${what} do you need, and by which day?`,
+    tooSmall: (what) => `That amount is too small to order. How much ${what} do you need?`,
+  },
+  fi: {
+    which: "Mitä tuotetta tarvitset?",
+    offTask: "Voin vain hakea tuotteita, pyytää allekirjoitetun hinnan ja tilata keittiöllesi. Ihminen hyväksyy tilaukset ja asettaa rajat.",
+    howMuch: (what) => `Kuinka paljon tarvitset (${what}), ja mihin päivään mennessä?`,
+    tooSmall: (what) => `Määrä on liian pieni tilattavaksi. Kuinka paljon tarvitset (${what})?`,
+  },
+  sv: {
+    which: "Vilken produkt behöver du?",
+    offTask: "Jag kan bara söka produkter, få ett signerat pris och beställa till ert kök. En person godkänner beställningar och sätter gränserna.",
+    howMuch: (what) => `Hur mycket ${what} behöver du, och till vilken dag?`,
+    tooSmall: (what) => `Mängden är för liten att beställa. Hur mycket ${what} behöver du?`,
+  },
+};
+
+/** Words that ask the agent to do what only a person may: approve, change limits, ignore the rules. */
+const OFF_TASK = /\b(approve (it|all|everything|the order|orders) (yourself|now|for me)|approve everything|ignore (your|the|all|my) (rules|instructions|limits|mandate)|bypass|override (the|your) (rules|limits?)|raise (my|the|your) limits?|change (my|the|your) (limits?|mandate)|ohita säännöt|nosta rajaa?|hyväksy kaikki|ignorera reglerna|godkänn allt)\b/iu;
+
 /**
  * The buyer's purchasing agent: read the request, find the cheapest product that covers it, get a signed
  * offer, and place one order under the mandate. It never retries after a block or while waiting for a person.
@@ -79,7 +113,11 @@ export async function runPurchase(
     const read = parseRequest(requestText, now());
     parsed = options.productId ? { ...read, productId: options.productId } : read;
     const what = parsed.phrase || (parsed.productId ? `product ${parsed.productId}` : "the product");
-    if (!parsed.quantity) return finish("needs_input", `I need a quantity. How much ${what} do you need?`, {}, "waiting");
+    const lang = languageOf(requestText);
+    if (OFF_TASK.test(requestText)) return finish("needs_input", ASK[lang].offTask, {}, "waiting");
+    if (!parsed.phrase && !parsed.productId) return finish("needs_input", ASK[lang].which, {}, "waiting");
+    if (!parsed.quantity) return finish("needs_input", ASK[lang].howMuch(what), {}, "waiting");
+    if (parsed.quantity.amount <= 0) return finish("needs_input", ASK[lang].tooSmall(what), {}, "waiting");
     const quantity = parsed.quantity;
     const by = `by ${shortDay(parsed.deliverBy)}${parsed.deliverByStated ? "" : " (next working day)"}`;
     await say(`Looking for ${what}, ${quantityText(quantity)}, ${by}.`);

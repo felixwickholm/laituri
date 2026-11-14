@@ -180,6 +180,25 @@ describe("runModelPurchase", () => {
     expect(result.status).toBe("confirmed");
   });
 
+  it("hands the request to the next model before the scripted agent", async () => {
+    const spy = spyTransport();
+    const { provider } = fakeProvider([
+      () => {
+        throw new ProviderError("Gemini answered with status 429.");
+      },
+    ]);
+    const gemini = { ...provider, engine: "gemini" as const };
+    const next = { name: "The Claude agent", run: async () => ({ status: "needs_input" as const, summary: "Which milk?", steps: [{ text: "Which milk?", status: "waiting" as const }] }) };
+    const result = await runModelPurchase(REQUEST, spy.transport, hooks, gemini, { next });
+
+    expect(result.steps.map((step) => step.text)).toEqual([
+      "The Gemini agent stopped: Gemini answered with status 429. The Claude agent takes over.",
+      "Which milk?",
+    ]);
+    expect(result.status).toBe("needs_input");
+    expect(spy.orders).toHaveLength(0);
+  });
+
   it("falls back when the model declines", async () => {
     const spy = spyTransport();
     const { provider } = fakeProvider([() => ({ status: "refused", detail: "Blocked." })]);

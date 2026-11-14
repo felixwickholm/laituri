@@ -9,32 +9,41 @@ const UNITS: [RegExp, Unit, number][] = [
   [/^(?:litres?|liters?|litraa?|ltr|l)$/, "l", 1],
   [/^(?:kilograms?|kilos?|kiloa|kg)$/, "kg", 1],
   [/^(?:grams?|grammaa?|g)$/, "kg", 0.001],
-  [/^(?:pieces?|pcs|pc|units?|kpl|packs?|cases?|bottles?)$/, "sales_unit", 1],
+  [/^(?:dl|desilitraa?|deciliters?|decilitres?)$/, "l", 0.1],
+  [/^(?:pieces?|pcs|pc|units?|kpl|st|styck|packs?|cases?|bottles?|boxes|box|crates?|laatikk\p{L}*|pullo\p{L}*|paketti\p{L}*|pakettia|pkt|lådor|låda|flaskor|flaska|paket)$/u, "sales_unit", 1],
 ];
 
 const WEEKDAYS: [RegExp, number][] = [
-  [/^(?:sunday|sunnuntai\p{L}*)$/u, 0],
-  [/^(?:monday|maanantai\p{L}*)$/u, 1],
-  [/^(?:tuesday|tiistai\p{L}*)$/u, 2],
-  [/^(?:wednesday|keskiviikko\p{L}*|keskiviikkoon)$/u, 3],
-  [/^(?:thursday|torstai\p{L}*)$/u, 4],
-  [/^(?:friday|perjantai\p{L}*)$/u, 5],
-  [/^(?:saturday|lauantai\p{L}*)$/u, 6],
+  [/^(?:sunday|söndagen|söndag|sunnuntai\p{L}*)$/u, 0],
+  [/^(?:monday|måndagen|måndag|maanantai\p{L}*)$/u, 1],
+  [/^(?:tuesday|tisdagen|tisdag|tiistai\p{L}*)$/u, 2],
+  [/^(?:wednesday|onsdagen|onsdag|keskiviikko\p{L}*|keskiviikkoon)$/u, 3],
+  [/^(?:thursday|torsdagen|torsdag|torstai\p{L}*)$/u, 4],
+  [/^(?:friday|fredagen|fredag|perjantai\p{L}*)$/u, 5],
+  [/^(?:saturday|lördagen|lördag|lauantai\p{L}*)$/u, 6],
 ];
 
 const RELATIVE: [RegExp, number][] = [
-  [/^(?:today|tänään)$/u, 0],
-  [/^(?:tomorrow|huomenna|huomiseksi|huomiselle|huomiseen)$/u, 1],
+  [/^(?:today|tänään|idag)$/u, 0],
+  [/^(?:tomorrow|imorgon|huomenna|huomiseksi|huomiselle|huomiseen)$/u, 1],
   [/^(?:ylihuomenna|ylihuomiseksi)$/u, 2],
 ];
 
-const NUMBER_WORDS: Record<string, number> = { thousand: 1000, tuhat: 1000, hundred: 100, sata: 100 };
+const NUMBER_WORDS: Record<string, number> = {
+  thousand: 1000, tuhat: 1000, tusen: 1000, hundred: 100, sata: 100, hundra: 100,
+  one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, twelve: 12, dozen: 12, twenty: 20, fifty: 50,
+  yksi: 1, kaksi: 2, kaks: 2, kolme: 3, neljä: 4, viisi: 5, kuusi: 6, seitsemän: 7, kahdeksan: 8, yhdeksän: 9, kymmenen: 10, tusina: 12, kaksikymmentä: 20, viisikymmentä: 50,
+  ett: 1, två: 2, tre: 3, fyra: 4, fem: 5, sex: 6, sju: 7, åtta: 8, nio: 9, tio: 10, tolv: 12, tjugo: 20, femtio: 50,
+  half: 0.5, puoli: 0.5, halv: 0.5,
+};
 
 const FILLER = new Set([
   "of", "for", "by", "on", "the", "a", "an", "please", "i", "we", "need", "want", "order", "buy", "get",
   "about", "around", "approx", "approximately", "noin", "tilaa", "tilataan", "tarvitaan", "tarvitsen",
   "tarvitsemme", "ostetaan", "deliver", "delivered", "delivery", "toimitus", "until", "before", "next",
-  "product", "tuote", "x", "and", "ja",
+  "product", "tuote", "x", "and", "ja", "some", "me", "us", "my", "our", "can", "could", "you", "would", "like", "pls",
+  "send", "bring", "haluan", "haluaisin", "tilaisin", "laita", "laittakaa", "tuokaa", "meille", "mulle", "minulle", "vähän",
+  "jotain", "kiitos", "jag", "vi", "behöver", "beställ", "köp", "skicka", "vill", "ha", "lite", "några", "tack", "till", "oss",
 ]);
 
 const WORD = /[\p{L}\d][\p{L}\d,.\-]*/gu;
@@ -70,7 +79,7 @@ interface Token {
 const CLAUSE_END = /[!?;\n]|\.(?!\d)/;
 
 /** Words that tie a date to the request ("by Monday", "maanantaihin mennessä"); they are read with the date. */
-const DATE_BEFORE = new Set(["by", "on", "for", "until", "till", "before", "senast", "på", "innan"]);
+const DATE_BEFORE = new Set(["by", "on", "for", "until", "till", "before", "senast", "på", "innan", "tills"]);
 const DATE_AFTER = new Set(["mennessä", "asti"]);
 
 function tokenize(text: string): Token[] {

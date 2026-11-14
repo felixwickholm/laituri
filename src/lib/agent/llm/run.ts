@@ -1,7 +1,7 @@
 import { runPurchase } from "../purchase";
 import type { AgentHooks, AgentTransport, PurchaseResult } from "../types";
 import { admitModelCall } from "./budget";
-import { providerFor, selectEngine, type EngineChoice } from "./engine";
+import { engineChain, providerFor, selectEngine, type EngineChoice } from "./engine";
 import { runModelPurchase } from "./loop";
 import type { AgentEngine } from "./types";
 
@@ -11,19 +11,32 @@ export function activeEngine(env: Record<string, string | undefined> = process.e
   return model ? { engine, model } : { engine };
 }
 
+const ENGINE_NAMES = { claude: "The Claude agent", gemini: "The Gemini agent" } as const;
+
 /**
- * Runs a free-text request with the selected engine. Without a usable model, or once the model budget for this caller
- * or this day is spent, the scripted agent runs it.
+ * Runs a free-text request with the selected engines in order (Gemini, then Claude, by default). A model that cannot
+ * finish hands the request to the next; the scripted agent is always last. Without a usable model, or once the model
+ * budget for this caller or this day is spent, the scripted agent runs it.
  */
 export async function runBuyerAgent(
   requestText: string,
   transport: AgentTransport,
   hooks: AgentHooks,
-  choice: EngineChoice = selectEngine(),
+  chain: EngineChoice | EngineChoice[] = engineChain(),
 ): Promise<PurchaseResult> {
-  const provider = providerFor(choice);
-  if (provider && admitModelCall()) return runModelPurchase(requestText, transport, hooks, provider);
-  if (provider || !choice.unavailable) return runPurchase(requestText, transport, hooks);
+  const choices = Array.isArray(chain) ? chain : [chain];
+  const choice = choices[0] ?? { engine: "scripted" as const };
+  const providers = choices.map((item) => providerFor(item)).filter((item) => item !== undefined);
+  if (providers.length && admitModelCall()) {
+    const runFrom = (index: number): Promise<PurchaseResult> => {
+      const later = providers[index + 1];
+      return runModelPurchase(requestText, transport, hooks, providers[index], {
+        next: later ? { name: ENGINE_NAMES[later.engine], run: () => runFrom(index + 1) } : undefined,
+      });
+    };
+    return runFrom(0);
+  }
+  if (providers.length || !choice.unavailable) return runPurchase(requestText, transport, hooks);
   const step = { text: `The model agent is not available: ${choice.unavailable} The scripted agent runs this request.`, status: "error" as const };
   await hooks.note(step.text, step.status);
   const result = await runPurchase(requestText, transport, hooks);

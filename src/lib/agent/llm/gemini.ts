@@ -26,8 +26,19 @@ const GenerateResponse = z.object({
 export interface GeminiOptions {
   apiKey: string;
   model: string;
+  /** Gemini 3 thinking level: minimal, low (default, stays fast), medium or high. Gemini 2.5 gets a token budget instead. */
+  thinking?: string;
   /** Replaces the network in tests. */
   fetch?: typeof fetch;
+}
+
+const LEVELS = new Set(["minimal", "low", "medium", "high"]);
+const BUDGETS: Record<string, number> = { minimal: 0, low: 1_024, medium: 4_096, high: 8_192 };
+
+/** Thinking on, at a level that keeps a run fast. */
+export function thinkingConfig(model: string, level = "low"): Record<string, unknown> {
+  const chosen = LEVELS.has(level) ? level : "low";
+  return model.startsWith("gemini-2.5") ? { thinkingBudget: BUDGETS[chosen] } : { thinkingLevel: chosen };
 }
 
 function declaration(spec: ToolSpec) {
@@ -110,7 +121,7 @@ export function geminiProvider(options: GeminiOptions): ModelProvider {
               systemInstruction: { parts: [{ text: system }] },
               contents,
               tools: [{ functionDeclarations: tools.map(declaration) }],
-              generationConfig: { maxOutputTokens: MAX_OUTPUT_TOKENS },
+              generationConfig: { maxOutputTokens: MAX_OUTPUT_TOKENS, thinkingConfig: thinkingConfig(options.model, options.thinking) },
             },
             signal,
           );

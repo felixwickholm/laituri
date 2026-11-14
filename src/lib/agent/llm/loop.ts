@@ -14,6 +14,8 @@ const ENGINE_NAMES: Record<ModelEngine, string> = { claude: "Claude", gemini: "G
 export interface ModelRunOptions {
   maxRounds?: number;
   timeoutMs?: number;
+  /** Who takes over when this model cannot finish, and its name for the note. Default: the scripted agent. */
+  next?: { name: string; run: () => Promise<PurchaseResult> };
 }
 
 function reasonOf(error: unknown, signal: AbortSignal): string {
@@ -44,9 +46,10 @@ export async function runModelPurchase(
     return { status, summary, steps, ...extra };
   };
   const fallback = async (reason: string): Promise<PurchaseResult> => {
-    await say(`The ${ENGINE_NAMES[provider.engine]} agent stopped: ${reason} The scripted agent takes over.`, "error");
-    const scripted = await runPurchase(requestText, transport, hooks);
-    return { ...scripted, steps: [...steps, ...scripted.steps] };
+    const next = options.next ?? { name: "The scripted agent", run: () => runPurchase(requestText, transport, hooks) };
+    await say(`The ${ENGINE_NAMES[provider.engine]} agent stopped: ${reason} ${next.name} takes over.`, "error");
+    const taken = await next.run();
+    return { ...taken, steps: [...steps, ...taken.steps] };
   };
 
   const signal = AbortSignal.timeout(options.timeoutMs ?? RUN_TIMEOUT_MS);

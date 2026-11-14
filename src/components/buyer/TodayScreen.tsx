@@ -3,6 +3,7 @@
 import { CalendarHeart, MessageCircle, ShoppingBasket, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { isEventRequest } from "@/lib/console/basket";
 import { weeklyBasket, isoWeek } from "@/lib/console/basket-verdict";
 import { useBaskets } from "@/lib/console/basket-store";
 import { longDay } from "@/lib/console/format/time";
@@ -16,6 +17,7 @@ import { WeeklyDraftCard } from "../basket/WeeklyDraftCard";
 import { WeeklyVerdict } from "../basket/WeeklyVerdict";
 import { QuickCatalogue, QuickSearch } from "../shop/QuickOrder";
 import { useNow } from "../ui/useNow";
+import { AgentAsk, looksLikeRequest } from "./AgentAsk";
 import { MilkExample } from "./MilkExample";
 import { PlanEventChoice } from "./PlanEventChoice";
 import { SuspensionBanner } from "./SuspensionBanner";
@@ -35,6 +37,17 @@ export function TodayScreen({ basketId }: { basketId?: string }) {
   const draft = useWeeklyDraft(basketsReady && !hero);
   const agent = snapshot.mandate?.mandate.agent;
   const suspension = agentSuspension(snapshot.audit, agent?.id);
+
+  /** Enter on a sentence: an event goes to the planner, anything else to the agent through the chip below the field. */
+  function submitWords(words: string) {
+    if (!looksLikeRequest(words)) return;
+    if (isEventRequest(words)) {
+      planEvent(words);
+      setQuery("");
+      return;
+    }
+    document.querySelector<HTMLButtonElement>(".agent-ask .milk-chip")?.click();
+  }
 
   function planEvent(words: string) {
     setEvent((current) => ({ words, key: (current?.key ?? 0) + 1 }));
@@ -59,7 +72,8 @@ export function TodayScreen({ basketId }: { basketId?: string }) {
             <ShoppingBasket aria-hidden="true" />
             Order directly
           </h2>
-          <QuickSearch value={query} onChange={setQuery} />
+          <QuickSearch value={query} onChange={setQuery} onEnter={submitWords} placeholder="Milk, butter… or say it in your own words" />
+          <AgentAsk query={query} onSent={() => setQuery("")} />
           <MilkExample />
         </section>
         <QuickCatalogue query={query} />

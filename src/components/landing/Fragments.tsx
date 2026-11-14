@@ -116,7 +116,7 @@ const ATTEMPTS = [
   { tried: "Change the record afterwards.", caught: "The record’s seal breaks at once." },
 ];
 
-/** The agent's five tries to cheat, each stopped, and the record's seal. */
+/** The agent's five tries to break the rules, each stopped, and the record's seal. */
 export function SafeFragment() {
   const Blocked = STATE_ICON.red;
   return (

@@ -1,6 +1,6 @@
 import "../store/temp-data-dir";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_CLAUDE_MODEL, DEFAULT_GEMINI_MODEL, activeEngine, providerFor, runBuyerAgent, selectEngine } from "@/lib/agent/llm";
+import { DEFAULT_CLAUDE_MODEL, DEFAULT_GEMINI_MODEL, activeEngine, engineChain, providerFor, runBuyerAgent, selectEngine } from "@/lib/agent/llm";
 import { createGateway } from "@/lib/gateway";
 import type { AgentTransport } from "@/lib/agent";
 import { AGENT, makeDeps } from "../support/deps";
@@ -8,16 +8,23 @@ import { AGENT, makeDeps } from "../support/deps";
 const BOTH = { ANTHROPIC_API_KEY: "a", GEMINI_API_KEY: "g" };
 
 describe("selectEngine", () => {
-  it("prefers Claude, then Gemini, then the scripted agent", () => {
-    expect(selectEngine(BOTH)).toEqual({ engine: "claude", model: DEFAULT_CLAUDE_MODEL });
-    expect(selectEngine({ GEMINI_API_KEY: "g" })).toEqual({ engine: "gemini", model: DEFAULT_GEMINI_MODEL });
+  it("prefers Gemini, then Claude, then the scripted agent", () => {
+    expect(selectEngine(BOTH)).toEqual({ engine: "gemini", model: DEFAULT_GEMINI_MODEL });
+    expect(selectEngine({ ANTHROPIC_API_KEY: "a" })).toEqual({ engine: "claude", model: DEFAULT_CLAUDE_MODEL });
     expect(selectEngine({})).toEqual({ engine: "scripted" });
+  });
+
+  it("chains the other model behind the selected one", () => {
+    expect(engineChain(BOTH).map((choice) => choice.engine)).toEqual(["gemini", "claude"]);
+    expect(engineChain({ ...BOTH, LAITURI_AGENT_ENGINE: "claude" }).map((choice) => choice.engine)).toEqual(["claude", "gemini"]);
+    expect(engineChain({ GEMINI_API_KEY: "g" }).map((choice) => choice.engine)).toEqual(["gemini"]);
+    expect(engineChain({ ...BOTH, LAITURI_AGENT_ENGINE: "scripted" })).toEqual([{ engine: "scripted" }]);
   });
 
   it("follows LAITURI_AGENT_ENGINE and the model overrides", () => {
     expect(selectEngine({ ...BOTH, LAITURI_AGENT_ENGINE: "gemini", LAITURI_GEMINI_MODEL: "gemini-x" })).toEqual({ engine: "gemini", model: "gemini-x" });
     expect(selectEngine({ ...BOTH, LAITURI_AGENT_ENGINE: "scripted" })).toEqual({ engine: "scripted" });
-    expect(selectEngine({ ...BOTH, LAITURI_CLAUDE_MODEL: "claude-x" }).model).toBe("claude-x");
+    expect(selectEngine({ ...BOTH, LAITURI_AGENT_ENGINE: "claude", LAITURI_CLAUDE_MODEL: "claude-x" }).model).toBe("claude-x");
   });
 
   it("says why a requested engine cannot run", () => {
@@ -29,7 +36,7 @@ describe("selectEngine", () => {
   });
 
   it("builds a provider only for a model engine", () => {
-    expect(providerFor(selectEngine(BOTH), BOTH)?.engine).toBe("claude");
+    expect(providerFor(selectEngine(BOTH), BOTH)?.engine).toBe("gemini");
     expect(providerFor({ engine: "scripted" }, BOTH)).toBeUndefined();
   });
 

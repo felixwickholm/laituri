@@ -21,7 +21,7 @@ import { ProductImage } from "./ProductImage";
 const SHOWN = 8;
 
 /** The search field for the "Order directly" card. Results show below it as the person types. */
-export function QuickSearch({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+export function QuickSearch({ value, onChange, onEnter, placeholder = "Milk, butter, rice…" }: { value: string; onChange: (value: string) => void; onEnter?: (value: string) => void; placeholder?: string }) {
   return (
     <div className="quick-search">
       <label htmlFor="quick-q" className="sr-only">
@@ -33,7 +33,13 @@ export function QuickSearch({ value, onChange }: { value: string; onChange: (val
         type="search"
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        placeholder="Milk, butter, rice…"
+        onKeyDown={(event) => {
+          if (event.key === "Enter" && onEnter && !event.nativeEvent.isComposing) {
+            event.preventDefault();
+            onEnter(value);
+          }
+        }}
+        placeholder={placeholder}
         autoComplete="off"
         spellCheck={false}
         enterKeyHint="search"

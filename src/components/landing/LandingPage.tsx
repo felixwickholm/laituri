@@ -55,7 +55,7 @@ export function LandingPage() {
           id="lp-safe"
           band="petrol"
           title="Safe by design"
-          line="We let an agent try to cheat, five ways. Each try was stopped."
+          line="We let an agent try to break the rules, five ways. Each try was stopped."
           link={{ href: "/security", label: "See the security page" }}
         >
           <SafeFragment />

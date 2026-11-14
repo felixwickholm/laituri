@@ -127,7 +127,7 @@ describe("runPurchase", () => {
     const { transport, calls } = fakeTransport();
     const result = await runPurchase("milk for Monday", transport, hooks);
     expect(result.status).toBe("needs_input");
-    expect(result.summary).toBe("I need a quantity. How much milk do you need?");
+    expect(result.summary).toBe("How much milk do you need, and by which day?");
     expect(Object.values(calls).every((count) => count === 0)).toBe(true);
   });
 

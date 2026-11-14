@@ -136,7 +136,7 @@ How to check: `npm run eval -- --suite openness`; `/api/v1/openapi.json` on the 
 Measured:
 
 - Openness eval suite: 8/8 cases pass (bar 100%).
-- Unit and integration tests: 3638/3638 pass in 155 files.
+- Unit and integration tests: 3643/3643 pass in 155 files.
 
 Known limit: Agents use demo bearer tokens, not OAuth 2.1. AP2, UCP and Peppol are followed in names and shapes; no Peppol UBL document is produced.
 
