@@ -1,7 +1,10 @@
 import type { z } from "zod";
 import { ValidationError } from "@/lib/gateway/errors";
+import { inWorkspace } from "@/lib/workspace/context";
 import { refuseSuspendedCredential } from "./agent";
+import { refuseSharedWrite } from "./shared-view";
 import { errorResponse } from "./respond";
+import { resolveWorkspace } from "./workspace";
 
 /** Signed offers and mandates fit well inside this; nothing legitimate is larger. */
 const MAX_BODY_CHARS = 64_000;
@@ -10,16 +13,26 @@ type Params = Record<string, string>;
 type Context = { params: Promise<Params> };
 type Handler = (request: Request, params: Params) => Promise<Response>;
 
+export interface RouteOptions {
+  /** A browser looking at the shared workspace may call this without a session: signing in, or switching back. */
+  openInSharedView?: boolean;
+}
+
 /**
- * Wraps a route handler so every thrown error becomes a problem response.
+ * Wraps a route handler: it runs in the caller's workspace, and every thrown error becomes a problem response.
  * A suspended agent's credential is refused before the handler runs, whatever the route serves.
+ * A browser looking at the shared workspace only reads there unless it signed in.
  */
-export function route(handler: Handler) {
+export function route(handler: Handler, options: RouteOptions = {}) {
   return async (request: Request, context?: Context): Promise<Response> => {
     try {
-      await refuseSuspendedCredential(request);
-      const params = context ? await context.params : {};
-      return await handler(request, params);
+      const { workspace, access } = await resolveWorkspace(request.headers);
+      return await inWorkspace(workspace, async () => {
+        await refuseSuspendedCredential(request);
+        if (access === "shared-view" && !options.openInSharedView) await refuseSharedWrite(request);
+        const params = context ? await context.params : {};
+        return await handler(request, params);
+      });
     } catch (error) {
       return errorResponse(error);
     }

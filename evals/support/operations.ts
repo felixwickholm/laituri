@@ -1,7 +1,7 @@
 import type { Order } from "@/lib/contracts";
 import { EXAMPLES } from "@/lib/openapi/examples";
 import { OPERATIONS, type Operation } from "@/lib/openapi/registry";
-import { MILK_ID, approverCookie, mandate, monday, orderLitres, quoteLitres } from "./flow";
+import { MILK_ID, approverCookie, mandate, monday, operatorCookie, orderLitres, quoteLitres } from "./flow";
 import { pendingOrder } from "./hostile";
 import { AGENT_AUTH, call } from "./router";
 
@@ -12,6 +12,7 @@ interface Context {
   orderId: string;
   pendingId: string;
   cookie: string;
+  operatorCookie: string;
 }
 
 interface Recipe {
@@ -47,6 +48,8 @@ const RECIPES: Record<string, (ctx: Context) => Recipe> = {
   getVoice: () => ({}),
   // The evals run without an ElevenLabs key, so the documented answer is 404 voice_not_configured.
   speakText: () => ({ body: { text: "Order confirmed." }, expect: 404 }),
+  getWorkspace: () => ({}),
+  setWorkspaceView: () => ({ body: { view: "sandbox" } }),
 };
 
 async function context(): Promise<Context> {
@@ -60,6 +63,7 @@ async function context(): Promise<Context> {
     orderId: order.id,
     pendingId: pending.id,
     cookie: await approverCookie(),
+    operatorCookie: await operatorCookie(),
   };
 }
 
@@ -71,6 +75,7 @@ export interface OperationResult {
 
 function headersFor(operation: Operation, ctx: Context): Record<string, string> {
   if (operation.audience === "human") return { cookie: ctx.cookie };
+  if (operation.audience === "operator") return { cookie: ctx.operatorCookie };
   return operation.audience === "agent" ? AGENT_AUTH : {};
 }
 

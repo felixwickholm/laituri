@@ -1,6 +1,6 @@
 import type { AuditEntry } from "@/lib/contracts";
 import { GENESIS_HASH, entryHash } from "@/lib/audit/verify";
-import { trust } from "@/lib/trust";
+import { TOKEN_TYPE, trust } from "@/lib/trust";
 
 /**
  * The log as an operator holding the supplier key could rewrite it: the first `keep` entries unchanged,
@@ -21,7 +21,7 @@ export async function rewriteLog(entries: AuditEntry[], keep: number, add: numbe
       signature: "",
     };
     entry.hash = await entryHash(entry);
-    entry.signature = await trust().sign("supplier", { seq: entry.seq, hash: entry.hash }, { typ: "audit+jwt" });
+    entry.signature = await trust().sign("supplier", { seq: entry.seq, hash: entry.hash }, TOKEN_TYPE.audit);
     log.push(entry);
   }
   return log;

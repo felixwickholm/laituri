@@ -4,7 +4,7 @@ import type { Actor } from "@/lib/contracts";
 import { appendAudit, checkpoint, forgetHead, GENESIS_HASH, verifyAuditLog, verifyChain } from "@/lib/audit";
 import { AuditBrokenError } from "@/lib/gateway/errors";
 import { store } from "@/lib/store";
-import { jwks, trust, verifyWithJwks } from "@/lib/trust";
+import { jwks, TOKEN_TYPE, trust, verifyWithJwks } from "@/lib/trust";
 
 const agent: Actor = { type: "agent", id: "agent:harbour-purchasing", name: "Harbour purchasing agent" };
 
@@ -46,7 +46,7 @@ describe("audit chain", () => {
   it("finds a deleted middle entry", async () => {
     const entries = await appendFive();
     const withoutThird = entries.filter((e) => e.seq !== 3);
-    const result = await verifyChain(withoutThird, (jws) => trust().verify("supplier", jws));
+    const result = await verifyChain(withoutThird, (jws) => trust().verify("supplier", jws, TOKEN_TYPE.audit));
     expect(result).toMatchObject({ valid: false, brokenAt: 4 });
   });
 
@@ -72,12 +72,12 @@ describe("audit chain", () => {
     const entries = await appendFive();
     const { checkpoint: value, jws } = await checkpoint();
     expect(value).toMatchObject({ size: 5, head: entries[4].hash });
-    expect((await trust().verify("supplier", jws)).payload).toEqual(value);
+    expect((await trust().verify("supplier", jws, TOKEN_TYPE.checkpoint)).payload).toEqual(value);
   });
 
   it("finds a log whose newest entries were removed", async () => {
     const entries = await appendFive();
-    const verifier = (jws: string) => trust().verify("supplier", jws);
+    const verifier = (jws: string) => trust().verify("supplier", jws, TOKEN_TYPE.audit);
     const recorded = { size: 5, head: entries[4].hash };
     expect(await verifyChain(entries, verifier, recorded)).toMatchObject({ valid: true, entries: 5 });
     expect(await verifyChain(entries.slice(0, 3), verifier, recorded)).toMatchObject({ valid: false, brokenAt: 4 });
@@ -92,7 +92,7 @@ describe("audit chain", () => {
     forgetHead();
     for (const summary of ["Search 1.", "Forged 2.", "Forged 3."]) await appendAudit({ actor: agent, event: "catalog.searched", summary });
     const fork = await store().audit.list();
-    const result = await verifyChain(fork, (jws) => trust().verify("supplier", jws), remembered);
+    const result = await verifyChain(fork, (jws) => trust().verify("supplier", jws, TOKEN_TYPE.audit), remembered);
     expect(result).toMatchObject({ valid: false, brokenAt: 2 });
     expect(result.reason).toContain("rewritten");
   });
@@ -106,7 +106,7 @@ describe("audit chain", () => {
     for (let i = 4; i <= 6; i++) await appendAudit({ actor: agent, event: "catalog.searched", summary: `Other ${i}.` });
     const extended = await store().audit.list();
     expect(extended[2].hash).toBe(entries[2].hash);
-    const result = await verifyChain(extended, (jws) => trust().verify("supplier", jws), remembered);
+    const result = await verifyChain(extended, (jws) => trust().verify("supplier", jws, TOKEN_TYPE.audit), remembered);
     expect(result).toMatchObject({ valid: false, brokenAt: 5 });
   });
 

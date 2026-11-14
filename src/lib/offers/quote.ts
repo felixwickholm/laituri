@@ -3,6 +3,8 @@ import { UpstreamError, errorMessage } from "@/lib/gateway/errors";
 import { checkRequest, offeredLines, readBuyerWords } from "@/lib/request";
 import { TIER_MEANING, planAlternatives, type Need } from "./alternatives";
 import { assembleOffer, issueOffer } from "./assemble";
+import { productName } from "./format";
+import { checkQuoteLimits } from "./limits";
 import { quoteLine } from "./lines";
 import { stockLedger } from "./stock";
 import type { BuiltLine, Market, OfferDeps, QuoteContext } from "./types";
@@ -23,11 +25,15 @@ async function fetchMarket(ids: string[], request: QuoteRequest, ctx: QuoteConte
 }
 
 /**
- * Price the request as asked, with honest availability, and sign it.
+ * Price the request as asked, with honest availability, and sign it. A past date or an implausible quantity is refused first.
  * When it cannot be met in full and on time, add up to three signed alternatives.
  * Requested products and their substitute candidates share one price call and one availability call.
  */
 export async function quote(request: QuoteRequest, ctx: QuoteContext, deps: OfferDeps): Promise<QuoteResponse> {
+  checkQuoteLimits(request, deps.now(), (id) => {
+    const product = deps.catalog.get(id);
+    return product ? productName(product) : `product ${id}`;
+  });
   const requested = request.lines.map((line) => ({ line, product: deps.catalog.get(line.productId) }));
   const candidates = new Map<string, Product[]>();
   for (const { product } of requested) {

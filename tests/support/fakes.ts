@@ -1,11 +1,11 @@
-import { CompactSign, compactVerify, exportJWK, generateKeyPair, type CryptoKey } from "jose";
+import { CompactSign, compactVerify, decodeProtectedHeader, exportJWK, generateKeyPair, type CryptoKey } from "jose";
 import { createHash } from "node:crypto";
 import type { AgentSuspension, AuditEntry, Order, Product, SearchRequest, SearchResponse, SignedOffer } from "@/lib/contracts";
 import { productFacts } from "@/lib/catalog/facts";
 import type { Catalog } from "@/lib/catalog/types";
 import type { DemandRecord } from "@/lib/demand/types";
 import type { Activity, Store } from "@/lib/store/types";
-import type { SignerRole, Verified } from "@/lib/trust/types";
+import type { SignerRole, TokenType, Verified } from "@/lib/trust/types";
 import type { UpstreamAvailability, UpstreamClient, UpstreamPrice } from "@/lib/valio/types";
 import type { AuditInput, AuditLog } from "@/lib/orders/types";
 import { AVAILABILITY, PRICES, PRODUCTS } from "./products";
@@ -60,15 +60,16 @@ export class FakeTrust {
     return this.keys.get(role)!;
   }
 
-  async sign(role: SignerRole, payload: object, options?: { typ?: string }): Promise<string> {
+  async sign(role: SignerRole, payload: object, typ: TokenType): Promise<string> {
     const { privateKey } = await this.key(role);
     return new CompactSign(new TextEncoder().encode(JSON.stringify(payload)))
-      .setProtectedHeader({ alg: "ES256", kid: role, typ: options?.typ ?? "JWT" })
+      .setProtectedHeader({ alg: "ES256", kid: role, typ })
       .sign(privateKey);
   }
 
-  async verify<T>(role: SignerRole, jws: string): Promise<Verified<T>> {
+  async verify<T>(role: SignerRole, jws: string, typ: TokenType): Promise<Verified<T>> {
     try {
+      if (decodeProtectedHeader(jws).typ !== typ) return { valid: false, reason: "wrong token type" };
       const { publicKey } = await this.key(role);
       const { payload } = await compactVerify(jws, publicKey);
       return { valid: true, payload: JSON.parse(new TextDecoder().decode(payload)) as T, keyId: role };

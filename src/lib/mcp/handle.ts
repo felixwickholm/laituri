@@ -1,6 +1,8 @@
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { resolveAgent } from "@/lib/http/agent";
 import { errorResponse } from "@/lib/http/respond";
+import { resolveWorkspace } from "@/lib/http/workspace";
+import { inWorkspace } from "@/lib/workspace/context";
 import { mcpCall, mcpClient } from "./clients";
 import { createMcpServer } from "./server";
 
@@ -37,10 +39,23 @@ function withKeyFromAddress(request: Request): Headers {
   return headers;
 }
 
-/** Handles one stateless MCP POST: a fresh server and transport per request, JSON responses, no sessions. */
+/**
+ * Handles one stateless MCP POST: a fresh server and transport per request, JSON responses, no sessions.
+ * It runs in the workspace the agent's key belongs to, like a REST call.
+ */
 export async function handleMcpPost(request: Request): Promise<Response> {
-  const body = await request.text();
   const headers = withKeyFromAddress(request);
+  let resolved;
+  try {
+    resolved = await resolveWorkspace(headers);
+  } catch (error) {
+    return withCors(errorResponse(error));
+  }
+  return inWorkspace(resolved.workspace, () => serveMcp(request, headers));
+}
+
+async function serveMcp(request: Request, headers: Headers): Promise<Response> {
+  const body = await request.text();
   let agent;
   try {
     agent = await resolveAgent(headers, mcpCall(body), mcpClient(headers, body));

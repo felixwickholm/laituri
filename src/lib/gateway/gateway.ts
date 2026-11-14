@@ -205,8 +205,8 @@ export function createGateway(deps: Deps): Gateway {
       await caller(agentInput, call);
     },
 
-    async setAgentSuspension(agentId, input) {
-      return suspensions.set(agentId, validate(SuspensionRequest, input, "suspension request"));
+    async setAgentSuspension(agentId, input, operator) {
+      return suspensions.set(agentId, validate(SuspensionRequest, input, "suspension request"), operator);
     },
 
     async reset() {

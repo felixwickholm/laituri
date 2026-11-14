@@ -37,6 +37,12 @@ describe("llms.txt", () => {
     }
   });
 
+  it("tells an agent the answer each order outcome gets", () => {
+    expect(text).toMatch(/201 confirmed/);
+    expect(text).toMatch(/202 pending_approval/);
+    expect(text).toMatch(/422 order_blocked[^\n]*order\.decision\.checks/);
+  });
+
   it("keeps what an outside agent needs to buy: the token, every tool and a curl line per step", () => {
     expect(text).toContain("Authorization: Bearer demo-agent-token");
     for (const tool of TOOLS) expect(text).toContain(tool.name);

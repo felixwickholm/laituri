@@ -10,7 +10,7 @@ import type {
 } from "@/lib/contracts";
 import type { Catalog } from "@/lib/catalog/types";
 import type { Store } from "@/lib/store/types";
-import type { SignerRole, Verified } from "@/lib/trust/types";
+import type { SignerRole, TokenType, Verified } from "@/lib/trust/types";
 
 export interface MandateRead {
   valid: boolean;
@@ -72,7 +72,7 @@ export interface AuditLog {
 
 export interface OrderDeps {
   catalog: Pick<Catalog, "get">;
-  trust: Signer & { verify<T>(role: SignerRole, jws: string): Promise<Verified<T>> };
+  trust: Signer & { verify<T>(role: SignerRole, jws: string, typ: TokenType): Promise<Verified<T>> };
   store: Pick<Store, "offers" | "orders">;
   policy: PolicyEngine;
   mandates: MandateService;
@@ -84,9 +84,9 @@ export interface OrderDeps {
 
 export type { StoredOrder } from "@/lib/store";
 
-/** Signing with an optional JOSE typ header, such as "receipt+jwt". */
+/** Signing with the JOSE typ header of the object signed, such as "receipt+jwt". */
 export interface Signer {
-  sign(role: SignerRole, payload: object, options?: { typ?: string }): Promise<string>;
+  sign(role: SignerRole, payload: object, typ: TokenType): Promise<string>;
 }
 
 export interface Caller {

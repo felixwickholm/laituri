@@ -1,7 +1,7 @@
 import { ValidationError } from "@/lib/gateway/errors";
 import { PRIMARY_BUYER_ID, isKnownBuyer } from "@/lib/mandate";
 import { ForbiddenError, bearerToken, resolveAgent, restCall } from "./agent";
-import { readSession } from "./console-session";
+import { approverSession } from "./console-session";
 
 /**
  * The buyer a read is about. An agent token reads only its own buyer's records and may not name another.
@@ -18,5 +18,5 @@ export async function readerBuyer(request: Request): Promise<string> {
     if (!isKnownBuyer(named)) throw new ValidationError(`No buyer with the id ${named} is known.`);
     return named;
   }
-  return (await readSession(request.headers)).buyer?.id ?? PRIMARY_BUYER_ID;
+  return (await approverSession(request.headers))?.buyer.id ?? PRIMARY_BUYER_ID;
 }

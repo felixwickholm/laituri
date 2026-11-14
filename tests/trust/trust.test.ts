@@ -2,7 +2,7 @@ import "../store/temp-data-dir";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { canonicalize, jwks, ROLES, sha256Hex, trust, verifyWithJwks } from "@/lib/trust";
+import { canonicalize, jwks, ROLES, sha256Hex, TOKEN_TYPE, trust, verifyWithJwks } from "@/lib/trust";
 import { testDataDir } from "../store/temp-data-dir";
 
 function tamper(jws: string): string {
@@ -13,38 +13,38 @@ function tamper(jws: string): string {
 
 describe("trust", () => {
   it.each(ROLES)("signs and verifies for %s", async (role) => {
-    const jws = await trust().sign(role, { hello: role, n: 1 });
-    const result = await trust().verify<{ hello: string }>(role, jws);
+    const jws = await trust().sign(role, { hello: role, n: 1 }, TOKEN_TYPE.offer);
+    const result = await trust().verify<{ hello: string }>(role, jws, TOKEN_TYPE.offer);
     expect(result.valid).toBe(true);
     expect(result.payload?.hello).toBe(role);
   });
 
   it("writes keys under the data dir override", async () => {
-    await trust().sign("supplier", {});
+    await trust().sign("supplier", {}, TOKEN_TYPE.offer);
     const file = path.join(testDataDir!, "keys", "supplier.json");
     expect(existsSync(file)).toBe(true);
     expect(JSON.parse(readFileSync(file, "utf8")).d).toBeTypeOf("string");
   });
 
   it("rejects an altered payload", async () => {
-    const jws = await trust().sign("supplier", { total: 10 });
-    const result = await trust().verify("supplier", tamper(jws));
+    const jws = await trust().sign("supplier", { total: 10 }, TOKEN_TYPE.offer);
+    const result = await trust().verify("supplier", tamper(jws), TOKEN_TYPE.offer);
     expect(result).toMatchObject({ valid: false, reason: "signature does not match" });
   });
 
   it("rejects a token signed by another role", async () => {
-    const jws = await trust().sign("buyer", { total: 10 });
-    expect(await trust().verify("supplier", jws)).toMatchObject({ valid: false, reason: "unknown key" });
+    const jws = await trust().sign("buyer", { total: 10 }, TOKEN_TYPE.offer);
+    expect(await trust().verify("supplier", jws, TOKEN_TYPE.offer)).toMatchObject({ valid: false, reason: "unknown key" });
   });
 
   it("rejects malformed input without throwing", async () => {
-    expect(await trust().verify("supplier", "not-a-token")).toMatchObject({ valid: false, reason: "malformed token" });
-    expect(await trust().verify("supplier", "a.b.c")).toMatchObject({ valid: false, reason: "malformed token" });
+    expect(await trust().verify("supplier", "not-a-token", TOKEN_TYPE.offer)).toMatchObject({ valid: false, reason: "malformed token" });
+    expect(await trust().verify("supplier", "a.b.c", TOKEN_TYPE.offer)).toMatchObject({ valid: false, reason: "malformed token" });
   });
 
   it("publishes a JWKS with the kid and no private part", async () => {
     const set = await jwks("approver");
-    const jws = await trust().sign("approver", { ok: true });
+    const jws = await trust().sign("approver", { ok: true }, TOKEN_TYPE.approval);
     const kid = JSON.parse(Buffer.from(jws.split(".")[0], "base64url").toString()).kid;
     expect(set.keys).toHaveLength(1);
     expect(set.keys[0].kid).toBe(kid);
@@ -52,7 +52,7 @@ describe("trust", () => {
   });
 
   it("verifies with the public JWKS only", async () => {
-    const jws = await trust().sign("supplier", { ok: true });
+    const jws = await trust().sign("supplier", { ok: true }, TOKEN_TYPE.offer);
     expect((await verifyWithJwks(jws, await jwks("supplier"))).valid).toBe(true);
     expect(await verifyWithJwks(jws, await jwks("buyer"))).toMatchObject({ valid: false, reason: "unknown key" });
     expect((await verifyWithJwks(tamper(jws), await jwks("supplier"))).reason).toBe("signature does not match");

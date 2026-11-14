@@ -31,8 +31,9 @@ export function priceChangePct(original: Product, candidate: Product, market: Ma
 export function shortfallReason(line: OfferLine): string {
   const { status, requested, available } = line.availability;
   switch (status) {
+    // Only counted stock can fall short, so a partial line always carries its count.
     case "partial":
-      return `Only ${count(available)} of ${count(requested)} units of ${line.name} are in stock.`;
+      return `Only ${count(available ?? 0)} of ${count(requested)} units of ${line.name} are in stock.`;
     case "cutoff_passed":
       return `The order cut-off for ${line.name} has passed.`;
     case "blocked":

@@ -1,17 +1,19 @@
+import { workspaceState } from "@/lib/workspace/context";
 import type { LogHead } from "./verify";
 
-const globalHead = globalThis as typeof globalThis & { __laituriAuditHead?: LogHead };
+/** A sandbox inherits the template's head, so its copied log is checked for completeness from the start. */
+const knownHeadOf = workspaceState<{ head?: LogHead }>("audit.head", () => ({}), { inherit: true });
 
-/** Records the newest entry written by this process, kept apart from the stored log. */
+/** Records the newest entry written in this workspace, kept apart from the stored log. */
 export function rememberHead(head: LogHead): void {
-  globalHead.__laituriAuditHead = head;
+  knownHeadOf().head = head;
 }
 
 export function knownHead(): LogHead | undefined {
-  return globalHead.__laituriAuditHead;
+  return knownHeadOf().head;
 }
 
 /** Called when the log is cleared on purpose. */
 export function forgetHead(): void {
-  globalHead.__laituriAuditHead = undefined;
+  knownHeadOf().head = undefined;
 }

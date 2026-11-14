@@ -6,7 +6,8 @@ import { dataDir } from "./data-dir";
 import { readSnapshot, writeSnapshot, type Recovery } from "./snapshot";
 import type { Activity, Store } from "./types";
 
-interface State {
+/** Everything a store holds. Plain JSON, so a copy is a structured clone. */
+export interface StoreState {
   offers: Record<string, SignedOffer>;
   orders: Record<string, Order>;
   audit: AuditEntry[];
@@ -22,7 +23,7 @@ export type StoredOrder = Order & { idempotencyKey?: string };
 /** Offers, activity and demand records are saved together a moment later; records that commit are saved at once. */
 const SNAPSHOT_DELAY_MS = 250;
 
-function emptyState(): State {
+function emptyState(): StoreState {
   return { offers: {}, orders: {}, audit: [], activity: [], requests: [], mandates: {}, suspensions: {} };
 }
 
@@ -33,9 +34,9 @@ function snapshotFile(): string {
 /** The activity feed is a view for the console, not a record; the audit log is the record. */
 const MAX_ACTIVITY = 1000;
 
-function toState(value: unknown): State {
+function toState(value: unknown): StoreState {
   if (!value || typeof value !== "object") return emptyState();
-  const parsed = value as Partial<State>;
+  const parsed = value as Partial<StoreState>;
   return {
     offers: parsed.offers ?? {},
     orders: parsed.orders ?? {},
@@ -56,6 +57,10 @@ export interface StoreStatus {
 export type MemoryStore = Store & {
   /** Saves now. Throws StorageError when the snapshot cannot be written. */
   flush(): void;
+  /** A deep copy of everything held, for starting another store from it. */
+  copyState(): StoreState;
+  /** Replaces everything held with `next`, which it takes over, and saves it. */
+  replaceState(next: StoreState): Promise<void>;
   /** The unreadable snapshot that was kept aside at start-up, if there was one. */
   recovery(): Recovery | undefined;
   status(): StoreStatus;
@@ -67,13 +72,24 @@ export type MemoryStore = Store & {
  */
 export function createMemoryStore(file: string = snapshotFile()): MemoryStore {
   const loaded = readSnapshot(file);
-  let state = toState(loaded.value);
+  return storeOver(toState(loaded.value), file, loaded.recovery);
+}
+
+/** State in memory only, gone when the store is dropped. It takes over `initial`; pass a copy (see copyState). */
+export function createVolatileStore(initial: StoreState = emptyState()): MemoryStore {
+  return storeOver(initial);
+}
+
+/** `file` absent: nothing is written, so no write can fail. */
+function storeOver(initial: StoreState, file?: string, recovery?: Recovery): MemoryStore {
+  let state = initial;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let lastSaveError: string | undefined;
 
   function flush(): void {
     if (timer) clearTimeout(timer);
     timer = undefined;
+    if (!file) return;
     try {
       writeSnapshot(file, state);
       lastSaveError = undefined;
@@ -84,7 +100,7 @@ export function createMemoryStore(file: string = snapshotFile()): MemoryStore {
   }
 
   function saveLater(): void {
-    if (timer) return;
+    if (timer || !file) return;
     timer = setTimeout(() => {
       try {
         flush();
@@ -113,8 +129,13 @@ export function createMemoryStore(file: string = snapshotFile()): MemoryStore {
 
   return {
     flush,
-    recovery: () => loaded.recovery,
-    status: () => ({ recovery: loaded.recovery, lastSaveError }),
+    recovery: () => recovery,
+    status: () => ({ recovery, lastSaveError }),
+    copyState: () => structuredClone(state),
+    async replaceState(next) {
+      const previous = state;
+      commit(() => (state = next), () => (state = previous));
+    },
     offers: {
       async put(offer) {
         state.offers[offer.offer.id] = offer;

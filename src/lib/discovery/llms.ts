@@ -21,6 +21,7 @@ Public keys (JWKS): ${urls.jwks}
 Header: Authorization: Bearer demo-agent-token (without it you act as an unidentified agent and orders are blocked).
 Clients that cannot send a header may put the demo key in the address: ${urls.mcp}?key=demo-agent-token
 Two more demo buyers have their own token and mandate: demo-kaisla-token (Kaisla School Kitchens) and demo-laine-token (Ravintola Laine).
+These fixed tokens act in the shared workspace. Each visitor to the console gets a private sandbox with its own keys, one per buyer, shown on ${origin}/connect; calls with those keys land in that visitor's sandbox.
 Over REST, X-Agent-Client names your application (for example "Claude Code") in the wholesaler's view.
 Tools: search_catalog, get_product, request_quote, get_mandate, place_order, get_order, verify_audit.
 
@@ -59,9 +60,9 @@ With jq: OFFER=$(curl -s ... /quotes ... | jq -r .primary.jws); MANDATE=$(curl -
 
 **Order outcomes.**
 
-- confirmed: receiptJws holds the wholesaler-signed receipt.
-- pending_approval: stop and tell your human. Do not retry with another key. Poll GET ${urls.rest}/orders/{id}.
-- blocked: nothing was ordered; decision.checks says why.
+- 201 confirmed: receiptJws holds the wholesaler-signed receipt.
+- 202 pending_approval: stop and tell your human. Do not retry with another key. Poll GET ${urls.rest}/orders/{id}.
+- 422 order_blocked: nothing was ordered. The problem body carries the order; order.decision.checks says why.
 
 The wholesaler can suspend an agent. While it is suspended every call answers 403 with the code agent_suspended; tell your human.
 Retrying with the same Idempotency-Key returns the same order.

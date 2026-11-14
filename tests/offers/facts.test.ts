@@ -4,6 +4,7 @@ import { productFacts } from "@/lib/catalog/facts";
 import { replacePayload } from "@/lib/demo/forge";
 import { quote } from "@/lib/offers";
 import { TIER_MEANING } from "@/lib/offers/alternatives";
+import { TOKEN_TYPE } from "@/lib/trust/types";
 import { QUOTE_CONTEXT, makeDeps } from "../support/deps";
 import { fakeCatalog } from "../support/fakes";
 import { DELIVER_BY, PRODUCTS } from "../support/products";
@@ -35,7 +36,7 @@ describe("facts inside the signed offer", () => {
     expect(primary.offer.lines[0].facts).toEqual({ countryOfOrigin: "FI", labels: [], deliveryReliability: 0.97 });
     const organic = alternatives.flatMap((alt) => alt.signed.offer.lines).find((line) => line.productId === "463335");
     expect(organic?.facts).toEqual({ countryOfOrigin: "FI", labels: ["eu_organic"], deliveryReliability: 0.9 });
-    expect((await trust.verify<Offer>("supplier", primary.jws)).payload?.lines[0].facts).toEqual(primary.offer.lines[0].facts);
+    expect((await trust.verify<Offer>("supplier", primary.jws, TOKEN_TYPE.offer)).payload?.lines[0].facts).toEqual(primary.offer.lines[0].facts);
   });
 
   it("breaks the signature when the origin or a label is changed", async () => {
@@ -46,7 +47,7 @@ describe("facts inside the signed offer", () => {
       (offer) => ({ ...offer, lines: offer.lines.map((line) => ({ ...line, facts: { ...line.facts!, labels: ["eu_organic"] } })) }),
     ];
     for (const edit of edits) {
-      expect(await trust.verify("supplier", replacePayload(primary.jws, edit))).toMatchObject({ valid: false });
+      expect(await trust.verify("supplier", replacePayload(primary.jws, edit), TOKEN_TYPE.offer)).toMatchObject({ valid: false });
     }
   });
 });

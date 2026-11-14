@@ -28,6 +28,7 @@ const TITLES: Record<number, string> = {
   422: "Cannot process",
   500: "Internal error",
   502: "Wholesaler unavailable",
+  503: "Storage unavailable",
 };
 
 export function json(body: unknown, init: ResponseInit = {}): Response {

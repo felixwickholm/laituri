@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ConflictError, NotFoundError, StateError, ValidationError } from "@/lib/gateway/errors";
 import { decideApproval, getOrder, pendingApprovals, placeOrder } from "@/lib/orders";
 import type { ReceiptPayload } from "@/lib/orders";
+import { TOKEN_TYPE } from "@/lib/trust/types";
 import { AGENT, BUYER } from "../support/deps";
 import { setup } from "./helpers";
 
@@ -16,7 +17,7 @@ describe("placeOrder", () => {
 
     expect(order).toMatchObject({ status: "confirmed", simulated: true, agent: AGENT, mandateId: "mandate:test" });
     expect(order.id).toMatch(/^ord_[a-z2-7]{10}$/);
-    const receipt = await env.trust.verify<ReceiptPayload>("supplier", order.receiptJws!);
+    const receipt = await env.trust.verify<ReceiptPayload>("supplier", order.receiptJws!, TOKEN_TYPE.receipt);
     expect(receipt.valid).toBe(true);
     expect(receipt.payload).toMatchObject({
       type: "order_receipt",
@@ -107,9 +108,9 @@ describe("approvals", () => {
     const approved = await decideApproval(order.id, { decision: "approved", note: "Fine for the weekend." }, env.deps, DECIDER);
     expect(approved.status).toBe("confirmed");
     expect(approved.approval).toMatchObject({ decision: "approved", decidedBy: { name: "Maria Lind" } });
-    const signed = await env.trust.verify<{ orderId: string; decision: string }>("approver", approved.approval!.jws);
+    const signed = await env.trust.verify<{ orderId: string; decision: string }>("approver", approved.approval!.jws, TOKEN_TYPE.approval);
     expect(signed.payload).toMatchObject({ orderId: order.id, decision: "approved" });
-    expect((await env.trust.verify("supplier", approved.receiptJws!)).valid).toBe(true);
+    expect((await env.trust.verify("supplier", approved.receiptJws!, TOKEN_TYPE.receipt)).valid).toBe(true);
     expect(env.audit.entries.slice(-2).map((e) => e.event)).toEqual(["approval.granted", "order.confirmed"]);
     expect(await pendingApprovals(BUYER.id, env.deps)).toHaveLength(0);
     await expect(decideApproval(order.id, { decision: "approved" }, env.deps, DECIDER)).rejects.toBeInstanceOf(StateError);

@@ -1,5 +1,13 @@
+/**
+ * Marks a GatewayError. Next bundles routes into separate module graphs, so one error class can exist twice in a
+ * process and instanceof fails across them; a symbol from the global registry is the same in every copy.
+ */
+const GATEWAY_ERROR = Symbol.for("laituri.gateway-error");
+
 /** Base for every error the gateway reports to callers, with an HTTP status and a stable machine code. */
 export class GatewayError extends Error {
+  readonly [GATEWAY_ERROR] = true;
+
   constructor(
     message: string,
     readonly status: number,
@@ -64,8 +72,16 @@ export class UpstreamError extends GatewayError {
   }
 }
 
+/** True for a GatewayError from any copy of this module. */
 export function isGatewayError(error: unknown): error is GatewayError {
-  return error instanceof GatewayError;
+  if (!(error instanceof Error)) return false;
+  const marked = error as Partial<GatewayError> & { [GATEWAY_ERROR]?: unknown };
+  return marked[GATEWAY_ERROR] === true && typeof marked.status === "number" && typeof marked.code === "string";
+}
+
+/** A GatewayError with this status, from any copy of this module. */
+export function hasStatus(error: unknown, status: number): error is GatewayError {
+  return isGatewayError(error) && error.status === status;
 }
 
 export function errorMessage(error: unknown): string {

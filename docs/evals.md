@@ -21,12 +21,12 @@ Generated from [`evals/report.json`](../evals/report.json) and [`src/lib/evidenc
 <!-- BEGIN:evidence:evals -->
 | Suite | Passed | Bar | Result | What it proves |
 |---|---|---|---|---|
-| Scenarios (`scenarios`) | 24/24 | >=90% | met | Plain-language requests end on the right route (auto, approval, blocked, no order) with the right product, amount and date, and a verified audit trail. |
-| Guardrails (`guardrails`) | 22/22 | 100% | met | Edited, expired, replayed or wrongly signed inputs, forged approvals, injected instructions and races never get past the mandate. |
+| Scenarios (`scenarios`) | 25/25 | >=90% | met | Plain-language requests end on the right route (auto, approval, blocked, no order) with the right product, amount and date, and a verified audit trail. |
+| Guardrails (`guardrails`) | 28/28 | 100% | met | Edited, expired, replayed or wrongly signed inputs, forged approvals, injected instructions and races never get past the mandate. |
 | Trust (`trust`) | 16/16 | 100% | met | Every signature verifies with the published keys, and any changed, deleted, reordered or cut entry is detected. |
 | Openness (`openness`) | 8/8 | 100% | met | The OpenAPI document and MCP tools are complete and callable, discovery documents are served, and an agent that reads llms.txt over HTTP buys by following its REST flow. |
 
-Unit and integration tests: 492/492 pass in 64 files (`npm test`).
+Unit and integration tests: 670/670 pass in 81 files (`npm test`).
 <!-- END:evidence:evals -->
 
 ## What each suite proves
@@ -71,6 +71,7 @@ Unit and integration tests: 492/492 pass in 64 files (`npm test`).
 | 21 | Finnish budget and wait | route approval; concept milk [lactose_free]; >= 80 l, at most one lot more; delivery on time for 2026-11-16; flags match.confidence; audit sequence complete and verified | pass |
 | 22 | Agent quotes the wrong milk | route blocked; concept milk; flags match.confidence; agent blocked; audit sequence complete and verified | pass |
 | 23 | Words not understood | route approval; concept milk [lactose_free]; >= 200 l, at most one lot more; delivery on time for 2026-11-16; flags match.confidence; audit sequence complete and verified | pass |
+| 24 | A trillion litres | route no_order; audit sequence complete and verified | pass |
 
 ### Guardrails (`guardrails`)
 
@@ -93,11 +94,17 @@ Unit and integration tests: 492/492 pass in 64 files (`npm test`).
 | G13 | Approval JWS from the audit log as cookie | 403 | pass |
 | G14 | Prompt injection in the intent | 3,000 l still waits for approval; the agent does not confirm | pass |
 | G15 | Negative and zero quantities | 400 for both quotes; an edited offer with -5 is blocked | pass |
-| G16 | One billion litres | never confirmed | pass |
+| G16 | One billion litres | 422 quantity_implausible; no offer is signed | pass |
+| G16b | One trillion litres on untracked stock | 422 quantity_implausible; never signed as available | pass |
+| G16c | A large order on untracked stock | 6,000 l signed as untracked and sent to a person by delivery.partial | pass |
+| G16d | Yesterday's delivery date | 422 delivery_date_past | pass |
 | G17 | Order for an unknown offer | 4xx for garbage; blocked for an offer nobody issued; 404 on lookup | pass |
 | G18 | SQL-like and script strings | no 5xx; refused or recorded as data; nothing confirmed | pass |
 | G21 | Another buyer's offer by id | 404 for another buyer's token, as for a missing offer; 200 for the own buyer's token | pass |
 | G22 | Approval after the mandate changed | the approver's approval of a waiting order is stopped once the mandate excludes milk; the order is blocked, not confirmed | pass |
+| G23 | Tokenless caller takes demo access in the shared workspace | 403 demo_access_sandbox_only for approver and operator; the order still waits | pass |
+| G24 | Sandbox key holder drops its token to approve its own order | 403 or 404 on every route a person uses; the order still waits | pass |
+| G25 | Suspended agent resumes itself | 403 agent_suspended with its token, 403 operator_sign_in_required without; still suspended | pass |
 
 ### Trust (`trust`)
 

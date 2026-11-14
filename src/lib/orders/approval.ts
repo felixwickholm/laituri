@@ -1,5 +1,6 @@
 import type { Approval, ApprovalDecisionRequest, Order } from "@/lib/contracts";
 import { NotFoundError, StateError } from "@/lib/gateway/errors";
+import { TOKEN_TYPE } from "@/lib/trust/types";
 import { confirmOrder } from "./confirm";
 import { serial } from "./lock";
 import { recheckOrder } from "./recheck";
@@ -67,7 +68,7 @@ async function decide(orderId: string, body: ApprovalDecisionRequest, deps: Orde
   const jws = await deps.trust.sign(
     "approver",
     { orderId: order.id, offerId: order.offer.id, offerHash, decision: body.decision, decidedAt },
-    { typ: "approval+jwt" },
+    TOKEN_TYPE.approval,
   );
   const approval: Approval = { decidedBy: approver, decision: body.decision, decidedAt, note: body.note, jws };
   const decided: Order = { ...order, approval, updatedAt: decidedAt };

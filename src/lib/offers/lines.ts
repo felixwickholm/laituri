@@ -54,9 +54,10 @@ export function buildLine(productId: string, product: Product | undefined, units
   const unitPrice = price?.found && price.net !== undefined ? price.net : 0;
   const deliveryDate = offered > 0 ? availability?.availableDate : undefined;
   const requested = units ?? 0;
-  const available = availability && Number.isFinite(availability.available)
-    ? Math.max(0, availability.available)
-    : Math.max(requested, offered);
+  const counted = availability === undefined || Number.isFinite(availability.available);
+  const stock = counted
+    ? { stock: "tracked" as const, available: Math.max(0, availability?.available ?? 0) }
+    : { stock: "untracked" as const };
 
   const line: OfferLine = {
     productId,
@@ -73,7 +74,7 @@ export function buildLine(productId: string, product: Product | undefined, units
     availability: {
       status,
       requested,
-      available,
+      ...stock,
       deliveryDate,
       orderBy: availability?.orderBy,
       logisticModel: availability?.logisticModel,

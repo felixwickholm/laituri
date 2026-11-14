@@ -35,6 +35,14 @@ export interface AgentRef {
   client?: string;
 }
 
+/** The wholesaler's person who suspends or resumes an agent, as the audit entry names them. */
+export interface Operator {
+  id: string;
+  name: string;
+  /** How they signed in, when the audit entry must say so, for example "demo access". */
+  via?: string;
+}
+
 /** Input as it arrives from REST or MCP; the gateway validates it. */
 export type SearchInput = Omit<SearchRequest, "limit"> & { limit?: number };
 
@@ -58,7 +66,7 @@ export interface Gateway {
   supplierOverview(): Promise<SupplierOverview>;
   /** Refuses, and logs, a call by an agent the wholesaler has suspended. `call` names the call, for example "POST /api/v1/quotes". */
   admitAgent(agent: AgentRef, call: string): Promise<void>;
-  /** The wholesaler suspends or resumes an agent that has reached it. */
-  setAgentSuspension(agentId: string, request: SuspensionRequest): Promise<SuspensionState>;
+  /** A signed-in wholesaler operator suspends or resumes an agent that has reached the wholesaler. */
+  setAgentSuspension(agentId: string, request: SuspensionRequest, operator: Operator): Promise<SuspensionState>;
   reset(): Promise<void>;
 }

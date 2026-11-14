@@ -1,12 +1,13 @@
 import { createHash } from "node:crypto";
 import { bearerToken } from "@/lib/http/agent";
 import { clientFromInfo } from "@/lib/http/client-app";
+import { workspaceState } from "@/lib/workspace/context";
 
 /** Enough callers for a demo; the oldest is forgotten first. */
 const MAX_REMEMBERED = 500;
 
-const holder = globalThis as typeof globalThis & { __laituriMcpClients?: Map<string, string> };
-const remembered = (holder.__laituriMcpClients ??= new Map<string, string>());
+/** Client names by caller, per workspace. */
+const rememberedClients = workspaceState("mcp.clients", () => new Map<string, string>());
 
 /** One caller: its credential (hashed, never kept as is) and its User-Agent. */
 function callerKey(headers: Headers): string {
@@ -51,6 +52,7 @@ export function mcpCall(body: string): string {
  */
 export function mcpClient(headers: Headers, body: string): string | undefined {
   const key = callerKey(headers);
+  const remembered = rememberedClients();
   const reported = initializeClient(body);
   if (!reported) return remembered.get(key);
   remembered.delete(key);

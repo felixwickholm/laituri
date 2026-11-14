@@ -1,7 +1,7 @@
 import type { Order, RuleId } from "@/lib/contracts";
 import type { EvalCase } from "../harness";
 import { Checks } from "./checks";
-import { auditEntries, auditVerifies, confirmedOutsideMandate, nonPassing, orderLitres } from "./flow";
+import { auditEntries, auditVerifies, confirmedOutsideMandate, nonPassing, orderFrom, orderLitres } from "./flow";
 import { isClientError, type Reply } from "./router";
 
 interface Attempt {
@@ -34,28 +34,30 @@ export class Hostile {
   }
 }
 
-/** "blocked by offer.signature", "403 approver_sign_in_required", "pending_approval". */
+/** "422 blocked by offer.signature", "403 approver_sign_in_required", "202 pending_approval". */
 export function outcomeText(reply: Reply): string {
-  if (reply.status >= 400) {
+  const order = orderFrom(reply);
+  if (!order) {
     const code = (reply.body as { code?: string } | undefined)?.code ?? "";
     return `${reply.status} ${code}`.trim();
   }
-  const order = reply.body as Order;
   const blocks = order.decision?.checks.filter((check) => check.status === "block").map((check) => check.rule) ?? [];
-  if (order.status !== "blocked") return order.status;
-  return `blocked by ${blocks[0] ?? "no rule"}${blocks.length > 1 ? ` (+${blocks.length - 1} more)` : ""}`;
+  if (order.status !== "blocked") return `${reply.status} ${order.status}`;
+  return `${reply.status} blocked by ${blocks[0] ?? "no rule"}${blocks.length > 1 ? ` (+${blocks.length - 1} more)` : ""}`;
 }
 
-/** A forged order must be refused (4xx) or recorded as blocked by the named rule. */
+/** A forged order must be refused before it is recorded (4xx) or recorded as blocked by the named rule, answering 422. */
 export function expectRefused(reply: Reply, rule: RuleId, checks: Checks, label: string): void {
-  if (isClientError(reply.status)) return;
-  const order = reply.body as Order;
+  const order = orderFrom(reply);
+  if (!order) {
+    checks.expect(isClientError(reply.status), `${label}: ${outcomeText(reply)}, expected a refusal`);
+    return;
+  }
   const status = order.decision?.checks.find((check) => check.rule === rule)?.status;
-  checks.expect(order.status === "blocked" && status === "block", `${label}: ${outcomeText(reply)}, expected blocked by ${rule}`);
-}
-
-export function orderOf(reply: Reply): Order | undefined {
-  return reply.status < 300 ? (reply.body as Order) : undefined;
+  checks.expect(
+    order.status === "blocked" && status === "block" && reply.status === 422,
+    `${label}: ${outcomeText(reply)}, expected 422 blocked by ${rule}`,
+  );
 }
 
 /** A pending order that only a person may approve. 3,000 l is over the per-order limit. */

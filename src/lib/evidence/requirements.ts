@@ -13,7 +13,7 @@ export function core(f: Facts): Requirement[] {
     {
       quote: "Requesting price & availability, then placing an order: a defined interaction for moving from inquiry to commitment, based on fixed prices rather than a negotiated quote.",
       status: "covered",
-      answer: "request_quote returns an offer signed by the wholesaler key with a fixed net price, valid 15 minutes. place_order takes that offer unchanged plus the signed mandate and an idempotency key. One offer gives one order.",
+      answer: "request_quote returns an offer signed by the wholesaler key with a fixed net price, valid 15 minutes. place_order takes that offer unchanged plus the signed mandate and an idempotency key. One offer gives one order. Over REST the answer says the outcome: 201 confirmed, 202 waiting for a person, 422 blocked with the blocked order in the problem body.",
       where: ["src/lib/offers/quote.ts", "src/lib/offers/assemble.ts", "src/lib/orders/place.ts"],
       check: [{ kind: "eval", value: "1" }, { kind: "eval", value: "G1" }, { kind: "eval", value: "G9" }],
     },

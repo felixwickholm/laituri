@@ -10,7 +10,7 @@ import * as order from "@/app/api/v1/orders/[id]/route";
 import * as orders from "@/app/api/v1/orders/route";
 import * as search from "@/app/api/v1/products/search/route";
 import * as quotes from "@/app/api/v1/quotes/route";
-import { trust } from "@/lib/trust";
+import { TOKEN_TYPE, trust } from "@/lib/trust";
 
 const PROBLEM = "application/problem+json";
 
@@ -78,7 +78,7 @@ describe("human-only endpoints", () => {
   });
 
   it("refuses a forged console header, a made-up cookie and a public approval signature", async () => {
-    const publicApproval = await trust().sign("approver", { orderId: "x", decision: "approved" }, { typ: "approval+jwt" });
+    const publicApproval = await trust().sign("approver", { orderId: "x", decision: "approved" }, TOKEN_TYPE.approval);
     const attempts: Record<string, string>[] = [
       {},
       { "x-laituri-console": "1" },

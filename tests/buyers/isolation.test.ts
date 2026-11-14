@@ -88,7 +88,8 @@ describe.skipIf(!hasFixtures)("isolation between buyers", () => {
   it("blocks an agent that presents another buyer's mandate, and files the attempt under its own buyer", async () => {
     const { primary } = await quote(KAISLA_TOKEN, 100);
     const response = await place(KAISLA_TOKEN, primary.jws, (await mandateOf(AGENT_TOKEN)).jws, "kaisla-borrowed-mandate");
-    const attempt = await body<Order>(response);
+    expect(response.status).toBe(422);
+    const attempt = (await body<{ order: Order }>(response)).order;
     expect(attempt.status).toBe("blocked");
     expect(attempt.buyer.id).toBe(BUYER_IDS.kaisla);
     expect(attempt.decision.checks.find((c) => c.rule === "mandate.validity")).toMatchObject({
@@ -101,7 +102,9 @@ describe.skipIf(!hasFixtures)("isolation between buyers", () => {
   it("blocks an offer made for another buyer", async () => {
     const { primary } = await quote(AGENT_TOKEN, 100);
     expect(primary.offer.buyer).toEqual({ id: BUYER_IDS.nordicHarbour, name: "Nordic Harbour Hotels" });
-    const attempt = await body<Order>(await place(KAISLA_TOKEN, primary.jws, (await mandateOf(KAISLA_TOKEN)).jws, "kaisla-borrowed-offer"));
+    const response = await place(KAISLA_TOKEN, primary.jws, (await mandateOf(KAISLA_TOKEN)).jws, "kaisla-borrowed-offer");
+    expect(response.status).toBe(422);
+    const attempt = (await body<{ order: Order }>(response)).order;
     expect(attempt.status).toBe("blocked");
     expect(attempt.decision.checks.find((c) => c.rule === "mandate.validity")?.message).toBe(
       "The offer was made for Nordic Harbour Hotels, not Kaisla School Kitchens.",

@@ -15,6 +15,8 @@ Laituri is the agent front door for a food-service wholesaler: a customer's own 
 - Search: `src/lib/catalog`. Offers, pack maths, alternatives: `src/lib/offers`. Orders and approvals: `src/lib/orders`.
 - Mandate rules: `src/lib/policy`. Demo buyers and their mandates: `src/lib/mandate`.
 - Keys and signatures: `src/lib/trust`. Audit chain: `src/lib/audit`. Wholesaler overview: `src/lib/insights`.
+- Workspaces: `src/lib/workspace` (the shared one on disk, one in-memory sandbox per browser). `route()` and the MCP handler resolve the workspace (`src/lib/http/workspace.ts`); `src/proxy.ts` gives a first page load its cookie. Module state that changes lives in `workspaceState`, never in a module-level variable.
+- Who may act as a person: `src/lib/http/sign-in.ts`, `console-session.ts` (approver), `operator-session.ts` (wholesaler operator).
 - Demo history: `src/lib/seed`. Buyer agents (scripted and model-driven): `src/lib/agent`. Voice: `src/lib/voice`.
 - Screens: `/` landing, `/buyer`, `/valio`, `/connect`, `/approve/[orderId]`, `/evidence`; walkthrough in `src/lib/tour` and `src/components/tour`.
 - What the docs and `/evidence` claim: `src/lib/evidence` (one source). Mocks and assumptions are listed there under `simulated`.
@@ -22,6 +24,9 @@ Laituri is the agent front door for a food-service wholesaler: a customer's own 
 ## Invariants
 
 - An agent never signs or approves. Only the buyer key signs mandates, only the approver key signs approvals.
+- Every signed object carries its own JWS `typ` (`TOKEN_TYPE` in `src/lib/trust`) and every verification requires it.
+- Demo access exists only in a sandbox, for the browser holding its cookie; a session works only in the workspace that issued it. Suspending or resuming an agent needs an operator session.
+- Domain errors are recognised by their brand (`isGatewayError`), never by `instanceof`: Next loads a module once per route bundle.
 - An offer is single use and expires; an order must carry it unchanged.
 - Every call that searches, quotes, orders, approves or changes a mandate goes through the gateway. Three read-only routes bypass it: `GET /api/v1/offers/{id}` reads the store, `/api/v1/audit/checkpoint` signs through the audit module and `/api/v1/health` reads status.
 - A suspended agent's credential is refused with 403 `agent_suspended` on every route, these included: `route()` in `src/lib/http/handler.ts` checks it before the handler runs, and MCP checks it before any method. Without a credential, public documents stay readable.

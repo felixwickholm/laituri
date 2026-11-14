@@ -61,17 +61,33 @@ describe("OpenAPI document", async () => {
     expect(JSON.stringify(responses["400"])).toContain("application/problem+json");
   });
 
+  it("documents each order outcome with its own status", () => {
+    const place = ((doc.paths as Json)["/api/v1/orders"] as Json).post as Json;
+    const responses = place.responses as Record<string, Json>;
+    expect(Object.keys(responses)).toEqual(expect.arrayContaining(["201", "202", "422"]));
+    expect(JSON.stringify(responses["202"].content)).toContain("#/components/schemas/Order");
+    expect(Object.keys(responses["422"].content as Json)).toEqual(["application/problem+json"]);
+    expect(JSON.stringify(responses["422"].content)).toContain("#/components/schemas/BlockedOrderProblem");
+    const schemas = (doc.components as { schemas: Record<string, { properties: Record<string, Json> }> }).schemas;
+    expect(Object.keys(schemas.BlockedOrderProblem.properties)).toEqual(expect.arrayContaining(["code", "detail", "order"]));
+  });
+
   it("documents the wholesaler's suspension control, the voice routes and every health field", () => {
     const paths = doc.paths as Record<string, Record<string, Json>>;
     const suspend = paths["/api/v1/supplier/agents/{agentId}/suspension"].post;
     expect(suspend.operationId).toBe("setAgentSuspension");
-    expect(suspend.description).toMatch(/agent_suspended[\s\S]*refuses agent credentials[\s\S]*own sign-in/);
+    expect(suspend.description).toMatch(/agent_suspended[\s\S]*operator session[\s\S]*refused with 403/);
+    expect(suspend["x-audience"]).toBe("operator");
+    expect(Object.keys(suspend.responses as Json)).toEqual(expect.arrayContaining(["200", "400", "403", "404"]));
+    expect(paths["/api/v1/workspace"].get.operationId).toBe("getWorkspace");
+    expect(paths["/api/v1/workspace/view"].post.operationId).toBe("setWorkspaceView");
     expect(Object.keys(paths["/api/v1/voice"].get.responses as Json)).toEqual(["200", "403"]);
     expect(Object.keys((paths["/api/v1/voice/speech"].post.responses as Record<string, Json>)["200"].content as Json)).toEqual(["audio/mpeg"]);
 
     const schemas = (doc.components as { schemas: Record<string, { properties: Record<string, Json> }> }).schemas;
     expect(Object.keys(schemas.Health.properties)).toEqual(expect.arrayContaining(["seed", "agent"]));
     expect(schemas.SuspensionState.properties.suspended).toBeDefined();
+    expect(Object.keys(schemas.WorkspaceInfo.properties)).toEqual(expect.arrayContaining(["kind", "label", "agentKeys", "mcpUrl", "expiresAt"]));
     expect(JSON.stringify(schemas.SearchResponse)).toContain("categoryAverageCo2PerKg");
     expect(JSON.stringify(schemas.QuoteResponse)).toContain("meaning");
     expect(JSON.stringify(schemas.SearchRequest)).toContain("sustainability");

@@ -2,6 +2,7 @@ import type { AuditEntry, Order, QuoteResponse } from "@/lib/contracts";
 import { parseRequest } from "@/lib/agent";
 import { now } from "@/lib/clock";
 import { gateway } from "@/lib/gateway";
+import { ORDER_BLOCKED } from "@/lib/http/order-response";
 import type { SignedMandate } from "@/lib/orders/types";
 import { AGENT_AUTH, get, ok, post, type Reply } from "./router";
 
@@ -39,11 +40,23 @@ export function placeOrder(offerJws: string, mandateJws: string, key: string, he
   return post("/api/v1/orders", { offerJws, mandateJws, idempotencyKey: key }, headers);
 }
 
+/** The order an order call answered with: 201 or 202 carry it as the body, 422 order_blocked inside the problem. */
+export function orderFrom(reply: Reply): Order | undefined {
+  if (reply.status === 201 || reply.status === 202) return reply.body as Order;
+  const problem = reply.body as { code?: string; order?: Order } | undefined;
+  return reply.status === 422 && problem?.code === ORDER_BLOCKED ? problem.order : undefined;
+}
+
+/** The order an order call recorded, whatever its outcome. Throws when the call was refused before an order existed. */
+export function recordedOrder(reply: Reply, what: string): Order {
+  return orderFrom(reply) ?? ok<Order>(reply, what);
+}
+
 /** Quote and order in one step, returning the stored order. */
 export async function orderLitres(litres: number, key: string): Promise<Order> {
   const quote = await quoteLitres(litres);
   const { jws } = await mandate();
-  return ok<Order>(await placeOrder(quote.primary.jws, jws, key), "Order");
+  return recordedOrder(await placeOrder(quote.primary.jws, jws, key), "Order");
 }
 
 /** Signs in through the console session route, as the approver's browser does. */
@@ -52,6 +65,15 @@ export async function approverCookie(): Promise<string> {
   ok(result, "Approver sign-in");
   const cookie = result.headers.get("set-cookie");
   if (!cookie) throw new Error("Approver sign-in set no cookie.");
+  return cookie.split(";")[0];
+}
+
+/** Signs in the shared workspace's wholesaler operator, as LAITURI_OPERATOR_PASSCODE allows (open on a development server). */
+export async function operatorCookie(): Promise<string> {
+  const result = await post("/api/v1/console/session", { role: "operator", passcode: process.env.LAITURI_OPERATOR_PASSCODE });
+  ok(result, "Operator sign-in");
+  const cookie = result.headers.get("set-cookie");
+  if (!cookie) throw new Error("Operator sign-in set no cookie.");
   return cookie.split(";")[0];
 }
 

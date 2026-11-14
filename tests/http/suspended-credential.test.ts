@@ -11,6 +11,7 @@ const hasCatalog = [".data/catalog.json", "fixtures/upstream/catalog.json"].some
 const APP_DIR = path.resolve("src/app");
 const HARBOUR_AGENT = "agent:harbour-purchasing";
 const SUSPENDED = { authorization: `Bearer ${AGENT_TOKEN}` };
+const OPERATOR = { id: "operator:valio-aimo", name: "Valio Aimo operator" };
 const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;
 
 type Method = (typeof METHODS)[number];
@@ -48,6 +49,8 @@ const ROUTES: Record<string, { url: string; params?: Record<string, string> }> =
   "api/v1/supplier/overview": { url: "/api/v1/supplier/overview" },
   "api/v1/voice": { url: "/api/v1/voice" },
   "api/v1/voice/speech": { url: "/api/v1/voice/speech" },
+  "api/v1/workspace": { url: "/api/v1/workspace" },
+  "api/v1/workspace/view": { url: "/api/v1/workspace/view" },
   ".well-known/agent-card.json": { url: "/.well-known/agent-card.json" },
   ".well-known/ai-catalog.json": { url: "/.well-known/ai-catalog.json" },
   ".well-known/jwks.json": { url: "/.well-known/jwks.json" },
@@ -129,7 +132,7 @@ describe.skipIf(!hasCatalog)("a suspended agent's credential", () => {
     const body = JSON.stringify({ query: "maito" });
     const reached = await search.POST(new Request(`${BASE}/api/v1/products/search`, { method: "POST", headers: SUSPENDED, body }));
     expect(reached.status).toBe(200);
-    await gateway().setAgentSuspension(HARBOUR_AGENT, { suspended: true });
+    await gateway().setAgentSuspension(HARBOUR_AGENT, { suspended: true }, OPERATOR);
   });
 
   it("is refused with 403 agent_suspended by every handler that serves anything, each refusal logged", async () => {

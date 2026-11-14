@@ -1,3 +1,4 @@
+import { untrackedOverReview } from "@/lib/offers/limits";
 import type { Rule } from "../context";
 import { check, plural } from "../format";
 
@@ -48,10 +49,19 @@ export const deliveryPartial: Rule = {
   needs: "both",
   run: ({ mandate, offer }) => {
     const short = offer.lines.filter(
-      (line) => line.availability.status === "partial" || line.availability.available < line.availability.requested,
+      (line) => line.availability.status === "partial" || (line.availability.available ?? Infinity) < line.availability.requested,
     );
     const partial = offer.fulfilment === "partial" || short.length > 0;
     const limit = mandate.delivery.allowPartial ? "partial allowed" : "full delivery only";
+    const unvouched = offer.lines.map((line) => ({ line, quantity: untrackedOverReview(line) })).find(({ quantity }) => quantity);
+    if (!partial && unvouched) {
+      return check(
+        "delivery.partial",
+        "ask",
+        `The wholesaler does not track stock of ${unvouched.line.name}, so ${unvouched.quantity} cannot be promised without a person.`,
+        { observed: "untracked stock", limit },
+      );
+    }
     if (!partial) return check("delivery.partial", "pass", "The offer covers the full quantity.", { observed: "full", limit });
     const what = short.length ? `${plural(short.length, "line")} cannot be delivered in full.` : "The offer does not cover the full quantity.";
     if (mandate.delivery.allowPartial) {

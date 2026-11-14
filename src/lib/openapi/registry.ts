@@ -1,7 +1,7 @@
 import type { SchemaName } from "./schemas";
 import { EXAMPLES } from "./examples";
 
-export type Audience = "agent" | "human" | "public";
+export type Audience = "agent" | "human" | "operator" | "public";
 export type Scope = "catalog:read" | "quote:create" | "order:place";
 
 export interface Parameter {
@@ -10,6 +10,15 @@ export interface Parameter {
   description: string;
   required?: boolean;
   type: "string" | "integer";
+}
+
+/** A further answer the operation gives besides its main success status, such as 202 for an order that waits. */
+export interface Outcome {
+  status: number;
+  description: string;
+  response: SchemaName;
+  /** Sent as application/problem+json. */
+  problem?: true;
 }
 
 export interface Operation {
@@ -27,6 +36,7 @@ export interface Operation {
   /** Media type of the success response; JSON when not given. */
   responseType?: "audio/mpeg";
   status?: number;
+  outcomes?: Outcome[];
   errors: number[];
   example?: { request?: unknown; response?: unknown };
 }
@@ -39,6 +49,7 @@ const buyerQuery: Parameter = {
   description: "Buyer id. Defaults to the signed-in approver's buyer, else the primary buyer. An agent token reads only its own buyer.",
 };
 const human = (operation: Omit<Operation, "audience">): Operation => ({ ...operation, audience: "human", errors: [...operation.errors, 403] });
+const operator = (operation: Omit<Operation, "audience">): Operation => ({ ...operation, audience: "operator", errors: [...operation.errors, 403] });
 
 /** Every HTTP operation. The OpenAPI document and the MCP tools are both built from this list. */
 export const OPERATIONS: Operation[] = [
@@ -62,9 +73,17 @@ export const OPERATIONS: Operation[] = [
     summary: "Read an issued offer", parameters: [id("id", "Offer id")], response: "SignedOffer", errors: [401, 404] },
   { operationId: "placeOrder", method: "post", path: "/api/v1/orders", tag: "Ordering", audience: "agent", scope: "order:place",
     summary: "Place an order from a signed offer",
-    description: "Checks the offer and mandate signatures and every mandate rule. Outcomes: confirmed (with a signed receipt), pending_approval (a human must decide; do not retry with a new key), or blocked (nothing ordered).",
+    description:
+      "Checks the offer and mandate signatures and every mandate rule. Outcomes: 201 confirmed (with a signed receipt), " +
+      "202 pending_approval (a human must decide; do not retry with a new key), or 422 order_blocked (nothing ordered; the problem body carries the blocked order and the rules that stopped it). " +
+      "A retry with the same idempotency key gets the same answer.",
     parameters: [{ name: "Idempotency-Key", in: "header", type: "string", description: "Used when the body has no idempotencyKey" }],
-    body: "PlaceOrderBody", response: "Order", status: 201, errors: [400, 401, 409], example: EXAMPLES.order },
+    body: "PlaceOrderBody", response: "Order", status: 201,
+    outcomes: [
+      { status: 202, description: "The order waits for the buyer's approver", response: "Order" },
+      { status: 422, description: "The mandate blocked the order; nothing was ordered", response: "BlockedOrderProblem", problem: true },
+    ],
+    errors: [400, 401, 409], example: EXAMPLES.order },
   { operationId: "listOrders", method: "get", path: "/api/v1/orders", tag: "Ordering", audience: "public",
     summary: "List one buyer's orders, newest first", parameters: [buyerQuery], response: "OrderList", errors: [400, 403] },
   { operationId: "getOrder", method: "get", path: "/api/v1/orders/{id}", tag: "Ordering", audience: "agent", scope: "order:place",
@@ -96,17 +115,31 @@ export const OPERATIONS: Operation[] = [
     summary: "The wholesaler's view of agent trade across every buyer",
     description: "Connected agents, demand, unmet demand with the estimated lost value, offers, orders by outcome, the mandate rules that fired and a 7-day series. Holds only what reached the wholesaler. Refused for agent credentials.",
     response: "SupplierOverview", errors: [403] },
-  { operationId: "setAgentSuspension", method: "post", path: "/api/v1/supplier/agents/{agentId}/suspension", tag: "Supplier", audience: "public",
-    summary: "Suspend or resume one agent (wholesaler control)",
+  operator({ operationId: "setAgentSuspension", method: "post", path: "/api/v1/supplier/agents/{agentId}/suspension", tag: "Supplier",
+    summary: "Suspend or resume one agent (wholesaler operator only)",
     description:
       "While an agent is suspended, every call it makes over REST or MCP is refused with 403 and the problem code agent_suspended. " +
-      "The suspension, the resumption and every refused call are audit entries signed by the wholesaler. Asking for the state the agent is already in changes nothing. " +
-      "In the demo this control is open to console visitors and refuses agent credentials, like the other demo controls; production puts it behind the wholesaler's own sign-in.",
+      "Needs a wholesaler operator session (POST /api/v1/console/session with role operator: demo access in a sandbox, LAITURI_OPERATOR_PASSCODE in the shared workspace). " +
+      "No session, a buyer approver's session or any agent credential is refused with 403 and a signed audit entry. " +
+      "The suspension, the resumption and every refused call are signed audit entries that name the operator and say when demo access was used. Asking for the state the agent is already in changes nothing.",
     parameters: [id("agentId", "Agent id as the supplier overview lists it, for example agent:kaisla-menu-planner")],
-    body: "SuspensionRequest", response: "SuspensionState", errors: [400, 403, 404] },
+    body: "SuspensionRequest", response: "SuspensionState", errors: [400, 404] }),
   human({ operationId: "resetDemo", method: "post", path: "/api/v1/demo/reset", tag: "System",
-    summary: "Clear orders, audit and activity, then write the demo history again when LAITURI_SEED is on (buyer console only)",
+    summary: "Start the caller's workspace over (console only)",
+    description:
+      "In a visitor's sandbox: a fresh copy of the seeded week, for that sandbox only, at the browser's word. " +
+      "In the shared workspace: needs the approver; clears orders, audit and activity, then writes the demo history again when LAITURI_SEED is on.",
     response: "ResetResult", errors: [] }),
+  { operationId: "getWorkspace", method: "get", path: "/api/v1/workspace", tag: "System", audience: "public",
+    summary: "The browser's workspace and its agent keys (console only)",
+    description:
+      "Each browser gets its own sandbox, an in-memory copy of the demo, named by an HttpOnly cookie. Its agent keys work as bearer tokens or as ?key= on /mcp, " +
+      "and calls with them land in that sandbox. A caller without a cookie sees the shared workspace and its fixed demo tokens. Refused for agent credentials.",
+    response: "WorkspaceInfo", errors: [403] },
+  { operationId: "setWorkspaceView", method: "post", path: "/api/v1/workspace/view", tag: "System", audience: "public",
+    summary: "Look at the shared workspace, or back at your sandbox (console only)",
+    description: "The shared workspace is read-only for a browser unless it signs in with the passcode. The sandbox is kept meanwhile. Refused for agent credentials.",
+    body: "WorkspaceViewRequest", response: "WorkspaceInfo", errors: [400, 403] },
   { operationId: "getHealth", method: "get", path: "/api/v1/health", tag: "System", audience: "public",
     summary: "Service and upstream status", description: "Includes whether demo history was written at start-up and which engine runs free-text requests.",
     response: "Health", errors: [] },

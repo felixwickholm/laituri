@@ -1,6 +1,8 @@
 import { gateway } from "@/lib/gateway";
 import { GatewayError } from "@/lib/gateway/errors";
 import { BUYER_IDS, currentMandate } from "@/lib/mandate";
+import { sandboxes } from "@/lib/workspace";
+import { currentWorkspace } from "@/lib/workspace/context";
 import { clientLabel } from "./client-app";
 
 export interface AgentIdentity {
@@ -17,12 +19,23 @@ export const DEMO_AGENT_NAME = "An agent with a token";
 
 export const ANONYMOUS_AGENT = { id: "agent:anonymous", name: "Unidentified agent" } as const;
 
-/** Demo bearer tokens, one per buyer, each naming the agent in that buyer's mandate. Production uses OAuth 2.1. */
+/**
+ * Fixed demo bearer tokens for the shared workspace, one per buyer, each naming the agent in that buyer's mandate.
+ * Each sandbox has its own random keys instead (see sandboxes()). Production uses OAuth 2.1.
+ */
 export const DEMO_TOKENS: Record<string, string> = {
   "demo-agent-token": BUYER_IDS.nordicHarbour,
   "demo-kaisla-token": BUYER_IDS.kaisla,
   "demo-laine-token": BUYER_IDS.laine,
 };
+
+/** The buyer a token stands for in the current workspace; a key from another workspace stands for nobody here. */
+function tokenBuyer(token: string): string | undefined {
+  const workspace = currentWorkspace();
+  if (workspace.kind === "shared") return DEMO_TOKENS[token];
+  const keyed = sandboxes().byAgentKey(token);
+  return keyed?.workspace === workspace ? keyed.buyerId : undefined;
+}
 
 export class UnauthorizedError extends GatewayError {
   constructor(message: string) {
@@ -51,7 +64,7 @@ async function identify(headers: Headers, mcpClient?: string): Promise<AgentIden
   const client = clientLabel({ mcp: mcpClient, header: headers.get("x-agent-client") ?? undefined, userAgent: headers.get("user-agent") ?? undefined });
   const token = bearerToken(headers);
   if (token) {
-    const buyerId = DEMO_TOKENS[token];
+    const buyerId = tokenBuyer(token);
     if (!buyerId) throw new UnauthorizedError("The bearer token is not known.");
     const { mandate } = await currentMandate(buyerId);
     return { ...mandate.agent, buyer: { id: mandate.buyer.id, name: mandate.buyer.name }, client };
@@ -78,7 +91,7 @@ export async function resolveAgent(headers: Headers, call: string, mcpClient?: s
  */
 export async function refuseSuspendedCredential(request: Request): Promise<void> {
   const token = bearerToken(request.headers);
-  if (token && DEMO_TOKENS[token]) await resolveAgent(request.headers, restCall(request));
+  if (token && tokenBuyer(token)) await resolveAgent(request.headers, restCall(request));
 }
 
 /** Demo controls (start a scene, suspend an agent) are open to visitors but never to an agent credential. */

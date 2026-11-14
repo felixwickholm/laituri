@@ -1,32 +1,23 @@
 import type { JSONWebKeySet } from "jose";
 import { roleKey } from "./keys";
 import { signCompact, verifyCompact } from "./jws";
-import type { SignerRole, Trust, Verified } from "./types";
+import type { SignerRole, Trust, TokenType, Verified } from "./types";
 
 export { canonicalize, sha256Hex } from "./canonical";
 export { verifyWithJwks } from "./jws";
 export { ROLES } from "./keys";
-export type { SignerRole, Trust, Verified } from "./types";
+export { TOKEN_TYPE } from "./types";
+export type { SignerRole, Trust, TokenType, Verified } from "./types";
 
-export interface SignOptions {
-  /** JOSE "typ" header, for example "offer+jwt". Defaults to "JWT". */
-  typ?: string;
-}
-
-/** Trust with an optional typ header on sign; still assignable to Trust. */
-export interface TrustService extends Trust {
-  sign(role: SignerRole, payload: object, options?: SignOptions): Promise<string>;
-}
-
-const service: TrustService = {
-  async sign(role, payload, options) {
+const service: Trust = {
+  async sign(role, payload, typ) {
     const key = await roleKey(role);
-    return signCompact(key.privateKey, key.kid, payload, options?.typ);
+    return signCompact(key.privateKey, key.kid, payload, typ);
   },
-  async verify<T>(role: SignerRole, jws: string): Promise<Verified<T>> {
+  async verify<T>(role: SignerRole, jws: string, typ: TokenType): Promise<Verified<T>> {
     try {
       const key = await roleKey(role);
-      return await verifyCompact<T>(key.publicKey, key.kid, jws);
+      return await verifyCompact<T>(key.publicKey, key.kid, jws, typ);
     } catch {
       return { valid: false, reason: "unknown key" };
     }
@@ -34,7 +25,7 @@ const service: TrustService = {
   jwks,
 };
 
-export function trust(): TrustService {
+export function trust(): Trust {
   return service;
 }
 

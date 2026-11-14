@@ -2,6 +2,8 @@ import { AGENT_TOKEN, jsonRequest, params } from "./env";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
+import * as session from "@/app/api/v1/console/session/route";
+import * as audit from "@/app/api/v1/audit/route";
 import * as mandate from "@/app/api/v1/mandate/route";
 import * as search from "@/app/api/v1/products/search/route";
 import * as overview from "@/app/api/v1/supplier/overview/route";
@@ -10,6 +12,9 @@ import { POST as mcp } from "@/app/mcp/route";
 import { SupplierOverview, SuspensionState } from "@/lib/contracts";
 import { gateway } from "@/lib/gateway";
 import { store } from "@/lib/store";
+import * as workspace from "@/app/api/v1/workspace/route";
+import type { WorkspaceInfo } from "@/lib/contracts";
+import { Browser } from "./browser";
 
 const hasCatalog = [".data/catalog.json", "fixtures/upstream/catalog.json"].some((file) => existsSync(path.resolve(file)));
 
@@ -20,9 +25,16 @@ const kaisla = { authorization: "Bearer demo-kaisla-token" };
 const searchAs = (headers: Record<string, string>) =>
   search.POST(jsonRequest("/api/v1/products/search", { body: { query: "unobtainium" }, headers }));
 
-function setSuspension(body: unknown, headers: Record<string, string> = {}, agentId = HARBOUR_AGENT) {
+/** The shared workspace's operator, signed in the open way a local development server allows. */
+async function operatorCookie(): Promise<string> {
+  const response = await session.POST(jsonRequest("/api/v1/console/session", { body: { role: "operator" } }));
+  expect(response.status).toBe(200);
+  return response.headers.get("set-cookie")!.split(";")[0];
+}
+
+async function setSuspension(body: unknown, headers?: Record<string, string>, agentId = HARBOUR_AGENT) {
   const url = `/api/v1/supplier/agents/${encodeURIComponent(agentId)}/suspension`;
-  return suspension.POST(jsonRequest(url, { body, headers }), params({ agentId }));
+  return suspension.POST(jsonRequest(url, { body, headers: headers ?? { cookie: await operatorCookie() } }), params({ agentId }));
 }
 
 function mcpCall(headers: Record<string, string>) {
@@ -83,16 +95,36 @@ describe.skipIf(!hasCatalog)("suspending an agent", () => {
     expect(status).not.toHaveProperty("suspendedAt");
   });
 
-  it("cannot be done or undone with an agent token", async () => {
+  it("cannot be done or undone with an agent token, without a session, or with an approver's session", async () => {
     await searchAs(harbour);
-    for (const body of [{ suspended: true }, { suspended: false }]) {
-      const response = await setSuspension(body, kaisla);
-      expect(response.status).toBe(403);
-      expect((await response.json()).code).toBe("agent_not_allowed");
+    const approver = (await session.POST(jsonRequest("/api/v1/console/session", { body: {} }))).headers.get("set-cookie")!.split(";")[0];
+    const attempts: [Record<string, string>, string][] = [
+      [kaisla, "agent_not_allowed"],
+      [{}, "operator_sign_in_required"],
+      [{ cookie: approver }, "operator_sign_in_required"],
+    ];
+    for (const [headers, code] of attempts) {
+      for (const body of [{ suspended: true }, { suspended: false }]) {
+        const response = await setSuspension(body, headers);
+        expect(response.status).toBe(403);
+        expect((await response.json()).code).toBe(code);
+      }
     }
+    const refused = (await store().audit.list()).filter((entry) => entry.event === "access.refused" && entry.data.action === "suspension");
+    expect(refused).toHaveLength(attempts.length * 2);
+    expect(refused[1].summary).toBe(`An agent with a token tried to suspend or resume ${HARBOUR_AGENT}. Refused: only a signed-in Valio Aimo operator can.`);
+    expect((await gateway().verifyAudit()).valid).toBe(true);
+  });
+
+  it("cannot be undone by the suspended agent, with its token or without it", async () => {
+    await searchAs(harbour);
     await setSuspension({ suspended: true });
-    const selfResume = await setSuspension({ suspended: false }, harbour);
-    expect(selfResume.status).toBe(403);
+    const withToken = await setSuspension({ suspended: false }, harbour);
+    expect(withToken.status).toBe(403);
+    expect((await withToken.json()).code).toBe("agent_suspended");
+    const withoutToken = await setSuspension({ suspended: false }, {});
+    expect(withoutToken.status).toBe(403);
+    expect((await withoutToken.json()).code).toBe("operator_sign_in_required");
     expect((await searchAs(harbour)).status).toBe(403);
   });
 
@@ -106,7 +138,9 @@ describe.skipIf(!hasCatalog)("suspending an agent", () => {
     const entries = await store().audit.list();
     const events = entries.filter((entry) => entry.actor.type === "supplier" && entry.event !== "offer.issued");
     expect(events.map((entry) => entry.event)).toEqual(["agent.suspended", "access.refused", "access.refused", "agent.resumed"]);
-    expect(events[0].summary).toBe("Valio Aimo suspended Harbour purchasing agent. Every call it makes is refused until it is resumed. Reason: Checking a complaint.");
+    expect(events[0].summary).toBe("Valio Aimo operator suspended Harbour purchasing agent for Valio Aimo. Every call it makes is refused until it is resumed. Reason: Checking a complaint.");
+    expect(events[0].actor).toMatchObject({ id: "operator:valio-aimo", name: "Valio Aimo operator" });
+    expect(events[0].data).not.toHaveProperty("via");
     expect(events.slice(1, 3).map((entry) => entry.data.call)).toEqual(["POST /api/v1/products/search", "MCP tools/call get_mandate"]);
     expect(events.slice(1, 3).every((entry) => entry.data.code === "agent_suspended")).toBe(true);
     expect((await gateway().verifyAudit()).valid).toBe(true);
@@ -120,7 +154,31 @@ describe.skipIf(!hasCatalog)("suspending an agent", () => {
   });
 
   it("does not know an agent that never reached the wholesaler", async () => {
-    const response = await setSuspension({ suspended: true }, {}, "agent:nobody");
+    const response = await setSuspension({ suspended: true }, undefined, "agent:nobody");
     expect(response.status).toBe(404);
+  });
+
+  it("gives a sandbox's browser a demo operator who suspends that sandbox's agent only, and says so in the log", async () => {
+    const browser = new Browser();
+    const { agentKeys } = (await (await browser.call(workspace.GET, "/api/v1/workspace")).json()) as WorkspaceInfo;
+    const laine = agentKeys[2];
+    const asLaine = { authorization: `Bearer ${laine.key}` };
+    expect((await searchAs(asLaine)).status).toBe(200);
+    const url = `/api/v1/supplier/agents/${encodeURIComponent(laine.agent.id)}/suspension`;
+    const change = (body: unknown, headers: Record<string, string> = {}) => browser.call(suspension.POST, url, { body, headers, params: { agentId: laine.agent.id } });
+
+    expect((await change({ suspended: true })).status).toBe(403);
+    await browser.call(session.POST, "/api/v1/console/session", { body: { demo: true, role: "operator" } });
+    expect((await change({ suspended: true, reason: "Testing." })).status).toBe(200);
+    expect((await searchAs(asLaine)).status).toBe(403);
+    expect((await searchAs({ authorization: "Bearer demo-laine-token" })).status).toBe(200);
+    expect((await change({ suspended: false }, asLaine)).status).toBe(403);
+    expect((await change({ suspended: false })).status).toBe(200);
+    expect((await searchAs(asLaine)).status).toBe(200);
+
+    const log = (await (await browser.call(audit.GET, "/api/v1/audit")).json()) as { entries: { event: string; summary: string; data: Record<string, unknown> }[] };
+    const changes = log.entries.filter((entry) => entry.event === "agent.suspended" || entry.event === "agent.resumed");
+    expect(changes.map((entry) => entry.data.via)).toEqual(["demo access", "demo access"]);
+    expect(changes[0].summary).toBe("Valio Aimo operator (demo access) suspended Laine kitchen assistant for Valio Aimo. Every call it makes is refused until it is resumed. Reason: Testing.");
   });
 });

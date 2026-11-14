@@ -24,7 +24,7 @@ How to check: `/buyer?tour=1` on the live demo; `npm run eval -- --suite scenari
 
 Measured:
 
-- Scenarios eval suite: 24/24 cases pass (bar >=90%).
+- Scenarios eval suite: 25/25 cases pass (bar >=90%).
 - An agent that knows only the text of /llms.txt, fetched over HTTP from a server started for the eval, runs the curl lines of its REST flow in order (URLs, headers and bodies as written, filling each <field from step N> from that step's answer), searches, quotes and orders the milk, and the order confirms (eval O8).
 
 Known limit: Orders are simulated: the mock API has price and availability but no order endpoint, so Laituri writes the order and receipt itself and marks each one simulated: true.
@@ -48,7 +48,7 @@ How to check: eval 2; eval 12; eval 19; eval 22; `tests/request/fidelity.test.ts
 
 Measured:
 
-- 24/24 scenario cases end on the expected route with the expected concept, amount and date.
+- 25/25 scenario cases end on the expected route with the expected concept, amount and date.
 - 3 demo buyers, 31 seeded requests played through the real gateway.
 
 Known limit: The product concepts and category groups are our own, built from the product data. The catalogue sells "lactose-free milk" as "lactose-free milk drink"; Laituri treats the two as one request and names the product it chose.
@@ -72,7 +72,7 @@ How to check: `npm run eval -- --suite guardrails`; eval G10; eval G5; `/buyer/m
 
 Measured:
 
-- Guardrails eval suite: 22/22 cases pass (bar 100%).
+- Guardrails eval suite: 28/28 cases pass (bar 100%).
 - Trust eval suite: 16/16 cases pass (bar 100%).
 - 15 mandate rules, 3 signing keys (supplier, buyer, approver).
 
@@ -98,8 +98,8 @@ How to check: eval 5; eval 6; eval 13; eval G20; eval G14.
 
 Measured:
 
-- Scenarios eval suite: 24/24 cases pass (bar >=90%).
-- Guardrails eval suite: 22/22 cases pass (bar 100%).
+- Scenarios eval suite: 25/25 cases pass (bar >=90%).
+- Guardrails eval suite: 28/28 cases pass (bar 100%).
 
 Known limit: Substitutes are chosen like for like within the wholesaler's own concept and category, not through recipe logic.
 
@@ -109,7 +109,7 @@ One set of zod schemas produces the MCP tools, the REST routes and the OpenAPI 3
 
 What we built:
 
-- 7 MCP tools and 21 REST operations on 19 paths, from one schema set.
+- 7 MCP tools and 23 REST operations on 21 paths, from one schema set.
 - 6 discovery documents: OpenAPI is served beside the JWKS, agent card, AI catalog, UCP profile, OAuth protected-resource metadata and llms.txt.
 - An outside agent that knows only the text of llms.txt, fetched over HTTP, buys the milk by following its REST flow.
 - Standards table separates "used" (implemented and tested) from "follows" (names and shapes taken from the standard).
@@ -123,7 +123,7 @@ How to check: `npm run eval -- --suite openness`; `/api/v1/openapi.json` on the 
 Measured:
 
 - Openness eval suite: 8/8 cases pass (bar 100%).
-- Unit and integration tests: 492/492 pass in 64 files.
+- Unit and integration tests: 670/670 pass in 81 files.
 
 Known limit: Agents use demo bearer tokens, not OAuth 2.1. AP2, UCP and Peppol are followed in names and shapes; no Peppol UBL document is produced.
 
@@ -132,7 +132,7 @@ Known limit: Agents use demo bearer tokens, not OAuth 2.1. AP2, UCP and Peppol a
 | Brief | Status | Answer | Where | Check |
 |---|---|---|---|---|
 | Product, price & availability lookup: a structured way for an external agent to search for and retrieve what's available and at what price. | Covered | search_catalog and get_product (MCP), POST /api/v1/products/search and GET /api/v1/products/{id} (REST). Hits carry an indicative live price, stock, delivery date and order cut-off, plus pack maths for the stated need. 7 MCP tools in all. | [`src/lib/catalog/search.ts`](../src/lib/catalog/search.ts)<br>[`src/lib/gateway/preview.ts`](../src/lib/gateway/preview.ts)<br>[`src/lib/mcp/tools.ts`](../src/lib/mcp/tools.ts) | eval O6; `/api/v1/openapi.json` on the live demo |
-| Requesting price & availability, then placing an order: a defined interaction for moving from inquiry to commitment, based on fixed prices rather than a negotiated quote. | Covered | request_quote returns an offer signed by the wholesaler key with a fixed net price, valid 15 minutes. place_order takes that offer unchanged plus the signed mandate and an idempotency key. One offer gives one order. | [`src/lib/offers/quote.ts`](../src/lib/offers/quote.ts)<br>[`src/lib/offers/assemble.ts`](../src/lib/offers/assemble.ts)<br>[`src/lib/orders/place.ts`](../src/lib/orders/place.ts) | eval 1; eval G1; eval G9 |
+| Requesting price & availability, then placing an order: a defined interaction for moving from inquiry to commitment, based on fixed prices rather than a negotiated quote. | Covered | request_quote returns an offer signed by the wholesaler key with a fixed net price, valid 15 minutes. place_order takes that offer unchanged plus the signed mandate and an idempotency key. One offer gives one order. Over REST the answer says the outcome: 201 confirmed, 202 waiting for a person, 422 blocked with the blocked order in the problem body. | [`src/lib/offers/quote.ts`](../src/lib/offers/quote.ts)<br>[`src/lib/offers/assemble.ts`](../src/lib/offers/assemble.ts)<br>[`src/lib/orders/place.ts`](../src/lib/orders/place.ts) | eval 1; eval G1; eval G9 |
 | Permission & human-approval management: what the agent may decide on its own, and what must go to a human for sign-off. | Covered | A buyer-signed mandate with 15 rules in three tiers (alone, ask a person, never). Orders in the ask tier wait for the named approver, whose decision is signed with the approver key. | [`src/lib/policy/evaluate.ts`](../src/lib/policy/evaluate.ts)<br>[`src/lib/mandate/defaults.ts`](../src/lib/mandate/defaults.ts)<br>[`src/lib/orders/approval.ts`](../src/lib/orders/approval.ts)<br>[`src/app/approve/[orderId]/page.tsx`](../src/app/approve/%5BorderId%5D/page.tsx) | eval 4; eval G10; `/buyer/mandate` on the live demo |
 
 ## Optional directions
@@ -178,16 +178,18 @@ Simulated or assumed:
 
 - **Orders.** Orders are simulated. The mock API has price and availability but no order endpoint, so Laituri creates the order, the receipt and the log entry itself and marks every order simulated: true. ([`src/lib/orders/confirm.ts`](../src/lib/orders/confirm.ts))
 - **Keys.** One server holds all three private keys (buyer, supplier, approver) in .data/keys, so one deployment plays all three parties. In production each party keeps its own key. ([`src/lib/trust/keys.ts`](../src/lib/trust/keys.ts))
-- **Agent identity.** Agents use demo bearer tokens, one per demo buyer (demo-agent-token, demo-kaisla-token, demo-laine-token), instead of OAuth 2.1. The OAuth protected-resource metadata is already published. ([`src/lib/http/agent.ts`](../src/lib/http/agent.ts), [`src/app/.well-known/oauth-protected-resource/route.ts`](../src/app/.well-known/oauth-protected-resource/route.ts))
+- **Agent identity.** Agents use demo bearer tokens instead of OAuth 2.1: in the shared workspace the fixed demo-agent-token, demo-kaisla-token and demo-laine-token, one per demo buyer; in each visitor's sandbox random keys, one per buyer, that work only there. The OAuth protected-resource metadata is already published. ([`src/lib/http/agent.ts`](../src/lib/http/agent.ts), [`src/lib/workspace/sandboxes.ts`](../src/lib/workspace/sandboxes.ts), [`src/app/.well-known/oauth-protected-resource/route.ts`](../src/app/.well-known/oauth-protected-resource/route.ts))
+- **Workspaces.** Every browser gets its own sandbox: an in-memory copy of all mutable state (offers, orders, audit chain, activity, demand, mandates, suspensions, demo runs), named by a random HttpOnly cookie and copied from a seeded template written once at start-up, so it starts with the same verifiable week. At most 50 sandboxes live at once (LAITURI_SANDBOX_MAX); the least recently used is dropped first, and one unused for 60 minutes (LAITURI_SANDBOX_IDLE_MINUTES) is replaced by a fresh copy. Sandboxes are never written to disk. Calls without a cookie or sandbox key, such as the documented curl flows, reach the one shared workspace, which is persisted. The catalogue, the signing keys and the upstream client are shared by all. ([`src/lib/workspace/context.ts`](../src/lib/workspace/context.ts), [`src/lib/workspace/sandboxes.ts`](../src/lib/workspace/sandboxes.ts), [`src/lib/http/workspace.ts`](../src/lib/http/workspace.ts), [`src/proxy.ts`](../src/proxy.ts))
 - **Demo buyers.** 3 demo buyers (Nordic Harbour Hotels, Kaisla School Kitchens, Ravintola Laine) trade under the mock API's one customer number; the signed buyer id keeps them apart. ([`src/lib/mandate/defaults.ts`](../src/lib/mandate/defaults.ts))
 - **Seeded history.** On an empty state the server plays 31 requests by the demo buyers over about a week through the real gateway, at past times. Every offer, order, approval and audit entry is signed and chained as in live use, and marked seeded. LAITURI_SEED=off turns it off. ([`src/lib/seed/plan.ts`](../src/lib/seed/plan.ts), [`src/lib/seed/index.ts`](../src/lib/seed/index.ts))
-- **Demo access.** One click signs a visitor in as the hotel's approver without the passcode; each approval or mandate change made that way says "demo access" in the audit log. LAITURI_DEMO_ACCESS=off disables it. ([`src/lib/http/console-session.ts`](../src/lib/http/console-session.ts))
+- **Demo access.** In their own sandbox, and only there, one click signs a visitor in as the hotel's approver or as the wholesaler's operator without a passcode; each approval, mandate change, suspension or resumption made that way says "demo access" in the audit log. The session is bound to that sandbox, and an agent holding only a sandbox key cannot get its cookie or a session. The shared workspace takes the passcodes (LAITURI_APPROVER_PASSCODE, LAITURI_OPERATOR_PASSCODE); without one, a production server offers no sign-in there and only a local development server signs anyone in. LAITURI_DEMO_ACCESS=off disables demo access. ([`src/lib/http/sign-in.ts`](../src/lib/http/sign-in.ts), [`src/lib/http/console-session.ts`](../src/lib/http/console-session.ts), [`src/lib/http/operator-session.ts`](../src/lib/http/operator-session.ts))
 - **Open reading.** Orders, approvals, the mandate and the audit log can be read without signing in, so anyone can watch. They hold synthetic data only. Production puts every read behind each party's own access control. ([`src/lib/http/buyer-scope.ts`](../src/lib/http/buyer-scope.ts))
-- **Demo controls.** Starting a scene, altering one log entry to show detection and suspending an agent are open to visitors and refuse agent credentials; reset needs the approver. The altered entry is put back after five minutes. A production deployment has none of these controls open. ([`src/lib/demo/tamper.ts`](../src/lib/demo/tamper.ts), [`src/app/api/v1/demo/reset/route.ts`](../src/app/api/v1/demo/reset/route.ts))
+- **Demo controls.** Starting a scene, altering one log entry to show detection and resetting act on the caller's own workspace and refuse agent credentials. In a sandbox the browser may use them freely; in the shared workspace altering the log and resetting need the approver. Suspending or resuming an agent needs a wholesaler operator session everywhere. The altered entry is put back after five minutes. A production deployment has none of these controls open. ([`src/lib/demo/tamper.ts`](../src/lib/demo/tamper.ts), [`src/app/api/v1/demo/reset/route.ts`](../src/app/api/v1/demo/reset/route.ts), [`src/app/api/v1/supplier/agents/[agentId]/suspension/route.ts`](../src/app/api/v1/supplier/agents/%5BagentId%5D/suspension/route.ts))
 - **State.** State is kept in memory with a JSON snapshot on disk. An order, an approval, a mandate change, a suspension and each audit entry are written to disk (temporary file, fsync, rename) before the call returns, and a failed write fails the call. Offers, activity and demand records are saved a moment later. An unreadable snapshot is kept aside under a new name and reported by /api/v1/health, and the service starts empty. One process serialises order decisions, so two orders cannot pass a limit together. ([`src/lib/store/memory.ts`](../src/lib/store/memory.ts), [`src/lib/store/snapshot.ts`](../src/lib/store/snapshot.ts), [`src/lib/orders/lock.ts`](../src/lib/orders/lock.ts))
 - **Recorded mode.** Without an API key, recorded price and availability answers for 255 products replay with a fixed clock. Tests and evals always use this mode. ([`src/lib/valio/recorded.ts`](../src/lib/valio/recorded.ts), [`fixtures/upstream`](../fixtures/upstream))
 - **Product concepts.** Category groups and the product concept list are our own, built from the product data. "Lactose-free milk" is sold as "lactose-free milk drink"; Laituri treats them as one request and shows the product name it chose. ([`src/lib/catalog/build/groups.ts`](../src/lib/catalog/build/groups.ts), [`src/lib/catalog/lexicon.ts`](../src/lib/catalog/lexicon.ts))
-- **Upstream data.** A closingTime in the past means that delivery date can no longer be ordered. An available amount of 9999999999 or 999999 means no tracked limit. Availability returns the next delivery date whatever date is asked; Laituri compares it with the requested date. ([`src/lib/valio/normalise.ts`](../src/lib/valio/normalise.ts))
+- **Upstream data.** A closingTime in the past means that delivery date can no longer be ordered. An available amount of 9999999999 or 999999 means the wholesaler does not track stock, not that stock is unlimited: the signed offer line says stock: "untracked" and gives no available count. Availability returns the next delivery date whatever date is asked; Laituri compares it with the requested date. ([`src/lib/valio/normalise.ts`](../src/lib/valio/normalise.ts))
+- **Plausible quantities.** One order line may ask for at most 20,000 l, 20,000 kg or 20,000 sales units (LAITURI_MAX_LINE_LITRES, LAITURI_MAX_LINE_KG, LAITURI_MAX_LINE_UNITS); a larger quantity, or a delivery date before today, is refused at quote time with 422. A line on untracked stock above 25 % of its ceiling waits for a person (delivery.partial). The ceilings are our assumption, not the wholesaler's. ([`src/lib/offers/limits.ts`](../src/lib/offers/limits.ts), [`src/lib/policy/rules/fulfilment.ts`](../src/lib/policy/rules/fulfilment.ts))
 - **Pack contents.** Litres or kilograms per sales unit come from the product's unit data, else from the price divided by the comparison price. ([`src/lib/offers/packs.ts`](../src/lib/offers/packs.ts))
 - **Carbon figure.** The CO2 figure is the average for the product's category (categoryAverageCo2PerKg), not a measurement of the product. ([`src/lib/contracts/facts.ts`](../src/lib/contracts/facts.ts))
 - **Request check.** The wholesaler compares the buyer's words, sent as the quote's intent, with every offer before it signs it: the product, every claim, words it does not understand, the quantity (covers the need, at most one lot over), the date, a budget and an order to wait for a person. Each is met, unmet or unchecked and is signed inside the offer. An order is confirmed alone only when all are met; a certain mismatch (wrong product, a missing claim, less than half the need asked for) blocks it, and anything else waits for the approver with the requirement named. The agent's stated match confidence never counts for more than the wholesaler finds. What the goods are for ("for the breakfast buffets") is kept as context and not checked. An agent that sends no words gets no request check, and its order can still be confirmed alone inside the mandate. ([`src/lib/request/index.ts`](../src/lib/request/index.ts), [`src/lib/request/requirements.ts`](../src/lib/request/requirements.ts), [`src/lib/policy/rules/products.ts`](../src/lib/policy/rules/products.ts), [`src/lib/gateway/confidence.ts`](../src/lib/gateway/confidence.ts))

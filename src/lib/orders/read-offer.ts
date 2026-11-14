@@ -1,5 +1,6 @@
 import { Offer, type Order } from "@/lib/contracts";
 import { ValidationError } from "@/lib/gateway/errors";
+import { TOKEN_TYPE } from "@/lib/trust/types";
 import type { OfferRead, OrderDeps } from "./types";
 
 /** Reads the payload of a compact JWS without checking the signature. Only for display and idempotency matching. */
@@ -18,7 +19,7 @@ export function decodeUnverified(jws: string): unknown {
  * so the order can be recorded as blocked. Only an offer that cannot be read at all is a request error.
  */
 export async function readOffer(jws: string, deps: Pick<OrderDeps, "trust">): Promise<OfferRead & { offer: Offer }> {
-  const verified = await deps.trust.verify<unknown>("supplier", jws);
+  const verified = await deps.trust.verify<unknown>("supplier", jws, TOKEN_TYPE.offer);
   const parsed = Offer.safeParse(verified.valid ? verified.payload : decodeUnverified(jws));
   if (!parsed.success) {
     if (verified.valid) throw new ValidationError("The signed offer does not have the expected content.");

@@ -135,6 +135,18 @@ describe("policy rules", () => {
     expect(statusOf("delivery.partial", input({ offer: short, mandate: allow }))).toBe("pass");
   });
 
+  it("delivery.partial sends a large line on untracked stock to a person, and says why", () => {
+    const untracked = (litres: number) =>
+      offer({}, [line({ quantity: litres, content: { amount: litres, unit: "l" }, availability: { status: "available", requested: litres, stock: "untracked", deliveryDate: "2026-11-16" } })]);
+    expect(statusOf("delivery.partial", input({ offer: untracked(1000) }))).toBe("pass");
+    expect(checkOf("delivery.partial", input({ offer: untracked(6000) }))).toMatchObject({
+      status: "ask",
+      message: "The wholesaler does not track stock of Valio Arki lactose-free milk drink 1 l, so 6,000 l cannot be promised without a person.",
+    });
+    const allow = mandate({ delivery: { allowPartial: true, maxDelayDays: 1 } });
+    expect(statusOf("delivery.partial", input({ offer: untracked(6000), mandate: allow }))).toBe("ask");
+  });
+
   it("delivery.deadline", () => {
     expect(statusOf("delivery.deadline", input())).toBe("pass");
     expect(statusOf("delivery.deadline", input({ offer: offer({ deliveryDate: "2026-11-17" }) }))).toBe("ask");

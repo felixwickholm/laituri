@@ -3,7 +3,8 @@ import { now } from "@/lib/clock";
 import { AuditBrokenError } from "@/lib/gateway/errors";
 import { seededMark } from "@/lib/provenance";
 import { store } from "@/lib/store";
-import { trust } from "@/lib/trust";
+import { TOKEN_TYPE, trust } from "@/lib/trust";
+import { workspaceState } from "@/lib/workspace/context";
 import { knownHead, rememberHead } from "./head";
 import { tailProblem } from "./tail";
 import { GENESIS_HASH, entryHash } from "./verify";
@@ -16,16 +17,17 @@ export interface AuditInput {
   data?: AuditEntry["data"];
 }
 
-const globalQueue = globalThis as typeof globalThis & { __laituriAuditQueue?: Promise<unknown> };
+/** The last append queued in this workspace; each workspace's chain is written one entry at a time. */
+const appendQueue = workspaceState<{ last: Promise<unknown> }>("audit.queue", () => ({ last: Promise.resolve() }));
 
 /**
  * Appends one signed entry. Calls run one at a time so concurrent writers cannot fork the chain.
  * The stored tail is checked first: an entry is never chained onto a tail that was changed, cut or replaced.
  */
 export function appendAudit(input: AuditInput): Promise<AuditEntry> {
-  const previous = globalQueue.__laituriAuditQueue ?? Promise.resolve();
-  const next = previous.catch(() => undefined).then(() => write(input));
-  globalQueue.__laituriAuditQueue = next;
+  const queue = appendQueue();
+  const next = queue.last.catch(() => undefined).then(() => write(input));
+  queue.last = next;
   return next;
 }
 
@@ -34,7 +36,7 @@ async function write(input: AuditInput): Promise<AuditEntry> {
   const last = await log.last();
   const [beforeLast] = last && last.seq > 1 ? await log.list(last.seq - 2) : [];
   const entryAt = async (seq: number) => (await log.list(seq - 1))[0];
-  const problem = await tailProblem(last, beforeLast, (jws) => trust().verify("supplier", jws), knownHead(), entryAt);
+  const problem = await tailProblem(last, beforeLast, (jws) => trust().verify("supplier", jws, TOKEN_TYPE.audit), knownHead(), entryAt);
   if (problem) throw new AuditBrokenError(`Nothing was written to the audit log. ${problem}`);
   const draft: AuditEntry = {
     seq: last ? last.seq + 1 : 1,
@@ -50,7 +52,7 @@ async function write(input: AuditInput): Promise<AuditEntry> {
     signature: "",
   };
   draft.hash = await entryHash(draft);
-  draft.signature = await trust().sign("supplier", { seq: draft.seq, hash: draft.hash }, { typ: "audit+jwt" });
+  draft.signature = await trust().sign("supplier", { seq: draft.seq, hash: draft.hash }, TOKEN_TYPE.audit);
   await log.append(draft);
   rememberHead({ size: draft.seq, head: draft.hash });
   return draft;

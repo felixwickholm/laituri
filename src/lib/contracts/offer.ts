@@ -37,7 +37,11 @@ export const OfferLine = z.object({
   availability: z.object({
     status: AvailabilityStatus,
     requested: z.number().describe("Sales units needed to cover the request"),
-    available: z.number().describe("Sales units the wholesaler can deliver"),
+    available: z.number().optional()
+      .describe("Sales units the wholesaler counts in stock; absent when stock is untracked, because no count stands behind it"),
+    stock: z.enum(["tracked", "untracked"]).optional()
+      .describe("untracked: the wholesaler keeps no stock count for this product, so the offered quantity is not checked against stock. " +
+        "Absent only on offers signed before this field was added"),
     deliveryDate: IsoDate.optional(),
     orderBy: IsoDateTime.optional().describe("Order cut-off for that delivery date"),
     logisticModel: z.enum(["Stock", "Terminal"]).optional(),

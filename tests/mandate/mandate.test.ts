@@ -12,7 +12,7 @@ import {
   updateMandate,
 } from "@/lib/mandate";
 import { store } from "@/lib/store";
-import { trust } from "@/lib/trust";
+import { TOKEN_TYPE, trust } from "@/lib/trust";
 
 describe("mandate", () => {
   beforeEach(() => store().reset());
@@ -46,7 +46,7 @@ describe("mandate", () => {
   });
 
   it("rejects a mandate signed by the wrong role", async () => {
-    const jws = await trust().sign("supplier", toClaims(defaultMandate()));
+    const jws = await trust().sign("supplier", toClaims(defaultMandate()), TOKEN_TYPE.mandate);
     expect((await readMandate(jws)).valid).toBe(false);
   });
 

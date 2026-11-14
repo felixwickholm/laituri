@@ -1,4 +1,5 @@
 import type { Order } from "@/lib/contracts";
+import { TOKEN_TYPE } from "@/lib/trust/types";
 import type { OrderDeps } from "./types";
 
 export type ResponseCode = "AP" | "CA" | "RE";
@@ -41,5 +42,5 @@ export async function signReceipt(
     issuedAt: deps.now().toISOString(),
     auditSeq,
   };
-  return deps.trust.sign("supplier", payload, { typ: "receipt+jwt" });
+  return deps.trust.sign("supplier", payload, TOKEN_TYPE.receipt);
 }

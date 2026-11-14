@@ -1,9 +1,8 @@
 import type { Order } from "@/lib/contracts";
 import { catalog } from "@/lib/catalog";
 import type { Checks } from "./checks";
-import { mandate, monday, nonPassing, placeOrder, quoteLitres } from "./flow";
+import { mandate, monday, nonPassing, placeOrder, quoteLitres, recordedOrder } from "./flow";
 import { coveredAmount, lineText } from "./quantities";
-import { ok } from "./router";
 import type { Scenario } from "./scenario";
 
 interface ExtraContext {
@@ -33,7 +32,7 @@ async function partialSplit({ checks, scenario }: ExtraContext): Promise<void> {
   checks.expect(covered >= need, `split covers ${covered} l of ${need}`);
 
   const { mandate: rules, jws } = await mandate();
-  const order = ok<Order>(await placeOrder(split.signed.jws, jws, "eval-split-0001"), "Split order");
+  const order = recordedOrder(await placeOrder(split.signed.jws, jws, "eval-split-0001"), "Split order");
   const inRules = split.signed.offer.lines.every((line) =>
     !line.substituteFor || (line.substituteFor.likeForLike && line.substituteFor.priceChangePct <= rules.substitution.maxPriceIncreasePct));
   const wanted = inRules ? "confirmed" : "pending_approval";
@@ -49,7 +48,7 @@ async function cutoffPassed({ checks, scenario }: ExtraContext): Promise<void> {
   const status = quote.primary.offer.lines[0].availability.status;
   checks.expect(status === "cutoff_passed", `primary line ${status}, expected cutoff_passed`);
   const { jws } = await mandate();
-  const order = ok<Order>(await placeOrder(quote.primary.jws, jws, "eval-cutoff-0001"), "Primary order");
+  const order = recordedOrder(await placeOrder(quote.primary.jws, jws, "eval-cutoff-0001"), "Primary order");
   checks.expect(order.status === "blocked", `ordering the primary ended ${order.status}, expected blocked`);
   const deliverBy = monday();
   const onTime = quote.alternatives.filter(({ signed }) => signed.offer.lines.every((line) =>

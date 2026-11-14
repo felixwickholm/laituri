@@ -16,6 +16,8 @@ import {
   SupplierOverview,
   SuspensionRequest,
   SuspensionState,
+  WorkspaceInfo,
+  WorkspaceViewRequest,
 } from "@/lib/contracts";
 import { MAX_SPEECH_CHARS } from "@/lib/voice/server";
 
@@ -28,6 +30,10 @@ export const ProblemSchema = z.object({
   detail: z.string().describe("What went wrong, in one plain sentence"),
   code: z.string().describe("Stable machine-readable error code"),
   violations: z.array(z.object({ path: z.string(), message: z.string() })).optional(),
+});
+
+export const BlockedOrderProblem = ProblemSchema.extend({
+  order: Order.describe("The blocked order as recorded: its decision lists every rule that was checked and the ones that blocked it"),
 });
 
 export const SignedMandate = z.object({
@@ -135,6 +141,8 @@ export const ResetResult = z.object({ ok: z.literal(true), detail: z.string(), s
 
 /** Every named schema, keyed by its component name. Operations and tools refer to these names. */
 export const SCHEMAS = {
+  WorkspaceInfo,
+  WorkspaceViewRequest,
   Money,
   Product,
   SearchRequest,
@@ -166,6 +174,7 @@ export const SCHEMAS = {
   SpeechRequest,
   SpeechAudio,
   Problem: ProblemSchema,
+  BlockedOrderProblem,
 } satisfies Record<string, z.ZodType>;
 
 export type SchemaName = keyof typeof SCHEMAS;

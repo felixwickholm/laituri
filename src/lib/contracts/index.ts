@@ -8,3 +8,4 @@ export * from "./offer";
 export * from "./order";
 export * from "./audit";
 export * from "./supplier";
+export * from "./workspace";

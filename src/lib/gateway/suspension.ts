@@ -3,7 +3,7 @@ import { ISSUER } from "@/lib/offers/assemble";
 import { SUPPLIER_ACTOR } from "@/lib/orders/summaries";
 import { AgentSuspendedError, NotFoundError } from "./errors";
 import type { Recorder } from "./recorder";
-import type { AgentRef, Deps } from "./types";
+import type { AgentRef, Deps, Operator } from "./types";
 
 type SuspensionDeps = Pick<Deps, "store" | "audit" | "now">;
 
@@ -15,14 +15,22 @@ interface Party {
 export interface Suspensions {
   /** Throws AgentSuspendedError for a suspended agent, after logging the refused call. `call` names it, for example "POST /api/v1/quotes". */
   admit(agent: AgentRef, call: string): Promise<void>;
-  /** Suspends or resumes an agent that has reached the wholesaler. Asking for the state it is already in changes nothing. */
-  set(agentId: string, change: SuspensionRequest): Promise<SuspensionState>;
+  /** The operator suspends or resumes an agent that has reached the wholesaler. Asking for the state it is already in changes nothing. */
+  set(agentId: string, change: SuspensionRequest, operator: Operator): Promise<SuspensionState>;
 }
 
 function state(agent: Party, buyer: Party | undefined, suspension?: AgentSuspension): SuspensionState {
   const base = { agent, ...(buyer ? { buyer } : {}) };
   if (!suspension) return { ...base, suspended: false };
   return { ...base, suspended: true, suspendedAt: suspension.suspendedAt, ...(suspension.reason ? { reason: suspension.reason } : {}) };
+}
+
+/** The operator as the audit entry names them, and how they signed in when it was demo access. */
+function operatorFields(operator: Operator) {
+  return {
+    actor: { type: "supplier" as const, id: operator.id, name: operator.name },
+    data: { operator: { id: operator.id, name: operator.name }, ...(operator.via ? { via: operator.via } : {}) },
+  };
 }
 
 function refusal(agent: AgentRef, suspension: AgentSuspension): string {
@@ -56,22 +64,23 @@ export function createSuspensions(deps: SuspensionDeps, recorder: Pick<Recorder,
       throw new AgentSuspendedError(message);
     },
 
-    async set(agentId, change) {
+    async set(agentId, change, operator) {
       const found = await known(agentId);
       if (!found) throw new NotFoundError(`No agent with the id ${agentId} has reached ${ISSUER}.`);
       const { agent, buyer } = found;
       const current = await deps.store.suspensions.get(agentId);
       if (change.suspended === (current !== undefined)) return state(agent, buyer, current);
       const refs = buyer ? { buyerId: buyer.id } : {};
+      const by = operatorFields(operator);
 
       if (!change.suspended) {
         await deps.store.suspensions.remove(agentId);
         await deps.audit.append({
-          actor: SUPPLIER_ACTOR,
+          actor: by.actor,
           event: "agent.resumed",
-          summary: `${ISSUER} resumed ${agent.name}. Its calls are served again.`,
+          summary: `${operator.name} resumed ${agent.name} for ${ISSUER}. Its calls are served again.`,
           refs,
-          data: { agentId, suspendedAt: current?.suspendedAt, ...(change.reason ? { reason: change.reason } : {}) },
+          data: { agentId, suspendedAt: current?.suspendedAt, ...(change.reason ? { reason: change.reason } : {}), ...by.data },
         });
         return state(agent, buyer);
       }
@@ -84,11 +93,11 @@ export function createSuspensions(deps: SuspensionDeps, recorder: Pick<Recorder,
       };
       await deps.store.suspensions.put(suspension);
       await deps.audit.append({
-        actor: SUPPLIER_ACTOR,
+        actor: by.actor,
         event: "agent.suspended",
-        summary: `${ISSUER} suspended ${agent.name}. Every call it makes is refused until it is resumed.${change.reason ? ` Reason: ${change.reason}` : ""}`,
+        summary: `${operator.name} suspended ${agent.name} for ${ISSUER}. Every call it makes is refused until it is resumed.${change.reason ? ` Reason: ${change.reason}` : ""}`,
         refs,
-        data: { agentId, ...(change.reason ? { reason: change.reason } : {}) },
+        data: { agentId, ...(change.reason ? { reason: change.reason } : {}), ...by.data },
       });
       return state(agent, buyer, suspension);
     },

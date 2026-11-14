@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import type { Fulfilment, Offer, OfferLine, QuoteRequest, SignedOffer } from "@/lib/contracts";
+import { TOKEN_TYPE } from "@/lib/trust/types";
 import type { BuiltLine, OfferDeps } from "./types";
 
 export const ISSUER = "Valio Aimo";
@@ -85,7 +86,7 @@ export function assembleOffer({ request, customerNumber, buyer, lines, now, vali
 
 /** Sign with the wholesaler key and keep the offer so orders can refer back to it. */
 export async function issueOffer(offer: Offer, deps: Pick<OfferDeps, "trust" | "store">): Promise<SignedOffer> {
-  const jws = await deps.trust.sign("supplier", offer, { typ: "offer+jwt" });
+  const jws = await deps.trust.sign("supplier", offer, TOKEN_TYPE.offer);
   const signed = { offer, jws };
   await deps.store.offers.put(signed);
   return signed;

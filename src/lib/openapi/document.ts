@@ -21,6 +21,10 @@ function operationObject(op: Operation) {
       content: { [op.responseType ?? "application/json"]: { schema: ref(op.response), ...example(op.example?.response) } },
     },
   };
+  for (const outcome of op.outcomes ?? []) {
+    const mediaType = outcome.problem ? "application/problem+json" : "application/json";
+    responses[String(outcome.status)] = { description: outcome.description, content: { [mediaType]: { schema: ref(outcome.response) } } };
+  }
   for (const status of op.errors) {
     responses[String(status)] = {
       description: ERROR_TEXT[status] ?? "Error",
@@ -95,7 +99,7 @@ export function openApiDocument(origin: string) {
     "x-assumptions": [
       "Orders are simulated. The wholesaler test API has no order endpoint, so every order carries simulated: true.",
       "Cut-off rule: a delivery date whose order closing time has passed is not orderable; the offer reports cutoff_passed.",
-      "Unlimited stock sentinel: an available amount of 9999999999 or 999999 means no tracked limit.",
+      "Untracked stock sentinel: an available amount of 9999999999 or 999999 means the wholesaler does not track stock; the offer line says stock: untracked and gives no available count.",
     ],
   };
 }

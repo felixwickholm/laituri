@@ -75,6 +75,9 @@ export const SCENARIOS: Scenario[] = [
     expect: { route: ["blocked"], concept: "milk", rules: ["match.confidence"], agent: "blocked" } },
   { id: "23", request: "200 l lactose-free milk by Monday from a farm in Lapland",
     expect: { route: ["approval"], concept: "milk", claims: ["lactose_free"], need: LITRES(200), delivery: BY_MONDAY, rules: ["match.confidence"] } },
+  { id: "24", request: "1000000000000 l lactose-free milk by Monday",
+    note: "the quote is refused with 422 quantity_implausible, so no offer is signed",
+    expect: { route: ["no_order"] } },
 ];
 
 const NAMES: Record<string, string> = {
@@ -84,7 +87,7 @@ const NAMES: Record<string, string> = {
   "12": "Vague request", "13": "Tomorrow is Sunday", "14": "Over the weekly limit", "15": "Category outside mandate",
   "16": "Same idempotency key twice", "17": "Mandate requires organic", "18": "First-time product",
   "19": "Words say wait for approval", "20": "Words set a budget", "21": "Finnish budget and wait",
-  "22": "Agent quotes the wrong milk", "23": "Words not understood",
+  "22": "Agent quotes the wrong milk", "23": "Words not understood", "24": "A trillion litres",
 };
 
 function expectedText(scenario: Scenario): string {

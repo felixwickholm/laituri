@@ -1,6 +1,6 @@
 import { now } from "@/lib/clock";
 import { store } from "@/lib/store";
-import { trust } from "@/lib/trust";
+import { TOKEN_TYPE, trust } from "@/lib/trust";
 import { GENESIS_HASH } from "./verify";
 
 export interface Checkpoint {
@@ -17,5 +17,5 @@ export async function checkpoint(): Promise<{ checkpoint: Checkpoint; jws: strin
     head: last ? last.hash : GENESIS_HASH,
     at: now().toISOString(),
   };
-  return { checkpoint: value, jws: await trust().sign("supplier", value, { typ: "checkpoint+jwt" }) };
+  return { checkpoint: value, jws: await trust().sign("supplier", value, TOKEN_TYPE.checkpoint) };
 }

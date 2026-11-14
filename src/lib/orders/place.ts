@@ -2,6 +2,7 @@ import type { Order, PlaceOrderRequest } from "@/lib/contracts";
 import { ConflictError } from "@/lib/gateway/errors";
 import { newId } from "@/lib/offers/assemble";
 import { seededMark } from "@/lib/provenance";
+import { workspaceState } from "@/lib/workspace/context";
 import { confirmOrder } from "./confirm";
 import { serial } from "./lock";
 import { orderedProductIds, productsFor, weekSpendNet } from "./context";
@@ -13,8 +14,8 @@ export const UNKNOWN_AGENT = { id: "unknown", name: "Unknown agent" };
 /** The offer names no buyer, so an order without a valid mandate cannot say whose it is. */
 const UNVERIFIED_BUYER = { id: "unverified", name: "Unverified buyer" };
 
-/** Retries that arrive while the first attempt is still running share its result. */
-const inFlight = new Map<string, Promise<Order>>();
+/** Retries that arrive while the first attempt is still running share its result. Keys are per workspace. */
+const ordersInFlight = workspaceState("orders.in-flight", () => new Map<string, Promise<Order>>());
 
 function claimedOfferId(jws: string): string | undefined {
   const payload = decodeUnverified(jws);
@@ -38,6 +39,7 @@ async function existingOrder(request: PlaceOrderRequest, deps: OrderDeps, caller
 export async function placeOrder(request: PlaceOrderRequest, deps: OrderDeps, caller?: Caller): Promise<Order> {
   const existing = await existingOrder(request, deps, caller);
   if (existing) return existing;
+  const inFlight = ordersInFlight();
   const running = inFlight.get(request.idempotencyKey);
   if (running) {
     const order = await running;

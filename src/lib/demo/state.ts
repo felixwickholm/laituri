@@ -1,6 +1,7 @@
 import type { AuditEntry } from "@/lib/contracts";
 import type { AgentHooks, AgentTransport, PurchaseResult } from "@/lib/agent";
 import type { AgentRef } from "@/lib/gateway";
+import { workspaceState } from "@/lib/workspace/context";
 
 /** One buyer's agent as a scene plays it: who it is, how it calls the gateway, and where its notes go. */
 export interface ScenarioAgent {
@@ -42,9 +43,5 @@ interface DemoState {
   tampered?: { seq: number; original: AuditEntry };
 }
 
-const holder = globalThis as typeof globalThis & { __laituriDemo?: DemoState };
-
-/** Held on globalThis so runs survive module reloads in development. */
-export function demoState(): DemoState {
-  return (holder.__laituriDemo ??= { runs: new Map(), generation: 0 });
-}
+/** The current workspace's runs and tampered entry. */
+export const demoState = workspaceState<DemoState>("demo", () => ({ runs: new Map(), generation: 0 }));

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { QuoteRequest } from "@/lib/contracts";
+import { TOKEN_TYPE } from "@/lib/trust/types";
 import { UpstreamError } from "@/lib/gateway/errors";
 import { quote } from "@/lib/offers";
 import { QUOTE_CONTEXT, makeDeps } from "../support/deps";
@@ -20,7 +21,7 @@ describe("quote", () => {
     expect(offer.fulfilment).toBe("full");
     expect(offer.id).toMatch(/^off_[a-z2-7]{10}$/);
     expect(offer.lines[0]).toMatchObject({ quantity: 1000, content: { amount: 1000, unit: "l" }, taxRate: 13.5 });
-    expect(offer.lines[0].availability).toMatchObject({ status: "available", requested: 1000, available: 1000 });
+    expect(offer.lines[0].availability).toMatchObject({ status: "available", requested: 1000, stock: "untracked" });
     expect(offer.totals).toEqual({
       net: { amount: 1010, currency: "EUR" },
       tax: { amount: 136.35, currency: "EUR" },
@@ -31,7 +32,7 @@ describe("quote", () => {
     expect(offer.source.system).toBe("Valio Aimo mock API");
     expect(offer.expiresAt).toBe("2026-11-14T07:15:00.000Z");
     expect(alternatives).toEqual([]);
-    expect((await trust.verify("supplier", primary.jws)).payload).toEqual(offer);
+    expect((await trust.verify("supplier", primary.jws, TOKEN_TYPE.offer)).payload).toEqual(offer);
     expect(await store.offers.get(offer.id)).toEqual(primary);
     expect(upstream.calls.map((c) => c.kind).sort()).toEqual(["availability", "price"]);
     expect(upstream.calls[0].date).toBe(DELIVER_BY);

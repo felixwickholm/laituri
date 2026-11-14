@@ -1,6 +1,7 @@
 import type { Check, Decision, Mandate } from "@/lib/contracts";
 import type { Deps } from "@/lib/gateway/types";
 import type { MandateService, PolicyEngine, PolicyInput } from "@/lib/orders/types";
+import { TOKEN_TYPE } from "@/lib/trust/types";
 import { FakeTrust, FakeUpstream, fakeAudit, fakeCatalog, memoryStore, sha256 } from "./fakes";
 import { NOW } from "./products";
 
@@ -30,10 +31,10 @@ export function testMandate(): Mandate {
 export function fakeMandates(trust: FakeTrust): MandateService {
   let current = testMandate();
   let jws: string | undefined;
-  const issue = async () => (jws = await trust.sign("buyer", { jti: current.id, mandate: current }));
+  const issue = async () => (jws = await trust.sign("buyer", { jti: current.id, mandate: current }, TOKEN_TYPE.mandate));
   return {
     async read(token) {
-      const verified = await trust.verify<{ mandate: Mandate }>("buyer", token);
+      const verified = await trust.verify<{ mandate: Mandate }>("buyer", token, TOKEN_TYPE.mandate);
       if (!verified.valid || !verified.payload) return { valid: false, reason: "The mandate signature is not valid." };
       return { valid: true, mandate: verified.payload.mandate };
     },

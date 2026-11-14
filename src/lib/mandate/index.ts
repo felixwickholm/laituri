@@ -1,7 +1,7 @@
 import { Mandate } from "@/lib/contracts";
 import { NotFoundError } from "@/lib/gateway/errors";
 import { store } from "@/lib/store";
-import { trust } from "@/lib/trust";
+import { TOKEN_TYPE, trust } from "@/lib/trust";
 import { fromClaims, toClaims } from "./claims";
 import { PRIMARY_BUYER_ID, defaultMandate, isKnownBuyer } from "./defaults";
 
@@ -24,12 +24,12 @@ export type MandatePatch = {
 
 /** Signs the mandate with the buyer key. */
 export function issueMandate(mandate: Mandate): Promise<string> {
-  return trust().sign("buyer", toClaims(Mandate.parse(mandate)), { typ: "mandate+jwt" });
+  return trust().sign("buyer", toClaims(Mandate.parse(mandate)), TOKEN_TYPE.mandate);
 }
 
 /** Verifies the buyer signature and parses the claims. Never throws. */
 export async function readMandate(jws: string): Promise<MandateReading> {
-  const verified = await trust().verify<unknown>("buyer", jws);
+  const verified = await trust().verify<unknown>("buyer", jws, TOKEN_TYPE.mandate);
   if (!verified.valid) return { valid: false, reason: `The mandate signature is not valid: ${verified.reason}.` };
   const { mandate, reason } = fromClaims(verified.payload);
   return mandate ? { valid: true, mandate } : { valid: false, reason };

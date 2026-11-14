@@ -5,7 +5,7 @@ import { store } from "@/lib/store";
 import { sha256Hex } from "@/lib/trust";
 import type { EvalCase, Suite } from "../harness";
 import { Checks } from "../support/checks";
-import { mandate, placeOrder } from "../support/flow";
+import { mandate, orderFrom, placeOrder } from "../support/flow";
 import { changeOneByte } from "../support/jws";
 import { get } from "../support/router";
 import { rewriteLog } from "../support/rewrite";
@@ -78,8 +78,8 @@ const CASES: EvalCase[] = [
     const result = await verifyAs(changed, jwks, "supplier");
     checks.expect(!result.valid, "changed offer still verifies");
     const reply = await placeOrder(changed, (await mandate()).jws, "eval-t7-changed");
-    checks.expect((reply.body as Order | undefined)?.status === "blocked" || reply.status === 400, `ordering it answered ${reply.status}`);
-    return `${result.reason}; order ${(reply.body as Order | undefined)?.status ?? reply.status}`;
+    checks.expect(orderFrom(reply)?.status === "blocked" || reply.status === 400, `ordering it answered ${reply.status}`);
+    return `${result.reason}; order ${orderFrom(reply)?.status ?? reply.status}`;
   }),
   trustCase("T8", "One byte changed in a receipt", "detected", async ({ auto, jwks }, checks) => {
     const result = await verifyAs(changeOneByte(auto.receiptJws ?? ""), jwks, "supplier");
@@ -131,7 +131,7 @@ const CASES: EvalCase[] = [
       const changed = replacePayload(offer.jws, (payload: Offer) => ({ ...payload, lines: payload.lines.map(edit) }));
       const result = await verifyAs(changed, jwks, "supplier");
       checks.expect(!result.valid, `an offer with a changed ${what} still verifies`);
-      const order = (await placeOrder(changed, mandateJws, `eval-t14-${what}`)).body as Order | undefined;
+      const order = orderFrom(await placeOrder(changed, mandateJws, `eval-t14-${what}`));
       const check = order?.decision.checks.find((c) => c.rule === "offer.signature");
       checks.expect(order?.status === "blocked" && check?.status === "block", `ordering the offer with a changed ${what} was not blocked by its signature`);
       outcomes.push(`${what}: ${result.reason}, order ${order?.status}`);

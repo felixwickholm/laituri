@@ -1,7 +1,7 @@
 import { OrderStatus, type Order } from "@/lib/contracts";
 import { gateway } from "@/lib/gateway";
-import { mandate, placeOrder, quoteLitres } from "./flow";
-import { guardrail, orderOf, outcomeText, type Hostile } from "./hostile";
+import { mandate, orderFrom, placeOrder, quoteLitres } from "./flow";
+import { guardrail, outcomeText, type Hostile } from "./hostile";
 import type { Checks } from "./checks";
 
 const LITRES = 1000;
@@ -42,7 +42,7 @@ async function simultaneous(hostile: Hostile, checks: Checks, count: number, per
   );
   const net = quotes[0].primary.offer.totals.net.amount;
   const fits = Math.min(count, Math.floor(cents(rules.limits.perWeek.amount) / cents(net)));
-  const orders = replies.map(orderOf);
+  const orders = replies.map(orderFrom);
   await checkWeek(orders, fits, checks);
   return `${count} at once, ${net} EUR each, week ${rules.limits.perWeek.amount} EUR: ${tally(orders)}`;
 }
@@ -54,8 +54,8 @@ export const SPEND_GUARDRAILS = [
     const orders: (Order | undefined)[] = [];
     for (let i = 0; i < 4; i++) {
       const reply = await hostile.try(`replay ${i + 1}`, () => placeOrder(quote.primary.jws, jws, `eval-replay-${i + 1}`));
-      orders.push(orderOf(reply));
-      if (reply.status >= 300) checks.expect(false, `replay ${i + 1}: ${outcomeText(reply)}`);
+      orders.push(orderFrom(reply));
+      if (!orderFrom(reply)) checks.expect(false, `replay ${i + 1}: ${outcomeText(reply)}`);
     }
     const statuses = orders.map((order) => order?.status);
     checks.expect(statuses[0] === "confirmed", `first send ended ${statuses[0]}, expected confirmed`);
