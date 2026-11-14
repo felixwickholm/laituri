@@ -99,20 +99,21 @@ describe.skipIf(!hasCatalog)("suspending an agent", () => {
   it("cannot be done or undone with an agent token, without a session, or with an approver's session", async () => {
     await searchAs(harbour);
     const approver = (await session.POST(jsonRequest("/api/v1/console/session", { body: {} }))).headers.get("set-cookie")!.split(";")[0];
-    const attempts: [Record<string, string>, string][] = [
-      [kaisla, "agent_not_allowed"],
-      [{}, "operator_sign_in_required"],
-      [{ cookie: approver }, "operator_sign_in_required"],
+    const attempts: [Record<string, string>, number, string][] = [
+      [kaisla, 403, "agent_not_allowed"],
+      [{}, 401, "credential_required"],
+      [{ cookie: approver }, 403, "operator_sign_in_required"],
     ];
-    for (const [headers, code] of attempts) {
+    for (const [headers, status, code] of attempts) {
       for (const body of [{ suspended: true }, { suspended: false }]) {
         const response = await setSuspension(body, headers);
-        expect(response.status).toBe(403);
+        expect(response.status).toBe(status);
         expect((await response.json()).code).toBe(code);
       }
     }
+    // A caller that showed no credential leaves no entry, so nobody can fill the log anonymously.
     const refused = (await store().audit.list()).filter((entry) => entry.event === "access.refused" && entry.data.action === "suspension");
-    expect(refused).toHaveLength(attempts.length * 2);
+    expect(refused).toHaveLength(4);
     expect(refused[1].summary).toBe(`An agent with a token tried to suspend or resume ${HARBOUR_AGENT}. Refused: only a signed-in Valio Aimo operator can.`);
     expect((await gateway().verifyAudit()).valid).toBe(true);
   });
@@ -124,8 +125,8 @@ describe.skipIf(!hasCatalog)("suspending an agent", () => {
     expect(withToken.status).toBe(403);
     expect((await withToken.json()).code).toBe("agent_suspended");
     const withoutToken = await setSuspension({ suspended: false }, {});
-    expect(withoutToken.status).toBe(403);
-    expect((await withoutToken.json()).code).toBe("operator_sign_in_required");
+    expect(withoutToken.status).toBe(401);
+    expect((await withoutToken.json()).code).toBe("credential_required");
     expect((await searchAs(harbour)).status).toBe(403);
   });
 

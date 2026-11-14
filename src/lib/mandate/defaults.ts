@@ -27,7 +27,8 @@ function nordicHarbour(): Terms {
     agent: { id: "agent:harbour-purchasing", name: "Harbour purchasing agent" },
     limits: {
       perOrder: { amount: 1500, currency: "EUR" },
-      perWeek: { amount: 5000, currency: "EUR" },
+      // A standing weekly order of about twenty lines plus the week's one-off orders fits; one large order still asks.
+      perWeek: { amount: 7500, currency: "EUR" },
     },
     categories: {
       allowed: ["dairy", "cheese", "bakery", "produce", "dry_goods", "beverages", "eggs", "plant_based"],
@@ -55,7 +56,8 @@ function kaisla(): Terms {
     agent: { id: "agent:kaisla-menu-planner", name: "Kaisla menu planner" },
     limits: {
       perOrder: { amount: 800, currency: "EUR" },
-      perWeek: { amount: 3000, currency: "EUR" },
+      // Eleven schools' weekly order plus the week's extra orders fit; the big milk line still asks every week.
+      perWeek: { amount: 6000, currency: "EUR" },
     },
     categories: {
       allowed: ["dairy", "cheese", "bakery", "produce", "dry_goods", "eggs", "plant_based", "fish", "meat", "fats_oils"],
@@ -124,7 +126,11 @@ export function buyerParty(buyerId: string = PRIMARY_BUYER_ID): { id: string; na
   return { id: buyer.id, name: buyer.name };
 }
 
-/** A demo buyer's standing authority, valid 15 days either side of now. */
+/** How far back a demo mandate reaches: the four seeded weeks of standing orders fall inside it. */
+const VALID_BEFORE_DAYS = 35;
+const VALID_AFTER_DAYS = 15;
+
+/** A demo buyer's standing authority, from five weeks before now to 15 days after. */
 export function defaultMandate(buyerId: string = PRIMARY_BUYER_ID): Mandate {
   const terms = TERMS[buyerId];
   if (!terms) throw new Error(`No demo buyer has the id ${buyerId}.`);
@@ -133,7 +139,7 @@ export function defaultMandate(buyerId: string = PRIMARY_BUYER_ID): Mandate {
     ...terms(),
     version: 1,
     supplier: "Valio Aimo",
-    validFrom: new Date(at - 15 * DAY_MS).toISOString(),
-    validUntil: new Date(at + 15 * DAY_MS).toISOString(),
+    validFrom: new Date(at - VALID_BEFORE_DAYS * DAY_MS).toISOString(),
+    validUntil: new Date(at + VALID_AFTER_DAYS * DAY_MS).toISOString(),
   };
 }

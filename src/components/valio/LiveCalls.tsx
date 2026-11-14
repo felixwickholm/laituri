@@ -2,19 +2,24 @@
 
 import { Radio } from "lucide-react";
 import { useMemo } from "react";
+import { foldBaskets } from "@/lib/supplier-console/baskets";
 import { callLine, offerNets } from "@/lib/supplier-console/calls";
 import { ago, callTime, liveCalls } from "@/lib/supplier-console/format";
-import { useAllActivity } from "@/lib/supplier-console/hooks";
+import { useAllActivity, useBaskets } from "@/lib/supplier-console/hooks";
 import { agentName } from "@/lib/supplier-console/names";
-import { HistoryNote } from "../ui/HistoryNote";
+import { BasketRow } from "./BasketRow";
 import { EmptyState } from "./bits";
 
-/** Calls from any buyer's agent as they reach Valio Aimo, newest on top, each as one short line. New rows slide in. */
+/**
+ * Calls from any buyer's agent as they reach Valio Aimo, newest on top, each as one short line. A kitchen's
+ * multi-line order folds into one row that opens to its lines. New rows slide in.
+ */
 export function LiveCalls({ now, limit = 7 }: { now: number; limit?: number }) {
   const { data, error, locked } = useAllActivity();
-  const calls = useMemo(() => liveCalls([data ?? []], limit), [data, limit]);
+  const { data: baskets } = useBaskets();
+  const feed = useMemo(() => foldBaskets(liveCalls([data ?? []], Number.POSITIVE_INFINITY), baskets ?? []).slice(0, limit), [data, baskets, limit]);
   const nets = useMemo(() => offerNets(data ?? []), [data]);
-  const newest = calls[0];
+  const newest = feed[0];
   const live = newest ? now - Date.parse(newest.at) < 10 * 60 * 1000 : false;
   if (locked) return null;
 
@@ -27,16 +32,18 @@ export function LiveCalls({ now, limit = 7 }: { now: number; limit?: number }) {
           {newest ? `Last call ${ago(newest.at, now)}` : "Waiting for calls"}
         </span>
       </header>
-      {calls.length === 0 ? (
+      {feed.length === 0 ? (
         <EmptyState
           icon={Radio}
-          text={error ? `Could not read agent calls: ${error}` : data ? "No agent has called yet." : "Loading calls…"}
+          text={error ? `Could not read agent calls: ${error}` : data ? "No calls yet." : "Loading…"}
           action={data && !error ? { href: "/connect", label: "Connect an agent" } : undefined}
         />
       ) : (
         <div className="card live-card">
           <ol className="live-list" aria-live="polite" aria-relevant="additions">
-            {calls.map((call) => {
+            {feed.map((item) => {
+              if (item.kind === "basket") return <BasketRow key={item.basket.id} basket={item.basket} at={item.at} now={now} />;
+              const call = item.call;
               const line = callLine(call, nets);
               return (
                 <li key={call.id} className="live-row" data-tone={line.tone}>
@@ -54,9 +61,6 @@ export function LiveCalls({ now, limit = 7 }: { now: number; limit?: number }) {
               );
             })}
           </ol>
-          <div className="live-foot">
-            <HistoryNote show={calls.some((call) => call.seeded)} />
-          </div>
         </div>
       )}
     </section>

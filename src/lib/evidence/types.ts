@@ -24,6 +24,16 @@ export interface Facts {
   seededRequests: number;
   seededOrders: number;
   recordedProducts: number;
+  /** What the wholesaler's price and availability APIs are asked, measured on a 20-line weekly order in recorded mode. */
+  upstream: {
+    searchCap: number;
+    quoteLineCap: number;
+    basketLines: number;
+    basketCalls: number;
+    basketProductsAsked: number;
+    /** Products in the full product files the challenge provides, which search runs on locally. */
+    catalogueSize: number;
+  };
 }
 
 /**
@@ -88,6 +98,20 @@ export interface ProductionStep {
   where: string[];
 }
 
+/** An attack or failure the design defends against, with the code and the eval cases that show the defence holds. */
+export interface Threat {
+  threat: string;
+  defence: string;
+  where: string[];
+  check: Check[];
+}
+
+/** A question a reviewer asks, answered from the same source as the rest of the evidence. Shown on /paper and in its FAQPage data. */
+export interface Question {
+  question: string;
+  answer: string;
+}
+
 export interface Evidence {
   name: string;
   pitch: string;
@@ -103,5 +127,7 @@ export interface Evidence {
   simulated: Simulated[];
   notBuilt: Assumption[];
   production: ProductionStep[];
+  threats: Threat[];
+  questions: Question[];
   links: { label: string; href: string; note: string }[];
 }

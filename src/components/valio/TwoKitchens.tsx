@@ -75,17 +75,14 @@ export function TwoKitchens() {
   return (
     <section className="block" aria-labelledby="kitchens-title">
       <header className="block-head">
-        <h2 id="kitchens-title">Same sentence, two kitchens</h2>
+        <h2 id="kitchens-title">Two customers, same words</h2>
         <button type="button" className="btn btn-secondary kitchens-run" onClick={() => void start()} disabled={busy}>
           <Play aria-hidden="true" />
-          {busy ? "Running…" : state.kind === "done" ? "Run again" : "Run: same sentence, two kitchens"}
+          {busy ? "Running…" : state.kind === "done" ? "Run again" : "Try it"}
         </button>
       </header>
+      {sentence || pending || outcomes.length > 0 || state.kind === "error" ? (
       <div className="card kitchens">
-        <p className="kitchens-lede">
-          The hotel&rsquo;s agent and the school&rsquo;s agent send Valio Aimo the same words. Each order is checked against its own buyer&rsquo;s signed mandate, and
-          Valio Aimo sees how each one ends.
-        </p>
         {sentence ? <p className="kitchens-sentence">&ldquo;{sentence}&rdquo;</p> : null}
         {pending ? (
           <div className="kitchens-pair" aria-live="polite">
@@ -131,6 +128,7 @@ export function TwoKitchens() {
           </p>
         ) : null}
       </div>
+      ) : null}
     </section>
   );
 }

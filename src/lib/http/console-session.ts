@@ -1,4 +1,5 @@
 import { appendAudit } from "@/lib/audit";
+import { presentedCredential } from "./credential";
 import { ValidationError, hasStatus } from "@/lib/gateway/errors";
 import { PRIMARY_BUYER_ID, buyerIds, currentMandate, isKnownBuyer } from "@/lib/mandate";
 import type { Decider } from "@/lib/orders/types";
@@ -106,6 +107,7 @@ const HUMAN_ACTIONS = {
   mandate: "change the mandate",
   reset: "reset the demo",
   tamper: "alter the audit log",
+  handoff: "ask a person at Valio Aimo for the buyer",
 } as const;
 export type HumanAction = keyof typeof HUMAN_ACTIONS;
 
@@ -121,7 +123,7 @@ export async function guardApprover(
   try {
     return await requireApprover(headers, action);
   } catch (error) {
-    if (hasStatus(error, 403)) {
+    if (hasStatus(error, 403) && (await presentedCredential(headers))) {
       const byAgent = bearerToken(headers) !== undefined;
       const who = byAgent ? DEMO_AGENT_NAME : "A caller without an approver session";
       await appendAudit({

@@ -52,15 +52,15 @@ export function ResumePill({ step, total, onResume, onDismiss }: { step: number;
   useEffect(() => resume.current?.focus({ preventScroll: true }), []);
 
   const pill = (
-    <div className="tour-resume" role="region" aria-label="Paused tour" data-dock={dock?.dock ?? "float"}>
+    <div className="tour-resume" role="region" aria-label="Paused walkthrough" data-dock={dock?.dock ?? "float"}>
       <button ref={resume} type="button" className="tour-resume-go" onClick={onResume}>
         <CirclePlay aria-hidden="true" />
-        <span className="tour-resume-label">Resume the tour</span>
+        <span className="tour-resume-label">Resume the walkthrough</span>
         <span className="tour-resume-step">
           {step} of {total}
         </span>
       </button>
-      <button type="button" className="icon-btn tour-resume-end" onClick={onDismiss} aria-label="End the tour">
+      <button type="button" className="icon-btn tour-resume-end" onClick={onDismiss} aria-label="End the walkthrough">
         <X aria-hidden="true" />
       </button>
     </div>

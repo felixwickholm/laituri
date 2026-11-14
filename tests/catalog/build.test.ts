@@ -55,4 +55,15 @@ describe("query parsing", () => {
   it("keeps unknown words as leftovers", () => {
     expect(parseQuery("Valio oat milk").leftovers).toEqual(["valio"]);
   });
+
+  it("keeps a cheese variety as a requirement, never a synonym of cheese", () => {
+    for (const variety of ["cheddar", "edam", "gouda", "emmental"]) {
+      const parsed = parseQuery(`${variety} cheese slices`);
+      expect(parsed.concept?.id).toBe("cheese");
+      expect(parsed.leftovers).toContain(variety);
+    }
+    // The product is still a cheese: the variety names it, it does not hide it.
+    expect(assignConcept("arla pro 1 kg cheddar cheese slices", "10602")).toBe("cheese");
+    expect(assignConcept("valio edam 17 % e1 kg slices", "10602")).toBe("cheese");
+  });
 });

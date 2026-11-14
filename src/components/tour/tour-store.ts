@@ -2,14 +2,32 @@
 
 import { useSyncExternalStore } from "react";
 import type { Box } from "@/lib/tour/geometry";
-import { CLOSED, fromUrl, reduce, restore, type TourEvent, type TourState } from "@/lib/tour/machine";
+import { CLOSED, autoOpen, fromUrl, reduce, restore, turnsOff, type TourEvent, type TourState } from "@/lib/tour/machine";
 import { STEPS } from "@/lib/tour/steps";
 
 const STORAGE_KEY = "laituri-tour";
+/** Set once the visitor closes or finishes the walkthrough: it then stops opening by itself in this browser session. */
+const DISMISSED_KEY = "laituri-tour-dismissed";
+
+function readDismissed(): boolean {
+  try {
+    return window.sessionStorage.getItem(DISMISSED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function markDismissed(): void {
+  try {
+    window.sessionStorage.setItem(DISMISSED_KEY, "1");
+  } catch {
+    return;
+  }
+}
 
 /**
  * One walkthrough for the whole tab. It lives outside React so it survives the layout change between the
- * landing page, the buyer side and Valio Aimo's side, and it is saved to sessionStorage so a reload resumes it.
+ * about page, the customer's side and Valio Aimo's side, and it is saved to sessionStorage so a reload resumes it.
  */
 class TourStore {
   private state: TourState = CLOSED;
@@ -19,8 +37,6 @@ class TourStore {
   lastHoles: Box[] = [];
   /** Where focus was before the tour opened, so closing returns it there. */
   returnFocus: HTMLElement | null = null;
-  /** When each card was first shown, by read key, so its reading time survives a page change or a remount. */
-  readSince = new Map<string, number>();
 
   subscribe = (listener: () => void): (() => void) => {
     this.load();
@@ -43,11 +59,12 @@ class TourStore {
       this.returnFocus = document.activeElement;
     }
     this.state = next;
+    if (next.status === "closed" || next.status === "end") markDismissed();
     this.save();
     for (const listener of this.listeners) listener();
   };
 
-  /** The story starts from the entry links; the intro card says what Start will do. */
+  /** Every "Demo walkthrough" button opens the Start card. */
   open = (): void => this.dispatch({ type: "open" });
 
   private load(): void {
@@ -59,7 +76,10 @@ class TourStore {
     } catch {
       saved = null;
     }
-    this.state = fromUrl(STEPS, restore(STEPS, saved), new URLSearchParams(window.location.search).get("tour"));
+    const param = new URLSearchParams(window.location.search).get("tour");
+    if (turnsOff(param)) markDismissed();
+    const state = fromUrl(STEPS, restore(STEPS, saved), param);
+    this.state = autoOpen(state, { path: window.location.pathname, param, dismissed: readDismissed() });
   }
 
   private save(): void {

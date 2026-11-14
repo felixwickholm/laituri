@@ -5,8 +5,8 @@
     {
       "id": "scenarios",
       "name": "Scenarios",
-      "passed": 31,
-      "total": 31,
+      "passed": 38,
+      "total": 38,
       "bar": ">=90%",
       "met": true,
       "cases": [
@@ -257,14 +257,70 @@
           "evidence": "approval: 200 x 464306; delivery 2026-11-16; flagged match.confidence:ask; audit verified",
           "expected": "route approval; order 200 x 464306; concept milk [lactose_free]; >= 200 l by the eval's own pack sizes; delivery on time for 2026-11-16; flags match.confidence; audit sequence complete and verified",
           "actual": "approval (pending_approval)"
+        },
+        {
+          "id": "M1",
+          "name": "Need -> recipe -> order",
+          "pass": true,
+          "evidence": "Three-course dinner: Salmon mousse, Pike-perch with spinach, Pilaf rice, Chocolate strawberry layer cake; 8 of 11 lines ordered. 3 need you.",
+          "expected": "nut-free three-course menu ordered as one basket; most lines green; nothing with nuts; audit verifies",
+          "actual": "A dinner for 80 guests on Friday 20 Nov, no nuts. 8/11 green, 3 orange, 0 red"
+        },
+        {
+          "id": "M2",
+          "name": "Last-minute event, recipe-role swap",
+          "pass": true,
+          "evidence": "grated cheese -> leave it out: Grated cheese arrives Monday 16 Nov, too late. Leave the cheese out. The dish is less rich.",
+          "expected": "tomorrow's gaps flagged; a role swap from stock with its reason in short sentences",
+          "actual": "12 lines flagged, 4 swapped by role"
+        },
+        {
+          "id": "M3",
+          "name": "Allergen-safe school menu",
+          "pass": true,
+          "evidence": "dishes: BBQ chicken kebab, Salmon pizza, Potato purée, Spicy minced meat sauce, Potato pâté, Buttermilk cream, Salmon mousse, Pike-perch with spinach, Pilaf rice",
+          "expected": "no product with sesame, peanut, nuts or egg, traces included; mandate and egg fits hold",
+          "actual": "A school lunch for 120 guests on Thursday 19 Nov, no egg. 3 menus, no excluded allergen or trace"
+        },
+        {
+          "id": "W1",
+          "name": "Nordic Harbour's weekly order",
+          "pass": true,
+          "evidence": "17 of 20 lines ordered. 2 need you. 1 is blocked.",
+          "expected": "17 green, 2 orange, 1 red; 1,000 litres of lactose-free milk ordered; butter drift; lactose-free UHT skimmed milk substitute_needs_ok; Alpro almond drink allergen; every line its own order; audit verified",
+          "actual": "17/2/1"
+        },
+        {
+          "id": "W2",
+          "name": "Kaisla's weekly order",
+          "pass": true,
+          "evidence": "14 of 16 lines ordered. 1 needs you. 1 is blocked.",
+          "expected": "14 green, 1 orange, 1 red; lactose-free milk for school lunches over_limit; ciabatta rolls allergen; every line its own order; audit verified",
+          "actual": "14/1/1"
+        },
+        {
+          "id": "W3",
+          "name": "Ravintola Laine's weekly order",
+          "pass": true,
+          "evidence": "11 of 12 lines ordered. 1 needs you.",
+          "expected": "11 green, 1 orange, 0 red; lactose-free cooking cream ordered; espresso coffee beans new_product; every line its own order; audit verified",
+          "actual": "11/1/0"
+        },
+        {
+          "id": "W4",
+          "name": "The sheet's sentence inside a basket",
+          "pass": true,
+          "evidence": "Valio Hyvä suomalainen Arki® Eila® semi skimmed milk drink 1 l lactose free: 1,000 x 1 l = 1,000 l, 3 of 3 lines ordered.",
+          "expected": "the sentence as one line among others: green, 1,000 l of lactose-free milk; audit verified",
+          "actual": "green"
         }
       ]
     },
     {
       "id": "guardrails",
       "name": "Guardrails",
-      "passed": 35,
-      "total": 35,
+      "passed": 38,
+      "total": 38,
       "bar": "100%",
       "met": true,
       "cases": [
@@ -333,6 +389,14 @@
           "actual": "422 blocked by mandate.signature"
         },
         {
+          "id": "G42",
+          "name": "Product on the buyer's never-buy list",
+          "pass": true,
+          "evidence": "422 blocked by product.never_buy / 422 blocked by mandate.signature",
+          "expected": "blocked by product.never_buy; dropping the list from the signed mandate is blocked by mandate.signature",
+          "actual": "422 blocked by product.never_buy / 422 blocked by mandate.signature"
+        },
+        {
           "id": "G9",
           "name": "Replay a confirmed offer, new keys",
           "pass": true,
@@ -368,25 +432,25 @@
           "id": "G11",
           "name": "Approval with a forged console header",
           "pass": true,
-          "evidence": "403 approver_sign_in_required; order still pending_approval",
-          "expected": "403",
-          "actual": "403 approver_sign_in_required; order still pending_approval"
+          "evidence": "401 credential_required; order still pending_approval",
+          "expected": "401 credential_required",
+          "actual": "401 credential_required; order still pending_approval"
         },
         {
           "id": "G12",
           "name": "Approval with a made-up cookie",
           "pass": true,
-          "evidence": "403 approver_sign_in_required; order still pending_approval",
-          "expected": "403",
-          "actual": "403 approver_sign_in_required; order still pending_approval"
+          "evidence": "401 credential_required; order still pending_approval",
+          "expected": "401 credential_required",
+          "actual": "401 credential_required; order still pending_approval"
         },
         {
           "id": "G13",
           "name": "Approval JWS from the audit log as cookie",
           "pass": true,
-          "evidence": "403 approver_sign_in_required; order still pending_approval",
-          "expected": "403",
-          "actual": "403 approver_sign_in_required; order still pending_approval"
+          "evidence": "401 credential_required; order still pending_approval",
+          "expected": "401 credential_required",
+          "actual": "401 credential_required; order still pending_approval"
         },
         {
           "id": "G14",
@@ -448,9 +512,9 @@
           "id": "G18",
           "name": "SQL-like and script strings",
           "pass": true,
-          "evidence": "200,200,404,404,400,422; anonymous order 422 blocked by mandate.validity",
+          "evidence": "200,200,404,404,400,401; anonymous order 401 credential_required",
           "expected": "no 5xx; refused or recorded as data; nothing confirmed",
-          "actual": "200,200,404,404,400,422; anonymous order 422 blocked by mandate.validity"
+          "actual": "200,200,404,404,400,401; anonymous order 401 credential_required"
         },
         {
           "id": "G21",
@@ -472,25 +536,25 @@
           "id": "G23",
           "name": "Tokenless caller takes demo access in the shared workspace",
           "pass": true,
-          "evidence": "403 demo_access_sandbox_only / 403 demo_access_sandbox_only / approve 403 approver_sign_in_required; order still pending_approval",
-          "expected": "403 demo_access_sandbox_only for approver and operator; the order still waits",
-          "actual": "403 demo_access_sandbox_only / 403 demo_access_sandbox_only / approve 403 approver_sign_in_required; order still pending_approval"
+          "evidence": "403 demo_access_sandbox_only / 403 demo_access_sandbox_only / approve 401 credential_required; order still pending_approval",
+          "expected": "403 demo_access_sandbox_only for approver and operator, 401 for the approval; the order still waits",
+          "actual": "403 demo_access_sandbox_only / 403 demo_access_sandbox_only / approve 401 credential_required; order still pending_approval"
         },
         {
           "id": "G24",
           "name": "Sandbox key holder drops its token to approve its own order",
           "pass": true,
-          "evidence": "403 agent_not_allowed / 403 approver_sign_in_required / 403 demo_access_sandbox_only / 404 not_found / 403 agent_not_allowed; order still pending_approval",
-          "expected": "403 or 404 on every route a person uses; the order still waits",
-          "actual": "403 agent_not_allowed / 403 approver_sign_in_required / 403 demo_access_sandbox_only / 404 not_found / 403 agent_not_allowed; order still pending_approval"
+          "evidence": "403 agent_not_allowed / 401 credential_required / 403 demo_access_sandbox_only / 404 not_found / 403 agent_not_allowed; order still pending_approval",
+          "expected": "401, 403 or 404 on every route a person uses; the order still waits",
+          "actual": "403 agent_not_allowed / 401 credential_required / 403 demo_access_sandbox_only / 404 not_found / 403 agent_not_allowed; order still pending_approval"
         },
         {
           "id": "G25",
           "name": "Suspended agent resumes itself",
           "pass": true,
-          "evidence": "403 agent_suspended / 403 operator_sign_in_required; next call 403 agent_suspended",
-          "expected": "403 agent_suspended with its token, 403 operator_sign_in_required without; still suspended",
-          "actual": "403 agent_suspended / 403 operator_sign_in_required; next call 403 agent_suspended"
+          "evidence": "403 agent_suspended / 401 credential_required; next call 403 agent_suspended",
+          "expected": "403 agent_suspended with its token, 401 credential_required without; still suspended",
+          "actual": "403 agent_suspended / 401 credential_required; next call 403 agent_suspended"
         },
         {
           "id": "G26",
@@ -547,6 +611,22 @@
           "evidence": "200 confirmed, held until 2026-11-15T17:00:00+02:00",
           "expected": "the price hold until the cut-off keeps it approvable: 200 confirmed",
           "actual": "200 confirmed, held until 2026-11-15T17:00:00+02:00"
+        },
+        {
+          "id": "G40",
+          "name": "A basket's lines in parallel over the weekly limit",
+          "pass": true,
+          "evidence": "4 of 6 lines ordered. 2 need you. Confirmed 1616.00 EUR of a 2,000 EUR week.",
+          "expected": "only what fits the week confirms; the rest waits by spend.per_week",
+          "actual": "4 of 6 lines ordered. 2 need you. Confirmed 1616.00 EUR of a 2,000 EUR week."
+        },
+        {
+          "id": "G41",
+          "name": "Resolve a basket line with an option it does not have",
+          "pass": true,
+          "evidence": "400 invalid_request / 403 agent_not_allowed / 401 credential_required; line still orange",
+          "expected": "400 for a foreign option, 403 for an agent key, 401 without any credential; the line still waits",
+          "actual": "400 invalid_request / 403 agent_not_allowed / 401 credential_required; line still orange"
         }
       ]
     },
@@ -708,49 +788,49 @@
           "id": "O1",
           "name": "OpenAPI 3.1 document",
           "pass": true,
-          "evidence": "24 operations on 21 paths",
+          "evidence": "41 operations on 35 paths",
           "expected": "openapi 3.1.0, info, servers, every operation has responses and declares its path parameters",
-          "actual": "24 operations on 21 paths"
+          "actual": "41 operations on 35 paths"
         },
         {
           "id": "O2",
           "name": "Every operation has an operationId",
           "pass": true,
-          "evidence": "24 unique operationIds",
+          "evidence": "41 unique operationIds",
           "expected": "unique operationId on every operation",
-          "actual": "24 unique operationIds"
+          "actual": "41 unique operationIds"
         },
         {
           "id": "O3",
           "name": "Every $ref resolves",
           "pass": true,
-          "evidence": "111 refs, 32 distinct, all resolve",
+          "evidence": "197 refs, 51 distinct, all resolve",
           "expected": "no dangling $ref",
-          "actual": "111 refs, 32 distinct, all resolve"
+          "actual": "197 refs, 51 distinct, all resolve"
         },
         {
           "id": "O4",
           "name": "Every registered path answers",
           "pass": true,
-          "evidence": "24/24 operations answered as documented",
+          "evidence": "41/41 operations answered as documented",
           "expected": "documented success status for a well-formed call",
-          "actual": "24/24 operations answered as documented"
+          "actual": "41/41 operations answered as documented"
         },
         {
           "id": "O5",
           "name": "MCP tools/list",
           "pass": true,
-          "evidence": "7 tools: search_catalog, get_product, request_quote, get_mandate, place_order, get_order, verify_audit",
+          "evidence": "11 tools: search_catalog, get_product, request_quote, get_mandate, place_order, place_basket, get_order, verify_audit, plan_menu, list_recipes, plan_event",
           "expected": "every tool has input and output schemas",
-          "actual": "7 tools: search_catalog, get_product, request_quote, get_mandate, place_order, get_order, verify_audit"
+          "actual": "11 tools: search_catalog, get_product, request_quote, get_mandate, place_order, place_basket, get_order, verify_audit, plan_menu, list_recipes, plan_event"
         },
         {
           "id": "O6",
           "name": "Each MCP tool is callable",
           "pass": true,
-          "evidence": "7/7 tools valid (checked with zod)",
+          "evidence": "11/11 tools valid (checked with zod)",
           "expected": "structuredContent validates against the outputSchema",
-          "actual": "7/7 tools valid (checked with zod)"
+          "actual": "11/11 tools valid (checked with zod)"
         },
         {
           "id": "O7",

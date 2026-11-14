@@ -2,7 +2,7 @@ import { RuleId, type AuditEntry, type AuditEvent, type Order } from "@/lib/cont
 import { agentName } from "@/lib/supplier-console/names";
 import { eur } from "./money";
 import { offerSubject } from "./proof";
-import { askSentence, blockSentence, shortName } from "./rules";
+import { askSentence, blockSentence } from "./rules";
 import { plainSentence } from "./sentence";
 import { day } from "./time";
 
@@ -13,23 +13,27 @@ const TITLES: Record<AuditEvent, string> = {
   "agent.suspended": "Agent suspended by Valio Aimo",
   "agent.resumed": "Agent resumed by Valio Aimo",
   "catalog.searched": "Catalogue searched",
-  "offer.issued": "Offer signed by Valio Aimo",
+  "offer.issued": "Fixed price from Valio Aimo",
   "order.requested": "Order requested",
-  "policy.evaluated": "Checked against the mandate",
+  "policy.evaluated": "Checked against your limits",
   "order.confirmed": "Order confirmed",
   "order.blocked": "Order blocked",
-  "approval.requested": "Waiting for approval",
+  "approval.requested": "Needs you",
   "approval.granted": "Approved",
   "approval.rejected": "Rejected",
-  "mandate.updated": "Mandate re-signed",
+  "mandate.updated": "Your limits changed",
   "access.refused": "Attempt refused",
+  "basket.started": "Basket started",
+  "basket.line_resolved": "Basket line decided",
+  "handoff.requested": "Question to Valio Aimo",
+  "handoff.answered": "Valio Aimo answered",
 };
 
-/** A log entry's event in plain English: "Approved by Maria Lind", "Checked against the mandate". */
+/** A log entry's event in plain English: "Approved by the purchasing manager", "Checked against your limits". */
 export function auditTitle(entry: Pick<AuditEntry, "event" | "actor">): string {
   const title = TITLES[entry.event] ?? entry.event;
   if (entry.event === "approval.granted" || entry.event === "approval.rejected") {
-    return entry.actor.type === "human" ? `${title} by ${shortName(entry.actor.name)}` : entry.event === "approval.rejected" ? "Approval refused" : title;
+    return entry.actor.type === "human" ? `${title} by the purchasing manager` : entry.event === "approval.rejected" ? "Approval refused" : title;
   }
   return title;
 }

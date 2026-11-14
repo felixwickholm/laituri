@@ -46,26 +46,18 @@ describe.skipIf(!hasFixtures)("milk flow over REST", () => {
     expect((await place()).status).toBe(202);
   });
 
-  it("blocks an order from an unidentified agent", async () => {
-    const quote = await (await quotes.POST(jsonRequest("/api/v1/quotes", { body: EXAMPLES.quote.request }))).json();
+  it("refuses an order from an unidentified agent before anything is written", async () => {
+    const quote = await (await quotes.POST(jsonRequest("/api/v1/quotes", { body: EXAMPLES.quote.request, headers: auth }))).json();
     const { jws: mandateJws } = await (await mandate.GET(jsonRequest("/api/v1/mandate", { headers: auth }))).json();
-    const place = () =>
-      orders.POST(jsonRequest("/api/v1/orders", {
-        body: { offerJws: quote.primary.jws, mandateJws, idempotencyKey: "anon-key-0001" },
-        headers: { "x-agent-name": "Kitchen assistant" },
-      }));
-    const response = await place();
-    expect(response.status).toBe(422);
+    const listed = async () => (await (await orders.GET(jsonRequest("/api/v1/orders", { headers: auth }))).json()).orders.length;
+    const before = await listed();
+    const response = await orders.POST(jsonRequest("/api/v1/orders", {
+      body: { offerJws: quote.primary.jws, mandateJws, idempotencyKey: "anon-key-0001" },
+      headers: { "x-agent-name": "Kitchen assistant" },
+    }));
+    expect(response.status).toBe(401);
     expect(response.headers.get("content-type")).toBe("application/problem+json");
-    const problem = await response.json();
-    expect(problem).toMatchObject({ status: 422, code: "order_blocked", title: "Order blocked" });
-    expect(problem.detail).toMatch(/^The order was blocked: .+\.$/);
-    expect(response.headers.get("location")).toBe(`/api/v1/orders/${problem.order.id}`);
-    expect(problem.order.status).toBe("blocked");
-    expect(problem.order.agent.name).toBe("Kitchen assistant");
-    const failed = problem.order.decision.checks.filter((check: { status: string }) => check.status === "block");
-    expect(failed.length).toBeGreaterThan(0);
-    for (const check of failed) expect(problem.detail).toContain(check.message.replace(/\.$/, ""));
-    expect((await place()).status).toBe(422);
+    expect(await response.json()).toMatchObject({ status: 401, code: "credential_required" });
+    expect(await listed()).toBe(before);
   });
 });

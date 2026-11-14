@@ -1,29 +1,29 @@
 {
   "tests": {
-    "files": 107,
-    "total": 903,
-    "passed": 903,
+    "files": 155,
+    "total": 3638,
+    "passed": 3638,
     "failed": 0
   },
   "evals": {
     "mode": "recorded",
     "generatedAt": "2026-11-14T07:00:00.000Z",
-    "passed": 91,
-    "total": 91,
+    "passed": 101,
+    "total": 101,
     "suites": [
       {
         "id": "scenarios",
         "name": "Scenarios",
-        "passed": 31,
-        "total": 31,
+        "passed": 38,
+        "total": 38,
         "bar": ">=90%",
         "met": true
       },
       {
         "id": "guardrails",
         "name": "Guardrails",
-        "passed": 35,
-        "total": 35,
+        "passed": 38,
+        "total": 38,
         "bar": "100%",
         "met": true
       },
@@ -76,6 +76,13 @@
       "28",
       "29",
       "30",
+      "M1",
+      "M2",
+      "M3",
+      "W1",
+      "W2",
+      "W3",
+      "W4",
       "G1",
       "G2",
       "G3",
@@ -84,6 +91,7 @@
       "G6",
       "G7",
       "G8",
+      "G42",
       "G9",
       "G19",
       "G20",
@@ -111,6 +119,8 @@
       "G30",
       "G31",
       "G32",
+      "G40",
+      "G41",
       "T1",
       "T2",
       "T3",
@@ -138,7 +148,7 @@
       "O8"
     ]
   },
-  "mandateRules": 17,
+  "mandateRules": 18,
   "ruleIds": [
     "mandate.signature",
     "mandate.validity",
@@ -156,20 +166,25 @@
     "delivery.deadline",
     "match.confidence",
     "request.words",
-    "product.first_time"
+    "product.first_time",
+    "product.never_buy"
   ],
-  "mcpTools": 7,
+  "mcpTools": 11,
   "toolNames": [
     "search_catalog",
     "get_product",
     "request_quote",
     "get_mandate",
     "place_order",
+    "place_basket",
     "get_order",
-    "verify_audit"
+    "verify_audit",
+    "plan_menu",
+    "list_recipes",
+    "plan_event"
   ],
-  "restOperations": 24,
-  "restPaths": 21,
+  "restOperations": 41,
+  "restPaths": 35,
   "discoveryDocuments": 6,
   "signingKeys": [
     "supplier",
@@ -184,5 +199,13 @@
   ],
   "seededRequests": 31,
   "seededOrders": 24,
-  "recordedProducts": 255
+  "recordedProducts": 255,
+  "upstream": {
+    "searchCap": 10,
+    "quoteLineCap": 13,
+    "basketLines": 20,
+    "basketCalls": 10,
+    "basketProductsAsked": 228,
+    "catalogueSize": 17546
+  }
 }

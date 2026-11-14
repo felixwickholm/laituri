@@ -1,67 +1,101 @@
 "use client";
 
-import { LiveAgentPanel } from "@/components/orb/LiveAgentPanel";
-import { buyerOrders, weekStats } from "@/lib/console/format/orders";
+import { CalendarHeart, MessageCircle, ShoppingBasket, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { weeklyBasket, isoWeek } from "@/lib/console/basket-verdict";
+import { useBaskets } from "@/lib/console/basket-store";
 import { longDay } from "@/lib/console/format/time";
-import { todayVerdict } from "@/lib/console/format/verdict";
-import { useConsole } from "@/lib/console/store";
 import { LOCKED_NOTE } from "@/lib/console/paused";
+import { useConsole } from "@/lib/console/store";
 import { agentSuspension } from "@/lib/console/suspension";
-import { AgentRuns } from "../agent/AgentRuns";
-import { NeedsYou } from "../approvals/NeedsYou";
-import { MandateCard } from "../mandate/MandateCard";
-import { PageHeader } from "../shell/PageHeader";
+import { EventAssistant } from "../assistant/EventAssistant";
+import { GENERAL_TOPIC, askValioAimo } from "../basket/handoff";
+import { useWeeklyDraft } from "../basket/useWeeklyDraft";
+import { WeeklyDraftCard } from "../basket/WeeklyDraftCard";
+import { WeeklyVerdict } from "../basket/WeeklyVerdict";
+import { QuickCatalogue, QuickSearch } from "../shop/QuickOrder";
 import { useNow } from "../ui/useNow";
-import { KpiStrip } from "./KpiStrip";
+import { MilkExample } from "./MilkExample";
+import { PlanEventChoice } from "./PlanEventChoice";
 import { SuspensionBanner } from "./SuspensionBanner";
+import { TodayIdeas } from "./TodayIdeas";
+import "./today.css";
 
-/** The buyer's day: the verdict, this week's figures, what the agent did and what waits for a person. */
-export function TodayScreen() {
+/** Today: two big choices (order directly, plan an event), this week's order as one verdict, a few ideas, a person. */
+export function TodayScreen({ basketId }: { basketId?: string }) {
   const snapshot = useConsole();
+  const { baskets, ready: basketsReady } = useBaskets();
+  const router = useRouter();
   const now = useNow(60_000);
-  const orders = buyerOrders(snapshot.orders, snapshot.mandate);
-  const week = weekStats(orders, now);
-  const broken = snapshot.chain.state === "broken";
-  const verdict = todayVerdict(week, broken, orders.length > 0);
-  // An order waiting for a person leads the page; an empty queue sits quietly under the agent.
-  const waiting = orders.some((order) => order.status === "pending_approval");
+  const [query, setQuery] = useState("");
+  /** The event words handed to the assistant; a new key starts a new conversation. */
+  const [event, setEvent] = useState<{ words: string; key: number }>();
+  const hero = baskets.find((basket) => basket.id === basketId) ?? weeklyBasket(baskets, now);
+  const draft = useWeeklyDraft(basketsReady && !hero);
   const agent = snapshot.mandate?.mandate.agent;
   const suspension = agentSuspension(snapshot.audit, agent?.id);
-  const needsYou = <NeedsYou orders={orders} paused={broken} ready={snapshot.ready} recent={!waiting} />;
+
+  function planEvent(words: string) {
+    setEvent((current) => ({ words, key: (current?.key ?? 0) + 1 }));
+  }
 
   return (
-    <div className="page">
-      <PageHeader
-        title="Today"
-        meta={<time suppressHydrationWarning>{longDay(now)}</time>}
-        lede={
-          <>
-            <strong className="verdict-lead" data-tone={suspension ? "danger" : verdict.tone}>
-              {snapshot.locked ? LOCKED_NOTE : !snapshot.ready ? "Loading today…" : suspension ? "Your agent is suspended." : verdict.lead}
-            </strong>{" "}
-            {snapshot.ready && !snapshot.locked ? verdict.reason : null}
-          </>
-        }
-      />
+    <div className="page today-page">
+      <header className="page-head">
+        <div>
+          <h1>Today</h1>
+          <p className="page-date" suppressHydrationWarning>
+            {longDay(now)} · week {isoWeek(now)}
+          </p>
+        </div>
+      </header>
+      {snapshot.locked ? <p className="today-locked">{LOCKED_NOTE}</p> : null}
       {suspension ? <SuspensionBanner suspension={suspension} agent={agent?.name ?? "your agent"} /> : null}
-      <KpiStrip ready={snapshot.ready && !snapshot.locked} week={week} weeklyLimit={snapshot.mandate?.mandate.limits.perWeek.amount} chain={snapshot.chain} />
-      <div className="today-grid">
-        <div className="today-main">
-          {waiting ? needsYou : null}
-          <AgentRuns
-            activity={snapshot.activity}
-            orders={snapshot.orders}
-            run={snapshot.run}
-            approver={snapshot.mandate?.mandate.approval.approver.name}
-            ready={snapshot.ready}
-          />
-        </div>
-        <div className="today-side">
-          <LiveAgentPanel snapshot={snapshot} />
-          {waiting ? null : needsYou}
-          <MandateCard mandate={snapshot.mandate} jwks={snapshot.jwks} />
-        </div>
+
+      <div className="today-choices">
+        <section className="glass today-choice" data-choice="order" aria-labelledby="choice-order">
+          <h2 id="choice-order" className="today-choice-title">
+            <ShoppingBasket aria-hidden="true" />
+            Order directly
+          </h2>
+          <QuickSearch value={query} onChange={setQuery} />
+          <MilkExample />
+        </section>
+        <QuickCatalogue query={query} />
+        <section className="glass today-choice" data-choice="plan" aria-labelledby="choice-plan">
+          <h2 id="choice-plan" className="today-choice-title">
+            <CalendarHeart aria-hidden="true" />
+            Plan an event
+          </h2>
+          <PlanEventChoice onAsk={planEvent} />
+        </section>
+        {event ? (
+          <section className="today-assistant" aria-label="Event assistant">
+            <button type="button" className="icon-btn today-assistant-close" aria-label="Close the event plan" onClick={() => setEvent(undefined)}>
+              <X aria-hidden="true" />
+            </button>
+            <EventAssistant
+              key={event.key}
+              initialWords={event.words}
+              mode="compact"
+              onOrdered={(basket) => {
+                setEvent(undefined);
+                router.push(`/buyer?basket=${encodeURIComponent(basket.basketId)}`);
+              }}
+            />
+          </section>
+        ) : null}
       </div>
+
+      {hero ? <WeeklyVerdict basket={hero} /> : basketsReady ? <WeeklyDraftCard state={draft} /> : <section className="glass pad weekly-verdict" aria-busy="true" />}
+
+      <TodayIdeas skip={(suggestion) => suggestion.kind === "weekly_due"} />
+
+      <button type="button" className="text-link today-person" onClick={() => askValioAimo(GENERAL_TOPIC)}>
+        <MessageCircle aria-hidden="true" />
+        Talk to a person at Valio Aimo
+      </button>
     </div>
   );
 }

@@ -64,7 +64,7 @@ export interface ConsoleSession {
 /** What a person signs in with: a passcode, or the server's demo access, as the approver unless the operator is named. */
 export type SignInCredentials = ({ passcode: string } | { demo: true }) & { role?: SessionRole };
 
-export type Scenario = "milk" | "over-limit" | "break-mandate" | "two-kitchens";
+export type Scenario = "milk" | "over-limit" | "break-mandate" | "two-kitchens" | "weekly";
 
 export interface DemoRun {
   id: string;

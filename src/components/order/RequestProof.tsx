@@ -7,7 +7,7 @@ export function RequestProof({ order }: { order: Order }) {
   const facts = matchedFacts(order);
   return (
     <section className="section">
-      <h3>Request versus offer</h3>
+      <h3>Asked vs offered</h3>
       <div className="well proof-well">
         <p className="asked">{askedLine(order.offer)}</p>
         <p className="offered">{offeredLine(order.offer)}</p>
@@ -19,7 +19,7 @@ export function RequestProof({ order }: { order: Order }) {
               ) : fact.result === "unmet" ? (
                 <X aria-label="Does not match" />
               ) : fact.result === "substituted" ? (
-                <ArrowLeftRight aria-label="Substituted, as the mandate allows" />
+                <ArrowLeftRight aria-label="Swapped, as your limits allow" />
               ) : (
                 <CircleQuestionMark aria-label="Not checked" />
               )}

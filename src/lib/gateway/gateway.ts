@@ -8,6 +8,7 @@ import {
   type Actor,
   type QuoteResponse,
 } from "@/lib/contracts";
+import { afterAuditWrites } from "@/lib/audit/chain";
 import { supplierOverview } from "@/lib/insights";
 import { quote, type QuoteContext } from "@/lib/offers";
 import { offerSubject, productName } from "@/lib/offers/format";
@@ -208,15 +209,17 @@ export function createGateway(deps: Deps): Gateway {
     },
 
     async supplierOverview() {
-      const [orderList, offers, requests, activity, suspended, audit] = await Promise.all([
+      const [orderList, offers, requests, activity, suspended, audit, baskets, handoffs] = await Promise.all([
         deps.store.orders.list(),
         deps.store.offers.list(),
         deps.store.requests.list(),
         deps.store.activity.list(),
         deps.store.suspensions.list(),
         deps.store.audit.list(),
+        deps.store.baskets.list(),
+        deps.store.handoffs.list(),
       ]);
-      return supplierOverview({ now: deps.now(), orders: orderList, offers, requests, activity, suspensions: suspended, audit });
+      return supplierOverview({ now: deps.now(), orders: orderList, offers, requests, activity, suspensions: suspended, audit, baskets, handoffs });
     },
 
     async admitAgent(agentInput, call) {
@@ -228,8 +231,10 @@ export function createGateway(deps: Deps): Gateway {
     },
 
     async reset() {
-      await deps.store.reset();
-      deps.audit.forget?.();
+      await afterAuditWrites(async () => {
+        await deps.store.reset();
+        deps.audit.forget?.();
+      });
       recorder.reset();
     },
   };

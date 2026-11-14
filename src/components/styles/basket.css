@@ -1,0 +1,882 @@
+/*
+ * The weekly basket: three large counts, then the lines grouped by state. A state is always colour, icon and word.
+ * Green is ordered, orange needs a person, red is blocked. Lines change colour on the colour properties only.
+ */
+
+.basket-card {
+  display: grid;
+  align-content: start;
+  gap: 20px;
+  min-width: 0;
+  container: basket-card / inline-size;
+  min-height: 160px;
+  padding: 24px;
+  border-radius: var(--r-card);
+  border: 1px solid var(--line);
+  background: var(--surface-1);
+}
+.basket-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.basket-kicker {
+  margin: 0;
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+  line-height: 20px;
+}
+.basket-head h2 {
+  margin: 2px 0 0;
+  color: var(--heading);
+  font-family: var(--font-display);
+  font-size: clamp(24px, 7cqi, var(--fs-title));
+  line-height: 1.05;
+  font-weight: 700;
+}
+.basket-open {
+  flex: none;
+  margin-top: 4px;
+}
+
+/* Three counts side by side: the number is the hero, the word and icon sit above it. */
+/* The summary sizes itself to its own column, not the window: the shop's cart, the planner and the basket page differ. */
+.basket-summary {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  container: basket-summary / inline-size;
+}
+/* Three count tiles like the screens' count tiles: number big first, word with icon under it. */
+.basket-counts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.basket-count {
+  display: grid;
+  align-content: start;
+  gap: var(--space-1);
+  min-width: 0;
+  padding: var(--space-4) var(--space-4) var(--space-3);
+  border: 1px solid transparent;
+  border-radius: calc(var(--r-card) - 4px);
+  background: var(--glass-fill);
+  transition: background-color var(--d-base) var(--ease-out);
+}
+.basket-count-number {
+  color: var(--text-1);
+  font-family: var(--font-display);
+  font-size: clamp(28px, 9cqi, var(--fs-count));
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.basket-count-word {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  line-height: 20px;
+  white-space: nowrap;
+}
+.basket-count-word svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  stroke-width: 2;
+}
+.basket-count[data-state="green"] {
+  background: var(--success-tint);
+}
+.basket-count[data-state="orange"] {
+  background: var(--warn-tint);
+}
+.basket-count[data-state="red"] {
+  background: var(--danger-tint);
+}
+.basket-count[data-state="green"] :is(.basket-count-word svg, .basket-count-number) {
+  color: var(--success);
+}
+.basket-count[data-state="orange"] :is(.basket-count-word svg, .basket-count-number) {
+  color: var(--warn);
+}
+.basket-count[data-state="red"] :is(.basket-count-word svg, .basket-count-number) {
+  color: var(--danger);
+}
+.basket-count[data-zero="true"] {
+  border-color: var(--glass-line);
+  background: var(--glass-fill);
+}
+.basket-count[data-zero="true"] :is(.basket-count-word svg, .basket-count-number) {
+  color: var(--text-4);
+}
+/* A narrow column (the shop's cart, a phone): one compact row per count, number then word, never clipped. */
+@container basket-summary (max-width: 460px) {
+  .basket-counts {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+  .basket-count {
+    grid-template-columns: 3ch minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+    padding: 8px 14px;
+  }
+  .basket-count-number {
+    font-size: var(--fs-title);
+    text-align: right;
+  }
+  .basket-count-word {
+    white-space: normal;
+  }
+}
+
+.basket-net {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 16px;
+}
+.basket-net p {
+  margin: 0;
+}
+.basket-net-value {
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  line-height: 1;
+  font-weight: 700;
+}
+.basket-net-label {
+  margin-left: 8px;
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+}
+.basket-time {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+.basket-limit {
+  margin: -8px 0 0;
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+}
+.basket-phone {
+  justify-self: start;
+}
+
+/* The little "i" that opens the assumption behind a number. */
+.info-tip {
+  position: relative;
+  display: inline-flex;
+}
+.info-tip-button {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-full);
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+}
+.info-tip-button::after {
+  content: "";
+  position: absolute;
+  inset: -11px;
+}
+.info-tip-button svg {
+  width: 16px;
+  height: 16px;
+}
+.info-tip-body {
+  position: absolute;
+  z-index: 20;
+  right: -8px;
+  bottom: calc(100% + 8px);
+  width: min(280px, 80vw);
+  padding: 12px 14px;
+  border-radius: var(--r-card);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  box-shadow: var(--glass-shadow);
+  color: var(--text-1);
+  font-size: var(--fs-sm);
+  line-height: 1.45;
+  transform-origin: bottom right;
+  transition:
+    opacity var(--d-fast) var(--ease-out),
+    transform var(--d-fast) var(--ease-out);
+  @starting-style {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+/* A state as icon and word; the colour is on the icon, the word stays readable ink. */
+.state-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  line-height: 20px;
+}
+.state-mark-icon {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  stroke-width: 2;
+  transition: color var(--d-base) var(--ease-out);
+  @starting-style {
+    opacity: 0;
+  }
+}
+.state-mark[data-state="green"] .state-mark-icon {
+  color: var(--success);
+}
+.state-mark[data-state="orange"] .state-mark-icon {
+  color: var(--warn);
+}
+.state-mark[data-state="red"] .state-mark-icon {
+  color: var(--danger);
+}
+.state-mark[data-state="working"] .state-mark-icon {
+  color: var(--text-4);
+  animation: spin 1.4s linear infinite;
+}
+
+/* The lines, grouped. */
+.basket-groups {
+  display: grid;
+  gap: 20px;
+}
+.line-group {
+  display: grid;
+  gap: 4px;
+}
+.line-group-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 4px;
+  font-size: var(--fs-base);
+}
+.line-group-head .state-mark {
+  font-size: var(--fs-base);
+}
+.line-group-count {
+  color: var(--text-3);
+  font-weight: 600;
+}
+.line-group ul {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.line-group-more {
+  justify-self: start;
+  margin-top: 4px;
+}
+
+.basket-line {
+  position: relative;
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  grid-template-areas:
+    "mark main net"
+    ".    act  act";
+  align-items: start;
+  gap: 4px 14px;
+  padding: 14px 12px;
+  margin: 0 -12px;
+  border-top: 1px solid var(--line);
+  border-radius: var(--r-card);
+  transition: background-color var(--d-base) var(--ease-out);
+}
+.line-group ul > .basket-line:first-child {
+  border-top-color: transparent;
+}
+.basket-line > .state-mark {
+  grid-area: mark;
+  margin-top: 2px;
+}
+.basket-line[data-state="orange"] {
+  background: var(--warn-tint);
+  border-top-color: transparent;
+}
+.basket-line[data-state="orange"] + .basket-line {
+  border-top-color: transparent;
+}
+.line-main {
+  grid-area: main;
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.line-asked {
+  margin: 0;
+  color: var(--text-1);
+  font-size: var(--fs-base);
+  font-weight: 600;
+  line-height: 24px;
+  overflow-wrap: anywhere;
+}
+.line-product {
+  margin: 0;
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+.line-reason {
+  margin: 0;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+  line-height: 20px;
+}
+.basket-line[data-state="red"] .line-reason {
+  color: var(--danger);
+}
+.basket-line[data-state="working"] :is(.line-asked, .line-reason) {
+  color: var(--text-3);
+}
+.line-net {
+  grid-area: net;
+  font-size: var(--fs-base);
+  font-weight: 600;
+  line-height: 24px;
+  white-space: nowrap;
+}
+.basket-line .row-open::after {
+  border-radius: var(--r-card);
+}
+.line-actions {
+  grid-area: act;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+  margin-top: 8px;
+}
+/* A choice names a product, so its label may be long: it wraps inside the button instead of leaving the row. */
+.line-actions > .btn,
+.line-actions .more-menu > .btn {
+  max-width: 100%;
+  height: auto;
+  min-height: var(--control-h);
+  padding-block: 8px;
+  line-height: 1.25;
+  white-space: normal;
+  text-align: center;
+}
+/* In a narrow card (the shop's cart) the choices take the whole row, as on a phone. */
+@container basket-card (max-width: 420px) {
+  .line-actions > .btn,
+  .line-actions > .more-menu {
+    flex: 1 1 auto;
+  }
+  .line-actions .more-menu .btn {
+    width: 100%;
+  }
+}
+@media (hover: hover) and (pointer: fine) {
+  .basket-line:has(.row-open):hover {
+    background: var(--surface-2);
+  }
+  .basket-line[data-state="orange"]:has(.row-open):hover {
+    background: color-mix(in srgb, var(--warn-tint) 70%, var(--surface-3));
+  }
+}
+
+/* "More": the other choices and the hand-off. */
+.more-menu {
+  position: relative;
+}
+.more-menu-list {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 6px);
+  left: 0;
+  display: grid;
+  min-width: 240px;
+  padding: 6px;
+  border-radius: var(--r-card);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  box-shadow: var(--glass-shadow);
+  transform-origin: top left;
+  transition:
+    opacity var(--d-fast) var(--ease-out),
+    transform var(--d-fast) var(--ease-out);
+  @starting-style {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+.more-menu-item {
+  display: grid;
+  gap: 2px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text-1);
+  font: inherit;
+  font-size: var(--fs-base);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--d-hover) var(--ease-hover);
+}
+.more-menu-item:focus-visible {
+  outline-offset: -2px;
+}
+.more-menu-detail {
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+}
+.more-menu-ask {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--accent);
+  font-weight: 600;
+}
+.more-menu-ask svg {
+  width: 18px;
+  height: 18px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .more-menu-item:hover {
+    background: var(--surface-2);
+  }
+}
+
+/* Before any basket this week: the draft and one big button. */
+.draft-lead {
+  margin: 0;
+  color: var(--text-1);
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  line-height: 1.35;
+}
+.draft-drift {
+  display: grid;
+  gap: 6px;
+  margin: -8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.draft-drift li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+.draft-drift svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--text-3);
+}
+.draft-lines {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.draft-lines li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "words qty"
+    "note  qty";
+  align-items: center;
+  column-gap: 16px;
+  min-height: 48px;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+}
+.draft-lines li:first-child {
+  border-top: 0;
+}
+.draft-words {
+  grid-area: words;
+  font-weight: 550;
+  overflow-wrap: anywhere;
+}
+.draft-note {
+  grid-area: note;
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+}
+.draft-lines li[data-change="new"] .draft-note,
+.draft-lines li[data-change="more"] .draft-note {
+  color: var(--text-2);
+}
+.draft-qty {
+  grid-area: qty;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.draft-lines.editing li {
+  grid-template-areas: "words qty";
+}
+.draft-lines.editing li[data-removed="true"] .draft-words {
+  color: var(--text-4);
+  text-decoration: line-through;
+}
+.draft-amount {
+  grid-area: qty;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.draft-input {
+  width: 76px;
+  height: 40px;
+  padding: 0 8px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-strong);
+  background: var(--surface-1);
+  color: var(--text-1);
+  font: inherit;
+  font-weight: 600;
+  text-align: right;
+  -moz-appearance: textfield;
+}
+.draft-input::-webkit-inner-spin-button,
+.draft-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+}
+.draft-unit {
+  min-width: 28px;
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+}
+.draft-editor {
+  display: grid;
+  gap: 16px;
+}
+.draft-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.draft-go {
+  min-width: 280px;
+}
+
+/* Earlier: baskets and single requests as compact rows. */
+.history-rows {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  border-radius: var(--r-card);
+  border: 1px solid var(--line);
+  background: var(--surface-1);
+  list-style: none;
+}
+.history-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto auto 16px;
+  align-items: center;
+  gap: 4px 14px;
+  min-height: 64px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--line);
+  transition: background-color var(--d-hover) var(--ease-hover);
+}
+.history-row:first-child {
+  border-top: 0;
+}
+.history-row[data-kind="order"] {
+  grid-template-columns: 22px minmax(0, 1fr) auto 16px;
+}
+.history-kind {
+  width: 20px;
+  height: 20px;
+  color: var(--text-3);
+  stroke-width: 1.75;
+}
+.history-light[data-state="green"] {
+  color: var(--success);
+}
+.history-light[data-state="orange"] {
+  color: var(--warn);
+}
+.history-light[data-state="red"] {
+  color: var(--danger);
+}
+.history-main {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.history-title {
+  overflow: hidden;
+  font-size: var(--fs-base);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.history-sub {
+  overflow: hidden;
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.history-counts {
+  display: inline-flex;
+  gap: 12px;
+}
+.history-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+}
+.history-count svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2;
+}
+.history-count[data-state="green"] svg {
+  color: var(--success);
+}
+.history-count[data-state="orange"] svg {
+  color: var(--warn);
+}
+.history-count[data-state="red"] svg {
+  color: var(--danger);
+}
+.history-count[data-zero="true"] {
+  color: var(--text-4);
+}
+.history-count[data-zero="true"] svg {
+  color: var(--text-4);
+}
+.history-net {
+  font-weight: 600;
+  white-space: nowrap;
+}
+.history-go {
+  width: 16px;
+  height: 16px;
+  color: var(--text-4);
+}
+.history-row:has(.row-open:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .history-row:hover {
+    background: var(--surface-2);
+  }
+}
+
+/* Today's frame around the basket. */
+.talk-valio {
+  justify-self: center;
+  min-height: 44px;
+}
+.back-link {
+  justify-self: start;
+}
+
+/* Ask Valio Aimo: the context, one field, then the answer. */
+.handoff-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.handoff-kicker svg {
+  width: 16px;
+  height: 16px;
+}
+.handoff-form,
+.handoff-sent {
+  display: grid;
+  gap: 12px;
+}
+.handoff-context {
+  margin: 0 0 4px;
+  padding: 12px 14px;
+  border-radius: var(--r-card);
+  background: var(--surface-2);
+  color: var(--text-1);
+  font-size: var(--fs-base);
+  line-height: 1.45;
+}
+.handoff-words {
+  min-height: 112px;
+  resize: vertical;
+}
+.handoff-form .btn {
+  justify-self: start;
+}
+.handoff-error {
+  margin: 0;
+  color: var(--danger);
+  font-size: var(--fs-sm);
+}
+.handoff-bubble {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 12px 14px;
+  border-left: 3px solid var(--line-strong);
+  color: var(--text-1);
+  font-size: var(--fs-base);
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+.handoff-bubble[data-from="valio"] {
+  border-left-color: var(--accent);
+  background: var(--surface-2);
+}
+.handoff-by {
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+}
+.handoff-wait {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  color: var(--text-2);
+  font-size: var(--fs-base);
+}
+.handoff-wait svg {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  margin-top: 2px;
+  color: var(--text-3);
+}
+
+@media (max-width: 760px) {
+  .basket-card {
+    gap: 16px;
+    padding: 18px 16px;
+  }
+  .basket-head h2 {
+    font-size: 28px;
+  }
+  .basket-line {
+    grid-template-columns: 20px minmax(0, 1fr) auto;
+    gap: 2px 10px;
+  }
+  .line-actions {
+    grid-column: 2 / -1;
+  }
+  .line-actions > .btn,
+  .line-actions > .more-menu {
+    flex: 1 1 auto;
+  }
+  .line-actions .more-menu .btn {
+    width: 100%;
+  }
+  .draft-go {
+    width: 100%;
+    min-width: 0;
+  }
+  .draft-actions .btn {
+    flex: 1 1 auto;
+  }
+  .history-row {
+    grid-template-columns: 22px minmax(0, 1fr) auto;
+    grid-template-areas:
+      "kind main net"
+      "kind counts counts";
+    padding: 12px 14px;
+  }
+  .history-row[data-kind="order"] {
+    grid-template-columns: 22px minmax(0, 1fr) auto;
+    grid-template-areas: "kind main net";
+  }
+  .history-kind {
+    grid-area: kind;
+    align-self: start;
+    margin-top: 2px;
+  }
+  .history-main {
+    grid-area: main;
+  }
+  .history-counts {
+    grid-area: counts;
+  }
+  .history-net {
+    grid-area: net;
+    align-self: start;
+  }
+  .history-go {
+    display: none;
+  }
+  .history-title,
+  .history-sub {
+    white-space: normal;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .state-mark[data-state="working"] .state-mark-icon {
+    animation: none;
+  }
+}
+.line-group-rest {
+  margin: 4px 0 0 34px;
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+}
+
+/* Very narrow (a small phone, a slim cart): the price moves under the line's words so the words keep their width. */
+@media (max-width: 400px) {
+  .basket-line {
+    grid-template-columns: 20px minmax(0, 1fr);
+    grid-template-areas:
+      "mark main"
+      ".    net"
+      ".    act";
+  }
+  .line-net {
+    font-size: var(--fs-sm);
+    color: var(--text-2);
+  }
+}
+@container basket-card (max-width: 300px) {
+  .basket-line {
+    grid-template-columns: 20px minmax(0, 1fr);
+    grid-template-areas:
+      "mark main"
+      ".    net"
+      ".    act";
+  }
+  .line-net {
+    font-size: var(--fs-sm);
+    color: var(--text-2);
+  }
+}

@@ -35,9 +35,18 @@ export function StatusMark({ agent }: { agent: Pick<ControlAgent, "status" | "ag
   );
 }
 
-/** The honest line every control page ends with. */
-export function ControlFoot() {
-  return <p className="control-foot">Prices and stock are live from the challenge&rsquo;s mock API. Orders are simulated. History is demo data.</p>;
+/** A page's title with its date or scope line under it, and at most one quiet control at the right. */
+export function ValioHead({ title, date, lead, actions }: { title: string; date?: ReactNode; lead?: ReactNode; actions?: ReactNode }) {
+  return (
+    <header className="page-head">
+      <div>
+        <h1>{title}</h1>
+        {date ? <p className="page-date">{date}</p> : null}
+        {lead ? <p className="page-lead">{lead}</p> : null}
+      </div>
+      {actions ? <div className="page-actions">{actions}</div> : null}
+    </header>
+  );
 }
 
 /** A frame for a block whose data failed to load or has not arrived. */

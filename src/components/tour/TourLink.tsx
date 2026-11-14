@@ -3,10 +3,10 @@
 import type { MouseEvent, ReactNode } from "react";
 import { tourStore } from "./tour-store";
 
-/** The address every "See it in 2 minutes" uses; without script it opens the buyer side with the intro card. */
+/** The address every "Demo walkthrough" uses; without script it opens the customer's side with the Start card. */
 const TOUR_HREF = "/buyer?tour=start";
 
-/** Every "See it in 2 minutes" entry: opens the tour's intro card in place, the same way from any page. */
+/** Every "Demo walkthrough" entry: opens the Start card in place, the same way from any page. */
 export function TourLink({ className, children }: { className?: string; children: ReactNode }) {
   function open(event: MouseEvent<HTMLAnchorElement>) {
     if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;

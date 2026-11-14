@@ -1,23 +1,23 @@
 "use client";
 
-import { ChevronRight, SearchX } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import type { Alternative, Order } from "@/lib/contracts";
 import { eur } from "@/lib/console/format/money";
 import { offerSubject } from "@/lib/console/format/proof";
-import { shortName } from "@/lib/console/format/rules";
 import { day, dayAndTime, hourMinute } from "@/lib/console/format/time";
 import { sharedLocked } from "@/lib/console/format/workspace";
 import { useConsole } from "@/lib/console/store";
 import { useWorkspace } from "@/lib/console/workspace-store";
 import { SharedLock } from "../session/SharedLock";
-import { DockMark, Wordmark } from "../shell/Wordmark";
+import { DockMark } from "../shell/Wordmark";
 import { useNow } from "../ui/useNow";
-import { decisionEntry, orderPhase, phoneChecks, phoneReason, timeLeft } from "./phone-order";
+import { decisionEntry, orderPhase, phoneChecks, phoneReason, timeLeft, type PhoneCheck } from "./phone-order";
 import { PhoneDecide } from "./PhoneDecide";
 import { PhoneResult } from "./PhoneResult";
 import { PhoneSignIn } from "./PhoneSignIn";
+import { PhoneLoading, PhoneMissing } from "./PhoneStates";
 
 export interface PhoneApprovalProps {
   orderId: string;
@@ -25,52 +25,11 @@ export interface PhoneApprovalProps {
   embedded: boolean;
 }
 
-/** No such order in this browser's workspace: the brand, one plain sentence and the way back. */
-function PhoneMissing({ embedded }: { embedded: boolean }) {
-  return (
-    <main className="ph ph-missing" data-embedded={embedded}>
-      <Wordmark />
-      <div className="ph-empty" role="status">
-        <SearchX className="ph-empty-icon" aria-hidden="true" />
-        <h1>We could not find this order</h1>
-        <p>It may have been decided already, or your demo was reset since the link was made.</p>
-        {!embedded ? (
-          <Link className="btn btn-primary big" href="/buyer">
-            Go to the buyer side
-          </Link>
-        ) : null}
-      </div>
-    </main>
-  );
-}
-
-/** While the order loads, the card keeps its shape so nothing jumps when it arrives. */
-function PhoneLoading({ embedded }: { embedded: boolean }) {
-  return (
-    <main className="ph" data-embedded={embedded} aria-busy="true">
-      <header className="ph-top">
-        <DockMark size={20} />
-        <span className="ph-bone" style={{ width: 160 }} />
-      </header>
-      <div className="ph-card">
-        <span className="ph-bone" style={{ width: 120 }} />
-        <span className="ph-bone ph-bone-big" style={{ width: 200 }} />
-        <span className="ph-bone ph-bone-big" style={{ width: 160 }} />
-      </div>
-      <p className="sr-only">Loading the order…</p>
-    </main>
-  );
-}
-
 /** The buyer's words against the offer, as Valio Aimo signed them; a substitute shows the rule that allowed it. */
-function PhoneChecks({ order }: { order: Order }) {
-  const checks = phoneChecks(order);
-  if (checks.length === 0) return null;
+function CheckRows({ checks }: { checks: PhoneCheck[] }) {
   return (
-    <section className="ph-checks" aria-labelledby="ph-checks-title">
-      <h2 id="ph-checks-title">Checked against your words</h2>
-      <ul>
-        {checks.map((check) => (
+    <ul>
+      {checks.map((check) => (
           <li key={`${check.label}-${check.asked}`} data-result={check.result}>
             <span className="ph-check-head">
               <span className="ph-check-label">{check.label}</span>
@@ -81,8 +40,27 @@ function PhoneChecks({ order }: { order: Order }) {
             </span>
             {check.rule ? <span className="ph-check-rule">{check.rule}</span> : null}
           </li>
-        ))}
-      </ul>
+      ))}
+    </ul>
+  );
+}
+
+/** What did not match stays in view; what matched folds away behind its count. */
+function PhoneChecks({ order }: { order: Order }) {
+  const checks = phoneChecks(order);
+  if (checks.length === 0) return null;
+  const open = checks.filter((check) => check.result !== "met");
+  const met = checks.filter((check) => check.result === "met");
+  return (
+    <section className="ph-checks" aria-labelledby="ph-checks-title">
+      <h2 id="ph-checks-title">Your words</h2>
+      {open.length ? <CheckRows checks={open} /> : null}
+      {met.length ? (
+        <details className="ph-met">
+          <summary>{met.length} match</summary>
+          <CheckRows checks={met} />
+        </details>
+      ) : null}
     </section>
   );
 }
@@ -117,12 +95,11 @@ function PhoneAlternatives({ alternatives }: { alternatives: Alternative[] }) {
  * and the two choices under the thumb. Every decision is signed with the approver's key and logged.
  */
 export function PhoneApproval({ orderId, embedded }: PhoneApprovalProps) {
-  const { orders, audit, session, mandate, chain, ready } = useConsole();
+  const { orders, audit, session, chain, ready } = useConsole();
   const workspace = useWorkspace();
   const now = useNow(1000);
   const [alternatives, setAlternatives] = useState<Alternative[] | null>(null);
   const order = orders.find((item) => item.id === orderId);
-  const approver = shortName(session?.approver?.name ?? mandate?.mandate.approval.approver.name ?? "the approver");
 
   if (sharedLocked(workspace, session)) {
     return (
@@ -131,7 +108,7 @@ export function PhoneApproval({ orderId, embedded }: PhoneApprovalProps) {
       </main>
     );
   }
-  if (!order) return ready ? <PhoneMissing embedded={embedded} /> : <PhoneLoading embedded={embedded} />;
+  if (!order) return ready ? <PhoneMissing embedded={embedded} what="order" /> : <PhoneLoading embedded={embedded} />;
 
   const state = orderPhase(order, now);
   const hold = order.priceHold;
@@ -148,16 +125,16 @@ export function PhoneApproval({ orderId, embedded }: PhoneApprovalProps) {
         </div>
       </header>
 
-      <article className="ph-card" aria-labelledby="ph-title">
+      <article className="ph-card glass" aria-labelledby="ph-title">
         {state === "pending" ? (
           <>
-            <p className="ph-pill">Needs your approval</p>
-            <h1 id="ph-title" className="ph-reason-line">
-              {phoneReason(order)}
-            </h1>
+            <p className="ph-pill">Needs you</p>
             <p className="ph-amount">
               {eur(order.offer.totals.net.amount)} <span>net</span>
             </p>
+            <h1 id="ph-title" className="ph-reason-line">
+              {phoneReason(order)}
+            </h1>
           </>
         ) : (
           <PhoneResult order={order} state={state} entry={decisionEntry(audit, order.id)} stopped={alternatives !== null} />
@@ -176,13 +153,9 @@ export function PhoneApproval({ orderId, embedded }: PhoneApprovalProps) {
             <dt>Delivery</dt>
             <dd>{day(order.offer.deliveryDate)}</dd>
           </div>
-          <div>
-            <dt>With VAT</dt>
-            <dd>{eur(order.offer.totals.gross.amount)}</dd>
-          </div>
           {state === "pending" ? (
             <div>
-              <dt>{hold ? "Price held until" : "Price fixed until"}</dt>
+              <dt>{hold ? "Price held" : "Price fixed"}</dt>
               <dd>
                 {hold ? dayAndTime(hold.heldUntil) : hourMinute(order.offer.expiresAt)}
                 {left ? <span className="ph-left"> · {left} left</span> : null}
@@ -198,16 +171,16 @@ export function PhoneApproval({ orderId, embedded }: PhoneApprovalProps) {
       {state === "pending" ? (
         <div className="ph-dock">
           {!session ? null : signedIn ? (
-            <PhoneDecide order={order} paused={chain.state === "broken"} approver={approver} demo={session.demo === true} onStopped={setAlternatives} />
+            <PhoneDecide order={order} paused={chain.state === "broken"} onStopped={setAlternatives} />
           ) : (
-            <PhoneSignIn session={session} approver={approver} />
+            <PhoneSignIn session={session} />
           )}
         </div>
       ) : null}
 
       {!embedded ? (
         <Link className="text-link ph-full" href="/buyer/orders">
-          See every order on the buyer side
+          See every order
           <ChevronRight aria-hidden="true" />
         </Link>
       ) : null}

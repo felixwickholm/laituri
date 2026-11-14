@@ -1,10 +1,21 @@
 /* The log page: the verdict and a week of entries, then every entry as When / Who / What. */
 
+/* The verdict card: the seal (biggest words) beside a week of steps, on one glass surface. */
 .log-top {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 380px;
+  grid-template-columns: minmax(0, 1fr) 360px;
   align-items: stretch;
-  gap: 16px;
+  gap: var(--space-6);
+  padding: var(--pad-card);
+  border: 1px solid var(--glass-line);
+  border-radius: var(--r-card);
+  background: var(--glass-fill);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-edge), var(--glass-shadow-soft);
+}
+.log-top:has(.log-head[data-state="broken"]) {
+  border-color: var(--danger);
 }
 
 .log-head {
@@ -12,14 +23,7 @@
   grid-template-columns: minmax(0, 1fr) auto;
   align-content: start;
   align-items: center;
-  gap: 16px;
-  padding: 22px 24px;
-  border-radius: var(--r-card);
-  border: 1px solid var(--line);
-  background: var(--surface-1);
-}
-.log-head[data-state="broken"] {
-  border-color: var(--danger);
+  gap: var(--space-5) var(--space-4);
 }
 .log-verdict {
   display: flex;
@@ -31,15 +35,15 @@
   display: grid;
   place-items: center;
   flex: none;
-  width: 48px;
-  height: 48px;
+  width: 56px;
+  height: 56px;
   border-radius: var(--r-full);
   background: var(--surface-2);
   color: var(--text-3);
 }
 .log-icon svg {
-  width: 26px;
-  height: 26px;
+  width: 30px;
+  height: 30px;
   stroke-width: 2;
 }
 .log-head[data-state="verified"] .log-icon {
@@ -52,18 +56,21 @@
 }
 .log-title {
   margin: 0;
-  font-size: var(--fs-18);
-  line-height: 28px;
-  font-weight: 600;
+  color: var(--heading);
+  font-family: var(--font-display);
+  font-size: var(--fs-verdict);
+  line-height: 1.05;
+  font-weight: 800;
+  text-wrap: balance;
 }
 .log-head[data-state="broken"] .log-title {
   color: var(--danger);
 }
 .log-sub {
-  margin: 2px 0 0;
-  color: var(--text-3);
-  font-size: var(--fs-15);
-  line-height: 20px;
+  margin: 6px 0 0;
+  color: var(--text-2);
+  font-size: var(--fs-body-lg);
+  line-height: 1.4;
 }
 .log-alarm {
   grid-column: 1 / -1;
@@ -72,7 +79,7 @@
   border-radius: var(--r-control);
   background: var(--danger-tint);
   color: var(--text-1);
-  font-size: var(--fs-15);
+  font-size: var(--fs-base);
   line-height: 21px;
 }
 /* "Verify again": the browser's check as three steps; the step under way counts up over a progress bar. */
@@ -106,7 +113,7 @@
   border-radius: var(--r-full);
   background: var(--surface-2);
   color: var(--text-3);
-  font-size: var(--fs-12);
+  font-size: var(--fs-xs);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   transition: background-color var(--d-base) var(--ease-out), color var(--d-base) var(--ease-out);
@@ -132,7 +139,7 @@
   grid-area: title;
   line-height: 24px;
   color: var(--text-2);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   font-weight: 550;
 }
 .verify-step[data-status="active"] .verify-title,
@@ -146,7 +153,7 @@
   grid-area: line;
   min-height: 18px;
   color: var(--text-3);
-  font-size: var(--fs-12);
+  font-size: var(--fs-xs);
   line-height: 18px;
   font-variant-numeric: tabular-nums;
 }
@@ -172,7 +179,7 @@
   grid-column: 1 / -1;
   margin: 0;
   color: var(--text-2);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   line-height: 19px;
 }
 .log-head > .tech-details {
@@ -187,14 +194,12 @@
   align-content: space-between;
   gap: 12px;
   margin: 0;
-  padding: 20px 22px 16px;
-  border-radius: var(--r-card);
-  border: 1px solid var(--line);
-  background: var(--surface-1);
+  padding: 0 0 0 var(--space-6);
+  border-left: 1px solid var(--glass-line);
 }
 .histogram figcaption {
-  color: var(--text-3);
-  font-size: var(--fs-13);
+  color: var(--text-2);
+  font-size: var(--fs-sm);
 }
 .histogram-bars {
   display: grid;
@@ -212,7 +217,7 @@
 }
 .bar-value {
   color: var(--text-2);
-  font-size: var(--fs-12);
+  font-size: var(--fs-xs);
 }
 .bar-track {
   display: flex;
@@ -235,7 +240,7 @@
 }
 .bar-label {
   color: var(--text-3);
-  font-size: var(--fs-12);
+  font-size: var(--fs-xs);
 }
 .histogram-bars li[data-today="true"] .bar-label {
   color: var(--text-1);
@@ -255,7 +260,7 @@
   }
 }
 .log-table .cell-when .sub {
-  font-size: var(--fs-12);
+  font-size: var(--fs-xs);
 }
 .log-table .cell-what .row-open {
   font-weight: 600;
@@ -265,7 +270,7 @@
 }
 .log-table .cell-seq {
   color: var(--text-3);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
 }
 .log-table tr[data-alert="true"] .row-open {
   color: var(--danger);
@@ -282,7 +287,7 @@
 .link-note {
   display: block;
   color: var(--danger);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   font-weight: 550;
 }
 
@@ -293,7 +298,8 @@
   gap: 12px 16px;
   padding: 16px 20px;
   border-radius: var(--r-card);
-  border: 1px dashed var(--line-strong);
+  border: 1px solid var(--glass-line);
+  background: var(--glass-fill);
 }
 .demo-control > svg {
   width: 20px;
@@ -303,7 +309,7 @@
 .demo-control p {
   margin: 0;
   color: var(--text-2);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   line-height: 21px;
 }
 .demo-control strong {
@@ -313,7 +319,7 @@
 
 /* The audit sheet's record. */
 .record dd .mono {
-  font-size: var(--fs-12);
+  font-size: var(--fs-xs);
 }
 .hash-inline {
   display: inline-flex;
@@ -339,7 +345,7 @@
   border-radius: var(--r-control);
   background: var(--surface-2);
   color: var(--text-2);
-  font-size: var(--fs-12);
+  font-size: var(--fs-xs);
   line-height: 18px;
   white-space: pre-wrap;
   word-break: break-word;
@@ -349,12 +355,25 @@
   .log-top {
     grid-template-columns: minmax(0, 1fr);
   }
+  .histogram {
+    padding: var(--space-5) 0 0;
+    border-left: 0;
+    border-top: 1px solid var(--glass-line);
+  }
+}
+/* A count tile used as a filter: the chosen one carries the petrol edge. */
+.record-page .count-tile[aria-pressed="true"],
+.orders-page .count-tile[aria-pressed="true"] {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
 }
 
 @media (max-width: 760px) {
+  .log-top {
+    padding: 20px 16px;
+  }
   .log-head {
     grid-template-columns: minmax(0, 1fr);
-    padding: 18px 16px;
   }
   .log-head > .btn {
     justify-self: start;
@@ -363,9 +382,6 @@
     grid-template-columns: minmax(0, 1fr);
     gap: 6px;
     padding-top: 12px;
-  }
-  .log-title {
-    font-size: var(--fs-18);
   }
   .demo-control {
     grid-template-columns: 20px minmax(0, 1fr);
@@ -415,7 +431,7 @@
     flex-wrap: wrap;
     gap: 0 6px;
     color: var(--text-3);
-    font-size: var(--fs-13);
+    font-size: var(--fs-sm);
   }
   .log-table .cell-who .sub,
   .log-table .cell-when .sub {
@@ -424,10 +440,19 @@
   .log-table .cell-when {
     grid-area: when;
     display: flex;
-    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0 6px;
     color: var(--text-3);
-    font-size: var(--fs-13);
+    font-size: var(--fs-sm);
     text-align: right;
+  }
+  /* The time may drop under the date, so the step text keeps most of the row's width. */
+  .log-table tbody tr {
+    grid-template-columns: minmax(0, 1fr) min-content;
+  }
+  .log-table .cell-when > * {
+    white-space: nowrap;
   }
 }
 
@@ -446,13 +471,13 @@
 }
 .log-filter {
   display: grid;
-  grid-template-columns: 48px minmax(0, 1fr);
+  grid-template-columns: 72px minmax(0, 1fr);
   align-items: center;
   gap: 8px;
 }
 .log-filter-label {
   color: var(--text-3);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   font-weight: 500;
 }
 .log-list {

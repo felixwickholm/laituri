@@ -23,7 +23,7 @@ describe("the replay model", () => {
     const view = replayView(events.reduce(replayReducer, REPLAY_IDLE));
     expect(view.map((step) => step.status)).toEqual(["done", "active", "waiting"]);
     expect(view[0].line).toBe("3 keys from Valio Aimo");
-    expect(view[1].line).toBe("Checked 87 of 149 signatures");
+    expect(view[1].line).toBe("Checked 87 of 149 steps");
     expect(view[1].fraction).toBeCloseTo(87 / 149);
   });
 
@@ -35,7 +35,7 @@ describe("the replay model", () => {
     expect(broken[2].line).toBe("Entry 4 was changed after it was written.");
     const passing: ReplayEvent[] = [...base, { type: "verified" }];
     const verified = replayView(passing.reduce(replayReducer, REPLAY_IDLE));
-    expect(verified.map((step) => step.line)).toEqual(["1 key from Valio Aimo", "5 of 5 signatures valid", "5 of 5 links intact"]);
+    expect(verified.map((step) => step.line)).toEqual(["1 key from Valio Aimo", "5 of 5 steps signed", "5 of 5 steps unchanged"]);
     expect(replayView(REPLAY_IDLE).every((step) => step.status === "waiting")).toBe(true);
   });
 });
@@ -51,8 +51,8 @@ describe("runReplay", () => {
     expect(result).toBe("verified");
     expect(replayView(events.reduce(replayReducer, REPLAY_IDLE)).map((step) => step.line)).toEqual([
       `${keys.keys.length === 1 ? "1 key" : `${keys.keys.length} keys`} from Valio Aimo`,
-      "4 of 4 signatures valid",
-      "4 of 4 links intact",
+      "4 of 4 steps signed",
+      "4 of 4 steps unchanged",
     ]);
   });
 

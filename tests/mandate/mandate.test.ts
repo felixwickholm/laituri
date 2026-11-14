@@ -66,7 +66,7 @@ describe("mandate", () => {
     const after = await updateMandate({ limits: { perOrder: { amount: 2000, currency: "EUR" } } });
     expect(after.mandate.version).toBe(before.mandate.version + 1);
     expect(after.mandate.limits.perOrder.amount).toBe(2000);
-    expect(after.mandate.limits.perWeek.amount).toBe(5000);
+    expect(after.mandate.limits.perWeek.amount).toBe(7500);
     expect((await readMandate(after.jws)).mandate).toEqual(after.mandate);
     expect((await currentMandate()).jws).toBe(after.jws);
   });
@@ -75,7 +75,7 @@ describe("mandate", () => {
     const [harbour, kaisla, laine] = await Promise.all(Object.values(BUYER_IDS).map((id) => currentMandate(id)));
     expect(harbour.mandate.buyer.id).toBe(PRIMARY_BUYER_ID);
     expect(kaisla.mandate).toMatchObject({
-      limits: { perOrder: { amount: 800 }, perWeek: { amount: 3000 } },
+      limits: { perOrder: { amount: 800 }, perWeek: { amount: 6000 } },
       dietary: { excludeAllergens: ["peanut", "nuts", "sesame"], blockMayContain: true },
       substitution: { policy: "like_for_like", maxPriceIncreasePct: 5 },
       approval: { approver: { name: "Antti Korhonen, Food Service Manager" } },

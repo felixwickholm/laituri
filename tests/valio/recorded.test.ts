@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { RecordedUpstream, upstream, upstreamMode, type UpstreamClient } from "@/lib/valio";
+import { CachedUpstream } from "@/lib/valio/cached";
 import { LiveUpstream } from "@/lib/valio/live";
 
 describe("recorded upstream", () => {
@@ -40,7 +41,7 @@ describe("upstream selection", () => {
   it("uses recorded data when asked or when no API key is set", () => {
     process.env.VALIO_MODE = "recorded";
     expect(upstreamMode()).toBe("recorded");
-    expect(upstream()).toBeInstanceOf(RecordedUpstream);
+    expect(upstream()).toBeInstanceOf(CachedUpstream);
     delete process.env.VALIO_MODE;
     delete process.env.VALIO_API_KEY;
     expect(upstreamMode()).toBe("recorded");
@@ -52,13 +53,13 @@ describe("live upstream", () => {
     vi.restoreAllMocks();
   });
 
-  it("batches ids into one call and serves repeats from the cache", async () => {
+  it("batches ids into one call and, behind the cache, serves repeats without asking again", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async (_url, init) => {
       const body = JSON.parse(String(init?.body)) as { products: string[] };
       const products = body.products.map((productId) => ({ productId, salesBlock: false, scheduleLines: [] }));
       return new Response(JSON.stringify({ products }), { status: 200 });
     });
-    const client = new LiveUpstream({ baseUrl: "https://example.test/api", apiKey: "test" });
+    const client = new CachedUpstream(new LiveUpstream({ baseUrl: "https://example.test/api", apiKey: "test" }));
     await client.availability(["1", "2", "2"], "2026-11-16", "123");
     await client.availability(["1", "2"], "2026-11-16", "123");
     expect(fetchMock).toHaveBeenCalledTimes(1);

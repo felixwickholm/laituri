@@ -3,8 +3,9 @@ import { refuseAgents } from "@/lib/http/agent";
 import { readBody, route } from "@/lib/http/handler";
 import { originOf } from "@/lib/http/origin";
 import { json } from "@/lib/http/respond";
+import { sandboxForSecret } from "@/lib/http/workspace";
 import { describeWorkspace } from "@/lib/http/workspace-info";
-import { sandboxes, sharedWorkspace } from "@/lib/workspace";
+import { sharedWorkspace } from "@/lib/workspace";
 import {
   VIEW_COOKIE,
   WORKSPACE_COOKIE,
@@ -36,5 +37,5 @@ export const POST = route(async (request) => {
     secret = newWorkspaceSecret();
     headers.append("set-cookie", cookieHeader(WORKSPACE_COOKIE, secret, { maxAge: WORKSPACE_COOKIE_MAX_AGE_S, sameSite: "Lax" }));
   }
-  return json(await describeWorkspace(await sandboxes().forSecret(secret), originOf(request)), { headers });
+  return json(await describeWorkspace(await sandboxForSecret(secret, request.headers), originOf(request)), { headers });
 }, { openInSharedView: true });

@@ -19,15 +19,12 @@ const REASON_MAX = 200;
 interface PhoneDecideProps {
   order: Order;
   paused: boolean;
-  approver: string;
-  /** Signed in through one-click demo access rather than the passcode. */
-  demo: boolean;
   /** The re-check at approval stopped the order; these are the wholesaler's fresh alternatives. */
   onStopped: (alternatives: Alternative[]) => void;
 }
 
 /** The two choices side by side under the thumb. Reject asks for a short reason, which is signed with it. */
-export function PhoneDecide({ order, paused, approver, demo, onStopped }: PhoneDecideProps) {
+export function PhoneDecide({ order, paused, onStopped }: PhoneDecideProps) {
   const [busy, setBusy] = useState<Busy>(null);
   const [rejecting, setRejecting] = useState(false);
   const [reason, setReason] = useState("");
@@ -81,7 +78,7 @@ export function PhoneDecide({ order, paused, approver, demo, onStopped }: PhoneD
             Back
           </button>
           <button type="submit" className="btn big ph-danger" disabled={busy !== null || reason.trim() === ""}>
-            {busy === "rejected" ? "Signing…" : "Reject and sign"}
+            {busy === "rejected" ? "Signing…" : "Reject"}
           </button>
         </div>
         {error ? (
@@ -100,10 +97,10 @@ export function PhoneDecide({ order, paused, approver, demo, onStopped }: PhoneD
           Reject
         </button>
         <button type="button" className="btn big btn-primary" data-phone-approve disabled={busy !== null || paused} onClick={() => void decide("approved")}>
-          {paused ? PAUSED_LABEL : busy === "approved" ? "Signing…" : "Approve and sign"}
+          {paused ? PAUSED_LABEL : busy === "approved" ? "Signing…" : "Approve"}
         </button>
       </div>
-      <p className="ph-fine">{paused ? PAUSED_NOTE : `${approver}${demo ? " · demo access" : ""} · your decision is signed and logged`}</p>
+      <p className="ph-fine">{paused ? PAUSED_NOTE : "Signed and saved in the record"}</p>
       {error ? (
         <p className="ph-error" role="alert">
           {error}

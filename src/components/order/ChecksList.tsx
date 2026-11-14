@@ -33,14 +33,14 @@ function detail(check: PolicyCheck): string {
   return plainSentence(check.message);
 }
 
-/** Every mandate check, grouped by outcome. All of them are always listed. */
+/** Every check against your limits, grouped by outcome. All of them are always listed. */
 export function ChecksList({ decision }: { decision: Decision }) {
   // A rule that could not run (the mandate or offer was invalid) is neither passed nor blocking.
   const skipped = decision.checks.filter((check) => check.status === "skipped");
   return (
     <section className="section">
       <h3>
-        Mandate checks <span className="count">{decision.checks.length}</span>
+        Checked against your limits <span className="count">{decision.checks.length}</span>
       </h3>
       {GROUPS.map((group) => {
         const checks = decision.checks.filter((check) => check.status === group.status);

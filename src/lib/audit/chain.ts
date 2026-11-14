@@ -25,8 +25,17 @@ const appendQueue = workspaceState<{ last: Promise<unknown> }>("audit.queue", ()
  * The stored tail is checked first: an entry is never chained onto a tail that was changed, cut or replaced.
  */
 export function appendAudit(input: AuditInput): Promise<AuditEntry> {
+  return afterAuditWrites(() => write(input));
+}
+
+/**
+ * Runs `work` in this workspace's audit queue, after every append already queued and before any later one.
+ * A reset must run here: an append that read the old tail would otherwise chain onto a log that is gone.
+ * `work` must not append itself, or it waits on its own turn.
+ */
+export function afterAuditWrites<T>(work: () => Promise<T>): Promise<T> {
   const queue = appendQueue();
-  const next = queue.last.catch(() => undefined).then(() => write(input));
+  const next = queue.last.catch(() => undefined).then(work);
   queue.last = next;
   return next;
 }

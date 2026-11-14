@@ -82,7 +82,7 @@ export function curlOrder(origin: string, key: string): string {
   );
 }
 
-const PROMPT_STEP: Step = { text: "Ask your agent to buy. Its calls show up under Connected right now.", code: { value: PROMPT, label: "Copy prompt", wrap: true } };
+const PROMPT_STEP: Step = { text: "Ask your agent to buy. Its calls show up at the top.", code: { value: PROMPT, label: "Copy prompt", wrap: true } };
 
 const LOCAL_NOTE =
   "This page runs on your own machine. Chat apps connect from their servers, so use the public address of a deployed Laituri.";
@@ -105,7 +105,7 @@ export function guideFor(app: AppId, origin: string, key: string, deliverBy: str
       return {
         steps: [
           { text: "Add Laituri as an MCP server. Run this in a terminal.", code: { value: claudeCodeCommand(origin, key), label: "Copy command", wrap: true } },
-          { text: "Start Claude Code and type /mcp. Laituri shows as connected with seven tools." },
+          { text: "Start Claude Code and type /mcp. Laituri shows as connected." },
           PROMPT_STEP,
         ],
       };
@@ -123,7 +123,7 @@ export function guideFor(app: AppId, origin: string, key: string, deliverBy: str
       return {
         steps: [
           { text: "Paste this into .cursor/mcp.json in your project, or ~/.cursor/mcp.json for every project.", code: { value: cursorConfig(origin, key), label: "Copy mcp.json" } },
-          { text: "Open Cursor Settings, then MCP. Laituri shows with seven tools." },
+          { text: "Open Cursor Settings, then MCP. Laituri shows as connected." },
           PROMPT_STEP,
         ],
       };
@@ -139,7 +139,7 @@ export function guideFor(app: AppId, origin: string, key: string, deliverBy: str
       return {
         steps: [
           { text: "Add this to ~/.gemini/settings.json. Merge it if the file already has mcpServers.", code: { value: geminiConfig(origin, key), label: "Copy settings" } },
-          { text: "Run gemini and type /mcp. Laituri shows with seven tools." },
+          { text: "Run gemini and type /mcp. Laituri shows as connected." },
           PROMPT_STEP,
         ],
       };

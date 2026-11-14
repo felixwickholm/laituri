@@ -30,7 +30,7 @@ export const DEMO_TOKENS: Record<string, string> = {
 };
 
 /** The buyer a token stands for in the current workspace; a key from another workspace stands for nobody here. */
-function tokenBuyer(token: string): string | undefined {
+export function tokenBuyer(token: string): string | undefined {
   const workspace = currentWorkspace();
   if (workspace.kind === "shared") return DEMO_TOKENS[token];
   const keyed = sandboxes().byAgentKey(token);

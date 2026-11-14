@@ -36,6 +36,8 @@ class ConsoleStore {
   private texts = { activity: "", orders: "", audit: "" };
   private timer: ReturnType<typeof setTimeout> | undefined;
   private ticks = 0;
+  /** Bumped by every sign-in and sign-out, so a session read that started earlier cannot undo it. */
+  private sessionEpoch = 0;
   private busy = false;
   private verifyVersion = 0;
 
@@ -83,6 +85,7 @@ class ConsoleStore {
     if (this.busy) return;
     this.busy = true;
     const round = this.ticks++;
+    const sessionEpoch = this.sessionEpoch;
     try {
       // Every slice in one round, so the mandate and keys do not wait behind the lists on the first load.
       const [activity, orders, audit, jwks, health, mandate, run, session] = await Promise.allSettled([
@@ -116,7 +119,8 @@ class ConsoleStore {
         patch.audit = api.parseAudit(audit.value).sort((a, b) => a.seq - b.seq);
         auditChanged = true;
       }
-      if (session.status === "fulfilled" && session.value) patch.session = session.value;
+      // A sign-in or sign-out during this round wins over the session read that started before it.
+      if (session.status === "fulfilled" && session.value && sessionEpoch === this.sessionEpoch) patch.session = session.value;
       if (jwks.status === "fulfilled" && jwks.value) patch.jwks = jwks.value;
       if (health.status === "fulfilled" && health.value) patch.health = health.value;
       if (mandate.status === "fulfilled" && mandate.value) patch.mandate = mandate.value;
@@ -172,6 +176,7 @@ class ConsoleStore {
 
   async signIn(credentials: SignInCredentials): Promise<ConsoleSession> {
     const session = await api.signIn(credentials);
+    this.sessionEpoch++;
     this.set({ session });
     return session;
   }
@@ -184,6 +189,7 @@ class ConsoleStore {
 
   /** The server said the session is gone; show the person as signed out for that role. */
   markSignedOut(role?: SessionRole): void {
+    this.sessionEpoch++;
     const { session } = this.snapshot;
     if (session) this.set({ session: withoutRole(session, role) });
   }

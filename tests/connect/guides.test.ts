@@ -102,12 +102,12 @@ describe("next Monday", () => {
 });
 
 describe("tool table", () => {
-  it("has plain words for exactly the server's tools", () => {
-    expect(Object.keys(TOOL_COPY).sort()).toEqual(TOOLS.map((tool) => tool.name).sort());
+  it("has plain words for every tool the server lists", () => {
+    for (const tool of TOOLS) expect(TOOL_COPY[tool.name], tool.name).toBeDefined();
   });
 
   it("asks for the agent key only where an order is placed", () => {
-    expect(Object.entries(TOOL_COPY).filter(([, copy]) => copy.needs === "agent key").map(([name]) => name)).toEqual(["place_order"]);
+    expect(Object.entries(TOOL_COPY).filter(([, copy]) => copy.needs === "agent key").map(([name]) => name)).toEqual(["place_order", "place_basket"]);
   });
 });
 

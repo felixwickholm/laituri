@@ -28,6 +28,13 @@ const ROUTES: Record<string, { url: string; params?: Record<string, string> }> =
   "api/v1/audit": { url: "/api/v1/audit" },
   "api/v1/audit/checkpoint": { url: "/api/v1/audit/checkpoint" },
   "api/v1/audit/verify": { url: "/api/v1/audit/verify" },
+  "api/v1/baskets": { url: "/api/v1/baskets" },
+  "api/v1/baskets/[basketId]": { url: "/api/v1/baskets/bsk_x", params: { basketId: "bsk_x" } },
+  "api/v1/baskets/[basketId]/lines/[lineId]/resolve": { url: "/api/v1/baskets/bsk_x/lines/line_1/resolve", params: { basketId: "bsk_x", lineId: "line_1" } },
+  "api/v1/baskets/weekly": { url: "/api/v1/baskets/weekly" },
+  "api/v1/baskets/weekly/draft": { url: "/api/v1/baskets/weekly/draft" },
+  "api/v1/handoffs": { url: "/api/v1/handoffs" },
+  "api/v1/handoffs/[handoffId]/answer": { url: "/api/v1/handoffs/hnd_x/answer", params: { handoffId: "hnd_x" } },
   "api/v1/console/session": { url: "/api/v1/console/session" },
   "api/v1/demo/reset": { url: "/api/v1/demo/reset" },
   "api/v1/demo/runs": { url: "/api/v1/demo/runs" },
@@ -35,6 +42,12 @@ const ROUTES: Record<string, { url: string; params?: Record<string, string> }> =
   "api/v1/demo/tamper": { url: "/api/v1/demo/tamper" },
   "api/v1/health": { url: "/api/v1/health" },
   "api/v1/mandate": { url: "/api/v1/mandate" },
+  "api/v1/menus/plan": { url: "/api/v1/menus/plan" },
+  "api/v1/assistant/turn": { url: "/api/v1/assistant/turn" },
+  "api/v1/pantry": { url: "/api/v1/pantry" },
+  "api/v1/recipes": { url: "/api/v1/recipes" },
+  "api/v1/recipes/[id]": { url: "/api/v1/recipes/pasta-bolognese", params: { id: "pasta-bolognese" } },
+  "api/v1/suggestions": { url: "/api/v1/suggestions" },
   "api/v1/offers/[id]": { url: "/api/v1/offers/off_x", params: { id: "off_x" } },
   "api/v1/openapi.json": { url: "/api/v1/openapi.json" },
   "api/v1/orders": { url: "/api/v1/orders" },
@@ -49,6 +62,7 @@ const ROUTES: Record<string, { url: string; params?: Record<string, string> }> =
   "api/v1/supplier/overview": { url: "/api/v1/supplier/overview" },
   "api/v1/voice": { url: "/api/v1/voice" },
   "api/v1/voice/speech": { url: "/api/v1/voice/speech" },
+  "api/v1/voice/transcribe": { url: "/api/v1/voice/transcribe" },
   "api/v1/workspace": { url: "/api/v1/workspace" },
   "api/v1/workspace/view": { url: "/api/v1/workspace/view" },
   ".well-known/agent-card.json": { url: "/.well-known/agent-card.json" },
@@ -77,6 +91,8 @@ const PUBLIC_DOCUMENTS = [
   ".well-known/ucp",
   "evidence.json",
   "llms.txt",
+  "api/v1/recipes",
+  "api/v1/recipes/[id]",
 ];
 
 /** Records only an agent key, the browser's own sandbox or a signed-in person may read. */
@@ -89,6 +105,12 @@ const RECORD_READS = [
   "api/v1/activity",
   "api/v1/audit",
   "api/v1/supplier/overview",
+  "api/v1/baskets",
+  "api/v1/baskets/[basketId]",
+  "api/v1/baskets/weekly/draft",
+  "api/v1/handoffs",
+  "api/v1/pantry",
+  "api/v1/suggestions",
 ];
 
 function routeFolders(dir = APP_DIR): string[] {

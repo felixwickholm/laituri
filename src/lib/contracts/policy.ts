@@ -18,6 +18,7 @@ export const RuleId = z.enum([
   "match.confidence",
   "request.words",
   "product.first_time",
+  "product.never_buy",
 ]);
 export type RuleId = z.infer<typeof RuleId>;
 

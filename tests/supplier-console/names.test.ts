@@ -14,7 +14,7 @@ describe("client names", () => {
   });
 
   it("names the demo's scripted agent neutrally", () => {
-    expect(clientName(SCRIPTED_CLIENT)).toBe("Demo agent");
+    expect(clientName(SCRIPTED_CLIENT)).toBe("Laituri agent");
   });
 });
 

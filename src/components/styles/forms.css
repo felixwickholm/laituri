@@ -1,14 +1,14 @@
-/* The mandate page: rules as sentences in three groups, the signature beside them, and the save card. */
+/* The limits page: one glass card per kind of rule, the save card and the signature beside them. */
 
 .mandate-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
+  grid-template-columns: minmax(0, 1fr) 320px;
   align-items: start;
-  gap: 24px;
+  gap: var(--gap-card);
 }
-.rule-groups {
+.limits-sections {
   display: grid;
-  gap: 16px;
+  gap: var(--gap-card);
   min-width: 0;
 }
 .mandate-aside {
@@ -18,140 +18,315 @@
   gap: 16px;
 }
 
-.rule-group {
-  padding: 22px 24px 8px;
-  border-radius: var(--r-card);
-  border: 1px solid var(--line);
-  background: var(--surface-1);
+.limits-section {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
 }
-.rule-group-head {
+.limits-section > .section-title {
+  margin: 0;
+}
+.limits-line {
+  margin: calc(var(--space-2) * -1) 0 0;
+  color: var(--text-2);
+  font-size: var(--fs-body);
+  line-height: 1.4;
+}
+
+/* A label on the left, its control on the right. Rows inside a card are separated by space and one hairline. */
+.limits-row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  min-height: 44px;
+}
+.limits-row + .limits-row,
+.pick-chips + .limits-row {
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--glass-line);
+}
+.limits-row-label {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  color: var(--text-1);
+  font-size: var(--fs-body);
+  line-height: 1.35;
+}
+.limits-row-hint {
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+  line-height: 1.4;
+}
+.limits-row-control {
+  flex: none;
+}
+
+/* This week's spend under the two limits: the number first, the meter under it. */
+.limits-week {
+  display: grid;
   gap: 10px;
+  padding: var(--space-4);
+  border-radius: var(--r-lg);
+  background: var(--surface-2);
 }
-.rule-group-head h2 {
+.limits-week p {
   margin: 0;
-  font-size: var(--fs-18);
-  line-height: 24px;
-  font-weight: 600;
+  color: var(--text-2);
+  font-size: var(--fs-body);
+  font-variant-numeric: tabular-nums;
 }
-.strength {
+.limits-week strong {
+  color: var(--text-1);
+  font-weight: 700;
+}
+.limits-week .meter {
+  width: 100%;
+  height: 10px;
+}
+
+/* Allergens and kitchen labels: every option visible, each a switch. On shows an icon and a colour. */
+.pick-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pick-chip {
   display: inline-flex;
   align-items: center;
-  height: 26px;
-  padding: 0 10px;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--glass-line);
   border-radius: var(--r-full);
-  background: var(--surface-2);
-  color: var(--text-2);
-  font-size: var(--fs-13);
-  font-weight: 500;
+  background: var(--surface-1);
+  color: var(--text-1);
+  font: inherit;
+  font-size: var(--fs-sm);
+  font-weight: 550;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--d-hover) var(--ease-hover),
+    border-color var(--d-hover) var(--ease-hover),
+    color var(--d-hover) var(--ease-hover),
+    transform var(--d-press) var(--ease-out);
 }
-.strength[data-strength="alone"] {
-  background: var(--success-tint);
-  color: color-mix(in srgb, var(--success) 80%, var(--text-1));
+.pick-chip:active {
+  transform: var(--press);
 }
-.strength[data-strength="ask"] {
-  background: var(--warn-tint);
-  color: color-mix(in srgb, var(--warn) 80%, var(--text-1));
+.pick-chip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
-.strength[data-strength="hard"] {
+.pick-chip svg {
+  width: 15px;
+  height: 15px;
+  stroke-width: 2;
+}
+.pick-chip[data-tone="never"][aria-pressed="true"] {
+  border-color: transparent;
   background: var(--danger-tint);
   color: var(--danger);
 }
-.rule-group-note {
-  margin: 6px 0 8px;
-  color: var(--text-3);
-  font-size: var(--fs-13);
-  line-height: 20px;
+.pick-chip[data-tone="require"][aria-pressed="true"] {
+  border-color: transparent;
+  background: var(--accent-tint);
+  color: var(--accent);
 }
-.rules {
+@media (hover: hover) and (pointer: fine) {
+  .pick-chip[aria-pressed="false"]:hover {
+    border-color: var(--text-3);
+  }
+}
+
+/* Never buy: a search field, what it found, and the list. */
+.never-buy {
+  display: grid;
+  gap: var(--space-3);
+}
+.never-buy-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: var(--control-h-big);
+  padding: 0 14px;
+  border: 1px solid var(--glass-line);
+  border-radius: var(--r-control);
+  background: var(--surface-1);
+  color: var(--text-3);
+}
+.never-buy-search:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.never-buy-search svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+.never-buy-search input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--text-1);
+  font: inherit;
+  font-size: var(--fs-body);
+  outline: none;
+}
+.never-buy-results,
+.never-buy-list {
+  display: grid;
+  gap: 2px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
-.rule {
-  padding: 14px 0;
+.never-buy-results {
+  padding: 4px;
+  border-radius: var(--r-lg);
+  background: var(--surface-2);
 }
-.rule + .rule {
-  border-top: 1px solid var(--line);
+.never-buy-results[aria-busy="true"] {
+  opacity: 0.6;
 }
-.rule-text {
-  margin: 0;
-  color: var(--text-1);
-  font-size: var(--fs-15);
-  line-height: 34px;
-}
-.rule-detail {
-  margin-top: 8px;
-}
-.toggle-line {
-  display: inline-flex;
+.never-buy-row,
+.never-buy-item {
+  display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  padding: 4px 4px 4px 12px;
+  border-radius: var(--r-md);
 }
-.toggle-word {
+.never-buy-row .btn {
+  height: 36px;
+  padding: 0 12px;
+  font-size: var(--fs-sm);
+}
+.never-buy-word .never-buy-name {
   color: var(--text-2);
-  font-size: var(--fs-13);
+}
+.never-buy-item {
+  background: var(--danger-tint);
+}
+.never-buy-item .icon-btn {
+  color: var(--danger);
+}
+.never-buy-name {
+  min-width: 0;
+  color: var(--text-1);
+  font-size: var(--fs-body);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.never-buy-empty,
+.never-buy-none {
+  margin: 0;
+  padding: 10px 12px;
+  color: var(--text-2);
+  font-size: var(--fs-body);
+}
+.never-buy-none {
+  padding: 0;
 }
 
-/* An editable value inside a sentence: tinted with the accent so it reads as something to change. */
+/* Who decides what: two columns read straight from the rules. */
+.autonomy {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+.autonomy-col {
+  padding: var(--space-4);
+  border-radius: var(--r-lg);
+  background: var(--success-tint);
+}
+.autonomy-col[data-tier="asks"] {
+  background: var(--warn-tint);
+}
+.autonomy-col h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 var(--space-2);
+  color: var(--text-1);
+  font-size: var(--fs-body-lg);
+  font-weight: 700;
+}
+/* Colour and the word together: a dot before "Alone" and "Asks you". */
+.autonomy-col h3::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: var(--r-full);
+  background: var(--success);
+}
+.autonomy-col[data-tier="asks"] h3::before {
+  background: var(--warn);
+}
+.autonomy-col ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.autonomy-col li {
+  color: var(--text-1);
+  font-size: var(--fs-body);
+  line-height: 1.4;
+}
+
+/* An editable value: tinted with the accent so it reads as something to change. */
 .value-chip {
   display: inline-flex;
   align-items: center;
   gap: 1px;
-  height: 32px;
-  padding: 0 10px;
+  height: 40px;
+  padding: 0 12px;
   border-radius: var(--r-md);
   border: 0;
   background: var(--accent-tint);
   color: var(--accent);
   font: inherit;
-  font-size: var(--fs-15);
+  font-size: var(--fs-body);
   font-weight: 600;
-  vertical-align: baseline;
-  transition: background-color var(--d-hover) var(--ease-hover);
+  font-variant-numeric: tabular-nums;
 }
-.value-chip:focus-within,
-input.value-chip:focus-visible {
+.value-chip:focus-within {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
 .value-chip input {
   width: auto;
-  min-width: 3ch;
+  min-width: 2ch;
+  max-width: 7ch;
   padding: 0;
   border: 0;
   background: transparent;
   color: inherit;
   font: inherit;
+  text-align: right;
   outline: none;
-}
-input.value-chip {
-  width: 3.6em;
-  text-align: center;
   -moz-appearance: textfield;
   appearance: textfield;
 }
-input.value-chip::-webkit-inner-spin-button,
-input.value-chip::-webkit-outer-spin-button {
+.value-chip input::-webkit-inner-spin-button,
+.value-chip input::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
-.usage {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  color: var(--text-3);
-  font-size: var(--fs-13);
-  font-variant-numeric: tabular-nums;
+/* The signature and the save card. */
+.signature-card,
+.save-card {
+  padding: var(--space-5);
 }
-.usage .meter {
-  width: 180px;
-  flex: none;
-}
-
-/* The signed mandate, summed up in two sentences and the browser's verdict. */
 .signature-card {
   display: grid;
   gap: 8px;
@@ -164,17 +339,21 @@ input.value-chip::-webkit-outer-spin-button {
 }
 .signature-head .card-title {
   margin: 0;
+  color: var(--text-1);
+  font-family: var(--font-sans);
+  font-size: var(--fs-lg);
+  font-weight: 700;
 }
 .signature-version {
   color: var(--text-3);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   font-variant-numeric: tabular-nums;
 }
 .signature-who,
 .signature-when {
   margin: 0;
-  font-size: var(--fs-13);
-  line-height: 20px;
+  font-size: var(--fs-body);
+  line-height: 1.4;
 }
 .signature-who {
   color: var(--text-1);
@@ -188,7 +367,7 @@ input.value-chip::-webkit-outer-spin-button {
   gap: 6px;
   margin: 4px 0 0;
   color: var(--text-2);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   font-weight: 500;
 }
 .signature-verdict-line svg {
@@ -219,12 +398,12 @@ input.value-chip::-webkit-outer-spin-button {
   margin: 0;
 }
 .save-status strong {
-  font-size: var(--fs-15);
-  font-weight: 600;
+  font-size: var(--fs-body);
+  font-weight: 700;
 }
 .save-status span {
-  color: var(--text-3);
-  font-size: var(--fs-13);
+  color: var(--text-2);
+  font-size: var(--fs-sm);
   line-height: 19px;
 }
 .save-actions {
@@ -232,8 +411,12 @@ input.value-chip::-webkit-outer-spin-button {
   flex-wrap: wrap;
   gap: 8px;
 }
+.save-actions .btn-primary,
+.save-actions .btn:only-child {
+  flex: 1;
+}
 
-@media (max-width: 1023px) {
+@media (max-width: 1100px) {
   .mandate-layout {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -246,25 +429,32 @@ input.value-chip::-webkit-outer-spin-button {
     z-index: 25;
     left: 12px;
     right: 12px;
-    bottom: calc(76px + env(safe-area-inset-bottom, 0px));
-    box-shadow: var(--shadow-2);
+    bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+    background: var(--glass-fill-strong);
+    box-shadow: var(--glass-shadow);
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
     gap: 12px;
-    padding: 14px 16px;
+    padding: 12px 14px;
   }
 }
 
-@media (max-width: 760px) {
-  .rule-group {
-    padding: 18px 16px 4px;
-  }
-  .rule-text {
-    font-size: var(--fs-15);
-    line-height: 34px;
-  }
-  .usage {
+@media (max-width: 720px) {
+  .limits-row {
     flex-wrap: wrap;
+    gap: var(--space-2);
   }
-  .usage .meter {
-    width: 100%;
+  /* A switch or a short value stays beside its label; a wide choice drops under it. */
+  .limits-row-label {
+    flex: 1 1 180px;
+  }
+  .autonomy {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .pick-chip {
+    height: 44px;
+  }
+  .segmented.inline {
+    max-width: 100%;
   }
 }

@@ -1,0 +1,813 @@
+/*
+ * The shop (/buyer/shop). Shaped after Valio Aimo's own product search: a wide search field, round filter pills,
+ * a product grid without frames, small square upper-case tags, facts in green with a check. Tokens only.
+ * Every class starts with store- or qty-.
+ */
+
+.store-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 32px;
+  align-items: start;
+}
+.store-main {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+.store-side {
+  position: sticky;
+  top: 24px;
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+/* Search: one wide field in large type, the icon inside on the right. */
+.store-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 60px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface-1);
+  transition: border-color var(--d-hover) var(--ease-hover);
+}
+.store-search:focus-within {
+  border-color: var(--accent);
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+.store-search input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0 8px 0 20px;
+  border: 0;
+  background: transparent;
+  color: var(--text-1);
+  font: inherit;
+  font-size: var(--fs-lg);
+  outline: none;
+}
+.store-search input::placeholder {
+  color: var(--text-3);
+}
+.store-search input::-webkit-search-cancel-button {
+  display: none;
+}
+.store-search .icon-btn {
+  margin-right: 10px;
+}
+.store-search-icon {
+  width: 24px;
+  height: 24px;
+  margin-right: 18px;
+  color: var(--accent);
+  flex: none;
+}
+
+/* Category pills. */
+.store-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.store-chips button {
+  position: relative;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid transparent;
+  border-radius: var(--r-full);
+  background: var(--surface-3);
+  color: var(--accent);
+  font: inherit;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color var(--d-hover) var(--ease-hover),
+    color var(--d-hover) var(--ease-hover),
+    transform var(--d-press) var(--ease-out);
+}
+.store-chips button::after {
+  content: "";
+  position: absolute;
+  inset: -2px 0;
+}
+.store-chips button:active {
+  transform: var(--press);
+}
+.store-chips button[aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+@media (hover: hover) and (pointer: fine) {
+  .store-chips button:not([aria-pressed="true"]):hover {
+    background: var(--surface-4);
+  }
+}
+
+/* Result count and sort. */
+.store-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+}
+.store-count {
+  color: var(--text-2);
+  font-size: var(--fs-base);
+}
+.store-count strong {
+  color: var(--text-1);
+  font-weight: 700;
+}
+.store-count-sort {
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+}
+.store-sort {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.store-sort-label {
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+}
+.store-note,
+.store-error {
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+}
+.store-note {
+  color: var(--text-2);
+}
+.store-error {
+  padding: 10px 14px;
+  border-radius: var(--r-md);
+  background: var(--danger-tint);
+  color: var(--danger);
+}
+
+/* The grid: no frames, as in the wholesaler's own catalogue; a quiet line separates the cards. */
+.store-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(212px, 1fr));
+  gap: 32px 24px;
+  list-style: none;
+  transition: opacity var(--d-fast) var(--ease-out);
+}
+.store-cards[data-stale] {
+  opacity: 0.6;
+}
+.store-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 16px;
+  border-radius: var(--r-card);
+  background: var(--surface-1);
+  transition: background-color var(--d-base) var(--ease-out);
+}
+.store-card[data-agent] {
+  background: var(--accent-tint);
+}
+/* In place of a product photo: a pale panel with the category mark, the tags on its top-left corner as on the wholesaler's cards. */
+.store-card-visual {
+  position: relative;
+  display: grid;
+  grid-template-rows: minmax(22px, auto) auto;
+  justify-items: center;
+  align-content: start;
+  gap: 8px;
+  margin: -16px -16px 4px;
+  padding: 12px 16px 16px;
+  border-radius: var(--r-card) var(--r-card) 0 0;
+  background: var(--surface-3);
+}
+.store-card-visual .product-image {
+  grid-row: 2;
+}
+.store-card-visual .store-tags {
+  grid-row: 1;
+  justify-self: stretch;
+  justify-content: flex-start;
+  margin: 0;
+  padding: 0;
+}
+.store-glyph {
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+}
+.store-glyph svg {
+  width: 32px;
+  height: 32px;
+  stroke-width: 1.5;
+}
+.store-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  list-style: none;
+}
+.store-tags li {
+  padding: 2px 8px;
+  background: var(--tag-new);
+  color: var(--on-cta);
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+}
+.store-card-name {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: var(--fs-base);
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: left;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+@media (hover: hover) and (pointer: fine) {
+  .store-card-name:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+}
+.store-card-pack {
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+.store-card-facts {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+}
+.store-card-when {
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+  line-height: 1.45;
+}
+.store-card-buy {
+  display: grid;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line-strong);
+}
+.store-price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+}
+.store-price strong {
+  color: var(--text-1);
+  font-size: var(--fs-lg);
+  font-weight: 700;
+}
+.store-price span {
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+}
+.store-add {
+  width: 100%;
+}
+.store-agent-tag {
+  color: var(--accent);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+/* Stock: a pill with an icon and a word. Green with a check, as the wholesaler shows positive facts. */
+.store-stock {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 12px 3px 10px;
+  border-radius: var(--r-full);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.store-stock svg {
+  width: 15px;
+  height: 15px;
+  stroke-width: 2.25;
+  flex: none;
+}
+.store-stock[data-tone="success"] {
+  background: var(--success-tint);
+  color: var(--success);
+}
+.store-stock[data-tone="waiting"] {
+  background: var(--warn-tint);
+  color: var(--warn);
+}
+.store-stock[data-tone="danger"] {
+  background: var(--danger-tint);
+  color: var(--danger);
+}
+
+/* Quantity stepper: packs in the middle, what they come to underneath. */
+.qty {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  align-items: center;
+  border: 2px solid var(--accent);
+  border-radius: var(--r-control);
+  min-width: 152px;
+}
+.qty-btn {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 40px;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  transition: transform var(--d-press) var(--ease-out), background-color var(--d-hover) var(--ease-hover);
+}
+.qty-btn:active {
+  transform: var(--press);
+}
+.qty-btn svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2;
+}
+@media (hover: hover) and (pointer: fine) {
+  .qty-btn:hover {
+    background: var(--surface-2);
+  }
+}
+.qty-value {
+  display: grid;
+  justify-items: center;
+  line-height: 1.1;
+}
+.qty-value strong {
+  color: var(--text-1);
+  font-size: var(--fs-base);
+  font-weight: 700;
+}
+.qty-value span {
+  color: var(--text-3);
+  font-size: var(--fs-xs);
+  white-space: nowrap;
+}
+
+/* The cart column. */
+.store-cart,
+.store-band {
+  padding: 24px;
+  border-radius: var(--r-card);
+  background: var(--surface-1);
+  min-width: 0;
+}
+.store-cart h2,
+.store-band h2 {
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: 0.01em;
+}
+.store-cart-body {
+  display: grid;
+  gap: 16px;
+  margin-top: 16px;
+}
+.sheet .store-cart-body {
+  margin-top: 0;
+}
+.store-cart-empty {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+.store-cart-empty svg {
+  width: 20px;
+  height: 20px;
+  color: var(--text-3);
+  flex: none;
+}
+.store-cart-lines {
+  display: grid;
+  list-style: none;
+}
+.store-cart-lines li {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+.store-cart-lines li:first-child {
+  padding-top: 0;
+}
+.store-cart-name {
+  color: var(--text-1);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.store-cart-pack {
+  color: var(--text-3);
+  font-size: var(--fs-xs);
+}
+.store-total {
+  display: grid;
+  gap: 2px;
+}
+.store-total p:first-child {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+.store-total strong {
+  color: var(--text-1);
+  font-size: var(--fs-title);
+  font-weight: 700;
+  letter-spacing: var(--track-title);
+  line-height: 1.1;
+}
+.store-total-note,
+.store-total-day,
+.store-cart-same {
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+}
+.store-total-day {
+  color: var(--text-1);
+  font-weight: 600;
+}
+.store-placed,
+.store-agent-basket {
+  display: grid;
+  gap: 12px;
+}
+.store-placed > p,
+.store-agent-basket > p {
+  color: var(--text-1);
+  font-size: var(--fs-base);
+  font-weight: 600;
+  line-height: 1.4;
+}
+.store-agent-basket {
+  padding: 14px 16px;
+  border-radius: var(--r-md);
+  background: var(--accent-tint);
+}
+.store-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  list-style: none;
+}
+.store-counts li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.store-counts strong {
+  font-size: var(--fs-lg);
+  font-weight: 700;
+}
+
+/* "Or let your agent do it": quiet, beside the cart. */
+.store-band {
+  display: grid;
+  gap: 12px;
+  background: var(--surface-3);
+}
+.store-band > p {
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+}
+.store-band .mcp-address {
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: start;
+}
+.store-band .mcp-address-line {
+  width: 100%;
+  background: var(--surface-1);
+}
+.store-band .mcp-address-line code {
+  font-size: var(--fs-xs);
+}
+
+/* Your agent is shopping. */
+.store-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  padding: 12px 16px;
+  border-radius: var(--r-md);
+  background: var(--surface-inverse);
+  color: var(--text-inverse);
+}
+.store-strip p {
+  flex: 1 1 260px;
+  font-size: var(--fs-base);
+  line-height: 1.4;
+}
+.store-strip p span {
+  animation: store-fade var(--d-base) var(--ease-out);
+}
+.store-strip-mark {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border-radius: var(--r-md);
+  background: var(--cta);
+  color: var(--on-cta);
+}
+.store-strip-mark svg {
+  width: 20px;
+  height: 20px;
+}
+.store-strip-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.store-strip .btn-quiet,
+.store-strip .text-link {
+  color: var(--text-inverse);
+}
+@keyframes store-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Product sheet. */
+.store-detail {
+  display: grid;
+  gap: 24px;
+}
+.store-detail h3 {
+  margin-bottom: 8px;
+  color: var(--accent);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.store-detail-price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+.store-detail-price strong {
+  color: var(--text-1);
+  font-size: var(--fs-title);
+  font-weight: 700;
+  letter-spacing: var(--track-title);
+}
+.store-detail-price span {
+  color: var(--text-2);
+}
+.store-detail-note {
+  flex-basis: 100%;
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+}
+.store-facts {
+  display: grid;
+}
+.store-facts > div {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.store-facts dt {
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+}
+.store-facts dd {
+  color: var(--text-1);
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+}
+.store-facts .store-tags {
+  justify-content: flex-start;
+}
+.store-allergen {
+  font-size: var(--fs-base);
+}
+.store-similar ul {
+  display: grid;
+  list-style: none;
+}
+.store-similar button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  padding: 8px 0;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: none;
+  color: var(--text-1);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.store-similar button > span {
+  display: grid;
+}
+.store-similar strong {
+  color: var(--accent);
+  font-size: var(--fs-sm);
+}
+.store-similar button span span {
+  color: var(--text-3);
+  font-size: var(--fs-xs);
+}
+.store-similar svg {
+  width: 18px;
+  height: 18px;
+  color: var(--accent);
+  flex: none;
+}
+
+.store-honest {
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+}
+
+/* The phone's cart bar, above the tab bar; hidden on a wide screen where the cart has its column. */
+.store-cartbar {
+  display: none;
+}
+@media (max-width: 1279px) {
+  .store-grid {
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 24px;
+  }
+}
+@media (max-width: 1023px) {
+  .store-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .store-side {
+    position: static;
+  }
+  .store-cart {
+    display: none;
+  }
+  .store-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .store {
+    padding-bottom: 72px;
+  }
+  .store-cartbar {
+    position: fixed;
+    z-index: 25;
+    left: 12px;
+    right: 12px;
+    bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+    display: block;
+  }
+  .store-cartbar-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 56px;
+    padding: 0 18px;
+    border: 0;
+    border-radius: var(--r-md);
+    background: var(--accent);
+    color: var(--on-accent);
+    font: inherit;
+    font-size: var(--fs-base);
+    font-weight: 600;
+    box-shadow: var(--shadow-float);
+    cursor: pointer;
+    transition: transform var(--d-press) var(--ease-out);
+  }
+  .store-cartbar-btn:active {
+    transform: var(--press);
+  }
+  .store-cartbar-btn svg {
+    width: 20px;
+    height: 20px;
+    flex: none;
+  }
+  .store-cartbar-btn strong {
+    font-size: var(--fs-lg);
+  }
+  .store-cartbar-open {
+    margin-left: auto;
+    font-size: var(--fs-sm);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+}
+@media (max-width: 559px) {
+  .store-card {
+    padding: 12px;
+  }
+  .store-card-visual {
+    margin: -12px -12px 4px;
+  }
+  .store-stock {
+    white-space: normal;
+  }
+  .qty {
+    grid-template-columns: 40px minmax(0, 1fr) 40px;
+    min-width: 0;
+  }
+  .store-search {
+    height: 56px;
+  }
+  .store-search input {
+    font-size: var(--fs-base);
+  }
+  /* All eight groups stay in view on a phone: they wrap in tighter rows instead of hiding off the edge. */
+  .store-chips {
+    gap: 6px;
+  }
+  .store-chips button {
+    padding: 0 14px;
+  }
+  .store-sort {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .store-strip p span {
+    animation: none;
+  }
+}
+
+/* Product pictures: square. A photo sits contained on a light tile in both themes; a drawn tile fills the box. */
+.product-image {
+  position: relative;
+  display: grid;
+  flex: none;
+  width: var(--size, 48px);
+  max-width: 100%;
+  aspect-ratio: 1;
+  place-items: center;
+  overflow: hidden;
+  border-radius: var(--r-md);
+  background: #fff;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.06);
+}
+.product-image img {
+  display: block;
+  width: 88%;
+  height: 88%;
+  object-fit: contain;
+}
+.product-image[data-kind="placeholder"] {
+  background: transparent;
+  box-shadow: none;
+}
+.product-image[data-kind="placeholder"] img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.store-detail-image {
+  justify-self: start;
+}

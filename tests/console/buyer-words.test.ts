@@ -86,7 +86,7 @@ describe("ruleChecklist", () => {
     const list = ruleChecklist(pendingOrder());
     expect(list).toMatchObject({ passed: 2, total: 3 });
     expect(list.rules.map((rule) => [rule.name, rule.status])).toEqual([
-      ["Offer signature", "pass"],
+      ["Price fixed by Valio Aimo", "pass"],
       ["Per-order limit", "ask"],
       ["Product match", "pass"],
     ]);
@@ -100,7 +100,7 @@ describe("stepText", () => {
     expect(callWords("place_order")).toBe("an order");
     expect(stepText("Looking for milk.")).toBe("Looking for milk.");
     expect(stepText("Offer signed by Valio Aimo: 1,600 × milk = 1,600 l, 1,834.16 EUR with VAT. Valid 15 minutes.")).toBe(
-      "Offer signed by Valio Aimo: 1,600 × milk = 1,600\u00a0l. Valid 15 minutes.",
+      "Fixed price from Valio Aimo: 1,600 × milk = 1,600\u00a0l. Valid 15 minutes.",
     );
   });
 });
@@ -115,13 +115,12 @@ describe("feedTime", () => {
 });
 
 describe("refused orders", () => {
-  it("are their own outcome, with the reason, and never count as blocked by the mandate", async () => {
-    const { orderOutcome, weekStats } = await import("@/lib/console/format/orders");
+  it("are their own outcome, with the reason, and never count as blocked by your limits", async () => {
+    const { orderLight } = await import("@/lib/console/history");
     const { blockedLine } = await import("@/lib/console/format/rules");
     const refused = pendingOrder({ status: "blocked", refusal: { code: "invalid_signature", message: "Refused: the offer signature does not verify." } });
-    expect(orderOutcome(refused)).toMatchObject({ key: "refused", label: "Refused", rule: "The offer signature does not verify." });
+    expect(orderLight(refused)).toBe("refused");
     expect(blockedLine(refused)).toBe("Refused. The offer signature does not verify.");
-    expect(weekStats([refused], Date.parse("2026-11-14T08:00:00.000Z")).blocked).toBe(0);
   });
 });
 

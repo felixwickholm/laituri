@@ -89,6 +89,10 @@ export const SearchHit = z.object({
   score: z.number(),
   matched: z.array(z.string()).describe("Why this product matched"),
   facts: ProductFacts,
+  image: z.string().optional().describe(
+    "Path of the product picture on this server, for example /products/464306.webp: a photo from the wholesaler's " +
+      "product page, or a drawn category tile under /products/placeholders/ when no photo was found",
+  ),
   offerPreview: OfferPreview.optional(),
 });
 export type SearchHit = z.infer<typeof SearchHit>;

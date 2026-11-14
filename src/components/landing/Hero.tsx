@@ -1,47 +1,54 @@
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
-import type { OrbState } from "@/lib/console/orb-params";
+import { GLOSS } from "../shell/brand-copy";
 import { TourLink } from "../tour/TourLink";
-import { HeroOrb } from "./HeroOrb";
-import { LiveCounters } from "./LiveCounters";
+import { HeroBasket } from "./HeroBasket";
 import { stagger } from "./stagger";
+import { TryExample } from "./TryExample";
 
-/**
- * The first screen: what Laituri is in two lines and one sentence, beside the agent orb running the story, and at its
- * foot the week's live figures from this visitor's own workspace.
- */
-export function Hero({ pinned }: { pinned?: OrbState }) {
+/** The challenge sheet's three promises, each in one plain line. */
+const PROOF = [
+  { word: "Safe", line: "Your agent cannot break your limits." },
+  { word: "Open", line: "Any AI agent can connect. No lock-in." },
+  { word: "Human approval", line: "A person signs what matters." },
+];
+
+/** The first screen: one line, one sub-line, one big button, and the example basket at work beside it. */
+export function Hero() {
   return (
     <section className="lp-hero" aria-labelledby="lp-title">
-      <div className="lp-hero-main">
-        <div className="lp-hero-text">
-          <h1 id="lp-title" className="lp-h1">
-            <span className="enter" style={stagger(0)}>
-              AI agents can buy from you.
-            </span>{" "}
-            <span className="lp-h1-quiet enter" style={stagger(1)}>
-              On terms a person signed.
-            </span>
-          </h1>
-          <p className="lp-lede enter" style={stagger(2)}>
-            Laituri is the open front door where a customer&apos;s own AI agent gets a signed, fixed price from Valio Aimo and
-            orders inside the limits a person signed, with every step in a log anyone can verify.
-          </p>
-          <div className="lp-actions enter" style={stagger(3)}>
-            <TourLink className="btn btn-primary big lp-cta">
-              See it in 2 minutes
-              <ArrowRight aria-hidden="true" />
-            </TourLink>
-            <Link href="/buyer" className="btn btn-quiet big">
-              Open the live demo
-            </Link>
-          </div>
+      <div className="lp-hero-text">
+        <h1 id="lp-title" className="lp-h1 enter" style={stagger(0)}>
+          <span className="lp-h1-line">Your AI agent orders.</span> <span className="lp-h1-line">You stay in control.</span>
+        </h1>
+        <p className="lp-lede enter" style={stagger(1)}>
+          Laituri is the dock where customers’ AI agents buy from Valio Aimo. Fixed prices. Your limits. Proof on every order.
+        </p>
+        <div className="lp-actions enter" style={stagger(2)}>
+          <TourLink className="btn btn-primary big lp-cta">
+            Demo walkthrough
+            <ArrowRight aria-hidden="true" />
+          </TourLink>
+          <TryExample className="btn btn-secondary big" />
+          <Link href="/buyer" className="btn btn-quiet big">
+            Try it yourself
+          </Link>
         </div>
-        <div className="lp-hero-orb enter" style={stagger(2)}>
-          <HeroOrb pinned={pinned} />
-        </div>
+        <p className="lp-gloss enter" style={stagger(3)}>
+          {GLOSS}
+        </p>
+        <ul className="lp-proof enter" style={stagger(4)}>
+          {PROOF.map((point) => (
+            <li key={point.word}>
+              <strong>{point.word}</strong>
+              <span>{point.line}</span>
+            </li>
+          ))}
+        </ul>
       </div>
-      <LiveCounters />
+      <div className="lp-hero-side enter" style={stagger(2)}>
+        <HeroBasket />
+      </div>
     </section>
   );
 }

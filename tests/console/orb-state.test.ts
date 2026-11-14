@@ -56,7 +56,7 @@ describe("orbStateFor", () => {
     const order = pendingOrder({ updatedAt: "2026-11-14T06:00:00.000Z" });
     const view = orbStateFor(snapshot({ orders: [order] }), NOW);
     expect(view.state).toBe("approval");
-    expect(view.caption).toBe("Waiting for a person: €318.00 over the limit.");
+    expect(view.caption).toBe("Waiting for the purchasing manager: €318.00 over the limit.");
     expect(view.rulesPassed).toBe(2);
     expect(view.rulesTotal).toBe(3);
     expect(view.digits).toBe(orderDigits(order));
@@ -64,7 +64,7 @@ describe("orbStateFor", () => {
 
   it("shows a just-blocked order as blocked after its check, then lets it go", () => {
     const order = { ...blockedOrder(), updatedAt: "2026-11-14T07:00:01.000Z" };
-    expect(orbStateFor(snapshot({ orders: [order] }), NOW + CHECK_MS)).toMatchObject({ state: "blocked", caption: "Blocked. Contains nuts. The mandate forbids nuts." });
+    expect(orbStateFor(snapshot({ orders: [order] }), NOW + CHECK_MS)).toMatchObject({ state: "blocked", caption: "Blocked. Contains nuts. Your limits forbid nuts." });
     expect(orbStateFor(snapshot({ orders: [order] }), NOW + 10_000).state).toBe("idle");
   });
 
@@ -76,7 +76,7 @@ describe("orbStateFor", () => {
   });
 
   it("is idle with the rules ready, and says so in words", () => {
-    expect(IDLE_CAPTION).toBe(`Idle. ${RULES_TOTAL} rules ready.`);
+    expect(IDLE_CAPTION).toBe(`Ready. It checks ${RULES_TOTAL} rules on every order.`);
   });
 
   it("says the agent is suspended while Valio Aimo's newest word on it is a suspension", () => {

@@ -4,7 +4,6 @@ import { ago, orderCount } from "@/lib/supplier-console/format";
 import type { ControlAgent } from "@/lib/supplier-console/types";
 import { Dash } from "../ui/Dash";
 import { ClientChips, StatusMark } from "./bits";
-import { OutcomeBar } from "./OutcomeBar";
 import { agentName } from "@/lib/supplier-console/names";
 
 interface AgentsTableProps {
@@ -20,22 +19,24 @@ const SKELETON_CELLS = ["cell-agent", "cell-apps", "cell-seen", "cell-calls", "c
 /** Every agent that reached Valio Aimo: who it buys for, how it connects, how busy it is and how its orders ended. */
 export function AgentsTable({ agents, now, onOpen }: AgentsTableProps) {
   return (
-    <div className="table-frame" aria-busy={agents === undefined}>
+    <div className="table-frame agents-frame" aria-busy={agents === undefined}>
       <table className="agents-table">
         <thead>
           <tr>
             <th scope="col">Agent</th>
-            <th scope="col">Client apps</th>
+            <th scope="col">Apps</th>
             <th scope="col">Last seen</th>
             <th scope="col" className="num">
               Calls
             </th>
             <th scope="col" className="num">
-              Quotes
+              Prices
             </th>
-            <th scope="col">Orders by outcome</th>
             <th scope="col" className="num">
-              Confirmed, net
+              Orders
+            </th>
+            <th scope="col" className="num">
+              Bought, net
             </th>
             <th scope="col">Status</th>
           </tr>
@@ -53,7 +54,7 @@ export function AgentsTable({ agents, now, onOpen }: AgentsTableProps) {
             ))
           ) : agents.length === 0 ? (
             <tr className="empty-row">
-              <td colSpan={8}>No agent has connected yet. Connect one from the Connect page.</td>
+              <td colSpan={8}>No agent has connected yet. Connect one on the Connect page.</td>
             </tr>
           ) : (
             agents.map((agent) => (
@@ -62,14 +63,17 @@ export function AgentsTable({ agents, now, onOpen }: AgentsTableProps) {
                   <button type="button" className="row-open" onClick={() => onOpen(agent.agent.id)}>
                     {agentName(agent.agent)}
                   </button>
-                  <span className="sub">{agent.buyer?.name ?? "No buyer named"}</span>
+                  <span className="sub">{agent.buyer?.name ?? "No customer named"}</span>
+                  <span className="apps-inline">
+                    <ClientChips clients={agent.clients} max={3} />
+                  </span>
                 </td>
                 <td className="cell-apps">
                   <ClientChips clients={agent.clients} max={4} />
                 </td>
                 <td className="cell-seen">
                   <span>{ago(agent.lastSeen, now)}</span>
-                  <span className="sub">since {day(agent.firstSeen)}</span>
+                  <span className="sub">first {day(agent.firstSeen)}</span>
                 </td>
                 <td className="cell-calls num">
                   {count(agent.calls)}
@@ -77,17 +81,17 @@ export function AgentsTable({ agents, now, onOpen }: AgentsTableProps) {
                 </td>
                 <td className="cell-quotes num">
                   {count(agent.quotes)}
-                  <span className="phone-unit"> {agent.quotes === 1 ? "quote" : "quotes"}</span>
+                  <span className="phone-unit"> {agent.quotes === 1 ? "price" : "prices"}</span>
                 </td>
-                <td className="cell-orders">
-                  <span className="orders-inline">
-                    <OutcomeBar orders={agent.orders} />
-                    <span className="num">{count(orderCount(agent.orders))}</span>
-                  </span>
+                <td className="cell-orders num">
+                  {count(orderCount(agent.orders))}
+                  <span className="phone-unit"> {orderCount(agent.orders) === 1 ? "order" : "orders"}</span>
+                  {orderCount(agent.orders) > 0 ? <span className="sub">{count(agent.orders.confirmed_auto + agent.orders.confirmed_after_approval)} confirmed</span> : null}
                 </td>
                 <td className="cell-net num">{agent.confirmedNet > 0 ? eur(agent.confirmedNet) : <Dash />}</td>
                 <td className="cell-status">
                   <StatusMark agent={agent} />
+                  <span className="sub status-seen">{ago(agent.lastSeen, now)}</span>
                 </td>
               </tr>
             ))

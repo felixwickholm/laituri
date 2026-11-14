@@ -1,7 +1,10 @@
 import { runPurchase, type PurchaseOptions, type PurchaseResult } from "@/lib/agent";
 import { runBuyerAgent } from "@/lib/agent/llm";
 import { inRun } from "@/lib/gateway/recorder";
-import { BUYER_IDS } from "@/lib/mandate";
+import { startBasket, toBasket, weeklyRequest } from "@/lib/basket";
+import { weeklyDeliverBy } from "@/lib/basket/weekly";
+import { now } from "@/lib/clock";
+import { BUYER_IDS, buyerParty } from "@/lib/mandate";
 import { newId } from "@/lib/offers/assemble";
 import { breakMandate } from "./break-mandate";
 import type { ScenarioAgent, ScenarioContext, ScenarioId, ScenarioOutcome } from "./state";
@@ -19,9 +22,13 @@ export const BREAK_MANDATE_TITLE = "Try to break the rules, five ways";
 export const TWO_KITCHENS_TITLE = "Same sentence, two kitchens";
 /**
  * Dafgårds ciabatta (471464) may contain sesame. The hotel excludes only peanut and nuts, so its order confirms;
- * the school kitchens exclude sesame even as a trace (blockMayContain), so the same order is blocked.
+ * the school kitchens exclude sesame even as a trace (blockMayContain), so the same order is blocked. The scene names
+ * that product, as the kitchen's usual one: a search by the school's own agent leaves it out and finds a sesame-free
+ * ciabatta instead, so only a named product shows the same order meeting two mandates.
  */
 export const TWO_KITCHENS_REQUEST = "10 kg of ciabatta rolls by Monday";
+const TWO_KITCHENS_PRODUCT = "471464";
+export const WEEKLY_TITLE = "The weekly order: twenty lines for Monday";
 /** The hotel speaks first, then the school kitchens. */
 const TWO_KITCHENS = [BUYER_IDS.nordicHarbour, BUYER_IDS.kaisla];
 
@@ -50,11 +57,23 @@ async function purchases(ctx: ScenarioAgent, list: Purchase[]): Promise<Scenario
   return { summary: results.map((result) => result.summary).join(" "), results };
 }
 
-/** The same words from each buyer's own agent, one run per buyer. Only the mandates differ. */
-async function sameSentence(ctx: ScenarioContext, text: string, buyerIds: string[]): Promise<ScenarioOutcome> {
+/** The same words for the same product from each buyer's own agent, one run per buyer. Only the mandates differ. */
+async function sameSentence(ctx: ScenarioContext, text: string, buyerIds: string[], productId: string): Promise<ScenarioOutcome> {
   const outcomes: ScenarioOutcome[] = [];
-  for (const buyerId of buyerIds) outcomes.push(await purchases(await ctx.agentOf(buyerId), [{ text }]));
+  for (const buyerId of buyerIds) outcomes.push(await purchases(await ctx.agentOf(buyerId), [{ text, options: { productId } }]));
   return { summary: outcomes.map((outcome) => outcome.summary).join(" "), results: outcomes.flatMap((outcome) => outcome.results) };
+}
+
+/**
+ * The primary buyer's standing weekly order, every line its own offer and order; the basket says what needs a person.
+ * The order runs once per delivery day: played again, the scene shows the basket already started.
+ */
+async function weeklyOrder(ctx: ScenarioContext): Promise<ScenarioOutcome> {
+  const buyer = ctx.agent.buyer ?? buyerParty();
+  const agent = { id: ctx.agent.id, name: ctx.agent.name, buyer, ...(ctx.agent.client ? { client: ctx.agent.client } : {}) };
+  const { done } = await startBasket(weeklyRequest(buyer.id, weeklyDeliverBy(now())), agent);
+  const basket = await done;
+  return { summary: basket ? toBasket(basket).summary : "The weekly order stopped.", results: [] };
 }
 
 export const SCENARIOS: Record<ScenarioId, Scenario> = {
@@ -76,7 +95,11 @@ export const SCENARIOS: Record<ScenarioId, Scenario> = {
   },
   "two-kitchens": {
     title: TWO_KITCHENS_TITLE,
-    run: (ctx) => sameSentence(ctx, TWO_KITCHENS_REQUEST, TWO_KITCHENS),
+    run: (ctx) => sameSentence(ctx, TWO_KITCHENS_REQUEST, TWO_KITCHENS, TWO_KITCHENS_PRODUCT),
+  },
+  weekly: {
+    title: WEEKLY_TITLE,
+    run: weeklyOrder,
   },
 };
 

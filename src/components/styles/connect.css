@@ -1,6 +1,7 @@
 /* Connect your agent (/connect). Every class starts with cx- so nothing leaks into the control room. */
 
-.cx {
+.cx,
+.cx-page {
   --cx-code-bg: #0e1726;
   --cx-code-text: #e8ecf3;
   --cx-code-muted: #9aa6ba;
@@ -8,10 +9,13 @@
   --cx-code-bad: #ff8a7a;
   --cx-code-wait: #f5c26b;
   --cx-code-line: rgba(255, 255, 255, 0.08);
+}
+.cx {
   min-height: 100dvh;
   background: var(--bg);
 }
-:root[data-theme="dark"] .cx {
+:root[data-theme="dark"] .cx,
+:root[data-theme="dark"] .cx-page {
   --cx-code-bg: #070b14;
   --cx-code-line: rgba(255, 255, 255, 0.07);
 }
@@ -36,7 +40,7 @@
 }
 .cx-tagline {
   color: var(--text-3);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   white-space: nowrap;
 }
 .cx-nav {
@@ -51,7 +55,7 @@
   padding: 0 10px;
   border-radius: var(--r-control);
   color: var(--text-2);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   font-weight: 500;
   text-decoration: none;
   white-space: nowrap;
@@ -78,12 +82,12 @@
 .cx-head p {
   margin-top: 8px;
   color: var(--text-2);
-  font-size: var(--fs-15);
+  font-size: var(--fs-base);
   line-height: 1.5;
 }
 
 .cx h2 {
-  font-size: var(--fs-18);
+  font-size: var(--fs-lg);
   line-height: 1.3;
   font-weight: 600;
   letter-spacing: -0.015em;
@@ -91,34 +95,54 @@
 .cx-sub {
   margin-top: 4px;
   color: var(--text-2);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   line-height: 1.5;
 }
+.cx-sub a {
+  color: var(--accent);
+}
 .cx-sub code {
-  font-size: var(--fs-12);
+  font-size: var(--fs-xs);
   color: var(--text-1);
   white-space: nowrap;
 }
 
-/* Cards: one tone step above the canvas and a quiet line. No shadow at rest. */
-.cx-setup,
-.cx-live,
-.cx-test,
-.cx-tools {
-  background: var(--surface-1);
-  border: 1px solid var(--line);
-  border-radius: var(--r-card);
-  padding: 24px;
+/* The verdict: the address on the left, what is live on the right. */
+.cx-verdict {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-6) var(--space-7);
+}
+.cx-verdict .mcp-address {
+  margin-top: var(--space-2);
+}
+.cx-live {
   min-width: 0;
+  padding: var(--space-5);
+  border-radius: calc(var(--r-card) - 6px);
+  background: color-mix(in srgb, var(--surface-1) 60%, transparent);
+}
+.cx-live h3 {
+  font-size: var(--fs-body);
+  font-weight: 700;
 }
 
-/* Two columns at desktop: the setup on the left, what is live on the right (the live card, then the test order). */
+/* The detail: the setup on the left, the test order on the right. */
 .cx-work {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 440px);
-  gap: 16px;
-  margin-top: 28px;
+  gap: var(--gap-card);
   align-items: start;
+}
+.cx-setup,
+.cx-test,
+.cx-tools {
+  min-width: 0;
+}
+.cx-setup {
+  display: grid;
+  gap: var(--space-5);
 }
 .cx-aside {
   display: grid;
@@ -127,29 +151,60 @@
 }
 .cx-endpoint {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 8px 16px;
+  gap: 12px;
   margin-bottom: 24px;
   padding-bottom: 24px;
   border-bottom: 1px solid var(--line);
 }
 .cx-endpoint h3 {
-  font-size: var(--fs-15);
+  font-size: var(--fs-base);
   font-weight: 600;
 }
 .cx-endpoint .cx-sub {
-  grid-column: 2;
   margin-top: 0;
+}
+
+/* The visitor's own MCP address with its key: the address and a copy button, a QR code beside it for a phone. */
+.mcp-address {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+}
+.mcp-address-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px 8px 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-control);
+  background: var(--surface-2);
+}
+.mcp-address-line code {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+  color: var(--text-1);
+  overflow-wrap: anywhere;
+}
+.qr {
+  display: block;
+  border-radius: var(--r-md);
+  box-shadow: 0 0 0 1px var(--line);
+}
+@media (max-width: 559px) {
+  .mcp-address {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: start;
+  }
 }
 
 /* The agent key: which demo buyer it acts for, the key itself, and whose workspace its calls reach. */
 .cx-key {
   display: grid;
   gap: 12px;
-  margin-bottom: 24px;
-  padding-bottom: 24px;
-  border-bottom: 1px solid var(--line);
 }
 .cx-key-head {
   display: flex;
@@ -158,12 +213,12 @@
   gap: 4px 12px;
 }
 .cx-key-head h3 {
-  font-size: var(--fs-15);
+  font-size: var(--fs-base);
   font-weight: 600;
 }
 .cx-key-agent {
   color: var(--text-2);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
 }
 /* One row of buyers; on a narrow screen it scrolls sideways instead of wrapping into a blob. */
 .segmented.cx-buyers {
@@ -172,6 +227,19 @@
   max-width: 100%;
   overflow-x: auto;
   scrollbar-width: none;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: 3px;
+}
+.segmented.cx-buyers::-webkit-scrollbar {
+  display: none;
+}
+.segmented.cx-buyers > button {
+  flex: none;
+  scroll-snap-align: start;
+}
+/* When the buyers do not fit, the edge fades so the row reads as one that scrolls sideways. */
+.segmented.cx-buyers[data-overflow="true"] {
+  mask-image: linear-gradient(90deg, #000 calc(100% - 40px), transparent);
 }
 /* A key has no spaces: on a narrow screen it breaks anywhere so the whole key stays visible. */
 .cx-key .cx-code pre {
@@ -180,14 +248,14 @@
 }
 .cx-key-note {
   color: var(--text-1);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   line-height: 1.5;
 }
 
 /* App picker */
 .cx-apps {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 8px;
 }
 .cx-app {
@@ -202,7 +270,7 @@
   border-radius: var(--r-control);
   background: var(--surface-2);
   color: var(--text-2);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   font-weight: 500;
   text-align: left;
   cursor: pointer;
@@ -241,9 +309,6 @@
   border-color: var(--accent);
   color: var(--text-1);
 }
-.cx-app[aria-selected="true"] svg {
-  color: var(--accent);
-}
 
 /* Steps */
 .cx-guide {
@@ -276,12 +341,12 @@
   border-radius: var(--r-full);
   background: var(--surface-3);
   color: var(--text-1);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   font-weight: 600;
 }
 .cx-steps p {
   color: var(--text-1);
-  font-size: var(--fs-15);
+  font-size: var(--fs-base);
   line-height: 1.5;
 }
 .cx-steps .cx-code {
@@ -292,7 +357,7 @@
   margin-top: 20px;
   padding: 12px 14px;
   border-radius: var(--r-control);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   line-height: 1.5;
 }
 .cx-note {
@@ -326,7 +391,7 @@
   padding: 12px 4px 12px 14px;
   overflow-x: auto;
   color: var(--cx-code-text);
-  font-size: var(--fs-12);
+  font-size: var(--fs-xs);
   line-height: 1.6;
   white-space: pre;
   scrollbar-width: thin;
@@ -383,7 +448,7 @@
   gap: 8px;
   margin-top: 12px;
   color: var(--text-2);
-  font-size: var(--fs-15);
+  font-size: var(--fs-base);
   font-weight: 500;
   line-height: 1.4;
 }
@@ -434,7 +499,7 @@
   border-radius: var(--r-control);
   background: var(--surface-2);
   color: var(--text-2);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   line-height: 1.5;
 }
 .cx-calls {
@@ -474,7 +539,7 @@
   grid-area: who;
   min-width: 0;
   color: var(--text-1);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   font-weight: 550;
   overflow-wrap: anywhere;
 }
@@ -482,7 +547,7 @@
   grid-area: tool;
   min-width: 0;
   color: var(--text-2);
-  font-size: var(--fs-12);
+  font-size: var(--fs-xs);
 }
 .cx-call-client {
   color: var(--text-3);
@@ -491,13 +556,13 @@
   grid-area: time;
   justify-self: end;
   color: var(--text-3);
-  font-size: var(--fs-12);
+  font-size: var(--fs-xs);
   white-space: nowrap;
 }
 .cx-status {
   grid-area: status;
   justify-self: end;
-  font-size: var(--fs-12);
+  font-size: var(--fs-xs);
   font-weight: 600;
 }
 .cx-status[data-status="ok"] {
@@ -538,7 +603,7 @@
   border: 1px solid var(--line);
   border-radius: var(--r-control);
   color: var(--text-2);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   transition:
     border-color var(--d-base) var(--ease-out),
     background-color var(--d-base) var(--ease-out),
@@ -552,7 +617,7 @@
   border-radius: var(--r-full);
   background: var(--surface-3);
   color: var(--text-2);
-  font-size: var(--fs-12);
+  font-size: var(--fs-xs);
   font-weight: 600;
 }
 .cx-stepper-mark svg {
@@ -619,7 +684,7 @@
   background: var(--cx-code-bg);
   box-shadow: inset 0 0 0 1px var(--cx-code-line);
   color: var(--cx-code-text);
-  font-size: var(--fs-12);
+  font-size: var(--fs-xs);
   line-height: 1.6;
 }
 .cx-term-idle {
@@ -674,7 +739,17 @@
 
 /* Tools table */
 .cx-tools {
-  margin-top: 16px;
+  display: grid;
+  gap: var(--space-3);
+}
+.cx-tools-more summary {
+  cursor: pointer;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+.cx-tools-more summary a {
+  color: var(--accent);
 }
 .cx-table-wrap {
   margin-top: 16px;
@@ -683,7 +758,7 @@
 .cx-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   line-height: 1.5;
 }
 .cx-table th,
@@ -696,11 +771,11 @@
 .cx-table thead th {
   padding-top: 0;
   color: var(--text-3);
-  font-size: var(--fs-12);
+  font-size: var(--fs-xs);
   font-weight: 500;
 }
 .cx-table tbody th {
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   font-weight: 500;
   color: var(--text-1);
   white-space: nowrap;
@@ -721,7 +796,7 @@
   border-radius: var(--r-full);
   background: var(--surface-2);
   color: var(--text-2);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   font-weight: 500;
 }
 .cx-access[data-tone="key"] {
@@ -733,16 +808,16 @@
   color: var(--warn);
 }
 .cx-never {
-  margin-top: 16px;
+  margin: 0;
   color: var(--text-1);
-  font-size: var(--fs-15);
+  font-size: var(--fs-base);
   font-weight: 550;
 }
 
 .cx-foot {
-  margin-top: 32px;
-  color: var(--text-3);
-  font-size: var(--fs-12);
+  margin: 0;
+  color: var(--text-2);
+  font-size: var(--fs-xs);
 }
 
 /* The shared toaster sits above the control room's dock; here there is no dock. */
@@ -776,7 +851,11 @@
   .cx-tagline {
     display: none;
   }
-  .cx-work {
+}
+/* With the sidebar, a laptop leaves too little room for two columns: the setup and the test order stack. */
+@media (max-width: 1279px) {
+  .cx-work,
+  .cx-verdict {
     grid-template-columns: minmax(0, 1fr);
   }
 }
@@ -785,11 +864,8 @@
   .cx-main {
     padding-top: 28px;
   }
-  .cx-setup,
-  .cx-live,
-  .cx-test,
-  .cx-tools {
-    padding: 18px 16px;
+  .cx-live {
+    padding: var(--space-4);
   }
   .cx-apps {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -803,11 +879,8 @@
   .cx-term {
     min-height: 120px;
   }
-  .cx-endpoint {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .cx-endpoint .cx-sub {
-    grid-column: 1;
+  .cx-top {
+    gap: 8px;
   }
   .cx-nav a {
     padding: 0 8px;
@@ -865,3 +938,7 @@
   }
 }
 
+.cx-endpoint .cx-sub code {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}

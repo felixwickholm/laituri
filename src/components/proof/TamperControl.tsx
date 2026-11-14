@@ -6,7 +6,7 @@ import { consoleStore } from "@/lib/console/store";
 import { toast } from "../ui/toast";
 
 /**
- * A demo control: change one stored entry, so the browser check can be seen failing, then put it back.
+ * A test control: change one stored entry, so the browser check can be seen failing, then put it back.
  * In production the log is restored from the last signed checkpoint; here the changed entry is put back as signed.
  */
 export function TamperControl({ broken }: { broken: boolean }) {
@@ -23,29 +23,28 @@ export function TamperControl({ broken }: { broken: boolean }) {
     }
   }
 
-  const tamper = () => act(async () => `Entry ${await consoleStore.tamper()} was changed on the server. Watch the check fail.`, "The log could not be changed.");
+  const tamper = () => act(async () => `Step ${await consoleStore.tamper()} was changed on the server. Watch the check fail.`, "The record could not be changed.");
   const restore = () =>
     act(async () => {
       await consoleStore.restoreLog();
-      return "The changed entry is back as it was signed. The log verifies again.";
-    }, "The log could not be restored.");
+      return "The step is back as it was written. The record checks out again.";
+    }, "The record could not be put back.");
 
   return (
     <div className="demo-control">
       <FlaskConical aria-hidden="true" />
       <p>
-        <strong>Try it: tamper with the log.</strong> This demo control changes one stored entry on the server, the way an attacker would. The check above
-        catches it.
+        <strong>Test the seal</strong>
       </p>
       {broken ? (
         <button type="button" className="btn btn-secondary" onClick={restore} disabled={busy}>
           <RotateCcw aria-hidden="true" />
-          {busy ? "Restoring…" : "Restore the log (demo)"}
+          {busy ? "Putting it back…" : "Put it back"}
         </button>
       ) : (
         <button type="button" className="btn btn-secondary" onClick={tamper} disabled={busy} data-tour="tamper">
           <FileWarning aria-hidden="true" />
-          {busy ? "Changing…" : "Change one entry"}
+          {busy ? "Changing…" : "Change one step"}
         </button>
       )}
     </div>

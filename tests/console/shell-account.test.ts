@@ -16,8 +16,8 @@ const PASSCODE: ConsoleSession = { ...DEMO, demo: false, mode: "passcode", opera
 
 describe("the account row", () => {
   it("names the approver on the buyer side and the operator on the Valio Aimo side, with demo access as the role", () => {
-    expect(accountFor(DEMO, "approver", "Maria Lind")).toEqual({ signedIn: true, name: "Maria Lind", role: "demo access", initials: "ML" });
-    expect(accountFor(DEMO, "operator", "Maria Lind")).toEqual({ signedIn: true, name: "Valio Aimo operator", role: "demo access", initials: "VA" });
+    expect(accountFor(DEMO, "approver", "Maria Lind")).toEqual({ signedIn: true, name: "Maria Lind", role: "Approver", initials: "ML" });
+    expect(accountFor(DEMO, "operator", "Maria Lind")).toEqual({ signedIn: true, name: "Valio Aimo operator", role: "Operator", initials: "VA" });
   });
 
   it("shows the role title after a passcode sign-in", () => {
@@ -39,7 +39,7 @@ describe("the account row", () => {
 describe("the demo menu", () => {
   it("names the engine in words and keeps the model id apart", () => {
     expect(engineChip(undefined)).toBeUndefined();
-    expect(engineChip({ status: "ok", mode: "live", agent: { engine: "scripted" } })).toEqual({ label: "Scripted demo agent" });
+    expect(engineChip({ status: "ok", mode: "live", agent: { engine: "scripted" } })).toEqual({ label: "Built-in agent" });
     expect(engineChip({ status: "ok", mode: "live", agent: { engine: "gemini", model: "gemini-2.5-flash" } })).toEqual({ label: "AI model: Gemini", model: "gemini-2.5-flash" });
     expect(engineChip({ status: "ok", mode: "live", agent: { engine: "claude" } })?.label).toBe("AI model: Claude");
   });

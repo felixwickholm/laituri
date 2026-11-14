@@ -34,6 +34,7 @@ function allChecks() {
     ...e.criteria.flatMap((c) => c.check),
     ...[...e.core, ...e.optional, ...e.problems, ...e.privacy].flatMap((r) => r.check),
     ...e.scenarios.flatMap((s) => s.check),
+    ...e.threats.flatMap((t) => t.check),
   ];
 }
 
@@ -44,6 +45,7 @@ function allPaths(): string[] {
     ...e.scenarios.flatMap((s) => s.where),
     ...[...e.simulated, ...e.notBuilt].flatMap((a) => a.where),
     ...e.production.flatMap((p) => p.where),
+    ...e.threats.flatMap((t) => t.where),
     ...allChecks().filter((c) => c.kind === "test").map((c) => c.value),
   ];
 }
@@ -52,7 +54,9 @@ function allPaths(): string[] {
 function routeFile(url: string): string | undefined {
   const pathname = new URL(url, "http://localhost").pathname;
   const dir = path.join(ROOT, "src", "app", ...pathname.split("/").filter(Boolean));
-  return ["page.tsx", "route.ts"].map((name) => path.join(dir, name)).find((file) => existsSync(file));
+  const file = ["page.tsx", "route.ts"].map((name) => path.join(dir, name)).find((candidate) => existsSync(candidate));
+  // Files in public/ are served as they are.
+  return file ?? [path.join(ROOT, "public", pathname)].find((candidate) => existsSync(candidate));
 }
 
 function markdownFiles(): string[] {
@@ -173,7 +177,7 @@ describe("README.md stays short and leads with what matters", () => {
   it("holds the agreed sections in order", () => {
     const headings = [...readme.matchAll(/^## (.+)$/gm)].map((match) => match[1]);
     expect(headings).toEqual([
-      "See it in 2 minutes",
+      "Demo walkthrough",
       "How each judging criterion is met",
       "What makes it different",
       "What stays private",

@@ -1,6 +1,21 @@
 import { z } from "zod";
 import { IsoDateTime, Money } from "./common";
 
+/** One product the buyer never wants bought, named so a person can read the list without the catalogue. */
+export const NeverBuyProduct = z.object({
+  productId: z.string().describe("Wholesaler product code"),
+  name: z.string().describe("The product's name when it was added"),
+});
+export type NeverBuyProduct = z.infer<typeof NeverBuyProduct>;
+
+/** The buyer's never-buy list: named products, and words matched against product names (for example "palm oil"). */
+export const NeverBuy = z.object({
+  products: z.array(NeverBuyProduct).max(200).describe("Hard rule: never buy these products"),
+  words: z.array(z.string().trim().min(2).max(60)).max(50).default([])
+    .describe("Hard rule: never buy a product whose name contains one of these words, in any language the catalogue names it"),
+});
+export type NeverBuy = z.infer<typeof NeverBuy>;
+
 export const SubstitutionPolicy = z.enum(["none", "like_for_like", "any_within_rules"]);
 export type SubstitutionPolicy = z.infer<typeof SubstitutionPolicy>;
 
@@ -31,6 +46,8 @@ export const Mandate = z.object({
     excludeAllergens: z.array(z.string()).describe("Hard rule: never buy products that contain these"),
     blockMayContain: z.boolean().describe("Treat 'may contain' as 'contains'"),
     requiredClaims: z.array(z.string()).describe("Hard rule: every product must carry these claims"),
+    neverBuy: NeverBuy.optional()
+      .describe("Hard rule: products and name words the agent never buys, swaps to or plans with. Absent means an empty list."),
   }),
   substitution: z.object({
     policy: SubstitutionPolicy,

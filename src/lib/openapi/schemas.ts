@@ -1,23 +1,41 @@
 import { z } from "zod";
 import {
   ApprovalDecisionRequest,
+  Basket,
+  BasketList,
+  BasketStarted,
+  CreateBasketRequest,
+  CreateHandoffRequest,
+  Handoff,
+  HandoffAnswerRequest,
+  HandoffList,
+  ResolveLineRequest,
+  WeeklyDraft,
   AuditEntry,
   AuditVerification,
   Mandate,
+  MenuPlan,
+  MenuPlanRequest,
   Money,
   Order,
+  PantryList,
   PlaceOrderRequest,
   Product,
   QuoteRequest,
   QuoteResponse,
+  Recipe,
+  RecipeList,
   SearchRequest,
   SearchResponse,
   SignedOffer,
+  SuggestionList,
   SupplierOverview,
   SuspensionRequest,
   SuspensionState,
   WorkspaceInfo,
   WorkspaceViewRequest,
+  AssistantTurnRequest,
+  AssistantTurn,
 } from "@/lib/contracts";
 import { MAX_SPEECH_CHARS } from "@/lib/voice/server";
 
@@ -99,7 +117,15 @@ export const ActivityList = z.object({ activity: z.array(ActivityItem) });
 export const Health = z.object({
   status: z.enum(["ok", "degraded"]),
   mode: z.enum(["live", "recorded"]).describe("live calls the wholesaler API; recorded replays saved responses"),
-  upstream: z.object({ ok: z.boolean(), latencyMs: z.number().optional(), error: z.string().optional() }),
+  upstream: z.object({
+    ok: z.boolean(),
+    latencyMs: z.number().optional(),
+    error: z.string().optional(),
+    calls: z.number().int().optional().describe("Requests the caller's workspace sent the price and availability APIs since start-up; cached answers are not counted"),
+    productsAsked: z.number().int().optional().describe("Product ids those requests carried. Search runs on the local product files; only a few candidates per request are asked"),
+    total: z.object({ calls: z.number().int(), productsAsked: z.number().int() }).optional().describe("The same across every workspace"),
+    catalogueSize: z.number().int().optional().describe("Products in the local catalogue, for comparison"),
+  }),
   catalog: z.object({ ready: z.boolean(), size: z.number().int() }),
   seed: z
     .object({
@@ -147,7 +173,10 @@ export const Health = z.object({
 
 export const VoiceSettings = z.object({
   tts: z.enum(["elevenlabs", "browser"]).describe("elevenlabs: POST /api/v1/voice/speech speaks; browser: use the browser's own voices"),
+  stt: z.enum(["elevenlabs", "browser"]).optional().describe("elevenlabs: POST /api/v1/voice/transcribe hears; browser: the browser's own speech recognition"),
 });
+
+export const Transcript = z.object({ text: z.string().describe("The words heard; empty when nothing was said") });
 
 export const SpeechRequest = z.object({ text: z.string().trim().min(1).max(MAX_SPEECH_CHARS).describe("The text to read aloud") });
 
@@ -191,6 +220,25 @@ export const SCHEMAS = {
   SpeechAudio,
   Problem: ProblemSchema,
   BlockedOrderProblem,
+  MenuPlanRequest,
+  MenuPlan,
+  RecipeList,
+  Recipe,
+  PantryList,
+  SuggestionList,
+  CreateBasketRequest,
+  BasketStarted,
+  Basket,
+  BasketList,
+  ResolveLineRequest,
+  WeeklyDraft,
+  CreateHandoffRequest,
+  HandoffAnswerRequest,
+  Handoff,
+  HandoffList,
+  AssistantTurnRequest,
+  AssistantTurn,
+  Transcript,
 } satisfies Record<string, z.ZodType>;
 
 export type SchemaName = keyof typeof SCHEMAS;

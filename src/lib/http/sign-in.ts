@@ -1,6 +1,9 @@
 import { createHash, timingSafeEqual } from "node:crypto";
+import { TooManyRequestsError } from "@/lib/gateway/errors";
+import { createCreationLimit, type CreationLimit } from "@/lib/workspace/creation-limit";
 import { currentWorkspace } from "@/lib/workspace/context";
 import { ForbiddenError } from "./agent";
+import { callerAddress } from "./caller";
 import type { SessionRole } from "./session-token";
 
 /**
@@ -31,6 +34,14 @@ function sameSecret(given: string, expected: string): boolean {
   return timingSafeEqual(digest(given), digest(expected));
 }
 
+/** Wrong passcodes one client address may send in ten minutes, both roles together, before it must wait. */
+export const PASSCODE_FAILURES_PER_WINDOW = 10;
+const PASSCODE_WINDOW_MS = 10 * 60_000;
+
+const holder = globalThis as typeof globalThis & { __laituriPasscodeFailures?: CreationLimit };
+const failures = () =>
+  (holder.__laituriPasscodeFailures ??= createCreationLimit({ max: () => PASSCODE_FAILURES_PER_WINDOW, windowMs: PASSCODE_WINDOW_MS }));
+
 /** Throws unless `given` signs in this role: the right passcode, or any input on an open development server. */
 export function checkPasscode(role: SessionRole, given: string | undefined): void {
   const mode = signInMode(role);
@@ -38,7 +49,17 @@ export function checkPasscode(role: SessionRole, given: string | undefined): voi
     throw new ForbiddenError(`Signing in as the ${role} is turned off: no ${PASSCODE_ENV[role]} is set on this server.`, "sign_in_unavailable");
   }
   const expected = passcode(role);
-  if (expected && !(given && sameSecret(given, expected))) throw new ForbiddenError("The passcode is not correct.", "wrong_passcode");
+  if (!expected) return;
+  // An address that sent too many wrong passcodes waits, whatever it sends now, so guessing gains nothing.
+  const address = callerAddress();
+  const admission = failures().check(address);
+  if (!admission.allowed) {
+    throw new TooManyRequestsError(`Too many wrong passcodes from this address. Try again in ${admission.retryAfterS} seconds.`, admission.retryAfterS, "too_many_attempts");
+  }
+  if (!(given && sameSecret(given, expected))) {
+    failures().admit(address);
+    throw new ForbiddenError("The passcode is not correct.", "wrong_passcode");
+  }
 }
 
 /** LAITURI_DEMO_ACCESS=off turns one-click demo access off; it is on by default. */

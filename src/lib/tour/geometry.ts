@@ -157,6 +157,27 @@ export function placeCard(targets: readonly Box[], card: Size, view: Size, edge 
   return { x: (view.w - card.w) / 2, y: view.h - card.h - edge * 1.5, side: "bottom" };
 }
 
+/** The narrowest card that still reads well beside a target. */
+export const NARROW_CARD = 260;
+
+/**
+ * The width a card may take beside the targets when none of them leaves room above or below it: the wider of the
+ * columns left and right of all targets. Undefined when neither column is at least `min` wide.
+ */
+export function besideRoom(targets: readonly Box[], view: Size, edge = 24, min = NARROW_CARD): number | undefined {
+  const all = union(targets);
+  if (!all) return undefined;
+  const room = Math.max(all.x, view.w - (all.x + all.w)) - GAP - edge;
+  return room >= min ? Math.floor(room) : undefined;
+}
+
+/** True when a card of `card` height cannot sit above or below the targets, as when a target fills the screen. */
+export function noRoomAboveOrBelow(targets: readonly Box[], card: Size, view: Size, edge = 24): boolean {
+  const all = union(targets);
+  if (!all) return false;
+  return all.y - GAP - edge < card.h && view.h - (all.y + all.h) - GAP - edge < card.h;
+}
+
 /**
  * How far to scroll so the target sits in the open part of the screen: centred above a bottom sheet on phones,
  * centred on desktop, and its top in view when it is taller than the room.

@@ -9,27 +9,27 @@ import { ReasonTag } from "./bits";
 /** Every unserved request: when, who, the buyer's own words, how much, by when, why, and what it was worth. */
 export function UnmetTable({ rows, filtered }: { rows: UnmetRequest[]; filtered: boolean }) {
   return (
-    <div className="table-frame">
+    <div className="table-frame unmet-frame">
       <table className="unmet-table">
         <thead>
           <tr>
             <th scope="col">When</th>
             <th scope="col">Buyer</th>
-            <th scope="col">The buyer&rsquo;s words</th>
+            <th scope="col">The customer&rsquo;s words</th>
             <th scope="col" className="num">
               Quantity
             </th>
             <th scope="col">Wanted by</th>
             <th scope="col">Reason</th>
             <th scope="col" className="num">
-              Est. lost net
+              Lost, net
             </th>
           </tr>
         </thead>
         <tbody>
           {rows.length === 0 ? (
             <tr className="empty-row">
-              <td colSpan={7}>{filtered ? "No unserved requests for this reason." : "Every request was served on time and in full."}</td>
+              <td colSpan={7}>{filtered ? "None for this reason." : "Every request served."}</td>
             </tr>
           ) : (
             rows.map((item) => (
@@ -39,7 +39,7 @@ export function UnmetTable({ rows, filtered }: { rows: UnmetRequest[]; filtered:
                   <span className="sub">{hourMinute(item.at)}</span>
                 </td>
                 <td className="cell-buyer">
-                  <span>{item.buyer?.name ?? "No buyer named"}</span>
+                  <span>{item.buyer?.name ?? "No customer named"}</span>
                   <span className="sub">
                     {agentName(item.agent)} · {clientName(item.client)}
                   </span>
@@ -51,8 +51,14 @@ export function UnmetTable({ rows, filtered }: { rows: UnmetRequest[]; filtered:
                   {item.concept && item.words && !item.words.toLowerCase().includes(conceptLabel(item.concept).toLowerCase()) ? (
                     <span className="sub">Read as {conceptLabel(item.concept).toLowerCase()}</span>
                   ) : null}
+                  <span className="sub compact-only">
+                    {item.buyer?.name ?? "No customer named"} · {day(item.at)} {hourMinute(item.at)}
+                  </span>
                 </td>
-                <td className="cell-qty num">{quantityText(item.quantity)}</td>
+                <td className="cell-qty num">
+                  {quantityText(item.quantity)}
+                  {item.deliverBy ? <span className="sub compact-only">by {day(item.deliverBy)}</span> : null}
+                </td>
                 <td className="cell-by">{item.deliverBy ? day(item.deliverBy) : <Dash />}</td>
                 <td className="cell-reason">
                   <ReasonTag reason={item.reason} />

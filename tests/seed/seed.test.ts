@@ -48,15 +48,19 @@ afterEach(() => {
 
 /** Each test seeds a signed week of trade through the real gateway; with every file running at once that takes a while. */
 describe.skipIf(!recorded)("seeded demo history", { timeout: 60_000 }, () => {
-  it("writes about a week of trade that verifies end to end", async () => {
+  it("writes four weeks of standing orders and a week of trade that verify end to end", async () => {
     const status = await seedIfEmpty();
-    expect(status).toMatchObject({ state: "seeded", requests: SEED_REQUESTS.length });
+    const basketLines = (await store().baskets.list()).flatMap((basket) => basket.lines).length;
+    expect(basketLines).toBeGreaterThan(40);
+    expect(status).toMatchObject({ state: "seeded", requests: SEED_REQUESTS.length + basketLines });
     expect((await verifyAuditLog()).valid).toBe(true);
 
     const requests = await store().requests.list();
     const pinned = Date.parse(process.env.LAITURI_NOW!);
-    expect(new Set(requests.map((r) => r.requestId)).size).toBe(SEED_REQUESTS.length);
-    expect(requests.every((r) => Date.parse(r.at) <= pinned && pinned - Date.parse(r.at) < WEEK_MS)).toBe(true);
+    expect(new Set(requests.map((r) => r.requestId)).size).toBe(SEED_REQUESTS.length + basketLines);
+    expect(requests.every((r) => Date.parse(r.at) <= pinned && pinned - Date.parse(r.at) < 5 * WEEK_MS)).toBe(true);
+    const thisWeek = requests.filter((r) => pinned - Date.parse(r.at) < WEEK_MS);
+    expect(thisWeek.length).toBeGreaterThanOrEqual(SEED_REQUESTS.length);
     expect(new Set(requests.map((r) => r.buyer?.id)).size).toBe(3);
     expect(new Set(requests.map((r) => r.client)).size).toBeGreaterThanOrEqual(3);
     expect(new Set(requests.map((r) => r.at.slice(0, 10))).size).toBeGreaterThanOrEqual(5);

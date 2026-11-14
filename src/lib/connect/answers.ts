@@ -49,8 +49,8 @@ export function blockedReasons(order: unknown): string[] {
 }
 
 const ORDER_WORDS: Record<string, Answer> = {
-  confirmed: { tone: "ok", summary: "Confirmed inside the mandate. Valio Aimo signed the receipt." },
-  pending_approval: { tone: "waiting", summary: "More than the mandate allows alone. Waiting for a person to approve." },
+  confirmed: { tone: "ok", summary: "Ordered inside your limits. Valio Aimo signed the receipt." },
+  pending_approval: { tone: "waiting", summary: "Needs you. A person approves it before it is ordered." },
   rejected: { tone: "blocked", summary: "A person rejected this order. Nothing was ordered." },
 };
 

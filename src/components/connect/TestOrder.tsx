@@ -37,8 +37,7 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 export function TestOrder({ deliverBy, primaryBuyerId }: { deliverBy: string; primaryBuyerId: string }) {
   const info = useWorkspace();
   const key = keyFor(info, primaryBuyerId);
-  const buyer = info?.agentKeys.find((entry) => entry.buyer.id === primaryBuyerId)?.buyer.name ?? "the demo buyer";
-  const where = info?.kind === "shared" ? "the shared workspace" : "your own demo workspace";
+  const buyer = info?.agentKeys.find((entry) => entry.buyer.id === primaryBuyerId)?.buyer.name ?? "your company";
   const [lines, setLines] = useState<Line[]>([]);
   const [active, setActive] = useState(-1);
   const [phase, setPhase] = useState<Phase>("idle");
@@ -83,12 +82,13 @@ export function TestOrder({ deliverBy, primaryBuyerId }: { deliverBy: string; pr
   };
 
   return (
-    <section className="cx-test" aria-labelledby="cx-test-title">
+    <section className="glass pad cx-test" aria-labelledby="cx-test-title">
       <div className="cx-test-side">
-        <h2 id="cx-test-title">No agent at hand?</h2>
-        <p className="cx-sub">This browser makes the same four HTTP calls an agent makes, with your agent key. They show up above.</p>
+        <h2 id="cx-test-title" className="section-title">
+          Test order
+        </h2>
         <p className="cx-sub cx-test-real">
-          It is a real order for {TEST_NEED.amount} litres, placed inside the mandate {buyer} signed, in {where}.
+          {TEST_NEED.amount} litres of milk for {buyer}.
         </p>
         <ol className="cx-stepper">
           {FLOW_STEPS.map((step, index) => (
@@ -104,7 +104,7 @@ export function TestOrder({ deliverBy, primaryBuyerId }: { deliverBy: string; pr
         <div className="cx-test-actions">
           {phase === "idle" ? (
             <button type="button" className="btn btn-primary big wide" onClick={start}>
-              Send a test order from this browser
+              Send a test order
             </button>
           ) : (
             <button type="button" className="btn btn-secondary" onClick={start} disabled={phase === "running"}>
@@ -117,7 +117,7 @@ export function TestOrder({ deliverBy, primaryBuyerId }: { deliverBy: string; pr
       <div className="cx-term" role="log" aria-live="polite" aria-label="Requests and responses">
         {lines.length === 0 ? (
           <div className="cx-term-idle">
-            <p>Requests and answers appear here.</p>
+            <p>Requests and answers</p>
             {FLOW_STEPS.map((step) => {
               const request = flowRequest(step.id, { key, deliverBy, idempotencyKey: "" });
               return (

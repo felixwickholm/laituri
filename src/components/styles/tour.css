@@ -1,13 +1,13 @@
 /*
- * The guided walkthrough: the page dimmed with a rounded cut-out around the real target, one large card,
- * and Maria's phone. The cut-out and the floating card are moved by script on transform only; everything
+ * The demo walkthrough: the page dimmed with a cut-out around the real target, one wide card with large type,
+ * and the purchasing manager's phone. The cut-out and the floating card are moved by script on transform only; everything
  * here enters on opacity and transform, and reduced motion keeps the fades without the travel.
  */
 
 /* A light scrim: the page behind stays readable as the product, and the lit target and card still lead. */
 :root {
-  --tour-dim: rgba(11, 18, 32, 0.45);
-  --tour-card-w: 460px;
+  --tour-dim: rgba(0, 45, 59, 0.45);
+  --tour-card-w: 600px;
   --tour-bezel: #0b0f17;
 }
 :root[data-theme="dark"] {
@@ -28,7 +28,7 @@
   width: 100%;
   height: 100%;
   pointer-events: none;
-  animation: tour-fade var(--d-sheet) var(--ease-out) both;
+  animation: tour-fade var(--d-base) var(--ease-out) both;
 }
 /* The dimmed area takes the clicks; the cut-out lets them through to the target. The blur softens its edge. */
 .tour-dim-fill {
@@ -38,8 +38,8 @@
 }
 .tour-ring {
   fill: none;
-  stroke: color-mix(in srgb, var(--accent) 55%, transparent);
-  stroke-width: 1.5;
+  stroke: var(--cta);
+  stroke-width: 3;
 }
 
 /* The floating card: placed by script beside, below or above the target. */
@@ -48,18 +48,22 @@
   top: 0;
   left: 0;
   width: min(var(--tour-card-w), calc(100vw - 48px));
+  max-width: var(--tour-card-room, none);
   pointer-events: auto;
   will-change: transform;
 }
 
 .tour-card {
   position: relative;
-  padding: 22px 24px 20px;
-  border-radius: var(--r-xl);
-  background: var(--surface-1);
+  padding: 20px 28px 24px;
+  border: 1px solid var(--glass-line);
+  border-radius: var(--r-card);
+  background: var(--glass-fill-strong);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
   box-shadow: var(--shadow-float);
   color: var(--text-1);
-  animation: tour-rise var(--d-sheet) var(--ease-out) both;
+  animation: tour-rise var(--d-base) var(--ease-out) both;
 }
 
 /* On the dark page the card's shadow has nothing to fall on; a hairline of light keeps its edge. */
@@ -72,20 +76,56 @@
 .tour-card-top {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin: -6px -10px 0 0;
+  gap: 16px;
+  margin: 0 -14px 0 0;
 }
 .tour-count {
+  flex: none;
   margin: 0;
   color: var(--text-2);
-  font-size: var(--fs-13);
-  line-height: 18px;
-  font-weight: 550;
+  font-size: var(--fs-base);
+  line-height: 22px;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
+}
+.tour-count-now {
+  color: var(--heading);
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: 800;
 }
 .tour-close {
   flex: none;
+  margin-left: auto;
+}
+
+/* Valio Aimo's four words for the flow, the current one lit. */
+.tour-flow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tour-flow li {
+  padding: 3px 8px;
+  border-radius: var(--r-xs);
+  background: var(--surface-3);
+  color: var(--text-3);
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  line-height: 18px;
+  letter-spacing: 0.02em;
+  transition: background-color var(--d-base) var(--ease-out), color var(--d-base) var(--ease-out);
+}
+.tour-flow li[data-state="done"] {
+  color: var(--accent);
+}
+.tour-flow li[data-state="now"] {
+  background: var(--cta);
+  color: var(--on-cta);
 }
 .tour-intro .tour-close,
 .tour-end .tour-close {
@@ -94,62 +134,25 @@
   right: 14px;
 }
 
-.tour-progress {
-  display: flex;
-  gap: 4px;
-  margin: 10px 0 0;
-  padding: 0;
-  list-style: none;
-}
-.tour-progress li {
-  position: relative;
-  flex: 1;
-  height: 4px;
-  border-radius: var(--r-full);
-  background: var(--surface-3);
-  overflow: hidden;
-}
-.tour-progress li::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: var(--accent);
-  transform: scaleX(0);
-  transform-origin: left center;
-  transition: transform var(--d-sheet) var(--ease-sheet);
-}
-.tour-progress li[data-state="done"]::after,
-.tour-progress li[data-state="now"]::after {
-  transform: scaleX(1);
-}
-.tour-progress li[data-state="done"]::after {
-  opacity: 0.45;
-}
-
 .tour-copy {
-  animation: tour-swap var(--d-base) var(--ease-out) both;
+  animation: tour-swap var(--d-fast) var(--ease-out) both;
 }
+/* The headline in the display face at 30 px (it reads like 26-28 px of a regular face), the sentence at 19 px. */
 .tour-title {
   margin: 14px 0 0;
-  font-size: var(--fs-18);
-  line-height: 26px;
-  font-weight: 600;
-  letter-spacing: -0.012em;
-  text-wrap: pretty;
-}
-.tour-title-big {
-  margin: 4px 40px 0 0;
-  font-size: var(--fs-title);
-  line-height: 36px;
-  letter-spacing: var(--track-title);
+  font-size: 30px;
+  line-height: 1.1;
   text-wrap: balance;
 }
+.tour-title-big {
+  margin: 16px 40px 0 0;
+  font-size: 44px;
+}
 .tour-detail {
-  margin: 6px 0 0;
-  color: var(--text-2);
-  font-size: var(--fs-15);
-  line-height: 22px;
+  margin: 8px 0 0;
+  color: var(--text-1);
+  font-size: 19px;
+  line-height: 1.45;
   text-wrap: pretty;
 }
 .tour-detail[data-note="true"] {
@@ -159,43 +162,26 @@
 .tour-actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px;
-  margin-top: 20px;
+  margin-top: 24px;
 }
-.tour-keys {
-  margin: 0 auto 0 0;
+.tour-working {
+  width: 20px;
+  height: 20px;
+  margin-right: auto;
   color: var(--text-3);
-  font-size: var(--fs-12);
-  line-height: 16px;
 }
 .tour-next {
-  min-width: 132px;
+  min-width: 140px;
 }
-.tour-next[aria-disabled="true"] {
-  opacity: 0.72;
-  cursor: progress;
+/* A narrow column beside a target taller than the screen: the buttons share the width. */
+.tour-float[data-narrow="true"] .tour-actions > .btn {
+  flex: 1;
+  min-width: 0;
 }
-.tour-next[aria-disabled="true"]:active {
-  transform: none;
-}
-.tour-next[data-busy="true"] {
-  background: var(--surface-3);
-  color: var(--text-1);
-}
-/* While the card is being read, Next fills from the left over the reading time, so the wait explains itself. */
-.tour-next {
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
-}
-.tour-next-fill {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: color-mix(in srgb, var(--on-accent) 24%, transparent);
-  transform: scaleX(0);
-  transform-origin: left center;
-  animation: tour-read var(--read-ms) linear forwards;
+.tour-float[data-narrow="true"] .tour-flow {
+  display: none;
 }
 
 /* The intro and the end: centred, with the page dimmed behind and no cut-out. */
@@ -214,73 +200,35 @@
   padding: 28px 28px 24px;
   pointer-events: auto;
 }
-.tour-intro .tour-detail {
-  margin-top: 10px;
-}
-.tour-intro-actions {
+.tour-intro {
   display: grid;
   justify-items: start;
-  gap: 12px;
-  margin-top: 24px;
+}
+.tour-intro .brand-mark {
+  color: var(--text-1);
 }
 .tour-start {
-  min-width: 160px;
-}
-.tour-fine {
-  margin: 0;
-  color: var(--text-3);
-  font-size: var(--fs-13);
-  line-height: 18px;
+  min-width: 200px;
+  margin-top: 28px;
 }
 .tour-error {
   margin: 14px 0 0;
   color: var(--danger);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   line-height: 18px;
 }
 
-.tour-center > .tour-end {
-  width: min(620px, 100%);
-}
-.tour-recap {
-  display: grid;
-  gap: 8px;
-  margin: 20px 0 0;
-  padding: 0;
-  list-style: none;
-}
-.tour-recap li {
-  padding: 12px 16px;
-  border-radius: var(--r-lg);
-  background: var(--surface-2);
-}
-.tour-recap p {
-  margin: 0;
-  font-size: var(--fs-15);
-  line-height: 22px;
-}
-.tour-recap .tour-criteria {
-  margin-top: 2px;
-  color: var(--text-3);
-  font-size: var(--fs-13);
-  line-height: 18px;
-}
 .tour-end-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
-  margin-top: 22px;
+  margin-top: 28px;
 }
 .tour-end-actions > :first-child {
   grid-column: 1 / -1;
 }
-.tour-end-foot {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 12px;
-}
 
-/* Maria's phone, beside the card. */
+/* The purchasing manager's phone, beside the card. */
 .tour-phone-layout {
   position: fixed;
   inset: 0;
@@ -296,13 +244,7 @@
 }
 .tour-phone-layout > .tour-float {
   position: static;
-  width: min(460px, 100%);
-}
-.tour-phone-layout .tour-keys {
-  display: none;
-}
-.tour-phone-layout .tour-actions {
-  justify-content: flex-end;
+  width: min(var(--tour-card-w), 100%);
 }
 /* The frame keeps a phone's proportions and shrinks with the window, so the whole phone is always in view. */
 .tour-phone {
@@ -314,7 +256,7 @@
   border-radius: 54px;
   background: var(--tour-bezel);
   box-shadow: var(--shadow-float);
-  animation: tour-rise-far 420ms var(--ease-out) both;
+  animation: tour-rise-far 260ms var(--ease-out) both;
 }
 :root[data-theme="dark"] .tour-phone {
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14), var(--shadow-float);
@@ -345,7 +287,7 @@
   align-items: center;
   gap: 2px;
   border-radius: var(--r-control);
-  animation: tour-rise var(--d-sheet) var(--ease-out) both;
+  animation: tour-rise var(--d-base) var(--ease-out) both;
 }
 .tour-resume-go {
   display: inline-flex;
@@ -360,7 +302,7 @@
   background: none;
   color: inherit;
   font: inherit;
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   font-weight: 550;
   cursor: pointer;
   transition: transform var(--d-press) var(--ease-out);
@@ -455,7 +397,7 @@ body:has(.tour-resume[data-dock="phone"]) main#main::after {
     width: 100%;
   }
   .tour-phone-layout > .tour-float .tour-card {
-    border-radius: var(--r-xl) var(--r-xl) 0 0;
+    border-radius: 0;
   }
 }
 
@@ -467,19 +409,28 @@ body:has(.tour-resume[data-dock="phone"]) main#main::after {
     width: 100%;
   }
   .tour-card {
-    padding: 18px 16px max(16px, env(safe-area-inset-bottom));
-    border-radius: var(--r-xl) var(--r-xl) 0 0;
+    padding: 16px 16px max(16px, env(safe-area-inset-bottom));
+    border-radius: 0;
     animation-name: tour-sheet;
     animation-timing-function: var(--ease-sheet);
   }
   .tour-card-top {
+    flex-wrap: wrap;
     margin-right: -6px;
+  }
+  .tour-flow {
+    order: 3;
+    flex-basis: 100%;
   }
   .tour-title {
     margin-top: 10px;
+    font-size: 28px;
   }
-  .tour-keys {
-    display: none;
+  .tour-title-big {
+    font-size: 36px;
+  }
+  .tour-detail {
+    font-size: 18px;
   }
   .tour-actions {
     margin-top: 16px;
@@ -499,8 +450,8 @@ body:has(.tour-resume[data-dock="phone"]) main#main::after {
   .tour-end-actions {
     grid-template-columns: 1fr;
   }
-  .tour-intro-actions {
-    justify-items: stretch;
+  .tour-start {
+    justify-self: stretch;
   }
   .tour-phone {
     width: 100%;
@@ -517,27 +468,30 @@ body:has(.tour-resume[data-dock="phone"]) main#main::after {
   .tour-phone-screen {
     border-radius: 0;
   }
-  /* Beside the phone's own page the card keeps to its sentence, so the order's lines stay in view above it. */
-  .tour-phone-layout .tour-progress {
-    display: none;
-  }
   .tour-resume[data-dock="float"] {
     left: 16px;
     bottom: max(16px, env(safe-area-inset-bottom));
   }
-}
-
-@media (pointer: coarse) {
-  .tour-keys {
+  /* Beside the phone the sheet stays short, so the phone's own buttons stay in view above it. */
+  .tour-phone-layout .tour-card {
+    padding: 10px 16px max(12px, env(safe-area-inset-bottom));
+  }
+  .tour-phone-layout .tour-flow {
     display: none;
   }
-}
-
-@keyframes tour-read {
-  to {
-    transform: scaleX(1);
+  .tour-phone-layout .tour-title {
+    margin-top: 2px;
+    font-size: 24px;
+  }
+  .tour-phone-layout .tour-detail {
+    margin-top: 4px;
+    font-size: 16px;
+  }
+  .tour-phone-layout .tour-actions {
+    margin-top: 12px;
   }
 }
+
 @keyframes tour-fade {
   from {
     opacity: 0;
@@ -574,10 +528,7 @@ body:has(.tour-resume[data-dock="phone"]) main#main::after {
   .tour-copy {
     animation-name: tour-fade;
   }
-  .tour-progress li::after {
+  .tour-flow li {
     transition: none;
-  }
-  .tour-next-fill {
-    animation: none;
   }
 }

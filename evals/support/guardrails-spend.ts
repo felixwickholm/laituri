@@ -65,5 +65,5 @@ export const SPEND_GUARDRAILS = [
   guardrail("G19", "Two simultaneous orders over the week", "one confirms, one waits", (hostile, checks) =>
     simultaneous(hostile, checks, 2, 1500)),
   guardrail("G20", "Six simultaneous orders over the week", "only what fits confirms, the rest wait", (hostile, checks) =>
-    simultaneous(hostile, checks, 6)),
+    simultaneous(hostile, checks, 6, 5000)),
 ];

@@ -2,7 +2,7 @@ import { TOOLS } from "@/lib/mcp/tools";
 import { OPERATIONS } from "@/lib/openapi/registry";
 import { suite, testsLine } from "./facts";
 import { evidence } from "./index";
-import type { Assumption, Check, Evidence, Facts, Requirement } from "./types";
+import type { Assumption, Check, Criterion, Evidence, Facts, Requirement } from "./types";
 
 /** Markdown blocks generated from the evidence source. `base` is the path from the Markdown file to the repo root. */
 
@@ -30,10 +30,10 @@ export function checkText(check: Check): string {
 const STATUS_WORD = { covered: "Covered", partly: "Partly", "not built": "Not built" } as const;
 
 /** One line of the headline numbers. */
-export function numbers(f: Facts): string {
+export function numbers(f: Facts, base = ""): string {
   const suites = f.evals.suites.map((item) => `${item.name} ${item.passed}/${item.total}`).join(", ");
   return [
-    `Measured by \`npm run evidence\` (numbers in [\`src/lib/evidence/facts.json\`](src/lib/evidence/facts.json)):`,
+    `Measured by \`npm run evidence\` (numbers in [\`src/lib/evidence/facts.json\`](${base}src/lib/evidence/facts.json)):`,
     "",
     `- ${testsLine(f)}.`,
     `- Eval suites (\`npm run eval\`, recorded data, fixed clock): ${suites}; ${f.evals.passed}/${f.evals.total} cases in all.`,
@@ -134,6 +134,12 @@ export function privacyTable(e: Evidence, base = ""): string {
   return requirementTable(e.privacy, base, "Not exposed");
 }
 
+/** The README's shorter form: the answer, the first file and the checks. Every row in full is in docs/judging.md. */
+export function privacyBrief(e: Evidence, base = ""): string {
+  const rows = e.privacy.map((r) => `| ${cell(r.quote)} | ${cell(r.answer)} | ${r.where.slice(0, 1).map((p) => pathLink(p, base)).join("")} | ${r.check.map(checkText).join("; ")} |`);
+  return ["| Not exposed | Answer | Code | Check |", "|---|---|---|---|", ...rows].join("\n");
+}
+
 /** The long form of the criteria-to-evidence map, for docs/judging.md. */
 export function judging(e: Evidence, base = "../"): string {
   const sections = e.criteria.map((c) =>
@@ -187,6 +193,63 @@ export function judging(e: Evidence, base = "../"): string {
   ].join("\n");
 }
 
+/** The paper's abstract: five sentences, every number from the facts. */
+export function paperAbstract(e: Evidence): string {
+  const f = e.facts;
+  return [
+    `${e.name} is an open front door through which a hotel's or a kitchen's own purchasing agent buys from the food-service wholesaler Valio Aimo over MCP or REST: it searches the catalogue, receives a fixed-price offer signed by the wholesaler, and orders inside a mandate the buyer signed.`,
+    `Every order is checked by ${f.mandateRules} named rules in three tiers (the agent orders alone, a named person approves, or the order is refused), and a buyer can let the agent reorder alone what it bought before while a new product waits for a person.`,
+    "When stock is short, the order cut-off has passed or delivery would be late, the wholesaler returns signed counter-offers ranked good, better and best, and in a menu plan an ingredient is swapped by its role in the recipe.",
+    "Every step is a signed entry in a hash-chained log that the buyer, the wholesaler and any outside agent can verify with the published public keys.",
+    `On recorded data with a fixed clock, ${f.evals.passed} of ${f.evals.total} eval cases and ${f.tests.passed} of ${f.tests.total} unit and integration tests pass; orders are simulated, because the challenge's mock API has no order endpoint.`,
+  ].join(" ");
+}
+
+/** One criterion in the paper: the claim, what was built, the code, how to verify it, what was measured and the limit. */
+function paperCriterion(c: Criterion, base: string): string {
+  return [
+    `### ${c.name} (${c.weight}%)`,
+    "",
+    c.claim,
+    "",
+    ...c.built.map((item) => `- ${item}`),
+    "",
+    `**Code.** ${c.where.map((p) => pathLink(p, base)).join(", ")}.`,
+    "",
+    `**Verify.** ${c.check.map(checkText).join("; ")}.`,
+    "",
+    `**Measured.** ${c.measured.join("; ")}.`,
+    "",
+    `**Known limit.** ${c.limit}`,
+  ].join("\n");
+}
+
+export function paperCriteria(e: Evidence, base = ""): string {
+  return e.criteria.map((c) => paperCriterion(c, base)).join("\n\n");
+}
+
+export function threatTable(e: Evidence, base = ""): string {
+  const rows = e.threats.map((t) => `| ${cell(t.threat)} | ${cell(t.defence)} | ${t.where.map((p) => pathLink(p, base)).join(", ")} | ${t.check.map(checkText).join(", ")} |`);
+  return ["| Threat | Defence | Code | Tried by |", "|---|---|---|---|", ...rows].join("\n");
+}
+
+export function questionList(e: Evidence): string {
+  return e.questions.map((q) => `### ${q.question}\n\n${q.answer}`).join("\n\n");
+}
+
+/** Exact steps for a reviewer with five minutes, against the live demo and a local clone. */
+export function fiveMinutes(e: Evidence): string {
+  const f = e.facts;
+  return [
+    `1. Open ${e.live}/buyer?tour=1. The demo walkthrough plays the product: the brief's milk order, a weekly basket of ${f.upstream.basketLines} lines with the reason for every line that waits or stops, a phone approval, the buyer's limits, event planning with Valio recipes, Valio Aimo's side, security and the record.`,
+    `2. Run \`curl -s -X POST ${e.live}/api/v1/workspace\`. It returns a private sandbox with one agent key per demo buyer. Then follow ${e.live}/llms.txt: search, quote, read the mandate, order.`,
+    `3. Open ${e.live}/api/v1/audit/verify. The server re-checks the hash chain and every signature; ${e.live}/.well-known/jwks.json has the keys to do it yourself.`,
+    `4. Open ${e.live}/security. Unusual actions are tried live and each is stopped, flagged and logged.`,
+    `5. Open ${e.live}/evidence or ${e.live}/evidence.json. Every criterion with its code, checks, measurements and limit.`,
+    `6. In a clone: \`npm install\`, then \`npm run eval\` (recorded data, fixed clock, no key: ${f.evals.passed}/${f.evals.total} cases) and \`npm test\`. One suite: \`npm run eval -- --suite guardrails\`.`,
+  ].join("\n");
+}
+
 /** Headline numbers for one suite, for prose. */
 export function suiteNumbers(f: Facts, id: string): string {
   const item = suite(f, id);
@@ -197,7 +260,25 @@ export function suiteNumbers(f: Facts, id: string): string {
 export function renderBlock(name: string, e: Evidence = evidence(), base = ""): string {
   switch (name) {
     case "numbers":
-      return numbers(e.facts);
+      return numbers(e.facts, base);
+    case "paper-abstract":
+      return paperAbstract(e);
+    case "paper-criteria":
+      return paperCriteria(e, base);
+    case "core":
+      return requirementTable(e.core, base, "Brief");
+    case "optional":
+      return requirementTable(e.optional, base, "Brief");
+    case "problems":
+      return requirementTable(e.problems, base, "Brief");
+    case "threats":
+      return threatTable(e, base);
+    case "questions":
+      return questionList(e);
+    case "five-minutes":
+      return fiveMinutes(e);
+    case "simulated-full":
+      return simulatedList(e, base);
     case "criteria":
       return criteriaTable(e);
     case "tools":
@@ -208,6 +289,8 @@ export function renderBlock(name: string, e: Evidence = evidence(), base = ""): 
       return scenarioTable(e, base);
     case "privacy":
       return privacyTable(e, base);
+    case "privacy-brief":
+      return privacyBrief(e, base);
     case "simulated":
       return simulatedBrief(e);
     case "production":

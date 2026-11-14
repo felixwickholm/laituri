@@ -37,24 +37,22 @@ html:has(.ph[data-embedded="true"])::-webkit-scrollbar {
 }
 .ph-buyer {
   margin: 0;
-  font-size: var(--fs-15);
+  font-size: var(--fs-base);
   line-height: 20px;
   font-weight: 600;
 }
 .ph-agent {
   margin: 0;
   color: var(--text-3);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   line-height: 18px;
 }
 
 .ph-card {
   display: grid;
   gap: 8px;
-  padding: 20px;
+  padding: 22px 20px;
   border-radius: var(--r-xl);
-  border: 1px solid var(--line);
-  background: var(--surface-1);
 }
 
 .ph-pill {
@@ -67,27 +65,32 @@ html:has(.ph[data-embedded="true"])::-webkit-scrollbar {
   border-radius: var(--r-full);
   background: var(--warn-tint);
   color: color-mix(in srgb, var(--warn) 80%, var(--text-1));
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   font-weight: 500;
 }
 .ph-reason-line {
-  margin: 6px 0 0;
-  font-size: var(--fs-18);
-  line-height: 24px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
-.ph-amount {
   margin: 0;
-  font-size: var(--fs-title);
-  line-height: 36px;
+  color: var(--text-1);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body-lg);
+  line-height: 1.4;
   font-weight: 600;
-  letter-spacing: var(--track-title);
+  letter-spacing: 0;
+}
+/* The amount is the biggest thing on the phone. */
+.ph-amount {
+  margin: 4px 0 0;
+  color: var(--heading);
+  font-family: var(--font-display);
+  font-size: var(--fs-count);
+  line-height: 1;
+  font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
 .ph-amount span {
-  color: var(--text-3);
-  font-size: var(--fs-15);
+  color: var(--text-2);
+  font-family: var(--font-sans);
+  font-size: var(--fs-base);
   font-weight: 500;
   letter-spacing: 0;
 }
@@ -103,16 +106,16 @@ html:has(.ph[data-embedded="true"])::-webkit-scrollbar {
   display: grid;
   gap: 2px;
   padding: 10px 12px;
-  background: var(--surface-2);
+  background: color-mix(in srgb, var(--surface-1) 60%, transparent);
 }
 .ph-facts dt {
-  color: var(--text-3);
-  font-size: var(--fs-13);
+  color: var(--text-2);
+  font-size: var(--fs-sm);
   line-height: 18px;
 }
 .ph-facts dd {
   margin: 0;
-  font-size: var(--fs-15);
+  font-size: var(--fs-base);
   line-height: 21px;
   overflow-wrap: anywhere;
 }
@@ -166,12 +169,12 @@ html:has(.ph[data-embedded="true"])::-webkit-scrollbar {
 .ph-fine {
   margin: 0;
   color: var(--text-3);
-  font-size: var(--fs-12);
+  font-size: var(--fs-xs);
   line-height: 18px;
   text-align: center;
 }
 .ph-inline {
-  font-size: var(--fs-12);
+  font-size: var(--fs-xs);
 }
 .ph-inline svg {
   width: 13px;
@@ -183,7 +186,7 @@ html:has(.ph[data-embedded="true"])::-webkit-scrollbar {
 .ph-error {
   margin: 0;
   color: var(--danger);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   line-height: 18px;
 }
 .ph-full {
@@ -220,7 +223,7 @@ html:has(.ph[data-embedded="true"])::-webkit-scrollbar {
 .ph-result-line {
   margin: 0;
   color: var(--text-2);
-  font-size: var(--fs-15);
+  font-size: var(--fs-base);
   line-height: 22px;
 }
 .ph-signed {
@@ -232,7 +235,7 @@ html:has(.ph[data-embedded="true"])::-webkit-scrollbar {
   border-radius: var(--r-full);
   background: var(--success-tint);
   color: var(--text-1);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   font-weight: 500;
 }
 .ph-result[data-tone="neutral"] .ph-signed {
@@ -275,7 +278,7 @@ html:has(.ph[data-embedded="true"])::-webkit-scrollbar {
 }
 .ph-empty h1 {
   margin: 0;
-  font-size: var(--fs-18);
+  font-size: var(--fs-lg);
   line-height: 24px;
   font-weight: 600;
 }
@@ -328,7 +331,7 @@ html:has(.ph[data-embedded="true"])::-webkit-scrollbar {
 .ph-checks h2,
 .ph-alts h2 {
   margin: 0;
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   line-height: 18px;
   font-weight: 600;
 }
@@ -347,7 +350,14 @@ html:has(.ph[data-embedded="true"])::-webkit-scrollbar {
   display: grid;
   gap: 2px;
   padding: 10px 12px;
-  background: var(--surface-2);
+  background: color-mix(in srgb, var(--surface-1) 60%, transparent);
+}
+.ph-met summary {
+  cursor: pointer;
+  padding: 8px 0;
+  color: var(--accent);
+  font-size: var(--fs-sm);
+  font-weight: 600;
 }
 .ph-check-head {
   display: flex;
@@ -357,10 +367,10 @@ html:has(.ph[data-embedded="true"])::-webkit-scrollbar {
 }
 .ph-check-label {
   color: var(--text-3);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
 }
 .ph-check-word {
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   font-weight: 550;
   color: var(--text-2);
 }
@@ -377,13 +387,13 @@ html:has(.ph[data-embedded="true"])::-webkit-scrollbar {
   color: var(--accent);
 }
 .ph-check-line {
-  font-size: var(--fs-15);
+  font-size: var(--fs-base);
   line-height: 21px;
   overflow-wrap: anywhere;
 }
 .ph-check-rule {
   color: var(--text-2);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   line-height: 18px;
 }
 
@@ -397,19 +407,139 @@ html:has(.ph[data-embedded="true"])::-webkit-scrollbar {
   background: var(--surface-1);
 }
 .ph-alt-what {
-  font-size: var(--fs-15);
+  font-size: var(--fs-base);
   line-height: 21px;
 }
 .ph-alt-why {
   color: var(--text-2);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   line-height: 18px;
 }
 .ph-alt-net {
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   font-weight: 550;
   font-variant-numeric: tabular-nums;
 }
 .ph-alts .ph-fine {
   text-align: left;
+}
+
+/* A basket on the phone: how many lines need you, then one card per line, the options as full-width buttons. */
+.ph-lead {
+  display: grid;
+  gap: 2px;
+  padding: 0 4px;
+}
+.ph-lead h1 {
+  margin: 0;
+  color: var(--heading);
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  line-height: 1.05;
+  font-weight: 700;
+}
+.ph-lead p {
+  margin: 0;
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+}
+.ph-stack {
+  display: grid;
+  gap: 8px;
+}
+.ph-stack-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ph-stack-count {
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+.ph-stack-card {
+  touch-action: pan-y;
+}
+.ph-line {
+  gap: 10px;
+  border-color: color-mix(in srgb, var(--warn) 35%, var(--line));
+}
+.ph-line .ph-reason-line {
+  margin: 0;
+  color: var(--heading);
+  font-family: var(--font-display);
+  font-size: var(--fs-verdict);
+  font-weight: 800;
+  line-height: 1.05;
+}
+.ph-options {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+.ph-options .btn {
+  flex-direction: column;
+  gap: 2px;
+  height: auto;
+  min-height: var(--control-h-big);
+  padding: 10px 16px;
+  white-space: normal;
+  text-align: center;
+}
+.ph-option-detail {
+  font-family: var(--font-sans);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.ph-ask {
+  justify-self: center;
+  min-height: 44px;
+}
+.ph-decided {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 0 0 0 18px;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+.ph-blocked {
+  display: grid;
+  gap: 8px;
+}
+.ph-blocked h2 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0 4px;
+  font-size: var(--fs-base);
+}
+.ph-blocked ul {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--glass-line);
+  border-radius: var(--r-card);
+  overflow: hidden;
+  list-style: none;
+}
+.ph-blocked li {
+  display: grid;
+  gap: 2px;
+  padding: 12px 14px;
+  background: var(--glass-fill);
+}
+.ph-blocked-what {
+  font-weight: 600;
+}
+.ph-blocked-why {
+  color: var(--danger);
+  font-size: var(--fs-sm);
+}
+.ph-blocked .ph-ask {
+  justify-self: start;
 }

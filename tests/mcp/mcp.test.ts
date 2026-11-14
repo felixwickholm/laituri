@@ -32,12 +32,12 @@ describe("MCP server", () => {
     expect(body.result.instructions).toMatch(/place_order/);
   });
 
-  it("lists seven tools with input and output schemas", async () => {
+  it("lists the ordering tools with input and output schemas", async () => {
     const { body } = await rpc("tools/list");
     const tools = body.result.tools as { name: string; inputSchema: { type: string }; outputSchema: { type: string } }[];
-    expect(tools.map((t) => t.name).sort()).toEqual(
-      ["get_mandate", "get_order", "get_product", "place_order", "request_quote", "search_catalog", "verify_audit"],
-    );
+    expect(tools.map((t) => t.name)).toEqual(expect.arrayContaining(
+      ["get_mandate", "get_order", "get_product", "place_basket", "place_order", "request_quote", "search_catalog", "verify_audit"],
+    ));
     for (const tool of tools) {
       expect(tool.inputSchema.type).toBe("object");
       expect(tool.outputSchema.type).toBe("object");

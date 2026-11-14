@@ -2,12 +2,13 @@ import { CircleCheck, CircleDashed, CircleX, LoaderCircle } from "lucide-react";
 import type { Buyer } from "./types";
 import { shortHash } from "@/lib/console/format/activity";
 import { CopyButton } from "../ui/CopyButton";
+import { TechDetails } from "../ui/TechDetails";
 import type { SignatureRow } from "./useOrderProof";
 
 function keyName(row: SignatureRow, buyer: Buyer): string {
-  if (row.role === "supplier") return "Valio Aimo key";
-  if (row.role === "buyer") return `${buyer.name} key`;
-  return `approver key (${buyer.approver})`;
+  if (row.role === "supplier") return "Valio Aimo’s key";
+  if (row.role === "buyer") return `${buyer.name}’s key`;
+  return `the ${buyer.approver.toLowerCase()}’s key`;
 }
 
 function stateLine(row: SignatureRow, buyer: Buyer) {
@@ -16,21 +17,21 @@ function stateLine(row: SignatureRow, buyer: Buyer) {
       return (
         <span className="sig-state tone-success">
           <CircleCheck aria-hidden="true" />
-          Verified against {keyName(row, buyer)}
+          Checked with {keyName(row, buyer)}
         </span>
       );
     case "invalid":
       return (
         <span className="sig-state tone-danger">
           <CircleX aria-hidden="true" />
-          Signature does not match{row.note ? `: ${row.note}` : ""}
+          Does not check out{row.note ? `: ${row.note}` : ""}
         </span>
       );
     case "missing":
       return (
         <span className="sig-state">
           <CircleDashed aria-hidden="true" />
-          {row.label === "Approval" ? "No person signed this order" : "Not issued for this order"}
+          {row.label === "Approval" ? "No person had to decide" : "Not issued for this order"}
         </span>
       );
     default:
@@ -43,43 +44,39 @@ function stateLine(row: SignatureRow, buyer: Buyer) {
   }
 }
 
-/** Each signature checked in this browser against the published keys. */
-export function Signatures({ rows, offerHash, buyer, simulated }: { rows: SignatureRow[]; offerHash?: string; buyer: Buyer; simulated: boolean }) {
+/** Who vouched for each part of the order, checked on this device; the raw signatures behind Technical details. */
+export function Signatures({ rows, offerHash, buyer }: { rows: SignatureRow[]; offerHash?: string; buyer: Buyer }) {
+  const hash = (value: string, copy: string, label: string) => (
+    <span className="hash-well">
+      <span className="mono">{value}</span>
+      <CopyButton value={copy} label={label} />
+    </span>
+  );
   return (
     <section className="section">
-      <h3>Signatures</h3>
-      <p className="section-note">Checked in your browser with the public keys at /.well-known/jwks.json.</p>
+      <h3>Who signed</h3>
       <ul className="sigs">
         {rows.map((row) => (
           <li key={row.label}>
             <div className="sig-head">
               <span className="sig-label">
                 {row.label}
-                {row.label === "Receipt" && simulated && row.jws ? <span className="state-word"> · Simulated order</span> : null}
               </span>
               {stateLine(row, buyer)}
             </div>
-            {row.jws ? (
-              <div className="hash-well">
-                <span className="mono">{shortHash(row.jws.split(".")[2])}</span>
-                <CopyButton value={row.jws} label={`Copy ${row.label.toLowerCase()} signature`} />
-              </div>
-            ) : null}
           </li>
         ))}
-        {offerHash ? (
-          <li>
-            <div className="sig-head">
-              <span className="sig-label">Offer hash</span>
-              <span className="sig-state">SHA-256 of the offer</span>
-            </div>
-            <div className="hash-well">
-              <span className="mono">sha256:{shortHash(offerHash)}</span>
-              <CopyButton value={offerHash} label="Copy offer hash" />
-            </div>
-          </li>
-        ) : null}
       </ul>
+      <TechDetails
+        rows={[
+          ...rows.filter((row) => row.jws).map((row) => ({
+            label: `${row.label} signature`,
+            value: hash(shortHash((row.jws ?? "").split(".")[2]), row.jws ?? "", `Copy ${row.label.toLowerCase()} signature`),
+          })),
+          ...(offerHash ? [{ label: "Offer hash", value: hash(`sha256:${shortHash(offerHash)}`, offerHash, "Copy offer hash") }] : []),
+          { label: "Public keys", value: "/.well-known/jwks.json", mono: true },
+        ]}
+      />
     </section>
   );
 }

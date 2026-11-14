@@ -1,0 +1,802 @@
+{
+  "460001": {
+    "src": "/products/460001.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/torino-10-kg-suurkeittiomakaroni/"
+  },
+  "460008": {
+    "src": "/products/460008.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/barilla-5-kg-fusilli-kuivapasta/"
+  },
+  "460027": {
+    "src": "/products/460027.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/tomaatti-es-ma-1-lk/"
+  },
+  "460065": {
+    "src": "/products/460065.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/tomaatti-1-lk-suomi/"
+  },
+  "460151": {
+    "src": "/products/460151.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/tomaatti-san-marzano-es-be/"
+  },
+  "460170": {
+    "src": "/products/460170.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/tomaatti-luumu-es-ma-nl-tn/"
+  },
+  "460172": {
+    "src": "/products/460172.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/kirsikkatomaatti-250-g-punainen-es-ma-tn/"
+  },
+  "460200": {
+    "src": "/products/460200.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/elovena-1-kg-taysjyva-kaurahiutale/"
+  },
+  "460202": {
+    "src": "/products/460202.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/punasipuli-1-kg-pss-hollanti/"
+  },
+  "460210": {
+    "src": "/products/460210.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/sipuli-makea-sweet-onion-es/"
+  },
+  "460283": {
+    "src": "/products/460283.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/punasipuli-suomi-5-kg-pussi/"
+  },
+  "460325": {
+    "src": "/products/460325.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/dansukker-siro-erikoishieno-sokeri-1-kg/"
+  },
+  "460396": {
+    "src": "/products/460396.webp",
+    "source": "https://www.valioaimo.fi/ammattilaistuotteet/valio-vapaan-lehman-rasvaton-maito-novobox/"
+  },
+  "460443": {
+    "src": "/products/460443.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/alpro-no-sugars-mantelijuoma-sokeriton-1-l/"
+  },
+  "460509": {
+    "src": "/products/460509.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/alpro-soijajuoma-1-l/"
+  },
+  "460600": {
+    "src": "/products/460600.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/myllyn-paras-lasagne-6-kg/"
+  },
+  "460643": {
+    "src": "/products/460643.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/peruna-rosamunda-pesty/"
+  },
+  "460664": {
+    "src": "/products/460664.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/nordic-sugar-neste-77-25-kg/"
+  },
+  "460708": {
+    "src": "/products/460708.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/porkkana-10-kg-sk-suomi/"
+  },
+  "460782": {
+    "src": "/products/460782.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/myllarin-vehnasirote-20-kg/"
+  },
+  "460811": {
+    "src": "/products/460811.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/porkkana-pesty-1-kg-pss-suomi/"
+  },
+  "460829": {
+    "src": "/products/460829.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/keiju-catering-kasvirasvalevite-70-400-g/"
+  },
+  "460935": {
+    "src": "/products/460935.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/dansukker-fariinisokeri-500-g/"
+  },
+  "460944": {
+    "src": "/products/460944.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/vaasan-lapin-rieskanen-peruna-72-x32-g/"
+  },
+  "461174": {
+    "src": "/products/461174.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/18-x-oatly-kaurajuoma-kalsium-25-dl/"
+  },
+  "461273": {
+    "src": "/products/461273.webp",
+    "source": "https://www.valioaimo.fi/ammattilaistuotteet/valio-kuohukerma-laktoositon-novobox/"
+  },
+  "461277": {
+    "src": "/products/461277.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/keiju-catering-margariini-60-400-g/"
+  },
+  "461329": {
+    "src": "/products/461329.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/dansukker-ruokokidesokeri-500-g/"
+  },
+  "461360": {
+    "src": "/products/461360.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/alpro-mantelijuoma-original-1-l/"
+  },
+  "461444": {
+    "src": "/products/461444.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/myllyn-paras-durumvehnajauho-20-kg/"
+  },
+  "461490": {
+    "src": "/products/461490.webp",
+    "source": "https://www.valio.fi/tuotteet/valio-keittion-kuohukerma-laktoositon/"
+  },
+  "461548": {
+    "src": "/products/461548.webp",
+    "source": "https://www.valio.fi/tuotteet/valio-kahvikerma-laktoositon/"
+  },
+  "461568": {
+    "src": "/products/461568.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/myllyn-paras-ruisjauho-1-kg/"
+  },
+  "461886": {
+    "src": "/products/461886.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/kalavapriikki-kuhafilee-suomustettu-v-leikattu/"
+  },
+  "462150": {
+    "src": "/products/462150.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/lohifilee-c-leikattu-10-kg/"
+  },
+  "462279": {
+    "src": "/products/462279.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/risella-taysjyvariisi-5-kg/"
+  },
+  "462408": {
+    "src": "/products/462408.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/soignon-levitettava-vuohenjuusto-750-g/"
+  },
+  "462421": {
+    "src": "/products/462421.webp",
+    "source": "https://www.valio.fi/tuotteet/valio-eila-laktoositon-voi/"
+  },
+  "462616": {
+    "src": "/products/462616.webp",
+    "source": "https://www.valioaimo.fi/ammattilaistuotteet/valio-edam-17-juustoviipale-2/"
+  },
+  "462626": {
+    "src": "/products/462626.webp",
+    "source": "https://www.valio.fi/tuotteet/valio-kahvimaito-laktoositon/"
+  },
+  "462744": {
+    "src": "/products/462744.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/arla-10-l-novobox-taysmaito/"
+  },
+  "462775": {
+    "src": "/products/462775.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/arla-maitojuoma-1-l-laktoositon-rasvaton-uht-suomesta/"
+  },
+  "462845": {
+    "src": "/products/462845.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/arla-pro-18-kg-laktoositon-creme-fraiche/"
+  },
+  "462921": {
+    "src": "/products/462921.webp",
+    "source": "https://www.valio.fi/tuotteet/valio-eila-luomu-kevytmaitojuoma-laktoositon/"
+  },
+  "462933": {
+    "src": "/products/462933.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/arla-10-l-novobox-kevytmaito/"
+  },
+  "463038": {
+    "src": "/products/463038.webp",
+    "source": "https://www.valioaimo.fi/ammattilaistuotteet/valio-eila-kevytmaitojuoma-novobox/"
+  },
+  "463047": {
+    "src": "/products/463047.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/arla-taysmaito-1-l-suomesta-vahalaktoosinen-uht/"
+  },
+  "463149": {
+    "src": "/products/463149.webp",
+    "source": "https://www.valio.fi/tuotteet/valio-plus-maito-rasvaton/"
+  },
+  "463171": {
+    "src": "/products/463171.webp",
+    "source": "https://www.valio.fi/tuotteet/valio-vapaan-lehman-rasvaton-maito/"
+  },
+  "463210": {
+    "src": "/products/463210.webp",
+    "source": "https://www.valioaimo.fi/ammattilaistuotteet/valio-viola-maustamaton-tuorejuusto-sanko/"
+  },
+  "463228": {
+    "src": "/products/463228.webp",
+    "source": "https://www.valioaimo.fi/ammattilaistuotteet/valio-viola-kevyt-maustamaton-tuorejuusto-sanko/"
+  },
+  "463290": {
+    "src": "/products/463290.webp",
+    "source": "https://www.valio.fi/tuotteet/valio-vapaan-lehman-ykkosmaito/"
+  },
+  "463299": {
+    "src": "/products/463299.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/millac-gold-ruoka-vispi-33-laktoositon-kasvirasvan-ja-kerman-sekoitus-uht-1-l/"
+  },
+  "463313": {
+    "src": "/products/463313.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/5-x-arla-luomu-1-l-kevytmaito/"
+  },
+  "463335": {
+    "src": "/products/463335.webp",
+    "source": "https://www.valio.fi/tuotteet/valio-eila-3-maitojuoma-laktoositon/"
+  },
+  "463359": {
+    "src": "/products/463359.webp",
+    "source": "https://www.valio.fi/tuotteet/valio-vapaan-lehman-kevytmaito/"
+  },
+  "463373": {
+    "src": "/products/463373.webp",
+    "source": "https://www.valio.fi/tuotteet/valio-rasvaton-piima/"
+  },
+  "463380": {
+    "src": "/products/463380.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/arla-cafe-maito-1-l-uht-laktoositon/"
+  },
+  "463386": {
+    "src": "/products/463386.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/nordqvist-riku-matcha-40-g-vihrea-irtotee/"
+  },
+  "463422": {
+    "src": "/products/463422.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/5-x-arla-luomu-1-l-rasvaton-maito/"
+  },
+  "463439": {
+    "src": "/products/463439.webp",
+    "source": "https://www.valio.fi/tuotteet/valio-ab-piima-asidofilus-bifidus/"
+  },
+  "463442": {
+    "src": "/products/463442.webp",
+    "source": "https://www.valioaimo.fi/ammattilaistuotteet/valio-kahvikerma/"
+  },
+  "463553": {
+    "src": "/products/463553.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/kariniemen-kananpojan-paistileike-miedosti-suolattu-2-kg/"
+  },
+  "463775": {
+    "src": "/products/463775.webp",
+    "source": "https://www.valio.fi/tuotteet/valio-plus-kevytmaito/"
+  },
+  "463779": {
+    "src": "/products/463779.webp",
+    "source": "https://www.valio.fi/tuotteet/valio-eila-kevytmaitojuoma-laktoositon-uht/"
+  },
+  "463797": {
+    "src": "/products/463797.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/arla-pro-ruokakerma-10-1-l-uht-laktoositon/"
+  },
+  "463810": {
+    "src": "/products/463810.webp",
+    "source": "https://www.valio.fi/tuotteet/valio-luomu-vanhanajan-taysmaito/"
+  },
+  "463828": {
+    "src": "/products/463828.webp",
+    "source": "https://www.valio.fi/tuotteet/valio-keittion-ruokakerma-15-laktoositon-uht/"
+  },
+  "463837": {
+    "src": "/products/463837.webp",
+    "source": "https://www.valio.fi/tuotteet/valio-keittion-vispikerma-uht-laktoositon/"
+  },
+  "463905": {
+    "src": "/products/463905.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/atria-kypsa-kanan-siipi-miedosti-suolattu-pakaste-5-kg/"
+  },
+  "463938": {
+    "src": "/products/463938.webp",
+    "source": "https://www.valio.fi/tuotteet/valio-hyva-suomalainen-arki-rasvaton-maitojuoma-rullakko/"
+  },
+  "463971": {
+    "src": "/products/463971.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/arla-pro-1-kg-cheddar-juustoviipale/"
+  },
+  "463982": {
+    "src": "/products/463982.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/kieku-vapaan-kanan-muna-l180-12300-g/"
+  },
+  "464013": {
+    "src": "/products/464013.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/alpro-no-sugars-soijajuoma-ilman-sokereita-1-l/"
+  },
+  "464042": {
+    "src": "/products/464042.webp",
+    "source": "https://www.valio.fi/tuotteet/valio-hyva-suomalainen-arki-kevytmaitojuoma-rullakko/"
+  },
+  "464047": {
+    "src": "/products/464047.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/5-x-arla-lempi-kuohukerma-luomu-2-dl/"
+  },
+  "464073": {
+    "src": "/products/464073.webp",
+    "source": "https://www.valio.fi/tuotteet/valio-taysmaito-laktoositon-uht/"
+  },
+  "464076": {
+    "src": "/products/464076.webp",
+    "source": "https://www.valioaimo.fi/ammattilaistuotteet/valio-eila-voi-laktoositon-suurpakkaus/"
+  },
+  "464094": {
+    "src": "/products/464094.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/keiju-laktoositon-kasvirasvalevite-70-600-g/"
+  },
+  "464097": {
+    "src": "/products/464097.webp",
+    "source": "https://www.valio.fi/tuotteet/valio-kevytmaito/"
+  },
+  "464119": {
+    "src": "/products/464119.webp",
+    "source": "https://www.valio.fi/tuotteet/valio-rasvaton-maito-laktoositon-uht/"
+  },
+  "464158": {
+    "src": "/products/464158.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/lv-hot-dog-briossisampyla-36-x70-g-pak/"
+  },
+  "464179": {
+    "src": "/products/464179.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/arla-10-l-novobox-suomi-laktoositon-kevytmaitojuoma-esl/"
+  },
+  "464187": {
+    "src": "/products/464187.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/keiju-rypsioljy-1-l/"
+  },
+  "464194": {
+    "src": "/products/464194.webp",
+    "source": "https://www.valioaimo.fi/ammattilaistuotteet/valio-vispikerma-laktoositon-uht/"
+  },
+  "464201": {
+    "src": "/products/464201.webp",
+    "source": "https://www.valio.fi/tuotteet/valio-kevytmaito-laktoositon-uht/"
+  },
+  "464237": {
+    "src": "/products/464237.webp",
+    "source": "https://www.valioaimo.fi/ammattilaistuotteet/valio-kahvimaito-laktoositon-uht/"
+  },
+  "464249": {
+    "src": "/products/464249.webp",
+    "source": "https://www.valioaimo.fi/ammattilaistuotteet/valio-ruokakerma-15-laktoositon-uht/"
+  },
+  "464256": {
+    "src": "/products/464256.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/kaona-100-g-25-kg-broilerin-varras-pak/"
+  },
+  "464306": {
+    "src": "/products/464306.webp",
+    "source": "https://www.valio.fi/tuotteet/valio-hyva-suomalainen-arki-eila-kevytmaitojuoma-laktoositon/"
+  },
+  "464320": {
+    "src": "/products/464320.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/oatly-ikaffe-kaurajuoma-1-l/"
+  },
+  "464399": {
+    "src": "/products/464399.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/14-x-arla-kevytmaitojuoma-2-dl-suomesta-uht-laktoositon/"
+  },
+  "464401": {
+    "src": "/products/464401.webp",
+    "source": "https://www.valio.fi/tuotteet/valio-hyva-suomalainen-arki-eila-rasvaton-maitojuoma-laktoositon/"
+  },
+  "464411": {
+    "src": "/products/464411.webp",
+    "source": "https://www.valio.fi/tuotteet/valio-voi-suolaamaton/"
+  },
+  "464473": {
+    "src": "/products/464473.webp",
+    "source": "https://www.valio.fi/tuotteet/valio-kiehu-maitojuoma-rullakko/"
+  },
+  "464490": {
+    "src": "/products/464490.webp",
+    "source": "https://www.valio.fi/tuotteet/valio-luomu-kuohukerma-lisaaineeton/"
+  },
+  "464648": {
+    "src": "/products/464648.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/trs-1-kg-kikhernejauho/"
+  },
+  "464699": {
+    "src": "/products/464699.webp",
+    "source": "https://www.valioaimo.fi/ammattilaistuotteet/valio-kuohukerma-laktoositon-luomu/"
+  },
+  "464727": {
+    "src": "/products/464727.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/arla-kuohukerma-1-l-esl-laktoositon/"
+  },
+  "464768": {
+    "src": "/products/464768.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/12-x-arla-taysmaitojuoma-1-l-uht-laktoositon/"
+  },
+  "465039": {
+    "src": "/products/465039.webp",
+    "source": "https://www.valio.fi/tuotteet/valio-eila-kevytmaitojuoma-rullakko/"
+  },
+  "465052": {
+    "src": "/products/465052.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/hf-1-kg-nahaton-kuhafile-100-300-g-iqf-ee/"
+  },
+  "465058": {
+    "src": "/products/465058.webp",
+    "source": "https://www.valioaimo.fi/ammattilaistuotteet/valio-luomu-d-vitaminoitu-rasvaton-maito-novobox/"
+  },
+  "465193": {
+    "src": "/products/465193.webp",
+    "source": "https://www.valioaimo.fi/ammattilaistuotteet/valio-suurtalous-kuohukerma/"
+  },
+  "465241": {
+    "src": "/products/465241.webp",
+    "source": "https://www.valioaimo.fi/ammattilaistuotteet/valio-juustoraasteseos-hieno/"
+  },
+  "465244": {
+    "src": "/products/465244.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/arla-5-dl-kevytmaito-suomi-esl/"
+  },
+  "465283": {
+    "src": "/products/465283.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/6-x-arla-2-dl-kevytmaito-suomesta-esl/"
+  },
+  "465765": {
+    "src": "/products/465765.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/arla-luomu-10-l-novobox-d-vitaminoitu-rasvaton-maito/"
+  },
+  "465793": {
+    "src": "/products/465793.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/alpro-barista-mantelijuoma-1-l/"
+  },
+  "466016": {
+    "src": "/products/466016.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/alpro-barista-kookosjuoma-soijalla-1-l/"
+  },
+  "466090": {
+    "src": "/products/466090.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/keiju-catering-margariini-60-25-kg/"
+  },
+  "466238": {
+    "src": "/products/466238.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/5-x-arla-cafe-1-l-10-laktoositon-kerma/"
+  },
+  "466608": {
+    "src": "/products/466608.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/apetit-rapsioljy-10-l/"
+  },
+  "466983": {
+    "src": "/products/466983.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/fazer-kaurahiutale-10-kg/"
+  },
+  "467012": {
+    "src": "/products/467012.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/illy-jauhettu-kofeiiniton-espressokahvi-250-g/"
+  },
+  "467142": {
+    "src": "/products/467142.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/rama-professional-kuohu-30-laktositoon-1-l/"
+  },
+  "467169": {
+    "src": "/products/467169.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/14-x-arla-vispikerma-laktoositon-2-dl-uht-suomi/"
+  },
+  "467297": {
+    "src": "/products/467297.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/rama-professional-laktoositon-ruoka-15-1-l/"
+  },
+  "467464": {
+    "src": "/products/467464.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/kieku-vapaan-kanan-muna-irto-s90-4320-g/"
+  },
+  "467676": {
+    "src": "/products/467676.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/kieku-vapaan-kanan-muna-m10/"
+  },
+  "467728": {
+    "src": "/products/467728.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/castelli-1-kg-kuiva-juustoraaste/"
+  },
+  "467747": {
+    "src": "/products/467747.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/elovena-500-g-gluteeniton-iso-taysjyvakaurahiutale/"
+  },
+  "467880": {
+    "src": "/products/467880.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/kieku-vapaan-kanan-muna-l15-1020-g/"
+  },
+  "468232": {
+    "src": "/products/468232.webp",
+    "source": "https://www.valioaimo.fi/ammattilaistuotteet/valio-burgerviipale-cheddar/"
+  },
+  "468245": {
+    "src": "/products/468245.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/turskanselkafilee-feldts-msc-80-130-g-5-kg/"
+  },
+  "468257": {
+    "src": "/products/468257.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/castelli-mascarpone-tuorejuusto-2-kg/"
+  },
+  "468319": {
+    "src": "/products/468319.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/oatly-ikaffe-05-l/"
+  },
+  "468389": {
+    "src": "/products/468389.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/fazer-alku-kaurahiutale-900-g/"
+  },
+  "468423": {
+    "src": "/products/468423.webp",
+    "source": "https://www.valioaimo.fi/ammattilaistuotteet/valio-cheddar-juustoraaste/"
+  },
+  "468465": {
+    "src": "/products/468465.webp",
+    "source": "https://www.valio.fi/tuotteet/oddlygood-kaurajuoma/"
+  },
+  "468994": {
+    "src": "/products/468994.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/nescafe-gold-100-g-kofeiiniton-pikakahvi/"
+  },
+  "469013": {
+    "src": "/products/469013.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/atria-kanan-rintafilee-siipiluulla-tilaljaljitettava-n3-kg/"
+  },
+  "469027": {
+    "src": "/products/469027.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/nescafe-original-180-g-pikakahvi-tayttopussi/"
+  },
+  "469153": {
+    "src": "/products/469153.webp",
+    "source": "https://www.valioaimo.fi/ammattilaistuotteet/valio-vapaan-lehman-kevytmaito-novobox/"
+  },
+  "469162": {
+    "src": "/products/469162.webp",
+    "source": "https://www.valioaimo.fi/ammattilaistuotteet/valio-ruoka-15/"
+  },
+  "469175": {
+    "src": "/products/469175.webp",
+    "source": "https://www.valioaimo.fi/ammattilaistuotteet/oddlygood-dream-fraiche/"
+  },
+  "469181": {
+    "src": "/products/469181.webp",
+    "source": "https://www.valioaimo.fi/ammattilaistuotteet/valio-taysmaito-novobox/"
+  },
+  "469192": {
+    "src": "/products/469192.webp",
+    "source": "https://www.valio.fi/tuotteet/valio-luomu-d-vitaminoitu-rasvaton-maito/"
+  },
+  "469270": {
+    "src": "/products/469270.webp",
+    "source": "https://www.valioaimo.fi/ammattilaistuotteet/valio-maustamaton-tuorejuusto-sanko/"
+  },
+  "469330": {
+    "src": "/products/469330.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/5-x-arla-1-l-laktoositon-kevytmaitojuoma-suomesta-esl/"
+  },
+  "469337": {
+    "src": "/products/469337.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/5-x-arla-rasvaton-maito-1-l-suomi-esl/"
+  },
+  "469346": {
+    "src": "/products/469346.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/arla-pro-vispikerma-1-l-uht-laktoositon/"
+  },
+  "469363": {
+    "src": "/products/469363.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/arla-kevytmaitojuoma-1-l-uht-laktoositon-suomesta/"
+  },
+  "469386": {
+    "src": "/products/469386.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/5-x-arla-laktoositon-rasvaton-maitojuoma-1-l-suomi-esl/"
+  },
+  "469401": {
+    "src": "/products/469401.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/5-x-arla-taysmaito-1-l-suomi-esl/"
+  },
+  "469477": {
+    "src": "/products/469477.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/valio-rasvaton-maito-1-l-esl/"
+  },
+  "469512": {
+    "src": "/products/469512.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/80-x-8-x-elovena-1-l-kaurajuoma-kahviin/"
+  },
+  "469519": {
+    "src": "/products/469519.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/5-x-arla-1-l-kevytmaito-suomi-esl/"
+  },
+  "469541": {
+    "src": "/products/469541.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/12-x-arla-kevytmaito-1-l-suomi-vahalaktoosinen-uht/"
+  },
+  "469549": {
+    "src": "/products/469549.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/valio-kevytmaito-1-l-esl/"
+  },
+  "469672": {
+    "src": "/products/469672.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/kalavapriikki-asc-lohifileepala-pintasavustettu-10-x170-g-pakaste/"
+  },
+  "469836": {
+    "src": "/products/469836.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/seiti-selkafile-feldts-blue-msc-5-kg/"
+  },
+  "470418": {
+    "src": "/products/470418.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/snellman-kunnon-naudan-jauheliha-17-2-kg/"
+  },
+  "470569": {
+    "src": "/products/470569.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/lipton-musta-tee-yellow-label-horeca/"
+  },
+  "470863": {
+    "src": "/products/470863.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/oatly-kaurajuoma-kevyt-1-l/"
+  },
+  "470889": {
+    "src": "/products/470889.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/oatly-kaurajuoma-taytelainen-1-l/"
+  },
+  "471208": {
+    "src": "/products/471208.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/casa-milo-5-kg-fusilli/"
+  },
+  "471424": {
+    "src": "/products/471424.webp",
+    "source": "https://www.valio.fi/tuotteet/oddlygood-barista-kaurajuoma-uht-hasselpahkina/"
+  },
+  "471426": {
+    "src": "/products/471426.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/lipton-2-gx25-pss-earl-grey-horeca/"
+  },
+  "471464": {
+    "src": "/products/471464.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/dafgards-ciabatta-58-g/"
+  },
+  "471490": {
+    "src": "/products/471490.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/rapsona-long-life-10-l-syvapaistooljy/"
+  },
+  "471555": {
+    "src": "/products/471555.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/kalavapriikki-n2-kg-lohifilee-c-leikattu-vakuumi-pakaste/"
+  },
+  "471690": {
+    "src": "/products/471690.webp",
+    "source": "https://www.valio.fi/tuotteet/oddlygood-barista-kaurajuoma-delight-uht-gluteeniton/"
+  },
+  "471694": {
+    "src": "/products/471694.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/10-x-elovena-25-dl-kaurajuoma-kahviin/"
+  },
+  "471792": {
+    "src": "/products/471792.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/eleplant-kasvivoimaa-leivalle-ruoanlaittoon-ja-leivontaan-500-g/"
+  },
+  "472145": {
+    "src": "/products/472145.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/oatly-no-sugars-kaurajuoma-15-rasvaa-1-l/"
+  },
+  "472270": {
+    "src": "/products/472270.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/oatly-ikaffe-kaurajuoma-20-ml-x-100/"
+  },
+  "472598": {
+    "src": "/products/472598.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/fazer-aito-kaurajuoma-barista-1-l-uht/"
+  },
+  "472833": {
+    "src": "/products/472833.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/fazer-aito-kaurajuoma-1-l-uht/"
+  },
+  "473121": {
+    "src": "/products/473121.webp",
+    "source": "https://www.valioaimo.fi/ammattilaistuotteet/valio-pehmea-maitorahka-sanko-2/"
+  },
+  "473142": {
+    "src": "/products/473142.webp",
+    "source": "https://www.valio.fi/tuotteet/valio-kahvimaitojuoma-vanilja-laktoositon/"
+  },
+  "473233": {
+    "src": "/products/473233.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/sevan-jasmiiniriisi-5-kg/"
+  },
+  "473278": {
+    "src": "/products/473278.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/oatly-ikaffe-kaurajuoma-15-l/"
+  },
+  "473424": {
+    "src": "/products/473424.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/alpro-riisijuoma-1-l/"
+  },
+  "473485": {
+    "src": "/products/473485.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/oatly-ikaffe-light-1-l/"
+  },
+  "473775": {
+    "src": "/products/473775.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/gohar-5-kg-jasmiiniriisi/"
+  },
+  "473847": {
+    "src": "/products/473847.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/president-sokeroitu-kermavaahto-spray-250-g/"
+  },
+  "474156": {
+    "src": "/products/474156.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/grandor-comte-juusto-45-n-1-kg/"
+  },
+  "474206": {
+    "src": "/products/474206.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/president-sokeroimaton-kermavaahto-spray-250-g/"
+  },
+  "474929": {
+    "src": "/products/474929.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/fazer-aito-proteiinikaurajuoma-salted-caramel-25-dlx12/"
+  },
+  "475224": {
+    "src": "/products/475224.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/fazer-aito-professional-barista-kaurajuoma-gluteeniton-1-l-uht/"
+  },
+  "476025": {
+    "src": "/products/476025.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/scotti-5-kg-pitkariisi-parboiled-oro/"
+  },
+  "476240": {
+    "src": "/products/476240.webp",
+    "source": "https://www.valio.fi/tuotteet/valio-eila-rasvaton-maitojuoma-rullakko/"
+  },
+  "476548": {
+    "src": "/products/476548.webp",
+    "source": "https://www.valioaimo.fi/ammattilaistuotteet/valio-kermaviili-sanko/"
+  },
+  "476612": {
+    "src": "/products/476612.webp",
+    "source": "https://www.valio.fi/tuotteet/valio-luomu-kevytmaito/"
+  },
+  "476679": {
+    "src": "/products/476679.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/arla-10-l-novobox-rasvaton-maito/"
+  },
+  "476686": {
+    "src": "/products/476686.webp",
+    "source": "https://www.valio.fi/tuotteet/valiojogurtti-banaani-laktoositon/"
+  },
+  "476753": {
+    "src": "/products/476753.webp",
+    "source": "https://www.valioaimo.fi/ammattilaistuotteet/valio-juustoraasteseos/"
+  },
+  "476771": {
+    "src": "/products/476771.webp",
+    "source": "https://www.valio.fi/tuotteet/valio-luomu-rasvaton-maito/"
+  },
+  "476775": {
+    "src": "/products/476775.webp",
+    "source": "https://www.valio.fi/tuotteet/valiojogurtti-hedelmapommi-laktoositon/"
+  },
+  "476797": {
+    "src": "/products/476797.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/5-x-arla-1-l-rasvaton-maito-suomesta/"
+  },
+  "476824": {
+    "src": "/products/476824.webp",
+    "source": "https://www.valio.fi/tuotteet/valio-a-luonnonjogurtti-laktoositon/"
+  },
+  "476844": {
+    "src": "/products/476844.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/5-x-arla-taysmaito-1-l-suomesta/"
+  },
+  "476856": {
+    "src": "/products/476856.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/5-x-arla-1-maito-1-l-suomesta/"
+  },
+  "476890": {
+    "src": "/products/476890.webp",
+    "source": "https://www.valioaimo.fi/ammattilaistuotteet/valio-smetana-sanko/"
+  },
+  "476927": {
+    "src": "/products/476927.webp",
+    "source": "https://www.valioaimo.fi/toimitustukku/5-x-arla-1-l-kevytmaito-suomesta/"
+  },
+  "476957": {
+    "src": "/products/476957.webp",
+    "source": "https://www.valio.fi/tuotteet/valio-gefilus-ab-piima-1-rasvaa/"
+  },
+  "477044": {
+    "src": "/products/477044.webp",
+    "source": "https://www.valioaimo.fi/ammattilaistuotteet/valio-maitorahka-sanko/"
+  },
+  "477050": {
+    "src": "/products/477050.webp",
+    "source": "https://www.valio.fi/tuotteet/valio-eila-laktoositon-piima/"
+  },
+  "477086": {
+    "src": "/products/477086.webp",
+    "source": "https://www.valio.fi/tuotteet/valio-keittion-maitorahka-laktoositon/"
+  }
+}

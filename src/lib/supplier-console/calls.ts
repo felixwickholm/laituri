@@ -42,12 +42,12 @@ function quoteOutcome(detail: string | undefined): string | undefined {
 
 const ORDER_WORDS: Record<Activity["status"], string> = {
   ok: "Order confirmed",
-  waiting: "Order held for approval",
-  blocked: "Order blocked by the buyer's rules",
+  waiting: "Order waits for the customer",
+  blocked: "Order blocked by the customer's rules",
   error: "Order refused",
 };
 
-/** "Quote · 200 l Arki Eila lactose-free milk 1 l · €220.00", "Order held for approval · €1,616.00", "Search · vegan feta". */
+/** "Price · 200 l Arki Eila lactose-free milk 1 l · €220.00", "Order waits for the customer · €1,616.00", "Search · vegan feta". */
 export function callLine(call: Activity, nets: Map<string, number>): CallLine {
   const tone: CallLine["tone"] = call.status === "waiting" ? "waiting" : call.status === "blocked" || call.status === "error" ? "danger" : "neutral";
   const join = (...parts: (string | undefined)[]) => parts.filter(Boolean).join(" · ");
@@ -58,7 +58,7 @@ export function callLine(call: Activity, nets: Map<string, number>): CallLine {
   }
   if (call.tool === "request_quote") {
     const match = call.title.match(QUOTE);
-    if (match) return { tone, sentence: join("Quote", `${match[1]} ${productWords(match[2])}`, quoteOutcome(call.detail)) };
+    if (match) return { tone, sentence: join("Price", `${match[1]} ${productWords(match[2])}`, quoteOutcome(call.detail)) };
   }
   if (call.tool === "place_order" && ORDER.test(call.title)) {
     const net = (call.refs?.offerId && nets.get(call.refs.offerId)) || parseEur(call.detail);

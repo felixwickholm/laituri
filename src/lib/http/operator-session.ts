@@ -1,4 +1,5 @@
 import { appendAudit } from "@/lib/audit";
+import { presentedCredential } from "./credential";
 import { hasStatus } from "@/lib/gateway/errors";
 import type { Operator } from "@/lib/gateway/types";
 import { ISSUER } from "@/lib/offers/assemble";
@@ -55,7 +56,7 @@ export async function guardOperator(headers: Headers, agentId: string): Promise<
   try {
     return await requireOperator(headers);
   } catch (error) {
-    if (hasStatus(error, 403)) {
+    if (hasStatus(error, 403) && (await presentedCredential(headers))) {
       const byAgent = bearerToken(headers) !== undefined;
       const who = byAgent ? DEMO_AGENT_NAME : "A caller without an operator session";
       await appendAudit({

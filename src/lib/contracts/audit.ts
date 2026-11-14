@@ -16,6 +16,10 @@ export const AuditEvent = z.enum([
   "approval.rejected",
   "mandate.updated",
   "access.refused",
+  "basket.started",
+  "basket.line_resolved",
+  "handoff.requested",
+  "handoff.answered",
 ]);
 export type AuditEvent = z.infer<typeof AuditEvent>;
 

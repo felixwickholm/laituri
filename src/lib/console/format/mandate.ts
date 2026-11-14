@@ -43,9 +43,43 @@ export const ALLERGEN_RULES: Record<string, string> = {
   sulphites: "No sulphites",
 };
 
+/** The 14 allergens EU law makes every food label name (Regulation 1169/2011, Annex II), as the catalogue ids them. */
+export const EU_ALLERGENS: { id: string; label: string }[] = [
+  { id: "gluten", label: "Gluten" },
+  { id: "crustaceans", label: "Crustaceans" },
+  { id: "egg", label: "Egg" },
+  { id: "fish", label: "Fish" },
+  { id: "peanut", label: "Peanuts" },
+  { id: "soy", label: "Soy" },
+  { id: "milk", label: "Milk" },
+  { id: "nuts", label: "Nuts" },
+  { id: "celery", label: "Celery" },
+  { id: "mustard", label: "Mustard" },
+  { id: "sesame", label: "Sesame" },
+  { id: "sulphites", label: "Sulphites" },
+  { id: "lupin", label: "Lupin" },
+  { id: "molluscs", label: "Molluscs" },
+];
+
+/** Labels a kitchen can require of every product: the claims the catalogue carries on enough products to buy from. */
+export const KITCHEN_LABELS: { id: string; label: string }[] = [
+  { id: "vegan", label: "Vegan" },
+  { id: "vegetarian", label: "Vegetarian" },
+  { id: "lactose_free", label: "Lactose-free" },
+  { id: "low_lactose", label: "Low-lactose" },
+  { id: "gluten_free", label: "Gluten-free" },
+  { id: "egg_free", label: "Egg-free" },
+  { id: "soy_free", label: "Soy-free" },
+  { id: "organic", label: "Organic" },
+];
+
+export function kitchenLabel(id: string): string {
+  return KITCHEN_LABELS.find((item) => item.id === id)?.label ?? id.replace(/_/g, " ");
+}
+
 export const SUBSTITUTION_OPTIONS: { value: SubstitutionPolicy; label: string }[] = [
   { value: "none", label: "Never" },
-  { value: "like_for_like", label: "Same product, other brand" },
+  { value: "like_for_like", label: "Same kind" },
   { value: "any_within_rules", label: "Any within rules" },
 ];
 

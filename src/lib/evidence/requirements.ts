@@ -1,3 +1,4 @@
+import { count } from "@/lib/offers/format";
 import type { Facts, Requirement, Scenario } from "./types";
 
 /** "Core – your solution must enable", in the brief's order and words. */
@@ -67,9 +68,9 @@ export function problems(f: Facts): Requirement[] {
     {
       quote: "Guardrails model: which decisions require human sign-off (spend threshold, substitutions outside stated preferences) vs. fully autonomous.",
       status: "covered",
-      answer: `Spend per order and per week, category, allergens and claims, substitution policy and price cap, partial and late delivery, match confidence and first-time products: ${f.mandateRules} rules, each with a defined tier.`,
+      answer: `Spend per order and per week, category, allergens and claims, substitution policy and price cap, partial and late delivery, match confidence, the buyer's own words, first-time products and a never-buy list: ${f.mandateRules} rules, each with a defined tier. With the history rule on, a product bought before is reordered alone inside the limits and a new product waits for a person.`,
       where: ["src/lib/policy/rules/spend.ts", "src/lib/policy/rules/fulfilment.ts", "src/lib/policy/rules/products.ts", "src/lib/policy/rules/trust.ts"],
-      check: [{ kind: "command", value: "npm run eval -- --suite guardrails" }, { kind: "test", value: "tests/policy/evaluate.test.ts" }],
+      check: [{ kind: "command", value: "npm run eval -- --suite guardrails" }, { kind: "test", value: "tests/policy/evaluate.test.ts" }, { kind: "test", value: "tests/policy/never-buy.test.ts" }],
     },
     {
       quote: "Response logic: how an agent handles partial availability and substitution ranking (\"good-better-best\") within Valio Aimo's own assortment.",
@@ -89,8 +90,18 @@ export function problems(f: Facts): Requirement[] {
 }
 
 /** The brief's question ends "without exposing real systems, confidential data or the marketplace roadmap". */
-export function privacy(): Requirement[] {
+export function privacy(f: Facts): Requirement[] {
+  const { upstream: u } = f;
   return [
+    {
+      quote: "Query the APIs only when needed, never for all products",
+      status: "covered",
+      answer:
+        `Search runs on the product files \`npm run setup\` downloads once. Price and stock are asked for at most ${u.searchCap} hits per search and ${u.quoteLineCap} ids per quoted line, cached for a minute: ` +
+        `a ${u.basketLines}-line weekly order asks about ${count(u.basketProductsAsked)} of ${count(u.catalogueSize)} products in ${u.basketCalls} requests. /api/v1/health counts them.`,
+      where: ["src/lib/valio/budget.ts", "src/lib/basket/prefetch.ts"],
+      check: [{ kind: "test", value: "tests/basket/upstream.test.ts" }],
+    },
     {
       quote: "Real systems",
       status: "covered",
@@ -128,50 +139,64 @@ export function scenarios(): Scenario[] {
     {
       name: "Need → recipe → order",
       quote: "a chef plans next week's menu around a seasonal ingredient. The agent suggests recipes, works out what's missing from stock, and places the order.",
-      status: "not built",
-      note: "No recipe model and no kitchen stock data. The ordering step at the end is what Laituri provides.",
-      where: [],
-      check: [],
+      status: "covered",
+      note:
+        "POST /api/v1/menus/plan (MCP plan_menu) reads the event in English or Finnish and returns three menus from Valio's professional recipes (our own as a fallback), scaled to the guests, " +
+        "with a shopping list net of the kitchen's stock and indicative prices for the delivery date; the chosen list is ordered as one basket of signed offers. " +
+        "The seasonal starting point is the wholesaler's suggestion or a Valio recipe for the season. The kitchen's stock is demo data.",
+      where: ["src/lib/menu/plan.ts", "src/lib/recipes/valio/index.ts", "src/lib/menu/shopping.ts", "src/lib/pantry/index.ts"],
+      check: [{ kind: "eval", value: "M1" }, { kind: "test", value: "tests/menu/plan.test.ts" }],
     },
     {
       name: "Last-minute event",
       quote: "an unexpected booking for tomorrow. The agent identifies what the recipes require, flags what can't be sourced in time, and proposes substitutions through recipe logic rather than a simple SKU swap.",
-      status: "partly",
-      note: "\"By tomorrow\" requests, passed order cut-offs and late dates are flagged with signed on-time alternatives. No recipe logic: alternatives are like for like.",
-      where: ["src/lib/policy/rules/fulfilment.ts", "src/lib/offers/alternatives.ts"],
-      check: [{ kind: "eval", value: "6" }, { kind: "eval", value: "13" }],
+      status: "covered",
+      note:
+        "For an event tomorrow the plan flags every line that cannot arrive in time or is past its cut-off, and swaps by the ingredient's role in the recipe, " +
+        "first to what the kitchen already has, then to a catalogue product that can come, each swap with its reason. Single orders still get signed on-time alternatives.",
+      where: ["src/lib/menu/shopping.ts", "src/lib/recipes/roles.ts", "src/lib/offers/alternatives.ts"],
+      check: [{ kind: "eval", value: "M2" }, { kind: "eval", value: "13" }],
     },
     {
       name: "Supplier stock-out",
       quote: "a key product runs out mid-week. The agent proposes a recipe-compatible substitute before the kitchen notices the gap, and explains the trade-off.",
       status: "partly",
-      note: "Short stock returns a signed split or substitute with a one-sentence trade-off. It answers at quote time, not before the kitchen asks, and substitutes are like for like rather than recipe-compatible.",
-      where: ["src/lib/offers/alternatives.ts"],
-      check: [{ kind: "eval", value: "5" }],
+      note:
+        "In a menu, a product that is short or out of stock for the date is replaced by a recipe-role swap with its trade-off (\"Oat fraiche works in this sauce. The taste is a little lighter.\"). " +
+        "A single order gets a signed split or like-for-like substitute. Nothing watches stock between orders, so the swap comes when the kitchen plans or orders, not before.",
+      where: ["src/lib/menu/shopping.ts", "src/lib/recipes/roles.ts", "src/lib/offers/alternatives.ts"],
+      check: [{ kind: "test", value: "tests/menu/swaps.test.ts" }, { kind: "eval", value: "5" }],
     },
     {
       name: "Proactive selling agent",
       quote: "Valio Aimo's own agent spots a new or seasonal product and proactively suggests it to the buyer's agent.",
-      status: "not built",
-      note: "The wholesaler side shows unmet demand (what agents asked for and could not get), which such an agent would start from. Nothing is pushed to buyers' agents.",
-      where: ["src/lib/insights/requests.ts", "src/app/valio/demand/page.tsx"],
-      check: [{ kind: "url", value: "/valio/demand" }],
+      status: "partly",
+      note:
+        "GET /api/v1/suggestions carries one seasonal proposal from Valio Aimo that fits what the kitchen buys and its mandate allows; the buyer's agent may only show it to a person. " +
+        "The season list is our assumption: the product data has no season or launch flag.",
+      where: ["src/lib/suggestions/seasonal.ts", "src/lib/suggestions/build.ts"],
+      check: [{ kind: "test", value: "tests/suggestions/suggestions.test.ts" }],
     },
     {
       name: "Allergen-safe substitution under pressure",
       quote: "in a school or hospital kitchen, a substitution must still satisfy strict allergen and nutrition rules.",
       status: "partly",
-      note: "The school kitchens' mandate excludes peanut, nuts and sesame, also as traces, and every line, substitutes included, is checked. Missing allergen data blocks the line. Nutrition rules are not modelled.",
-      where: ["src/lib/policy/rules/products.ts", "src/lib/mandate/defaults.ts"],
-      check: [{ kind: "eval", value: "9b" }, { kind: "test", value: "tests/demo/two-kitchens.test.ts" }],
+      note:
+        "The school kitchens' mandate excludes peanut, nuts and sesame, also as traces. Menus and their swaps meet it and every guest need, traces included; " +
+        "a dish with no safe swap is left out with the reason, and every order line is checked again. " +
+        "A basket line blocked for an allergen offers a product of the same kind that passes every never rule, and the person's choice is ordered and checked like any order. Nutrition rules are not modelled.",
+      where: ["src/lib/menu/dietary.ts", "src/lib/menu/adapt.ts", "src/lib/basket/safe-swap.ts", "src/lib/policy/rules/products.ts", "src/lib/mandate/defaults.ts"],
+      check: [{ kind: "eval", value: "M3" }, { kind: "eval", value: "W2" }, { kind: "eval", value: "9b" }, { kind: "test", value: "tests/demo/two-kitchens.test.ts" }],
     },
     {
       name: "Standing order drift detection",
       quote: "the agent learns a kitchen's recurring weekly order and flags anomalies (portion counts creeping up, cost drifting) before auto-renewing it.",
-      status: "not built",
-      note: "No standing orders. The nearest control is the weekly spend limit and the rule that sends a first-time product to a person.",
-      where: ["src/lib/policy/rules/spend.ts"],
-      check: [{ kind: "eval", value: "14" }, { kind: "eval", value: "18" }],
+      status: "partly",
+      note:
+        "The weekly draft compares each standing line with the weeks on record and says in plain words which lines crept up or down, before the order is started. " +
+        "The standing order itself is demo data, and drift is shown, not used to hold an order.",
+      where: ["src/lib/basket/drift.ts", "src/lib/basket/weekly.ts", "src/lib/basket/standing.ts"],
+      check: [{ kind: "test", value: "tests/basket/weekly.test.ts" }, { kind: "test", value: "tests/basket/routes.test.ts" }, { kind: "eval", value: "W1" }],
     },
   ];
 }

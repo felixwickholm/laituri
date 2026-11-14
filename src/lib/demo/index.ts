@@ -1,7 +1,7 @@
 import { demoState } from "./state";
 
 export { RunActiveError, getRun, startRun, type StartRun } from "./runs";
-export { SCENARIOS, MILK_REQUEST, OVER_LIMIT_REQUEST, SHORT_STOCK_REQUEST, TWO_KITCHENS_REQUEST } from "./scenarios";
+export { SCENARIOS, MILK_REQUEST, OVER_LIMIT_REQUEST, SHORT_STOCK_REQUEST, TWO_KITCHENS_REQUEST, WEEKLY_TITLE } from "./scenarios";
 export { restoreAudit, tamperAudit } from "./tamper";
 export type { DemoRun, ScenarioId } from "./state";
 

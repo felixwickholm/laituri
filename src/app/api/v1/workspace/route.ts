@@ -28,4 +28,4 @@ export const POST = route(async (request) => {
     return response;
   }
   return json(await describeWorkspace(await sandboxes().forClient(), originOf(request)), { status: 201 });
-});
+}, { openInSharedView: true });

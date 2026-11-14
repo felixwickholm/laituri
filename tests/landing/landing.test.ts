@@ -64,8 +64,8 @@ function day(date: string, requests: number, ordered: number, confirmed: number,
 describe("landingFigures", () => {
   const week = [day("2026-11-08", 4, 3, 2, 300.1), day("2026-11-09", 0, 0, 0, 0), day("2026-11-14", 6, 5, 4, 1000.2)];
 
-  it("counts the same seven days as the Valio Aimo overview: agents, requests, confirmed orders and their net", () => {
-    expect(landingFigures(overview({ daily: week }))).toEqual({ agents: 4, requests: 10, ordersConfirmed: 6, confirmedNet: 1300.3 });
+  it("counts the same seven days as the Valio Aimo overview: agents, requests and confirmed orders", () => {
+    expect(landingFigures(overview({ daily: week }))).toEqual({ agents: 4, requests: 10, ordersConfirmed: 6 });
   });
 
   it("does not count orders from outside the seven days, even when the all-time outcome counts are higher", () => {

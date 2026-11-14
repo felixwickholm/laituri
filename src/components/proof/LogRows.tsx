@@ -13,7 +13,7 @@ interface LogRowsProps {
   onOpen: (seq: number) => void;
 }
 
-const LINK_NOTE = { broken: "Changed after it was written", untrusted: "Written after the changed entry" } as const;
+const LINK_NOTE = { broken: "Changed after it was written", untrusted: "Written after the changed step" } as const;
 
 /** The log as When / Who / What rows, newest first. A changed entry and every entry after it are marked. */
 export function LogRows({ entries, chain, orders, onOpen }: LogRowsProps) {
@@ -26,7 +26,7 @@ export function LogRows({ entries, chain, orders, onOpen }: LogRowsProps) {
             <th scope="col">Who</th>
             <th scope="col">What</th>
             <th scope="col" className="num">
-              Entry
+              Step
             </th>
           </tr>
         </thead>

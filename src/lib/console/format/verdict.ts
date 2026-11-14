@@ -1,36 +1,38 @@
-import type { WeekStats } from "./orders";
+import type { Basket } from "@/lib/contracts";
+import { basketVerdict, lineCounts } from "../basket";
+
+export type VerdictTone = "calm" | "waiting" | "danger";
 
 export interface Verdict {
-  /** What the person must know first, as one short sentence. */
-  lead: string;
-  /** Why, or what else is true, in one more sentence. */
-  reason: string;
-  tone: "calm" | "waiting" | "danger";
+  /** What the person must know first, in one plain sentence or three short ones. */
+  text: string;
+  tone: VerdictTone;
 }
 
-function orders(n: number): string {
-  return n === 1 ? "1 order" : `${n} orders`;
+export interface TodayFacts {
+  /** This week's basket, when one exists. */
+  basket?: Basket;
+  /** Single orders, outside any basket, that wait for the purchasing manager. */
+  waitingOrders: number;
+  chainBroken: boolean;
+  suspended: boolean;
 }
 
-/** The Today screen's verdict: the decision first, then the reason, in plain words. */
-export function todayVerdict(week: WeekStats, chainBroken: boolean, anyOrders: boolean): Verdict {
-  if (chainBroken) {
-    return { lead: "The log does not verify.", reason: "Approvals stay paused until the log is restored from the last signed checkpoint.", tone: "danger" };
+function others(n: number, basket: boolean): string {
+  if (n === 0) return "";
+  const what = n === 1 ? "order" : "orders";
+  return basket ? ` ${n} other ${what} ${n === 1 ? "needs" : "need"} you.` : `${n} ${what} ${n === 1 ? "needs" : "need"} you.`;
+}
+
+/** Today's verdict: "Your agent ordered 17 lines. 2 need you. 1 is blocked." */
+export function todayVerdict({ basket, waitingOrders, chainBroken, suspended }: TodayFacts): Verdict {
+  if (suspended) return { text: "Valio Aimo stopped your agent. It cannot order now.", tone: "danger" };
+  if (chainBroken) return { text: "The record was changed after it was written. Approvals wait until it is fixed.", tone: "danger" };
+  if (basket) {
+    const n = lineCounts(basket);
+    const tone: VerdictTone = n.orange > 0 || waitingOrders > 0 ? "waiting" : "calm";
+    return { text: `${basketVerdict(basket)}${others(waitingOrders, true)}`, tone };
   }
-  if (week.waiting > 0) {
-    const rest =
-      week.blocked > 0
-        ? `${orders(week.blocked)} ${week.blocked === 1 ? "was" : "were"} blocked by your mandate. Everything else ran inside it.`
-        : "Everything else ran inside your mandate.";
-    return { lead: `${orders(week.waiting)} ${week.waiting === 1 ? "needs" : "need"} you.`, reason: rest, tone: "waiting" };
-  }
-  if (week.confirmed > 0) {
-    return {
-      lead: "Nothing needs you.",
-      reason: `${orders(week.confirmed)} this week ran inside your mandate${week.blocked > 0 ? `, and ${week.blocked} ${week.blocked === 1 ? "was" : "were"} blocked by it` : ""}.`,
-      tone: "calm",
-    };
-  }
-  if (anyOrders) return { lead: "Nothing needs you.", reason: "No orders were confirmed this week yet.", tone: "calm" };
-  return { lead: "Nothing needs you yet.", reason: "Ask your agent for something, or run a demo scene.", tone: "calm" };
+  if (waitingOrders > 0) return { text: `Your weekly order is ready to send. ${others(waitingOrders, false)}`, tone: "waiting" };
+  return { text: "Your weekly order is ready to send.", tone: "calm" };
 }

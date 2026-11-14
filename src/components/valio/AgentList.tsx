@@ -14,14 +14,13 @@ export function AgentList({ agents, now }: { agents: ControlAgent[]; now: number
         <h2 id="agents-title">
           Connected agents <span className="count">{agents.length}</span>
         </h2>
-        <span className="block-meta">Confirmed values are net</span>
         <Link href="/valio/agents" className="text-link block-link">
           All agents
           <ArrowRight aria-hidden="true" />
         </Link>
       </header>
       {agents.length === 0 ? (
-        <EmptyState icon={Bot} text="No agent has connected yet. The first call from a buyer's agent appears here." action={{ href: "/connect", label: "Connect an agent" }} />
+        <EmptyState icon={Bot} text="No agent yet." action={{ href: "/connect", label: "Connect an agent" }} />
       ) : (
         <ul className="card agent-list">
           {agents.map((agent) => (
@@ -30,7 +29,7 @@ export function AgentList({ agents, now }: { agents: ControlAgent[]; now: number
                 <Link href={`/valio/agents?agent=${encodeURIComponent(agent.agent.id)}`} className="agent-name">
                   {agentName(agent.agent)}
                 </Link>
-                <span className="sub">{agent.buyer?.name ?? "No buyer named"}</span>
+                <span className="sub">{agent.buyer?.name ?? "No customer named"}</span>
               </span>
               <span className="agent-apps">
                 <ClientChips clients={agent.clients} />
@@ -41,7 +40,7 @@ export function AgentList({ agents, now }: { agents: ControlAgent[]; now: number
               </span>
               <span className="agent-figure">
                 <span className="num strong">{agent.confirmedNet > 0 ? eur(agent.confirmedNet) : "–"}</span>
-                <span className="sub">confirmed</span>
+                <span className="sub">bought</span>
               </span>
               <span className="agent-state">
                 <StatusMark agent={agent} />

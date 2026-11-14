@@ -6,6 +6,13 @@ export function eur(amount: number): string {
   return EUR.format(amount);
 }
 
+const EUR_WHOLE = new Intl.NumberFormat("en-FI", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
+
+/** 3240.4 -> "€3,240", for a summary line where cents add noise. */
+export function eurWhole(amount: number): string {
+  return EUR_WHOLE.format(Math.round(amount));
+}
+
 /** 1000 -> "1,000"; 2.5 -> "2.5" */
 export function count(value: number): string {
   return NUMBER.format(value);

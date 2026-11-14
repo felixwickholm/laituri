@@ -131,5 +131,5 @@ const WITH_VAT = /,?\s*€[\d,.]+\s+with VAT/g;
 export function stepText(text: string): string {
   const refused = text.match(REFUSED_CALL);
   if (refused) return plainSentence(`Valio Aimo refused ${callWords(refused[1])}: ${refused[2]}.`);
-  return plainSentence(text).replace(WITH_VAT, "");
+  return plainSentence(text).replace(WITH_VAT, "").replace(/^Offer signed by Valio Aimo:/, "Fixed price from Valio Aimo:");
 }

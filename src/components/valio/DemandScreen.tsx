@@ -2,79 +2,60 @@
 
 import { useMemo, useState } from "react";
 import { count, eur } from "@/lib/console/format/money";
-import { plural, REASONS, reasonTotals, unmetNet } from "@/lib/supplier-console/format";
+import { REASONS, reasonTotals, unmetNet } from "@/lib/supplier-console/format";
 import { useOverview } from "@/lib/supplier-console/hooks";
 import type { UnmetReason } from "@/lib/supplier-console/types";
-import { PageHeader } from "../shell/PageHeader";
-import { Dash } from "../ui/Dash";
-import { HistoryNote } from "../ui/HistoryNote";
-import { BlockNote, ControlFoot } from "./bits";
+import { BlockNote, ValioHead } from "./bits";
 import { ConceptBars } from "./ConceptBars";
 import { UnmetTable } from "./UnmetTable";
 
 type Filter = UnmetReason | "all";
 
-/** What agents ask for, and what Valio Aimo could not serve and why. */
+/** What agents ask for, and what Valio Aimo could not serve and why. The reason boxes filter the table under them. */
 export function DemandScreen() {
   const { data: overview, error, locked } = useOverview();
   const [filter, setFilter] = useState<Filter>("all");
   const unmet = useMemo(() => overview?.unmet ?? [], [overview]);
   const totals = useMemo(() => reasonTotals(unmet), [unmet]);
   const shown = filter === "all" ? unmet : unmet.filter((item) => item.reason === filter);
+  const lost = unmetNet(unmet);
+  const pick = (next: Filter) => setFilter(filter === next ? "all" : next);
 
   return (
     <div className="page control-page">
-      <PageHeader
-        title="Demand"
-        meta={overview ? `${count(overview.demand.requests)} requests` : undefined}
-        lede="What agents wanted, and what they left without. A webshop log never shows this demand, because nothing ever reached a basket."
-      />
+      <ValioHead title="Demand" date={overview ? `${count(overview.demand.requests)} requests` : undefined} />
       {overview ? (
         <>
-          <ConceptBars concepts={overview.demand.topConcepts} requests={overview.demand.requests} unmet={unmet} />
-          <section className="block" id="unserved" aria-labelledby="unmet-title">
-            <header className="block-head">
-              <h2 id="unmet-title">
-                What we could not serve <span className="count">{eur(unmetNet(unmet))}</span>
+          <section className="glass pad week-card" id="unserved" aria-labelledby="unmet-title">
+            <div className="verdict">
+              <p className="verdict-label">Lost demand</p>
+              <h2 className="verdict-title" id="unmet-title">
+                {unmet.length === 0 ? "Every request was served." : lost > 0 ? `${eur(lost)} we could not sell.` : `${count(unmet.length)} requests we could not serve.`}
               </h2>
-              <span className="block-meta">Estimated net, from the price each request would have had</span>
-            </header>
-            <dl className="kpis reason-totals">
-              {totals.map((total) => (
-                <div key={total.key} className="kpi" data-reason={total.key} data-zero={total.net === 0 || undefined}>
-                  <dt>{total.label}</dt>
-                  <dd>
-                    <span className="kpi-value">
-                      {total.count === 0 ? <Dash reason="no requests" /> : total.net > 0 ? eur(total.net) : <Dash reason={`${plural(total.count, "request")} · no price`} />}
-                    </span>
-                    {total.net > 0 ? (
-                      <span className="kpi-sub">
-                        {plural(total.count, "request")}
-                        {total.unpriced > 0 ? ` · ${total.unpriced} without a price` : ""}
-                      </span>
-                    ) : null}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-            <div className="filter-row" role="group" aria-label="Filter by reason">
-              <button type="button" className="filter-chip" aria-pressed={filter === "all"} onClick={() => setFilter("all")}>
-                All <span className="count">{unmet.length}</span>
-              </button>
-              {REASONS.map((reason) => (
-                <button key={reason.key} type="button" className="filter-chip" aria-pressed={filter === reason.key} onClick={() => setFilter(reason.key)}>
-                  {reason.label} <span className="count">{totals.find((total) => total.key === reason.key)?.count ?? 0}</span>
-                </button>
-              ))}
+              {unmet.length > 0 ? <p className="verdict-line">A webshop never sees this.</p> : null}
             </div>
-            <UnmetTable rows={shown} filtered={filter !== "all"} />
-            <HistoryNote show={shown.some((item) => item.seeded)} />
+            <div className="count-tiles" role="group" aria-label="Filter by reason">
+              <button type="button" className="count-tile" aria-pressed={filter === "all"} onClick={() => setFilter("all")}>
+                <span className="count-tile-number">{count(unmet.length)}</span>
+                <span className="count-tile-word">all</span>
+              </button>
+              {REASONS.map((reason) => {
+                const n = totals.find((total) => total.key === reason.key)?.count ?? 0;
+                return (
+                  <button key={reason.key} type="button" className="count-tile" data-tone={n > 0 ? "warn" : undefined} aria-pressed={filter === reason.key} onClick={() => pick(reason.key)}>
+                    <span className="count-tile-number">{count(n)}</span>
+                    <span className="count-tile-word">{reason.label.toLowerCase()}</span>
+                  </button>
+                );
+              })}
+            </div>
           </section>
+          {unmet.length > 0 ? <UnmetTable rows={shown} filtered={filter !== "all"} /> : null}
+          <ConceptBars concepts={overview.demand.topConcepts} requests={overview.demand.requests} unmet={unmet} />
         </>
       ) : locked ? null : (
-        <BlockNote>{error ? `Could not load demand: ${error}` : "Loading demand…"}</BlockNote>
+        <BlockNote>{error ? `Could not load demand: ${error}` : "Loading…"}</BlockNote>
       )}
-      <ControlFoot />
     </div>
   );
 }

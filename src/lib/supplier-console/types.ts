@@ -24,3 +24,12 @@ export interface ScenarioRun {
   summary?: string;
   results?: RunResult[];
 }
+
+/** One plain bar: a short label, its count, an optional short note, and a tone that colours the bar only. */
+export interface PlainBar {
+  key: string;
+  label: string;
+  count: number;
+  note?: string;
+  tone: "good" | "warn" | "lost" | "neutral";
+}

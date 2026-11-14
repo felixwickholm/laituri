@@ -10,9 +10,12 @@ import { AGENT_AUTH, post, type Reply } from "./router";
 const approve = (orderId: string, headers: Record<string, string>) =>
   post(`/api/v1/approvals/${orderId}`, { decision: "approved", note: "Approved by the agent." }, headers);
 
-/** Every attempt must be a 403, and the order must still wait for a person. */
-async function refusedAll(order: Order, replies: Reply[], checks: Checks): Promise<string> {
-  for (const reply of replies) checks.expect(reply.status === 403, `approval answered ${outcomeText(reply)}, expected 403`);
+/**
+ * Every attempt must be refused, and the order must still wait for a person. An agent token is a 403; a caller with no
+ * credential at all (a forged header or session cookie is none) is a 401 before the approver check is reached.
+ */
+async function refusedAll(order: Order, replies: Reply[], checks: Checks, expected = 403): Promise<string> {
+  for (const reply of replies) checks.expect(reply.status === expected, `approval answered ${outcomeText(reply)}, expected ${expected}`);
   const { status } = await gateway().getOrder(DEMO_AGENT, order.id);
   checks.expect(status === "pending_approval", `the order is ${status} after the attempts`);
   return `${replies.map(outcomeText).join(" / ")}; order still ${status}`;
@@ -45,17 +48,17 @@ export const APPROVAL_GUARDRAILS = [
     const text = await refusedAll(order, [reply, withCookie], checks);
     return `${text}; MCP ${mcp.result?.isError ? "has no approval tool" : "answered"}`;
   }, true),
-  guardrail("G11", "Approval with a forged console header", "403", async (hostile, checks) => {
+  guardrail("G11", "Approval with a forged console header", "401 credential_required", async (hostile, checks) => {
     const { order, reply } = await attempt(hostile, "forged x-laituri-console", { "x-laituri-console": "1" });
-    return refusedAll(order, [reply], checks);
+    return refusedAll(order, [reply], checks, 401);
   }),
-  guardrail("G12", "Approval with a made-up cookie", "403", async (hostile, checks) => {
+  guardrail("G12", "Approval with a made-up cookie", "401 credential_required", async (hostile, checks) => {
     const { order, reply } = await attempt(hostile, "made-up cookie", { "x-laituri-console": "1", cookie: "laituri_approver=admin; session=approver" });
-    return refusedAll(order, [reply], checks);
+    return refusedAll(order, [reply], checks, 401);
   }),
-  guardrail("G13", "Approval JWS from the audit log as cookie", "403", async (hostile, checks) => {
+  guardrail("G13", "Approval JWS from the audit log as cookie", "401 credential_required", async (hostile, checks) => {
     const jws = await publicApprovalJws();
     const { order, reply } = await attempt(hostile, "approval JWS as session", { cookie: `laituri_approver=${jws}` });
-    return refusedAll(order, [reply], checks);
+    return refusedAll(order, [reply], checks, 401);
   }),
 ];

@@ -1,5 +1,6 @@
 import type { ApprovalDecisionRequest, AuditEntry, Order, SignedOffer } from "@/lib/contracts";
 import type { MandatePatch } from "@/lib/orders/types";
+import type { Basket, CreateBasketRequest, CreateHandoffRequest, Handoff, WeeklyDraft } from "@/lib/contracts";
 import type { Activity, ConsoleSession, DemoRun, Health, Jwks, Scenario, SessionRole, SignInCredentials, SignedMandate, WorkspaceInfo } from "./types";
 
 /** Thrown for any non-2xx answer. `detail` is the server's plain sentence and `code` its machine code. */
@@ -104,4 +105,14 @@ export const api = {
   /** Puts the changed entry back as it was signed; the rest of the workspace is untouched. */
   restoreLog: () => send<{ restored: true }>("DELETE", "/api/v1/demo/tamper"),
   reset: () => send<unknown>("POST", "/api/v1/demo/reset"),
+
+  baskets: async () => unwrap<Basket>(await getText("/api/v1/baskets"), "baskets"),
+  basket: (id: string) => getJson<Basket>(`/api/v1/baskets/${encodeURIComponent(id)}`),
+  weeklyDraft: () => getJson<WeeklyDraft>("/api/v1/baskets/weekly/draft"),
+  startWeekly: () => send<{ basketId: string }>("POST", "/api/v1/baskets/weekly"),
+  placeBasket: (body: CreateBasketRequest) => send<{ basketId: string }>("POST", "/api/v1/baskets", body),
+  resolveLine: (basketId: string, lineId: string, optionId: string) =>
+    send<Basket>("POST", `/api/v1/baskets/${encodeURIComponent(basketId)}/lines/${encodeURIComponent(lineId)}/resolve`, { optionId }),
+  handoffs: async () => unwrap<Handoff>(await getText("/api/v1/handoffs"), "handoffs"),
+  askValio: (body: CreateHandoffRequest) => send<Handoff>("POST", "/api/v1/handoffs", body),
 };

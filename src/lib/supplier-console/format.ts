@@ -6,7 +6,7 @@ import { ruleName } from "@/lib/console/format/rules";
 import { day, hourMinute } from "@/lib/console/format/time";
 import type { Activity } from "@/lib/store/types";
 import { isKeyless } from "./names";
-import type { ControlAgent, ControlOverview, DailyPoint, OutcomeCounts, RuleStat, RunResult, UnmetReason, UnmetRequest } from "./types";
+import type { ControlAgent, ControlOverview, DailyPoint, OutcomeCounts, PlainBar, RuleStat, RunResult, UnmetReason, UnmetRequest } from "./types";
 
 /* ---------- Words ---------- */
 
@@ -179,7 +179,7 @@ export function overviewVerdict(overview: ControlOverview): Verdict {
   } else if (overview.agents.length > 0) {
     parts.push("Every request was served.");
   }
-  if (suspended > 0) parts.push(`${plural(suspended, "agent is", "agents are")} suspended.`);
+  if (suspended > 0) parts.push(`${plural(suspended, "agent is", "agents are")} paused.`);
   return { lead, reason: parts.join(" ") };
 }
 
@@ -193,7 +193,8 @@ export function overviewVerdict(overview: ControlOverview): Verdict {
 export function ruleTitle(rule: Pick<RuleStat, "rule" | "title" | "tier">): string {
   if (rule.rule === "dietary.allergens" && rule.tier === "ask") return "Allergen data missing";
   const name = ruleName(rule.rule);
-  return name === rule.rule ? rule.title : name;
+  // The buyer's console names rules in the buyer's voice; Valio Aimo reads them about the buyer.
+  return name === rule.rule ? rule.title : name.replace(/^Your\b/, "Buyer's");
 }
 
 /* ---------- Days ---------- */
@@ -228,11 +229,25 @@ export type OutcomeSlot = keyof OutcomeCounts;
 export const OUTCOMES: { key: OutcomeSlot; label: string }[] = [
   { key: "confirmed_auto", label: "Confirmed automatically" },
   { key: "confirmed_after_approval", label: "Confirmed after approval" },
-  { key: "waiting", label: "Waiting for the buyer" },
-  { key: "rejected", label: "Rejected by the buyer" },
+  { key: "waiting", label: "Waiting for the customer" },
+  { key: "rejected", label: "Turned down by the customer" },
   { key: "blocked", label: "Blocked by a rule" },
   { key: "refused", label: "Refused" },
 ];
+
+const OUTCOME_BAR: Record<OutcomeSlot, { label: string; tone: PlainBar["tone"] }> = {
+  confirmed_auto: { label: "Confirmed alone", tone: "good" },
+  confirmed_after_approval: { label: "Approved by a person", tone: "good" },
+  waiting: { label: "Waiting for the customer", tone: "warn" },
+  rejected: { label: "Turned down", tone: "neutral" },
+  blocked: { label: "Blocked by a rule", tone: "lost" },
+  refused: { label: "Refused", tone: "lost" },
+};
+
+/** Orders by how they ended, one plain bar each; outcomes with no order are left out. */
+export function orderBars(orders: OutcomeCounts): PlainBar[] {
+  return OUTCOMES.filter((item) => orders[item.key] > 0).map((item) => ({ key: item.key, count: orders[item.key], ...OUTCOME_BAR[item.key] }));
+}
 
 /** An agent with a key that called in the last 24 hours; a keyless caller is never counted as active. */
 export function isActiveAgent(agent: Pick<ControlAgent, "status" | "agent">): boolean {
@@ -244,7 +259,7 @@ export function isActiveAgent(agent: Pick<ControlAgent, "status" | "agent">): bo
  * so that caller reads "Read-only" rather than active or idle.
  */
 export function statusWord(agent: Pick<ControlAgent, "status"> & { agent?: { id: string } }): { word: string; tone: "success" | "neutral" | "danger" } {
-  if (agent.status === "suspended") return { word: "Suspended", tone: "danger" };
+  if (agent.status === "suspended") return { word: "Paused", tone: "danger" };
   if (agent.agent && isKeyless(agent.agent)) return { word: "Read-only", tone: "neutral" };
   return agent.status === "active" ? { word: "Active", tone: "success" } : { word: "Idle", tone: "neutral" };
 }
@@ -356,7 +371,7 @@ export function latestStep(activity: Activity[], buyer: string, startedAt: strin
  */
 export function kitchenOutcomes(results: RunResult[] | undefined, buyerOf: (orderId: string) => string | undefined): KitchenOutcome[] {
   return (results ?? []).map((result, index) => {
-    const buyer = (result.orderId && buyerOf(result.orderId)) || KITCHENS[index] || `Kitchen ${index + 1}`;
+    const buyer = (result.orderId && buyerOf(result.orderId)) || KITCHENS[index] || `Customer ${index + 1}`;
     const base = { buyer, summary: plainSummary(result.summary), orderId: result.orderId };
     switch (result.status) {
       case "confirmed":

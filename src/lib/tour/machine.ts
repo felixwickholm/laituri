@@ -1,106 +1,66 @@
 /**
- * The walkthrough as a pure state machine. It knows the order of the steps and what each press of
- * Next, Back or Escape does; the runner in the browser performs the actions and reports outcomes.
+ * The walkthrough as a pure state machine. It knows the order of the steps and what each press of Next, Back or
+ * Escape does; the runner in the browser performs the actions and reports outcomes. Next always moves on at once:
+ * a step whose result is still coming says so on its card and never holds the visitor.
  */
 
 export type TourStatus = "closed" | "intro" | "starting" | "step" | "end" | "paused";
 
-/** "done": the step's outcome is on screen. "timeout": it did not arrive in time and the tour may go on. */
+/** "done": the step's result is on screen. "timeout": it did not arrive in time; the card says so. */
 export type Outcome = "done" | "timeout";
 
 /** What the machine needs to know about each step. */
 export interface PlanStep {
   id: string;
-  /** Next first performs this step's press action (for example, approving) before moving on. */
-  press?: boolean;
-  /** The least time the card stays once the step's outcome is in, so the person can read what it says. */
-  readMs?: number;
-  /** The same after the press action has settled. */
-  pressReadMs?: number;
 }
 
 export interface TourState {
   status: TourStatus;
   index: number;
   outcomes: Partial<Record<string, Outcome>>;
-  /** Steps whose entry action has been started, so Back never repeats it. */
+  /** One-shot actions already started, by key ("enter:basket", "leave:phone"), so Back or a reload never repeats one. */
   performed: string[];
-  /** Steps whose press action has been started. */
-  pressed: string[];
-  /** Steps whose press action has finished, by the tour or by the person. */
-  settled: string[];
-  /** Cards that have been on screen for their reading time, by {@link readKey}. */
-  read: string[];
-  /** The tour changed the log and has not restored it yet. */
+  /** The tour changed the record and has not put it back yet. */
   tampered: boolean;
-  /** The runs the tour itself started, by scene, so it spotlights those and never another run. */
-  runs: Partial<Record<string, string>>;
+  /** The page each step runs on in this build, chosen once at Start. */
+  routes: Partial<Record<string, string>>;
+  /** The weekly basket the tour started, once the server named it. */
+  basketId?: string;
+  /** When Start was pressed: a basket created after it belongs to this tour. */
+  since?: string;
   error?: string;
 }
 
 export type TourEvent =
   | { type: "open" }
-  | { type: "begin" }
+  | { type: "begin"; at: string }
   | { type: "failed"; message: string }
-  | { type: "started" }
+  | { type: "started"; routes: Partial<Record<string, string>> }
   | { type: "next" }
   | { type: "back" }
   | { type: "close" }
   | { type: "resume" }
-  | { type: "performed"; step: string }
+  | { type: "performed"; key: string }
   | { type: "outcome"; step: string; outcome: Outcome }
-  | { type: "settled"; step: string }
-  | { type: "read"; key: string }
   | { type: "tampered"; value: boolean }
-  | { type: "run"; scene: string; id: string };
+  | { type: "basket"; id: string };
 
-export const CLOSED: TourState = { status: "closed", index: 0, outcomes: {}, performed: [], pressed: [], settled: [], read: [], tampered: false, runs: {} };
+export const CLOSED: TourState = { status: "closed", index: 0, outcomes: {}, performed: [], tampered: false, routes: {} };
 
 function add(list: string[], id: string): string[] {
   return list.includes(id) ? list : [...list, id];
-}
-
-/** The card on screen, for its reading time: the step, or the step after its press action settled. */
-export function readKey(step: PlanStep, state: Pick<TourState, "settled">): string {
-  return step.press && state.settled.includes(step.id) ? `${step.id}:press` : step.id;
-}
-
-/** How long the card on screen asks to be read before Next; 0 when it has been, or asks for no time. */
-export function readMsOf(step: PlanStep, state: Pick<TourState, "settled" | "read">): number {
-  const key = readKey(step, state);
-  if (state.read.includes(key)) return 0;
-  return (key === step.id ? step.readMs : step.pressReadMs) ?? 0;
-}
-
-/**
- * Next is enabled once the step's outcome is in (or it timed out) and the card has been read; a pending press counts
- * as one more Next.
- */
-export function canGoNext(plan: readonly PlanStep[], state: TourState): boolean {
-  if (state.status !== "step") return false;
-  const step = plan[state.index];
-  if (!step || !state.outcomes[step.id] || readMsOf(step, state) > 0) return false;
-  return !(step.press && state.pressed.includes(step.id) && !state.settled.includes(step.id));
-}
-
-/** True while Next would perform the step's press action instead of moving on. */
-export function pressPending(plan: readonly PlanStep[], state: TourState): boolean {
-  const step = plan[state.index];
-  return Boolean(state.status === "step" && step?.press && !state.settled.includes(step.id));
-}
-
-function next(plan: readonly PlanStep[], state: TourState): TourState {
-  if (!canGoNext(plan, state)) return state;
-  const step = plan[state.index];
-  if (pressPending(plan, state)) return { ...state, pressed: add(state.pressed, step.id) };
-  if (state.index >= plan.length - 1) return { ...state, status: "end" };
-  return { ...state, index: state.index + 1 };
 }
 
 /** The end card is the last word: Back from it does nothing, and only a new start shows a step again. */
 function back(state: TourState): TourState {
   if (state.status === "step" && state.index > 0) return { ...state, index: state.index - 1 };
   return state;
+}
+
+function next(plan: readonly PlanStep[], state: TourState): TourState {
+  if (state.status !== "step") return state;
+  if (state.index >= plan.length - 1) return { ...state, status: "end" };
+  return { ...state, index: state.index + 1 };
 }
 
 function close(state: TourState): TourState {
@@ -119,11 +79,11 @@ export function reduce(plan: readonly PlanStep[], state: TourState, event: TourE
     case "open":
       return { ...CLOSED, status: "intro", tampered: state.tampered };
     case "begin":
-      return state.status === "intro" ? { ...state, status: "starting", error: undefined } : state;
+      return state.status === "intro" ? { ...state, status: "starting", since: event.at, error: undefined } : state;
     case "failed":
       return state.status === "starting" ? { ...state, status: "intro", error: event.message } : state;
     case "started":
-      return state.status === "starting" ? { ...CLOSED, status: "step" } : state;
+      return state.status === "starting" ? { ...CLOSED, status: "step", since: state.since, routes: event.routes } : state;
     case "next":
       return next(plan, state);
     case "back":
@@ -133,18 +93,14 @@ export function reduce(plan: readonly PlanStep[], state: TourState, event: TourE
     case "resume":
       return state.status === "paused" ? { ...state, status: "step" } : state;
     case "performed":
-      return { ...state, performed: add(state.performed, event.step) };
+      return { ...state, performed: add(state.performed, event.key) };
     case "outcome":
       if (state.outcomes[event.step] === "done") return state;
       return { ...state, outcomes: { ...state.outcomes, [event.step]: event.outcome } };
-    case "settled":
-      return { ...state, settled: add(state.settled, event.step) };
-    case "read":
-      return { ...state, read: add(state.read, event.key) };
     case "tampered":
       return { ...state, tampered: event.value };
-    case "run":
-      return { ...state, runs: { ...state.runs, [event.scene]: event.id } };
+    case "basket":
+      return { ...state, basketId: event.id };
   }
 }
 
@@ -157,6 +113,10 @@ function strings(value: unknown): string[] {
 function stringRecord(value: unknown): Partial<Record<string, string>> {
   if (!value || typeof value !== "object") return {};
   return Object.fromEntries(Object.entries(value as Record<string, unknown>).filter((entry): entry is [string, string] => typeof entry[1] === "string"));
+}
+
+function text(value: unknown): string | undefined {
+  return typeof value === "string" ? value : undefined;
 }
 
 /**
@@ -181,34 +141,42 @@ export function restore(plan: readonly PlanStep[], raw: unknown): TourState {
     index,
     outcomes,
     performed: strings(value.performed),
-    pressed: strings(value.pressed),
-    settled: strings(value.settled),
-    read: strings(value.read),
     tampered: value.tampered === true,
-    runs: stringRecord(value.runs),
+    routes: stringRecord(value.routes),
+    basketId: text(value.basketId),
+    since: text(value.since),
   };
 }
 
 /**
- * Applies `?tour=` to a restored state. "start" (or "1") opens the intro, whatever came before. A step id resumes that step when
- * the saved story reached it; without a saved story there is nothing to resume, so the intro opens. "end" is never
- * honoured: the end card belongs to the moment the tour finished, not to an address.
+ * Applies `?tour=` to a restored state. "start" (or "1") opens the intro, whatever came before. A step id resumes that
+ * step when the saved story reached it; without a saved story there is nothing to resume, so the intro opens. "end" is
+ * never honoured: the end card belongs to the moment the tour finished, not to an address.
  */
 export function fromUrl(plan: readonly PlanStep[], state: TourState, param: string | null): TourState {
   if (param === null) return state;
+  if (turnsOff(param)) return { ...CLOSED, tampered: state.tampered };
   if (param === "start" || param === "1") return state.status === "intro" ? state : { ...CLOSED, status: "intro", tampered: state.tampered };
   if (param === "end") return state;
   const index = plan.findIndex((step) => step.id === param);
   if (index < 0 || state.status === "closed" || state.status === "intro") return { ...CLOSED, status: "intro", tampered: state.tampered };
-  const reached = index === 0 || Boolean(state.outcomes[plan[index - 1].id]);
-  return reached ? { ...state, status: "step", index } : { ...state, status: "step" };
+  return index <= state.index ? { ...state, status: "step", index } : { ...state, status: "step" };
+}
+
+/** Pages that never open the walkthrough by themselves: the approval phone, and the about page a judge does not land on. */
+const NO_AUTO_OPEN = [/^\/approve(\/|$)/, /^\/about(\/|$)/];
+
+/** `?tour=off` (or `0`) keeps the walkthrough closed and remembers that for the rest of the browser session. */
+export function turnsOff(param: string | null): boolean {
+  return param === "off" || param === "0";
 }
 
 /**
- * Whether a step's press action has settled: its outcome is on screen and, when only Next may settle it, Next was
- * pressed; or Next was pressed and the wait ran out.
+ * The Start card opens by itself when a visitor lands on or reloads a page of the product, until they close it once in
+ * this browser session. A walkthrough already under way, a `?tour=` address and the pages above are left alone.
  */
-export function pressSettles(press: { requirePress?: boolean }, pressed: boolean, done: boolean, timedOut: boolean): boolean {
-  if (done) return pressed || !press.requirePress;
-  return pressed && timedOut;
+export function autoOpen(state: TourState, where: { path: string; param: string | null; dismissed: boolean }): TourState {
+  if (where.param !== null || where.dismissed || state.status !== "closed") return state;
+  if (NO_AUTO_OPEN.some((page) => page.test(where.path))) return state;
+  return { ...CLOSED, status: "intro", tampered: state.tampered };
 }

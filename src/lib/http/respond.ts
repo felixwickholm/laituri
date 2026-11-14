@@ -25,11 +25,17 @@ const TITLES: Record<number, string> = {
   404: "Not found",
   405: "Method not allowed",
   409: "Conflict",
+  413: "Payload too large",
   422: "Cannot process",
   429: "Too many requests",
   500: "Internal error",
   502: "Wholesaler unavailable",
   503: "Storage unavailable",
+};
+
+/** Where one status covers different causes, the code names the title. */
+const CODE_TITLES: Record<string, string> = {
+  sandboxes_full: "Service unavailable",
 };
 
 export function json(body: unknown, init: ResponseInit = {}): Response {
@@ -42,7 +48,7 @@ export function json(body: unknown, init: ResponseInit = {}): Response {
 export function problem(status: number, code: string, detail: string, violations?: Violation[]): Response {
   const body: Problem = {
     type: PROBLEM_TYPE_BASE + code,
-    title: TITLES[status] ?? "Error",
+    title: CODE_TITLES[code] ?? TITLES[status] ?? "Error",
     status,
     detail,
     code,
@@ -76,7 +82,10 @@ export function errorResponse(error: unknown): Response {
   }
   if (isGatewayError(error)) {
     const details = error.details instanceof ZodError ? violationsOf(error.details) : asViolations(error.details);
-    return problem(error.status, error.code, publicDetail(error), error.status === 502 ? undefined : details);
+    const response = problem(error.status, error.code, publicDetail(error), error.status === 502 ? undefined : details);
+    const retryAfterS = (error as { retryAfterS?: unknown }).retryAfterS;
+    if (typeof retryAfterS === "number" && retryAfterS > 0) response.headers.set("retry-after", String(Math.ceil(retryAfterS)));
+    return response;
   }
   return problem(500, "internal_error", "Something went wrong on our side. Try again.");
 }

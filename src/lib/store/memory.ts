@@ -1,5 +1,6 @@
 import path from "node:path";
-import type { AgentSuspension, AuditEntry, Order, SignedOffer } from "@/lib/contracts";
+import type { AgentSuspension, AuditEntry, Handoff, Order, SignedOffer } from "@/lib/contracts";
+import type { StoredBasket } from "@/lib/basket/types";
 import type { DemandRecord } from "@/lib/demand/types";
 import { StorageError } from "@/lib/gateway/errors";
 import { dataDir } from "./data-dir";
@@ -15,6 +16,8 @@ export interface StoreState {
   requests: DemandRecord[];
   mandates: Record<string, string>;
   suspensions: Record<string, AgentSuspension>;
+  baskets: Record<string, StoredBasket>;
+  handoffs: Record<string, Handoff>;
 }
 
 /** An order as kept by the store: the contract plus the key that makes retries safe. */
@@ -24,7 +27,7 @@ export type StoredOrder = Order & { idempotencyKey?: string };
 const SNAPSHOT_DELAY_MS = 250;
 
 function emptyState(): StoreState {
-  return { offers: {}, orders: {}, audit: [], activity: [], requests: [], mandates: {}, suspensions: {} };
+  return { offers: {}, orders: {}, audit: [], activity: [], requests: [], mandates: {}, suspensions: {}, baskets: {}, handoffs: {} };
 }
 
 function snapshotFile(): string {
@@ -45,6 +48,8 @@ function toState(value: unknown): StoreState {
     requests: Array.isArray(parsed.requests) ? parsed.requests : [],
     mandates: parsed.mandates && typeof parsed.mandates === "object" ? parsed.mandates : {},
     suspensions: parsed.suspensions && typeof parsed.suspensions === "object" ? parsed.suspensions : {},
+    baskets: parsed.baskets && typeof parsed.baskets === "object" ? parsed.baskets : {},
+    handoffs: parsed.handoffs && typeof parsed.handoffs === "object" ? parsed.handoffs : {},
   };
 }
 
@@ -82,7 +87,8 @@ export function createVolatileStore(initial: StoreState = emptyState()): MemoryS
 
 /** `file` absent: nothing is written, so no write can fail. */
 function storeOver(initial: StoreState, file?: string, recovery?: Recovery): MemoryStore {
-  let state = initial;
+  // A copy taken from a store of an earlier version lacks the collections added since; they start empty.
+  let state = toState(initial);
   let timer: ReturnType<typeof setTimeout> | undefined;
   let lastSaveError: string | undefined;
 
@@ -134,7 +140,7 @@ function storeOver(initial: StoreState, file?: string, recovery?: Recovery): Mem
     copyState: () => structuredClone(state),
     async replaceState(next) {
       const previous = state;
-      commit(() => (state = next), () => (state = previous));
+      commit(() => (state = toState(next)), () => (state = previous));
     },
     offers: {
       async put(offer) {
@@ -230,6 +236,31 @@ function storeOver(initial: StoreState, file?: string, recovery?: Recovery): Mem
       },
       async list() {
         return Object.values(state.suspensions);
+      },
+    },
+    baskets: {
+      // A running basket changes many times a second; its lines' orders are saved at once by the order path.
+      async put(basket) {
+        state.baskets[basket.id] = basket;
+        saveLater();
+      },
+      async get(id) {
+        return state.baskets[id];
+      },
+      async list() {
+        return Object.values(state.baskets).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+      },
+    },
+    handoffs: {
+      async put(handoff) {
+        const previous = state.handoffs[handoff.id];
+        commit(() => (state.handoffs[handoff.id] = handoff), () => restoreKey(state.handoffs, handoff.id, previous));
+      },
+      async get(id) {
+        return state.handoffs[id];
+      },
+      async list() {
+        return Object.values(state.handoffs).sort((a, b) => a.at.localeCompare(b.at));
       },
     },
     async reset() {

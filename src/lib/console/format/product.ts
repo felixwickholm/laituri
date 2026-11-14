@@ -1,7 +1,8 @@
 const MAX = 48;
 const MARKS = /[®™©]/g;
 const FILLER = /\b(hyvä suomalainen|suomesta)\b/gi;
-const SIZE = /(\d+(?:[.,]\d+)?)\s?(kg|g|ml|dl|cl|l)\b/i;
+/** A pack size in a product name: "500 g", "1 l", "3,5 kg". */
+export const SIZE = /(\d+(?:[.,]\d+)?)\s?(kg|g|ml|dl|cl|l)\b/i;
 const CLAIMS: [RegExp, string][] = [
   [/\b(lactose[- ]free|laktoositon)\b/i, "lactose-free"],
   [/\b(organic|luomu)\b/i, "organic"],

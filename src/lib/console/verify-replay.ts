@@ -13,9 +13,9 @@ import type { ChainState, Jwks } from "./types";
 export type ReplayStepKey = "keys" | "signatures" | "links";
 
 export const REPLAY_STEPS: readonly { key: ReplayStepKey; title: string }[] = [
-  { key: "keys", title: "Fetch the public keys" },
-  { key: "signatures", title: "Check every signature" },
-  { key: "links", title: "Check every link" },
+  { key: "keys", title: "Get Valio Aimo’s keys" },
+  { key: "signatures", title: "Check who wrote each step" },
+  { key: "links", title: "Check that no step changed" },
 ];
 
 export interface ReplayState {
@@ -72,14 +72,13 @@ function plural(n: number, one: string, many: string): string {
 
 function doneLine(key: ReplayStepKey, state: ReplayState): string {
   if (key === "keys") return `${plural(state.keys, "key", "keys")} from Valio Aimo`;
-  if (key === "signatures") return `${count(state.total)} of ${count(state.total)} signatures valid`;
-  return `${count(state.total)} of ${count(state.total)} links intact`;
+  if (key === "signatures") return `${count(state.total)} of ${count(state.total)} steps signed`;
+  return `${count(state.total)} of ${count(state.total)} steps unchanged`;
 }
 
 function activeLine(key: ReplayStepKey, state: ReplayState): string {
   if (key === "keys") return "Fetching from Valio Aimo…";
-  const noun = key === "signatures" ? "signatures" : "links";
-  return `Checked ${count(state.done)} of ${count(state.total)} ${noun}`;
+  return `Checked ${count(state.done)} of ${count(state.total)} steps`;
 }
 
 /** What each step shows: waiting, under way with its count, done, or where the log broke. */
@@ -88,7 +87,7 @@ export function replayView(state: ReplayState): ReplayStepView[] {
     if (state.status === "idle" || index > state.step) return { key, title, status: "waiting", line: "", fraction: 0 };
     if (index < state.step) return { key, title, status: "done", line: doneLine(key, state), fraction: 1 };
     if (state.status === "broken") {
-      return { key, title, status: "failed", line: state.reason ?? `Entry ${state.brokenAt} does not verify.`, fraction: state.total ? state.done / state.total : 0 };
+      return { key, title, status: "failed", line: state.reason ?? `Step ${state.brokenAt} does not check out.`, fraction: state.total ? state.done / state.total : 0 };
     }
     if (state.status === "verified") return { key, title, status: "done", line: doneLine(key, state), fraction: 1 };
     const fraction = key === "keys" ? 0.5 : state.total ? state.done / state.total : 1;

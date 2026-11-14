@@ -100,7 +100,8 @@ describe("console session", () => {
     const elsewhere = await mandate.PUT(jsonRequest("/api/v1/mandate", { method: "PUT", body: LIMIT_CHANGE, headers: { cookie: `${workspaceCookie}; ${approverCookie}` } }));
     expect(elsewhere.status).toBe(403);
     const inShared = await mandate.PUT(jsonRequest("/api/v1/mandate", { method: "PUT", body: LIMIT_CHANGE, headers: { cookie: approverCookie } }));
-    expect(inShared.status).toBe(403);
+    // No sandbox cookie and no session for the shared workspace: no credential there at all.
+    expect(inShared.status).toBe(401);
     expect((await changeLimit(owner)).status).toBe(200);
   });
 

@@ -1,5 +1,7 @@
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { resolveAgent } from "@/lib/http/agent";
+import { readCappedText } from "@/lib/http/body";
+import { asCaller } from "@/lib/http/caller";
 import { errorResponse } from "@/lib/http/respond";
 import { resolveWorkspace } from "@/lib/http/workspace";
 import { inWorkspace } from "@/lib/workspace/context";
@@ -14,6 +16,9 @@ export const CORS_HEADERS: Record<string, string> = {
   "access-control-expose-headers": "mcp-session-id, mcp-protocol-version",
   "access-control-max-age": "86400",
 };
+
+/** A JSON-RPC envelope around the largest REST body (signed offer and mandate) still fits. */
+export const MAX_MCP_BODY_BYTES = 128 * 1024;
 
 export function withCors(response: Response): Response {
   const headers = new Headers(response.headers);
@@ -45,17 +50,20 @@ function withKeyFromAddress(request: Request): Headers {
  */
 export async function handleMcpPost(request: Request): Promise<Response> {
   const headers = withKeyFromAddress(request);
-  let resolved;
-  try {
-    resolved = await resolveWorkspace(headers);
-  } catch (error) {
-    return withCors(errorResponse(error));
-  }
-  return inWorkspace(resolved.workspace, () => serveMcp(request, headers));
+  return asCaller(headers, async () => {
+    let resolved;
+    let body;
+    try {
+      body = await readCappedText(request, MAX_MCP_BODY_BYTES);
+      resolved = await resolveWorkspace(headers);
+    } catch (error) {
+      return withCors(errorResponse(error));
+    }
+    return inWorkspace(resolved.workspace, () => serveMcp(request, headers, body));
+  });
 }
 
-async function serveMcp(request: Request, headers: Headers): Promise<Response> {
-  const body = await request.text();
+async function serveMcp(request: Request, headers: Headers, body: string): Promise<Response> {
   let agent;
   try {
     agent = await resolveAgent(headers, mcpCall(body), mcpClient(headers, body));

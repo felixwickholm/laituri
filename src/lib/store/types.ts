@@ -1,4 +1,5 @@
-import type { AgentSuspension, AuditEntry, Order, SignedOffer } from "@/lib/contracts";
+import type { AgentSuspension, AuditEntry, Handoff, Order, SignedOffer } from "@/lib/contracts";
+import type { StoredBasket } from "@/lib/basket/types";
 import type { DemandRecord } from "@/lib/demand/types";
 
 /** One call an agent made through the front door, shown in the activity pane. */
@@ -63,6 +64,18 @@ export interface Store {
     put(suspension: AgentSuspension): Promise<void>;
     remove(agentId: string): Promise<void>;
     list(): Promise<AgentSuspension[]>;
+  };
+  /** Kitchens' multi-line orders, with what the engine keeps to act on a person's choice. */
+  baskets: {
+    put(basket: StoredBasket): Promise<void>;
+    get(id: string): Promise<StoredBasket | undefined>;
+    list(): Promise<StoredBasket[]>;
+  };
+  /** Questions from kitchens to a person at the wholesaler. */
+  handoffs: {
+    put(handoff: Handoff): Promise<void>;
+    get(id: string): Promise<Handoff | undefined>;
+    list(): Promise<Handoff[]>;
   };
   reset(): Promise<void>;
 }

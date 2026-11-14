@@ -78,7 +78,7 @@ function countDiscovery(): number {
   return documents.length + (existsSync(path.join(ROOT, "src", "app", "llms.txt", "route.ts")) ? 1 : 0);
 }
 
-async function measureCode(): Promise<Omit<Facts, "tests" | "evals">> {
+async function measureCode(): Promise<Omit<Facts, "tests" | "evals" | "upstream">> {
   const [{ ROLES }, { RuleId }, { TOOLS }, { openApiDocument }, mandate, { SEED_REQUESTS }, { readProductFile, fixtureCatalogPath }] = await Promise.all([
     import("../src/lib/trust"),
     import("../src/lib/contracts/policy"),
@@ -108,10 +108,52 @@ async function measureCode(): Promise<Omit<Facts, "tests" | "evals">> {
   };
 }
 
+/**
+ * Runs Nordic Harbour's 20-line weekly order on the recorded data with an empty cache and counts what reached the
+ * wholesaler's price and availability APIs. The full catalogue's size comes from the product files `npm run setup`
+ * downloads, when present.
+ */
+async function measureUpstream(previous: Facts | undefined): Promise<Facts["upstream"]> {
+  // Only this measurement runs on the recorded catalogue; the test run started afterwards keeps its own environment.
+  const before = process.env.LAITURI_CATALOG;
+  process.env.LAITURI_CATALOG = path.join(ROOT, "fixtures", "upstream", "catalog.json");
+  try {
+    return await weeklyUsage(previous);
+  } finally {
+    if (before === undefined) delete process.env.LAITURI_CATALOG;
+    else process.env.LAITURI_CATALOG = before;
+  }
+}
+
+async function weeklyUsage(previous: Facts | undefined): Promise<Facts["upstream"]> {
+  const [{ buyerAgent, startBasket, toBasket, weeklyRequest }, { weeklyDeliverBy }, { BUYER_IDS }, { UPSTREAM_ID_CAP }, { now }, { readProductFile }] = await Promise.all([
+    import("../src/lib/basket"),
+    import("../src/lib/basket/weekly"),
+    import("../src/lib/mandate/defaults"),
+    import("../src/lib/valio/budget"),
+    import("../src/lib/clock"),
+    import("../src/lib/catalog/load"),
+  ]);
+  const request = weeklyRequest(BUYER_IDS.nordicHarbour, weeklyDeliverBy(now()));
+  const { done } = await startBasket(request, await buyerAgent(BUYER_IDS.nordicHarbour));
+  const stored = await done;
+  if (!stored) throw new Error("The weekly order did not finish.");
+  const { totals } = toBasket(stored);
+  const fullCatalogue = path.join(ROOT, ".data", "catalog.json");
+  return {
+    searchCap: UPSTREAM_ID_CAP.search,
+    quoteLineCap: UPSTREAM_ID_CAP.quoteLine,
+    basketLines: totals.lines,
+    basketCalls: totals.upstreamCalls ?? 0,
+    basketProductsAsked: totals.productsAsked ?? 0,
+    catalogueSize: existsSync(fullCatalogue) ? readProductFile(fullCatalogue).length : previous?.upstream?.catalogueSize ?? 0,
+  };
+}
+
 async function main(): Promise<void> {
   const previous = existsSync(FACTS_FILE) ? (JSON.parse(readFileSync(FACTS_FILE, "utf8")) as Facts) : undefined;
   if (!quick) run("npx", ["tsx", "evals/run.ts"]);
-  const measured = { evals: readEvals(), ...(await measureCode()) };
+  const measured = { evals: readEvals(), ...(await measureCode()), upstream: await measureUpstream(previous) };
   // The test run imports the facts, so a first run needs a file before the test numbers are known.
   const known = previous?.tests ?? { files: 0, total: 0, passed: 0, failed: 0 };
   writeFileSync(FACTS_FILE, `${JSON.stringify({ tests: known, ...measured }, null, 2)}\n`);

@@ -92,7 +92,7 @@ export function openApiDocument(origin: string) {
         "Every step is written to a signed, hash-chained audit log. MCP is available at /mcp.",
     },
     servers: [{ url: origin }],
-    tags: ["Catalogue", "Ordering", "Approvals", "Mandate", "Audit", "Supplier", "System"].map((name) => ({ name })),
+    tags: ["Catalogue", "Ordering", "Approvals", "Mandate", "Audit", "Supplier", "System", "Menus", "Baskets"].map((name) => ({ name })),
     paths,
     components: {
       schemas: componentSchemas(),

@@ -7,15 +7,18 @@
   justify-content: center;
   gap: 8px;
   height: var(--control-h);
-  padding: 0 14px;
+  padding: 0 16px;
   border-radius: var(--r-control);
-  border: 1px solid transparent;
+  border: 2px solid transparent;
   background: transparent;
   color: var(--text-1);
   font: inherit;
-  font-size: var(--fs-13);
-  font-weight: 550;
-  letter-spacing: -0.01em;
+  /* iOS-style buttons: the body face, sentence case. */
+  font-family: var(--font-sans);
+  font-size: var(--fs-base);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0;
   white-space: nowrap;
   cursor: pointer;
   transition:
@@ -43,9 +46,10 @@
   stroke-width: 1.75;
   flex: none;
 }
+/* The one main action per screen: lime with petrol text. */
 .btn-primary {
-  background: var(--accent);
-  color: var(--on-accent);
+  background: var(--cta);
+  color: var(--on-cta);
 }
 .btn-primary[data-paused="true"] {
   background: var(--surface-3);
@@ -53,16 +57,17 @@
   opacity: 1;
 }
 .btn-secondary {
-  background: var(--surface-1);
-  border-color: var(--line-strong);
+  background: transparent;
+  border-color: var(--accent);
+  color: var(--accent);
 }
 .btn-quiet {
-  color: var(--text-2);
+  color: var(--accent);
 }
 .btn.big {
   height: var(--control-h-big);
-  padding: 0 18px;
-  font-size: var(--fs-15);
+  padding: 0 20px;
+  font-size: var(--fs-lg);
 }
 .btn.big::after {
   inset: 0;
@@ -72,7 +77,7 @@
 }
 @media (hover: hover) and (pointer: fine) {
   .btn-primary:hover:not(:disabled) {
-    background: var(--accent-hover);
+    background: var(--cta-hover);
   }
   .btn-secondary:hover:not(:disabled),
   .btn-quiet:hover:not(:disabled) {
@@ -128,7 +133,7 @@
   background: none;
   color: var(--accent);
   font: inherit;
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   font-weight: 550;
   text-decoration: none;
   cursor: pointer;
@@ -175,7 +180,7 @@
   border-radius: var(--r-full);
   background: var(--surface-2);
   color: var(--text-2);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   font-weight: 500;
   line-height: 1;
   white-space: nowrap;
@@ -208,7 +213,7 @@
   border-radius: var(--r-xs);
   border: 1px dashed var(--line-strong);
   color: var(--text-3);
-  font-size: var(--fs-12);
+  font-size: var(--fs-xs);
   font-weight: 500;
   white-space: nowrap;
 }
@@ -254,7 +259,7 @@
   background: transparent;
   color: var(--text-2);
   font: inherit;
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   font-weight: 500;
   white-space: nowrap;
   cursor: pointer;
@@ -297,7 +302,7 @@
   background: var(--surface-1);
   color: var(--text-2);
   font: inherit;
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   font-weight: 500;
   white-space: nowrap;
   cursor: pointer;
@@ -350,7 +355,7 @@
   background: var(--surface-2);
   color: var(--text-1);
   font: inherit;
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   font-weight: 500;
   white-space: nowrap;
 }
@@ -455,7 +460,7 @@
   display: block;
   margin-bottom: 6px;
   color: var(--text-1);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   font-weight: 550;
 }
 .text-field {
@@ -467,7 +472,7 @@
   background: var(--surface-1);
   color: var(--text-1);
   font: inherit;
-  font-size: var(--fs-15);
+  font-size: var(--fs-base);
   transition: border-color var(--d-hover) var(--ease-hover);
 }
 
@@ -544,12 +549,12 @@
 /* One quiet line above a list that holds seeded rows. */
 .history-note {
   color: var(--text-3);
-  font-size: var(--fs-12);
+  font-size: var(--fs-xs);
 }
 
 /* Technical details: closed by default, the summary is one quiet line. */
 .tech-details {
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
 }
 .tech-details summary {
   display: inline-flex;
@@ -610,7 +615,7 @@
 }
 .dash-reason {
   color: var(--text-3);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   font-weight: 450;
   letter-spacing: 0;
 }

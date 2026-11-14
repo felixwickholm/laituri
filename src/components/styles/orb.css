@@ -140,19 +140,12 @@
   stroke: var(--line-strong);
   stroke-width: 1;
 }
-.seal-pier rect {
+/* Laituri's mark: the quay in the text colour, the agent block in our own blue. */
+.seal-mark path {
   fill: var(--text-1);
 }
-.seal-pier path {
-  fill: none;
-  stroke: var(--text-1);
-  stroke-width: 4.5;
-  stroke-linecap: round;
-}
-.seal-pier .seal-water {
-  stroke: var(--orb-tone);
-  stroke-width: 3;
-  transition: stroke var(--d-orb) var(--ease-out);
+.seal-mark .seal-mark-agent {
+  fill: var(--mark-agent);
 }
 
 /* Dark theme: the ring and passed rules give off a little light. */
@@ -178,50 +171,13 @@
   }
 }
 
-/* Chips that float beside an orb: mandate facts at a glance. Placement is set by the host. */
-.orb-chips {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.orb-chip {
-  position: absolute;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  height: 30px;
-  padding: 0 12px;
-  border-radius: var(--r-full);
-  background: var(--surface-1);
-  box-shadow: var(--shadow-2);
-  color: var(--text-1);
-  font-size: var(--fs-12);
-  font-weight: 550;
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-}
-.orb-chip-key {
-  color: var(--text-3);
-  font-weight: 450;
-}
-.orb-chip[data-tone="warn"] {
-  background: var(--warn-tint);
-  color: var(--warn);
-  box-shadow: none;
-}
-.orb-chip[data-tone="warn"] .orb-chip-key {
-  color: inherit;
-  opacity: 0.8;
-}
-:root[data-theme="dark"] .orb-chip {
-  background: var(--surface-2);
-}
 
-/* The live agent panel on the buyer's Today screen: a small orb with one line on what it does, the composer, three scenes. */
+/* The live agent beside the basket: a large orb, one line on what it does, the order field and three examples. */
 .live-agent {
   display: grid;
+  justify-items: center;
   gap: 16px;
-  padding: 18px;
+  padding: 24px 20px 20px;
   border-radius: var(--r-card);
   border: 1px solid var(--line);
   background: var(--surface-1);
@@ -229,29 +185,29 @@
 .live-agent[data-status="suspended"] {
   border-color: color-mix(in srgb, var(--danger) 40%, var(--line));
 }
-.live-agent-top {
-  display: grid;
-  grid-template-columns: 88px minmax(0, 1fr);
-  align-items: center;
-  gap: 16px;
-}
 .live-agent-stage {
   position: relative;
+  width: 200px;
+  max-width: 100%;
 }
 .live-agent-say {
   display: grid;
+  justify-items: center;
   gap: 4px;
+  width: 100%;
   min-width: 0;
+  text-align: center;
 }
 .live-agent-name {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   gap: 4px 10px;
   margin: 0;
   color: var(--text-1);
-  font-size: var(--fs-15);
-  line-height: 20px;
+  font-size: var(--fs-base);
+  line-height: 22px;
   font-weight: 600;
 }
 .live-status {
@@ -259,7 +215,7 @@
   align-items: center;
   gap: 6px;
   color: var(--text-3);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   font-weight: 500;
 }
 .live-dot {
@@ -280,21 +236,38 @@
 .typed-caption {
   margin: 0;
 }
+/* The agent's line: large while short ("Working on line 9 of 20."), never more than three lines. */
 .live-agent-caption {
-  min-height: 40px;
-  color: var(--text-2);
-  font-size: var(--fs-15);
-  line-height: 20px;
-  text-wrap: pretty;
+  display: -webkit-box;
+  min-height: 52px;
+  overflow: hidden;
+  color: var(--text-1);
+  font-size: var(--fs-lg);
+  line-height: 26px;
+  font-weight: 500;
+  text-wrap: balance;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
 }
 .live-agent-offer {
   margin: 0;
   color: var(--warn);
-  font-size: var(--fs-13);
-  font-weight: 500;
+  font-size: var(--fs-sm);
+  font-weight: 600;
 }
 
+/* The order field: a label above, not a chat. */
 .composer {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+}
+.composer-label {
+  color: var(--text-1);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+.composer-field {
   display: flex;
   align-items: center;
   gap: 2px;
@@ -307,11 +280,11 @@
     border-color var(--d-hover) var(--ease-hover),
     box-shadow var(--d-hover) var(--ease-hover);
 }
-.composer:focus-within {
+.composer-field:focus-within {
   border-color: var(--accent);
   box-shadow: 0 0 0 1px var(--accent);
 }
-.composer input {
+.composer-field input {
   flex: 1;
   min-width: 0;
   height: 100%;
@@ -319,14 +292,14 @@
   background: transparent;
   color: var(--text-1);
   font: inherit;
-  font-size: var(--fs-15);
+  font-size: var(--fs-base);
   outline: none;
   text-overflow: ellipsis;
 }
-.composer input::placeholder {
+.composer-field input::placeholder {
   color: var(--text-3);
 }
-/* Inside the 48px composer the two buttons stay 36px, with the hit area grown to 44px around them. */
+/* Inside the 48px field the two buttons stay 36px, with the hit area grown to 44px around them. */
 .composer .icon-btn {
   width: 36px;
   height: 36px;
@@ -344,79 +317,50 @@
   color: var(--on-accent);
 }
 
-/* The three scripted scenes: one row each, a title and what it shows. */
-.scenes {
+/* Three examples, one tap each: Valio Aimo's milk sentence, an event, the weekly order. */
+.examples {
   display: grid;
-  gap: 2px;
+  gap: 6px;
+  width: 100%;
 }
-.scenes-note {
-  margin: 0 0 4px;
-  color: var(--text-3);
-  font-size: var(--fs-12);
-}
-.scene {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 16px;
-  grid-template-areas:
-    "title go"
-    "explain go";
+.example {
+  display: flex;
   align-items: center;
-  gap: 1px 10px;
-  padding: 9px 10px;
-  margin-inline: -10px;
-  width: calc(100% + 20px);
-  border: 0;
-  border-radius: var(--r-control);
-  background: transparent;
-  color: inherit;
+  gap: 10px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border-radius: var(--r-card);
+  border: 1px solid var(--line);
+  background: var(--surface-1);
+  color: var(--text-1);
   font: inherit;
+  font-size: var(--fs-sm);
+  line-height: 20px;
   text-align: left;
+  text-decoration: none;
   cursor: pointer;
   transition:
     background-color var(--d-hover) var(--ease-hover),
-    transform var(--d-press) var(--ease-out),
-    opacity var(--d-fast) var(--ease-out);
+    border-color var(--d-hover) var(--ease-hover),
+    transform var(--d-press) var(--ease-out);
 }
-.scene:active:not(:disabled) {
+.example svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  color: var(--accent);
+}
+.example:active:not(:disabled) {
   transform: var(--press);
 }
-.scene:disabled {
+.example:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
-.scene[data-running="true"] {
-  background: var(--accent-tint);
-  opacity: 1;
-}
-.scene-title {
-  grid-area: title;
-  color: var(--text-1);
-  font-size: var(--fs-13);
-  line-height: 18px;
-  font-weight: 550;
-}
-.scene-explain {
-  grid-area: explain;
-  color: var(--text-3);
-  font-size: var(--fs-13);
-  line-height: 18px;
-}
-.scene-go {
-  grid-area: go;
-  width: 16px;
-  height: 16px;
-  color: var(--text-4);
-}
-.scene[data-running="true"] .scene-title,
-.scene[data-running="true"] .scene-go {
-  color: var(--accent);
-}
 @media (hover: hover) and (pointer: fine) {
-  .scene:hover:not(:disabled) {
+  .example:hover:not(:disabled) {
+    border-color: var(--line-strong);
     background: var(--surface-2);
-  }
-  .scene:hover:not(:disabled) .scene-go {
-    color: var(--text-2);
   }
 }
 
@@ -424,13 +368,7 @@
   .live-agent {
     padding: 16px 14px;
   }
-  .composer {
+  .composer-field {
     padding-left: 12px;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .scene:active:not(:disabled) {
-    transform: none;
   }
 }

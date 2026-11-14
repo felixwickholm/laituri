@@ -39,7 +39,7 @@ describe("agent keys", () => {
   });
 
   it("claims the key is the visitor's own only in a sandbox", () => {
-    expect(keyNote("sandbox")).toBe("This key is yours: calls made with it appear in your own demo workspace.");
+    expect(keyNote("sandbox")).toBe("This key is yours. Its calls show up only for you.");
     expect(keyNote("shared")).toContain("shared workspace");
     expect(keyNote("shared")).not.toContain("yours");
     expect(keyNote(undefined)).toBeUndefined();

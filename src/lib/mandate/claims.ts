@@ -45,6 +45,9 @@ export function toClaims(mandate: Mandate, audience: string): MandateClaims {
         exclude_allergens: mandate.dietary.excludeAllergens,
         block_may_contain: mandate.dietary.blockMayContain,
         required_claims: mandate.dietary.requiredClaims,
+        ...(mandate.dietary.neverBuy
+          ? { never_buy_products: mandate.dietary.neverBuy.products.map((item) => item.productId), never_buy_words: mandate.dietary.neverBuy.words }
+          : {}),
       },
       {
         type: "fi.valio.substitution",

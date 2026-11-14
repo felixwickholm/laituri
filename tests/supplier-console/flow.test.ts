@@ -9,6 +9,7 @@ import {
   layoutFlow,
   nodeFigure,
   nodeLines,
+  requestBars,
   spreadLabels,
   type FlowInput,
 } from "@/lib/supplier-console/flow";
@@ -69,7 +70,7 @@ describe("demand flow", () => {
   it("counts orders by outcome, folds rejected into stopped and shares the ordered band by proportion", () => {
     const model = demandFlow({ ...INPUT, ordered: 12 });
     expect(model.orders).toBe(24);
-    expect(node(model, "stopped")).toMatchObject({ count: 4, net: 767.44, detail: "3 blocked by the buyer's rules · 1 rejected by a person" });
+    expect(node(model, "stopped")).toMatchObject({ count: 4, net: 767.44, detail: "3 blocked by the customer's rules · 1 rejected by a person" });
     expect(node(model, "confirmed_auto")?.weight).toBeCloseTo(6);
     const weights = model.nodes.filter((item) => item.stage === 3).reduce((sum, item) => sum + item.weight, 0);
     expect(weights).toBeCloseTo(12);
@@ -105,7 +106,7 @@ describe("demand flow", () => {
 
   it("keeps served requests as one node when the alternative split is unknown", () => {
     const model = demandFlow({ ...INPUT, alternatives: undefined });
-    expect(node(model, "in_full")).toMatchObject({ label: "Signed offer", count: 25 });
+    expect(node(model, "in_full")).toMatchObject({ label: "Fixed price", count: 25 });
     expect(node(model, "alternative")).toBeUndefined();
   });
 
@@ -124,7 +125,7 @@ describe("demand flow", () => {
     expect(nodeFigure(node(model, "in_full")!)).toBe("21");
     expect(nodeLines(node(model, "no_order")!, model)).toEqual(["1 request of 25 served"]);
     expect(nodeLines(node(model, "not_found")!, model)).toEqual(["3 requests of 31", "3 requests without a price"]);
-    expect(nodeLines(node(model, "waiting")!, model)).toEqual(["1 order of 24", "€909.00 net", "A person at the buyer decides"]);
+    expect(nodeLines(node(model, "waiting")!, model)).toEqual(["1 order of 24", "€909.00 net", "A person at the customer decides"]);
     expect(flowSummary(model)).toBe("31 requests: 25 served with a signed offer, 6 could not be served; 24 led to 24 orders.");
     expect(flowSummary(demandFlow({ ...INPUT, requests: 0, unmet: [] }))).toBe("No requests yet.");
   });
@@ -204,5 +205,16 @@ describe("label spreading", () => {
     expect(spreadLabels([10, 12, 100], 30, 0, 300)).toEqual([15, 45, 100]);
     expect(spreadLabels([280, 290, 295], 30, 0, 300)).toEqual([225, 255, 285]);
     expect(spreadLabels([], 30, 0, 300)).toEqual([]);
+  });
+});
+
+describe("request bars", () => {
+  it("gives one plain bar per outcome that adds up to the week's requests", () => {
+    const model = demandFlow(INPUT);
+    const bars = requestBars(model);
+    expect(bars[0]).toMatchObject({ key: "ordered", label: "Ordered", tone: "good" });
+    expect(bars.every((bar) => bar.count > 0)).toBe(true);
+    expect(bars.reduce((sum, bar) => sum + bar.count, 0)).toBe(model.requests);
+    expect(bars.filter((bar) => bar.tone === "lost").every((bar) => bar.label.startsWith("Lost: "))).toBe(true);
   });
 });

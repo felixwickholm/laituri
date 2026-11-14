@@ -13,6 +13,9 @@ import { findTool, TOOLS } from "./tools";
 
 export const SERVER_NAME = "laituri-valio-aimo";
 
+/** Tools that change state at the wholesaler: they issue offers or place orders. */
+const WRITING_TOOLS = new Set(["request_quote", "place_order", "place_basket"]);
+
 export const INSTRUCTIONS = [
   "This server lets you buy food-service products from the wholesaler Valio Aimo for your buyer.",
   "1. search_catalog to turn the need into product codes; check the interpretation confidence.",
@@ -21,6 +24,7 @@ export const INSTRUCTIONS = [
   "4. place_order with the offer JWS unchanged, the mandate JWS and a new idempotency key.",
   "If the order is pending_approval, stop and tell your human. Orders are simulated; verify_audit proves every step.",
   "Hits come best buy first when the match is clear. One offer gives one order.",
+  "For many lines at once, such as a weekly order, place_basket works each line as its own offer and order and says which lines need your human.",
 ].join("\n");
 
 /** Dates in requests are YYYY-MM-DD, so the agent is told which day it is at the wholesaler. */
@@ -37,7 +41,7 @@ function toolList() {
     description: tool.description,
     inputSchema: inlineSchema(tool.input, "input") as { type: "object" },
     outputSchema: inlineSchema(tool.output, "output") as { type: "object" },
-    annotations: { title: tool.title, readOnlyHint: tool.name !== "place_order" && tool.name !== "request_quote" },
+    annotations: { title: tool.title, readOnlyHint: !WRITING_TOOLS.has(tool.name) },
   }));
 }
 

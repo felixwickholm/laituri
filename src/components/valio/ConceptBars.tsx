@@ -14,7 +14,7 @@ export function ConceptBars({ concepts, requests, unmet }: { concepts: ConceptDe
   return (
     <section className="block" aria-labelledby="concepts-title">
       <header className="block-head">
-        <h2 id="concepts-title">What agents ask for</h2>
+        <h2 id="concepts-title">Most asked</h2>
         <span className="block-meta tier-key">
           <span className="tier-dot" data-tier="served" aria-hidden="true" />
           Served
@@ -23,7 +23,7 @@ export function ConceptBars({ concepts, requests, unmet }: { concepts: ConceptDe
         </span>
       </header>
       {concepts.length === 0 ? (
-        <EmptyState icon={ShoppingBasket} text="No agent has asked for anything yet." action={{ href: "/connect", label: "Connect an agent" }} />
+        <EmptyState icon={ShoppingBasket} text="Nothing asked yet." action={{ href: "/connect", label: "Connect an agent" }} />
       ) : (
         <div className="card">
           <ol className="bar-list concept-bars">
@@ -48,7 +48,7 @@ export function ConceptBars({ concepts, requests, unmet }: { concepts: ConceptDe
             })}
           </ol>
           <p className="card-note">
-            {count(concepts.reduce((sum, concept) => sum + concept.requests, 0))} of {count(requests)} requests named one of these products. Bars count requests.
+            {count(concepts.reduce((sum, concept) => sum + concept.requests, 0))} of {count(requests)} requests
           </p>
         </div>
       )}

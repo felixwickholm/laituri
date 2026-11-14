@@ -1,7 +1,7 @@
 import { CircleCheck, CircleX, Clock3 } from "lucide-react";
 import type { AuditEntry, Order } from "@/lib/contracts";
 import { eur } from "@/lib/console/format/money";
-import { blockedLine, shortName } from "@/lib/console/format/rules";
+import { blockedLine } from "@/lib/console/format/rules";
 import { day, hourMinute } from "@/lib/console/format/time";
 import { deadline, type OrderPhase } from "./phone-order";
 
@@ -17,7 +17,7 @@ function view({ order, state, stopped }: PhoneResultProps): { tone: "success" | 
   if (order.refusal) return { tone: "danger", word: "Refused", line: order.refusal.message };
   const reason = blockedLine(order).replace(/^Blocked\.\s*/, "");
   if (stopped) return { tone: "danger", word: "Not ordered", line: `It changed while it waited. ${reason} Nothing was ordered.` };
-  if (state === "blocked") return { tone: "danger", word: "Blocked by the rules", line: reason };
+  if (state === "blocked") return { tone: "danger", word: "Blocked by your limits", line: reason };
   if (state === "expired") {
     return {
       tone: "neutral",
@@ -38,7 +38,7 @@ export function PhoneResult(props: PhoneResultProps) {
   const { order, entry } = props;
   const { tone, word, line } = view(props);
   const Icon = tone === "success" ? CircleCheck : tone === "danger" ? CircleX : Clock3;
-  const signer = order.approval ? shortName(order.approval.decidedBy.name) : undefined;
+  const signer = order.approval ? "Purchasing manager" : undefined;
 
   return (
     <div className="ph-result" data-tone={tone} role="status">
@@ -47,8 +47,8 @@ export function PhoneResult(props: PhoneResultProps) {
       <p className="ph-result-line">{line}</p>
       {signer ? (
         <p className="ph-signed">
-          Signed by {signer}
-          {entry ? ` · logged as entry ${entry.seq}` : " · writing to the log…"}
+          Decided by the {signer.toLowerCase()}
+          {entry ? ` · step ${entry.seq} in the record` : " · saving to the record…"}
         </p>
       ) : null}
     </div>

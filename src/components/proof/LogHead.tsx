@@ -13,18 +13,17 @@ import { VerifySteps } from "./VerifySteps";
 export type LogAudience = "buyer" | "wholesaler";
 
 const CHECKED: Record<LogAudience, string> = {
-  buyer: "checked in your browser with Valio Aimo’s public keys",
-  wholesaler: "checked in this browser with Valio Aimo’s public keys",
+  buyer: "checked on your device",
+  wholesaler: "checked on this device",
 };
 
-export const PAUSED_UNTIL_RESTORED = "Approvals stay paused until the log is restored from the last signed checkpoint.";
-export const DISPUTE_LINE = "If a customer disputes an order, both sides check the same record in seconds.";
+const PAUSED_UNTIL_RESTORED = "Approvals wait until the record is put back.";
 
 function headline(chain: ChainState, missing: boolean): string {
-  if (chain.state === "verified") return "Verified";
-  if (chain.state === "broken") return missing ? "Entries are missing" : `Broken at entry ${chain.brokenAt}`;
+  if (chain.state === "verified") return "Nothing changed after it was written";
+  if (chain.state === "broken") return missing ? "Steps are missing" : `Step ${chain.brokenAt} changed after it was written`;
   if (chain.state === "checking") return "Checking";
-  return "Nothing logged yet";
+  return "Nothing in the record yet";
 }
 
 interface LogHeadProps {
@@ -34,7 +33,7 @@ interface LogHeadProps {
   audience?: LogAudience;
 }
 
-/** The log's seal: the verdict, the browser's check replayed step by step, and a way to run it again. */
+/** The record's seal: the verdict, the check on this device replayed step by step, and a way to run it again. */
 export function LogHead({ audit, chain, audience = "buyer" }: LogHeadProps) {
   const { state: replay, replay: verifyAgain } = useVerifyReplay(audit, chain);
   const lastSeq = audit.length ? audit[audit.length - 1].seq : 0;
@@ -50,25 +49,24 @@ export function LogHead({ audit, chain, audience = "buyer" }: LogHeadProps) {
           {state === "verified" ? <CircleCheck /> : state === "broken" ? <CircleX /> : <LoaderCircle className={state === "checking" ? "spin" : undefined} />}
         </span>
         <div>
-          <p className="log-title" aria-live="polite">
-            {running ? "Checking every entry…" : headline(chain, missing)}
-          </p>
+          <h2 className="log-title" aria-live="polite">
+            {running ? "Checking every step…" : headline(chain, missing)}
+          </h2>
           <p className="log-sub">
-            {chain.state === "empty" ? "Each step is signed and chained here as it happens." : `${count(entries)} ${entries === 1 ? "entry" : "entries"} · ${CHECKED[audience]}`}
+            {chain.state === "empty" ? "Empty" : `${count(entries)} ${entries === 1 ? "step" : "steps"} · ${CHECKED[audience]}`}
           </p>
         </div>
       </div>
       <button type="button" className="btn btn-secondary" onClick={verifyAgain} disabled={running || audit.length === 0}>
         <RefreshCw aria-hidden="true" className={running ? "spin" : undefined} />
-        Verify again
+        Check again
       </button>
       <VerifySteps state={replay} />
       {chain.state === "broken" ? (
         <p className="log-alarm" role="alert">
-          {missing ? "The newest entries this browser saw are gone." : `Entry ${chain.brokenAt} was changed after it was written.`} {PAUSED_UNTIL_RESTORED}
+          {missing ? "The newest steps this device saw are gone." : `Step ${chain.brokenAt} was changed after it was written.`} {PAUSED_UNTIL_RESTORED}
         </p>
       ) : null}
-      <p className="log-why">{DISPUTE_LINE}</p>
       <TechDetails
         rows={[
           { label: "Public keys", value: <a href="/.well-known/jwks.json" target="_blank" rel="noreferrer">/.well-known/jwks.json</a>, mono: true },

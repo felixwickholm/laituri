@@ -21,8 +21,8 @@ export interface FlowState {
 
 export const FLOW_STEPS: { id: FlowStepId; label: string }[] = [
   { id: "search", label: "Search the catalogue" },
-  { id: "quote", label: "Get a signed offer" },
-  { id: "mandate", label: "Read the mandate" },
+  { id: "quote", label: "Get a fixed price" },
+  { id: "mandate", label: "Read your limits" },
   { id: "order", label: "Place the order" },
 ];
 

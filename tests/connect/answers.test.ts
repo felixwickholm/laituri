@@ -17,11 +17,11 @@ describe("order answers", () => {
   it("reads 201 as confirmed and 202 as waiting for a person", () => {
     expect(readOrderAnswer(201, { id: "ord_1", status: "confirmed" })).toEqual({
       tone: "ok",
-      summary: "Confirmed inside the mandate. Valio Aimo signed the receipt. Order ord_1.",
+      summary: "Ordered inside your limits. Valio Aimo signed the receipt. Order ord_1.",
     });
     expect(readOrderAnswer(202, { id: "ord_2", status: "pending_approval" })).toEqual({
       tone: "waiting",
-      summary: "More than the mandate allows alone. Waiting for a person to approve. Order ord_2.",
+      summary: "Needs you. A person approves it before it is ordered. Order ord_2.",
     });
   });
 

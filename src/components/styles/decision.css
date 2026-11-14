@@ -1,144 +1,5 @@
-/* Needs you: the decision card, recent decisions, and the mandate summary that sits under them. */
+/* Calm empty states, the signature line under a page title, and the suspension banner. */
 
-.inbox {
-  display: grid;
-  gap: 12px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.approval {
-  transition:
-    opacity var(--d-base) var(--ease-out),
-    transform var(--d-base) var(--ease-out);
-  @starting-style {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-}
-.approval[data-leaving="true"] {
-  opacity: 0;
-  transform: scale(0.98);
-}
-
-.decision {
-  display: grid;
-  gap: 14px;
-  padding: 20px;
-  border-radius: var(--r-card);
-  border: 1px solid var(--line-strong);
-  background: var(--surface-1);
-}
-.decision-reason {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  margin: 0;
-  color: var(--text-1);
-  font-size: var(--fs-15);
-  line-height: 22px;
-  font-weight: 600;
-}
-.decision-reason::before {
-  content: "";
-  flex: none;
-  width: 8px;
-  height: 8px;
-  border-radius: var(--r-full);
-  background: var(--warn);
-  transform: translateY(-1px);
-}
-.decision-amount {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
-.decision-amount .amount {
-  font-size: var(--fs-title);
-  line-height: 40px;
-  font-weight: 600;
-  letter-spacing: var(--track-title);
-  font-variant-numeric: tabular-nums;
-}
-.decision-amount .net {
-  color: var(--text-3);
-  font-size: var(--fs-15);
-}
-.decision-amount .age {
-  margin-left: auto;
-  color: var(--text-3);
-  font-size: var(--fs-13);
-  white-space: nowrap;
-}
-.decision-more {
-  margin: -6px 0 0;
-  padding: 0 0 0 18px;
-  color: var(--text-2);
-  font-size: var(--fs-15);
-  line-height: 20px;
-}
-.mini-proof {
-  display: grid;
-  gap: 6px;
-  margin: 0;
-  padding: 12px 14px;
-  border-radius: var(--r-control);
-  background: var(--surface-2);
-  list-style: none;
-}
-.mini-proof li {
-  display: grid;
-  grid-template-columns: 16px minmax(0, 1fr);
-  gap: 8px;
-  color: var(--text-2);
-  font-size: var(--fs-13);
-  line-height: 19px;
-}
-.mini-proof svg {
-  width: 15px;
-  height: 15px;
-  margin-top: 2px;
-  stroke-width: 2.25;
-  color: var(--success);
-}
-.mini-proof li[data-ok="false"] svg {
-  color: var(--danger);
-}
-.decide {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-.paused-note {
-  margin: -4px 0 0;
-  color: var(--danger);
-  font-size: var(--fs-13);
-}
-.decision > .text-link {
-  justify-self: start;
-}
-
-.recent {
-  margin-top: 4px;
-  padding: 4px 20px;
-  border-radius: var(--r-card);
-  border: 1px solid var(--line);
-  background: var(--surface-1);
-}
-.recent h3 {
-  display: flex;
-  justify-content: space-between;
-  margin: 14px 0 2px;
-  color: var(--text-3);
-  font-size: var(--fs-13);
-  font-weight: 500;
-}
-.recent-meta {
-  font-weight: 450;
-}
-.recent .history-note {
-  margin: 0 0 4px;
-}
 /* An empty queue stays calm: an icon, one sentence, the next thing to do. */
 .quiet-empty {
   display: flex;
@@ -155,85 +16,6 @@
   height: 18px;
   color: var(--text-3);
 }
-.handled-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.handled-list li + li {
-  border-top: 1px solid var(--line);
-}
-.handled {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px 12px;
-  width: 100%;
-  padding: 12px 0 14px;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  transition: transform var(--d-press) var(--ease-out);
-}
-.handled:active {
-  transform: scale(0.99);
-}
-.handled-what {
-  min-width: 0;
-  overflow: hidden;
-  color: var(--text-1);
-  font-size: var(--fs-15);
-  line-height: 20px;
-  font-weight: 500;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.handled-amount {
-  color: var(--text-1);
-  font-size: var(--fs-15);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  text-align: right;
-}
-.handled-state {
-  grid-column: 1 / -1;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 10px;
-}
-.handled-when {
-  color: var(--text-3);
-  font-size: var(--fs-13);
-}
-@media (hover: hover) and (pointer: fine) {
-  .handled:hover .handled-what {
-    color: var(--accent);
-  }
-}
-
-.mandate-card {
-  display: grid;
-  gap: 10px;
-}
-.mandate-may {
-  margin: 0;
-  color: var(--text-1);
-  font-size: var(--fs-15);
-  line-height: 23px;
-}
-.mandate-limits {
-  margin: 0;
-  color: var(--text-2);
-  font-size: var(--fs-15);
-  line-height: 21px;
-}
-.mandate-card .text-link {
-  justify-self: start;
-  margin-top: 4px;
-}
 
 .signature-line {
   display: flex;
@@ -241,7 +23,7 @@
   gap: 8px;
   margin: 0;
   color: var(--text-2);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   line-height: 19px;
 }
 .signature-line svg {
@@ -263,27 +45,13 @@
   color: var(--text-3);
 }
 .page-lede .signature-line {
-  font-size: var(--fs-15);
+  font-size: var(--fs-base);
   line-height: 22px;
 }
 .page-lede .signature-line svg {
   width: 18px;
   height: 18px;
   margin-top: 2px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .approval {
-    @starting-style {
-      transform: none;
-    }
-  }
-  .approval[data-leaving="true"] {
-    transform: none;
-  }
-  .handled:active {
-    transform: none;
-  }
 }
 
 /* Across Today when Valio Aimo has suspended the buyer's agent. */
@@ -311,19 +79,19 @@
 .suspension h2 {
   margin: 0;
   color: var(--text-1);
-  font-size: var(--fs-15);
+  font-size: var(--fs-base);
   line-height: 22px;
   font-weight: 600;
 }
 .suspension p {
   margin: 0;
   color: var(--text-1);
-  font-size: var(--fs-15);
+  font-size: var(--fs-base);
   line-height: 22px;
 }
 .suspension .suspension-effect {
   color: var(--text-2);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   line-height: 20px;
 }
 .suspension .btn {
@@ -338,41 +106,4 @@
     justify-self: start;
     margin-top: 8px;
   }
-}
-
-/* An approval the re-check stopped: why, and the signed alternatives Valio Aimo offers instead. */
-.decision-stopped {
-  display: grid;
-  gap: 8px;
-  padding: 12px 14px;
-  border-radius: var(--r-control);
-  background: var(--danger-tint);
-  color: var(--text-1);
-  font-size: var(--fs-13);
-  line-height: 19px;
-}
-.decision-stopped p {
-  margin: 0;
-}
-.decision-stopped .decision-stopped-lead {
-  color: var(--text-2);
-}
-.decision-stopped ul {
-  display: grid;
-  gap: 6px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.decision-stopped li {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0 12px;
-}
-.decision-stopped li .sub {
-  grid-column: 1 / -1;
-  color: var(--text-2);
-}
-.decision-stopped .btn {
-  justify-self: start;
 }

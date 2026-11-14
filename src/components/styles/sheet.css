@@ -55,11 +55,11 @@
 }
 .sheet-kicker {
   color: var(--text-3);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
 }
 .sheet-head h2 {
   margin: 2px 0 0;
-  font-size: var(--fs-18);
+  font-size: var(--fs-lg);
   line-height: 26px;
   font-weight: 600;
   letter-spacing: -0.015em;
@@ -67,7 +67,7 @@
 .sheet-head .lede {
   margin: 4px 0 0;
   color: var(--text-3);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   line-height: 18px;
 }
 .sheet-head .close {
@@ -97,7 +97,7 @@
 }
 .sheet-foot .note {
   color: var(--text-3);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
 }
 .sheet-foot .end {
   display: flex;

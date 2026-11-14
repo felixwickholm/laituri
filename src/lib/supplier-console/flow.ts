@@ -3,7 +3,7 @@ import { count, eur } from "@/lib/console/format/money";
 import type { OrderStats } from "@/lib/contracts";
 import type { Activity } from "@/lib/store/types";
 import { plural, reasonTotals } from "./format";
-import type { DailyPoint, UnmetReason, UnmetRequest } from "./types";
+import type { DailyPoint, PlainBar, UnmetReason, UnmetRequest } from "./types";
 
 /*
  * "Where demand went": the week's requests, how Valio Aimo answered them, and what the answers turned into.
@@ -124,22 +124,22 @@ export function orderOutcomes(o: OrderStats["byOutcome"], week: FlowInput["week"
   }
   return [
     { id: "confirmed_auto", label: "Confirmed alone", tone: "confirmed", ...o.confirmed_auto, detail: "No person was needed" },
-    { id: "confirmed_after_approval", label: "Confirmed after approval", tone: "confirmed-soft", ...o.confirmed_after_approval, detail: "A person approved it first" },
-    { id: "waiting", label: "Waiting for approval", tone: "waiting", ...o.waiting, detail: "A person at the buyer decides" },
+    { id: "confirmed_after_approval", label: "A person approved", tone: "confirmed-soft", ...o.confirmed_after_approval, detail: "A person approved it first" },
+    { id: "waiting", label: "Needs the customer", tone: "waiting", ...o.waiting, detail: "A person at the customer decides" },
     {
       id: "stopped",
-      label: "Stopped by the buyer",
+      label: "Stopped",
       tone: "stopped",
       count: o.blocked.count + o.rejected.count,
       net: cents(o.blocked.net, o.rejected.net),
       detail: [
-        o.blocked.count > 0 ? `${count(o.blocked.count)} blocked by the buyer's rules` : "",
+        o.blocked.count > 0 ? `${count(o.blocked.count)} blocked by the customer's rules` : "",
         o.rejected.count > 0 ? `${count(o.rejected.count)} rejected by a person` : "",
       ]
         .filter(Boolean)
         .join(" · "),
     },
-    { id: "refused", label: "Refused", tone: "refused", ...o.refused, detail: "A signature did not verify, or the offer or mandate was not issued here" },
+    { id: "refused", label: "Refused", tone: "refused", ...o.refused, detail: "A seal did not match, or the price or limits came from elsewhere" },
   ];
 }
 
@@ -163,11 +163,11 @@ export function demandFlow(input: FlowInput): FlowModel {
 
   const all: FlowNode[] = [
     { id: "requests", stage: 0, label: "Requests", count: requests, unit: "request", tone: "base", weight: requests },
-    { id: "in_full", stage: 1, label: split ? "Signed offer in full" : "Signed offer", count: served - alternative, unit: "request", tone: "served", weight: served - alternative },
+    { id: "in_full", stage: 1, label: split ? "Fixed price, as asked" : "Fixed price", count: served - alternative, unit: "request", tone: "served", weight: served - alternative },
     {
       id: "alternative",
       stage: 1,
-      label: "Signed alternative offered",
+      label: "Other product",
       count: alternative,
       unit: "request",
       tone: "served-soft",
@@ -413,4 +413,27 @@ export function flowRows(model: FlowModel): FlowRow[] {
     { key: "orders", label: "Orders", total: count(model.orders), parts: stage(3) },
   ];
   return rows.filter((row) => row.parts.length > 0);
+}
+
+/**
+ * The week's requests as one plain bar per outcome: ordered, priced but not ordered, and lost by reason. Counts come
+ * from the flow model, so they add up to the week's requests and never exceed it.
+ */
+export function requestBars(model: FlowModel): PlainBar[] {
+  const node = (id: FlowNodeId) => model.nodes.find((item) => item.id === id);
+  const bars: PlainBar[] = [
+    { key: "ordered", label: "Ordered", count: node("ordered")?.count ?? 0, tone: "good" },
+    { key: "no_order", label: "Priced, not ordered", count: node("no_order")?.count ?? 0, tone: "neutral" },
+  ];
+  for (const item of model.nodes.filter((entry) => entry.tone === "unserved")) {
+    const priced = item.net !== undefined && item.net > 0;
+    bars.push({
+      key: item.id,
+      label: `Lost: ${item.label.toLowerCase()}`,
+      count: item.count,
+      tone: "lost",
+      ...(priced ? { note: `${eur(item.net ?? 0)} est.` } : item.unpriced ? { note: "no price" } : {}),
+    });
+  }
+  return bars.filter((bar) => bar.count > 0);
 }

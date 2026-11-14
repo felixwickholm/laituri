@@ -1,5 +1,6 @@
 import type { SchemaName } from "./schemas";
 import { EXAMPLES } from "./examples";
+import { MENU_OPERATIONS } from "./menu-operations";
 
 /**
  * agent: a bearer key, or anonymous for catalogue and quotes. reader: records read with an agent key (its own buyer only),
@@ -31,7 +32,7 @@ export interface Operation {
   path: string;
   summary: string;
   description?: string;
-  tag: "Catalogue" | "Ordering" | "Approvals" | "Mandate" | "Audit" | "Supplier" | "System";
+  tag: "Catalogue" | "Ordering" | "Approvals" | "Mandate" | "Audit" | "Supplier" | "System" | "Menus" | "Baskets";
   audience: Audience;
   scope?: Scope;
   parameters?: Parameter[];
@@ -121,6 +122,55 @@ export const OPERATIONS: Operation[] = [
     summary: "Recent calls by one buyer's agents and by callers without a token",
     parameters: [{ name: "after", in: "query", type: "string", description: "Only activity after this id" }, buyerQuery],
     response: "ActivityList", errors: [400, 403] }),
+  { operationId: "createBasket", method: "post", path: "/api/v1/baskets", tag: "Baskets", audience: "agent", scope: "order:place",
+    summary: "Order many lines for one delivery day",
+    description:
+      "Answers 202 with the basket id at once. The buyer's agent then works every line, about four at a time: a search, a signed offer quoted with the line's words, " +
+      "and one order under the mandate. Each line is its own offer and order, so signatures, the request check, the mandate rules, stock and the audit chain apply to each. " +
+      "Poll GET /api/v1/baskets/{id}: lines turn green (ordered alone), orange (waits for a person) or red (not ordered), each with a plain reason. " +
+      "With an agent key the basket is that key's buyer's and its source is agent (or menu, for a planned menu's lines); a browser in its sandbox or a signed-in person orders for the chosen buyer. Also the MCP tool place_basket. " +
+      "A retry with the same Idempotency-Key gets the first basket's id; the same key with different lines is 409.",
+    parameters: [{ name: "Idempotency-Key", in: "header", type: "string", description: "Repeat the same key to retry safely" }],
+    body: "CreateBasketRequest", response: "BasketStarted", status: 202, errors: [400, 401, 409] },
+  reader({ operationId: "listBaskets", method: "get", path: "/api/v1/baskets", tag: "Baskets",
+    summary: "One buyer's baskets, newest first", parameters: [buyerQuery], response: "BasketList", errors: [400, 403] }),
+  reader({ operationId: "getBasket", method: "get", path: "/api/v1/baskets/{basketId}", tag: "Baskets",
+    summary: "A basket and the state of every line", description: "Another buyer's basket, or one from another workspace, is not found.",
+    parameters: [id("basketId", "Basket id"), buyerQuery], response: "Basket", errors: [400, 403, 404] }),
+  { operationId: "startWeeklyBasket", method: "post", path: "/api/v1/baskets/weekly", tag: "Baskets", audience: "agent", scope: "order:place",
+    summary: "Start the buyer's standing weekly order for next Monday",
+    description: "The lines of GET /api/v1/baskets/weekly/draft, worked like any basket. Answers 202 with the basket id. A retry with the same Idempotency-Key gets the first basket's id.",
+    parameters: [{ name: "Idempotency-Key", in: "header", type: "string", description: "Repeat the same key to retry safely" }],
+    response: "BasketStarted", status: 202, errors: [401] },
+  reader({ operationId: "getWeeklyDraft", method: "get", path: "/api/v1/baskets/weekly/draft", tag: "Baskets",
+    summary: "This week's standing order before it starts",
+    description: "Each line with last week's quantity and whether it changed, the order cut-off, and drift sentences computed from the weeks on record.",
+    parameters: [buyerQuery], response: "WeeklyDraft", errors: [400, 403] }),
+  human({ operationId: "resolveBasketLine", method: "post", path: "/api/v1/baskets/{basketId}/lines/{lineId}/resolve", tag: "Baskets",
+    summary: "Take one option on an orange or red line (buyer console only)",
+    description:
+      "approve signs the waiting order with the approver key; substitute orders one of the wholesaler's signed alternatives (or a product of the same kind " +
+      "without the excluded allergen); quantity orders what is in stock now; skip leaves the line out; handoff asks a person at Valio Aimo. " +
+      "Every order still goes through the mandate, so a never rule blocks it whoever chose it. An option that is not on the line is refused with 400. " +
+      "Each choice is a signed audit entry naming the person and the option. Refused for agent credentials.",
+    parameters: [id("basketId", "Basket id"), id("lineId", "Line id, for example line_4")],
+    body: "ResolveLineRequest", response: "Basket", errors: [400, 404, 409] }),
+  human({ operationId: "createHandoff", method: "post", path: "/api/v1/handoffs", tag: "Baskets",
+    summary: "Ask a person at Valio Aimo (buyer console only)",
+    description:
+      "About a basket line, an order or nothing named. The answer says when a person answers: Monday to Friday 8:00-16:00 Helsinki time is a demo assumption. " +
+      "A signed audit entry records it. Refused for agent credentials.",
+    body: "CreateHandoffRequest", response: "Handoff", status: 201, errors: [400, 404] }),
+  human({ operationId: "listHandoffs", method: "get", path: "/api/v1/handoffs", tag: "Baskets",
+    summary: "Questions to Valio Aimo, newest first (console only)",
+    description:
+      "A signed-in operator sees every hand-off in the workspace; the buyer's approver, or a browser in its own sandbox, sees that buyer's. " +
+      "Refused for agent credentials; 401 without a session or sandbox.",
+    parameters: [buyerQuery], response: "HandoffList", errors: [400, 401] }),
+  operator({ operationId: "answerHandoff", method: "post", path: "/api/v1/handoffs/{handoffId}/answer", tag: "Baskets",
+    summary: "Answer a kitchen (wholesaler operator only)",
+    description: "Needs a wholesaler operator session. Answering twice is refused with 409. A signed audit entry records the answer.",
+    parameters: [id("handoffId", "Hand-off id")], body: "HandoffAnswerRequest", response: "Handoff", errors: [400, 404, 409] }),
   operator({ operationId: "getSupplierOverview", method: "get", path: "/api/v1/supplier/overview", tag: "Supplier",
     summary: "The wholesaler's view of agent trade across every buyer",
     description:
@@ -166,6 +216,25 @@ export const OPERATIONS: Operation[] = [
     response: "VoiceSettings", errors: [403] },
   { operationId: "speakText", method: "post", path: "/api/v1/voice/speech", tag: "System", audience: "public",
     summary: "Read a short text aloud as MP3 (console only)",
-    description: "Uses ElevenLabs; the key stays on the server. Answers 404 voice_not_configured when the server has no ElevenLabs key. Refused for agent credentials.",
-    body: "SpeechRequest", response: "SpeechAudio", responseType: "audio/mpeg", errors: [400, 403, 404, 502] },
+    description: "Uses ElevenLabs; the key stays on the server. Answers 404 voice_not_configured when the server has no ElevenLabs key. Serves a browser in its own sandbox or a signed-in person (401 otherwise), a limited number of times per address and workspace (429). Refused for agent credentials.",
+    body: "SpeechRequest", response: "SpeechAudio", responseType: "audio/mpeg", errors: [400, 401, 403, 404, 429, 502] },
+  { operationId: "streamSpeech", method: "get", path: "/api/v1/voice/speech", tag: "System", audience: "public",
+    summary: "Stream a short text aloud as MP3, for an audio element (console only)",
+    description: "The same as POST, streamed from ElevenLabs so playback starts with the first chunk. Same access and limits as POST. Refused for agent credentials.",
+    parameters: [{ name: "text", in: "query", description: "The text to read aloud, at most 600 characters", required: true, type: "string" }],
+    response: "SpeechAudio", responseType: "audio/mpeg", errors: [400, 401, 403, 404, 429, 502] },
+  { operationId: "transcribeSpeech", method: "post", path: "/api/v1/voice/transcribe", tag: "System", audience: "public",
+    summary: "Speech to text with ElevenLabs (console only)",
+    description: "The recorded audio is the request body (audio/webm or audio/mp4, under 2 MB; larger is 413). Answers 404 voice_not_configured without an ElevenLabs key. Same access and limits as speech. Refused for agent credentials.",
+    parameters: [{ name: "language", in: "query", description: "fi-FI or en-US", type: "string" }],
+    response: "Transcript", errors: [400, 401, 403, 404, 413, 429, 502] },
+  reader({ operationId: "assistantTurn", method: "post", path: "/api/v1/assistant/turn", tag: "Menus",
+    summary: "One turn of the event assistant: words in, a reply and cards out",
+    description:
+      "The kitchen explains its event in Finnish or English, one message at a time; pass conversationId to continue. The answer is a short reply in the " +
+      "kitchen's language, what is still needed (asks: guests, date, diets), cards (the event, three menus with price per guest from the menu planner, " +
+      "recipes, the shopping list) and actions (order_menu carries a ready POST /api/v1/baskets body; open_recipe; quick replies). Gemini reads the words " +
+      "when configured; prices, allergens and stock come only from the planner. 429 rate_limited after 40 turns in 10 minutes per workspace.",
+    body: "AssistantTurnRequest", response: "AssistantTurn", errors: [400, 403, 429, 502] }),
+  ...MENU_OPERATIONS,
 ];

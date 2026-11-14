@@ -1,4 +1,4 @@
-import type { AgentSuspension, AuditEntry, DemandOutcome, Order, Quantity, SignedOffer } from "@/lib/contracts";
+import type { AgentSuspension, AuditEntry, BasketLine, DemandOutcome, Handoff, Order, Quantity, SignedOffer } from "@/lib/contracts";
 import type { DemandRecord } from "@/lib/demand/types";
 import type { Activity } from "@/lib/store/types";
 
@@ -26,6 +26,9 @@ export interface InsightInput {
   suspensions: AgentSuspension[];
   /** The signed log; the overview reads which quote issued each alternative offer. */
   audit: AuditEntry[];
+  /** The lines of every basket, for the share ordered without a person; none when not given. */
+  baskets?: { lines: (Pick<BasketLine, "state"> & Partial<Pick<BasketLine, "resolved" | "orderId">>)[] }[];
+  handoffs?: Pick<Handoff, "status">[];
 }
 
 export interface Party {

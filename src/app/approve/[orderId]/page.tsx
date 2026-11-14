@@ -3,8 +3,8 @@ import { PhoneApproval } from "@/components/approve-phone/PhoneApproval";
 import "@/components/approve-phone/approve-phone.css";
 
 export const metadata: Metadata = {
-  title: "Approve an order · Laituri",
-  description: "An order your purchasing agent placed is over a limit and waits for your signed decision.",
+  title: "An order that needs you",
+  description: "An order your agent placed is past a limit and waits for the purchasing manager.",
   robots: { index: false },
 };
 

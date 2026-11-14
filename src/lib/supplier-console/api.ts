@@ -1,15 +1,15 @@
-import type { Order, SuspensionState } from "@/lib/contracts";
+import type { Basket, Handoff, Order, SuspensionState } from "@/lib/contracts";
 import { ApiError } from "@/lib/console/api";
 import type { Activity } from "@/lib/store/types";
 import type { ControlOverview, ScenarioRun } from "./types";
 
-async function getJson<T>(path: string): Promise<T> {
+export async function getJson<T>(path: string): Promise<T> {
   const response = await fetch(path, { cache: "no-store", credentials: "same-origin" });
   if (!response.ok) throw await failure(response);
   return response.json() as Promise<T>;
 }
 
-async function postJson<T>(path: string, body: unknown): Promise<T> {
+export async function postJson<T>(path: string, body: unknown): Promise<T> {
   const response = await fetch(path, {
     method: "POST",
     cache: "no-store",
@@ -45,4 +45,9 @@ export const supplierApi = {
     postJson<SuspensionState>(`/api/v1/supplier/agents/${encodeURIComponent(agentId)}/suspension`, reason ? { suspended, reason } : { suspended }),
   startTwoKitchens: () => postJson<{ runId: string }>("/api/v1/demo/runs", { scenario: "two-kitchens" }),
   run: (runId: string) => getJson<ScenarioRun>(`/api/v1/demo/runs/${encodeURIComponent(runId)}`),
+  /** Every kitchen's questions to a person at Valio Aimo; the operator session reads them all. */
+  handoffs: async () => (await getJson<{ handoffs: Handoff[] }>("/api/v1/handoffs")).handoffs ?? [],
+  answer: (handoffId: string, words: string) => postJson<Handoff>(`/api/v1/handoffs/${encodeURIComponent(handoffId)}/answer`, { words }),
+  /** Every buyer's multi-line orders, newest first. */
+  baskets: async () => (await getJson<{ baskets: Basket[] }>("/api/v1/baskets")).baskets ?? [],
 };

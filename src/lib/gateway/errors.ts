@@ -72,6 +72,24 @@ export class UpstreamError extends GatewayError {
   }
 }
 
+/** Too many calls from one caller; `retryAfterS` becomes the Retry-After header. */
+export class TooManyRequestsError extends GatewayError {
+  constructor(
+    message: string,
+    readonly retryAfterS: number,
+    code = "rate_limited",
+  ) {
+    super(message, 429, code);
+  }
+}
+
+/** The request body is larger than the route accepts. */
+export class PayloadTooLargeError extends GatewayError {
+  constructor(message: string) {
+    super(message, 413, "payload_too_large");
+  }
+}
+
 /** True for a GatewayError from any copy of this module. */
 export function isGatewayError(error: unknown): error is GatewayError {
   if (!(error instanceof Error)) return false;

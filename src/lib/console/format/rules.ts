@@ -4,23 +4,24 @@ import { plainSentence } from "./sentence";
 
 /** Each policy rule in plain words, as a buyer would name it. */
 export const RULE_NAMES: Record<RuleId, string> = {
-  "mandate.signature": "Mandate signature",
-  "mandate.validity": "Mandate validity",
-  "offer.signature": "Offer signature",
-  "offer.expiry": "Offer validity",
-  "audit.integrity": "Audit log intact",
+  "mandate.signature": "Limits signed",
+  "mandate.validity": "Limits in date",
+  "offer.signature": "Price fixed by Valio Aimo",
+  "offer.expiry": "Price still valid",
+  "audit.integrity": "Record unchanged",
   "spend.per_order": "Per-order limit",
   "spend.per_week": "Weekly limit",
-  "category.allowed": "Allowed categories",
+  "category.allowed": "Allowed kinds of food",
   "dietary.allergens": "Never-buy allergens",
-  "dietary.claims": "Required product claims",
-  "substitution.policy": "Substitution policy",
-  "substitution.price": "Substitute price change",
-  "delivery.partial": "Partial delivery",
-  "delivery.deadline": "Delivery deadline",
+  "dietary.claims": "Required labels",
+  "substitution.policy": "Swap rule",
+  "substitution.price": "Swap price",
+  "delivery.partial": "Part delivery",
+  "delivery.deadline": "Delivery day",
   "match.confidence": "Product match",
-  "request.words": "Buyer's words sent",
-  "product.first_time": "First-time products",
+  "request.words": "Your words sent",
+  "product.first_time": "New products",
+  "product.never_buy": "Never-buy list",
 };
 
 export function ruleName(rule: RuleId | string): string {
@@ -57,7 +58,7 @@ export function blockSentence(check: Check): string {
   if (check.rule === "dietary.allergens" && check.observed && /contains/.test(check.message)) {
     const what = words(check.observed);
     const verb = /may contain/.test(check.message) ? "May contain" : "Contains";
-    return `${verb} ${what}. The mandate forbids ${what}.`;
+    return `${verb} ${what}. Your limits forbid ${what}.`;
   }
   return plainSentence(check.message);
 }
@@ -70,33 +71,12 @@ export function blocks(order: Order): Check[] {
   return order.decision.checks.filter((check) => check.status === "block");
 }
 
-/** The reasons a pending order waits for a person, one sentence each. */
-export function askReasons(order: Order): string[] {
-  return asks(order).map(askSentence);
-}
-
-/** "Blocked. Contains nuts. The mandate forbids nuts.", or for an order refused before the mandate ran, "Refused. <why>". */
+/** "Blocked. Contains nuts. Your limits forbid nuts.", or for an order refused before the mandate ran, "Refused. <why>". */
 export function blockedLine(order: Order): string {
   if (order.refusal) return `Refused. ${plainSentence(order.refusal.message.replace(/^Refused:?\s*/i, ""))}`;
   const [first] = blocks(order);
-  return first ? `Blocked. ${blockSentence(first)}` : "Blocked. The order is outside the mandate.";
+  return first ? `Blocked. ${blockSentence(first)}` : "Blocked. The order is outside your limits.";
 }
-
-export type HandledState = "auto" | "approved" | "rejected" | "blocked" | "expired";
-
-export function handledState(order: Order): HandledState {
-  if (order.status === "blocked") return "blocked";
-  if (order.status === "rejected") return order.approval ? "rejected" : "expired";
-  return order.approval ? "approved" : "auto";
-}
-
-export const HANDLED_WORD: Record<HandledState, string> = {
-  auto: "Auto-approved",
-  approved: "Approved",
-  rejected: "Rejected",
-  blocked: "Blocked",
-  expired: "Expired",
-};
 
 /** "Maria Lind, Head of Purchasing" -> "Maria Lind" */
 export function shortName(name: string): string {

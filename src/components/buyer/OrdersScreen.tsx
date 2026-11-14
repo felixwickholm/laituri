@@ -1,60 +1,87 @@
 "use client";
 
+import { PackageOpen } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
-import { count, eur } from "@/lib/console/format/money";
-import { buyerOrders, isSeeded, newestFirst, orderOutcome, OUTCOME_FILTERS, weekStats, type OutcomeKey } from "@/lib/console/format/orders";
+import { useBaskets } from "@/lib/console/basket-store";
+import { historyItems, lightCounts, matchesLight, type Light } from "@/lib/console/history";
+import { count } from "@/lib/console/format/money";
+import { buyerOrders } from "@/lib/console/format/orders";
+import { longDay } from "@/lib/console/format/time";
 import { LOCKED_NOTE } from "@/lib/console/paused";
 import { useConsole } from "@/lib/console/store";
+import { HistoryRows } from "../basket/HistoryRows";
 import { PageHeader } from "../shell/PageHeader";
 import { useUi } from "../shell/ui-context";
 import { useNow } from "../ui/useNow";
-import { OrdersTable } from "../order/OrdersTable";
-import { HistoryNote } from "../ui/HistoryNote";
 
-type Filter = OutcomeKey | "all";
+type Filter = Light | "all";
 
-/** Every order the agent placed for this buyer, filterable by how it ended. */
+/** Baskets and single orders in one list, newest first, filtered by how their lines ended. */
 export function OrdersScreen() {
   const snapshot = useConsole();
+  const { baskets, ready: basketsReady } = useBaskets();
   const ui = useUi();
-  const now = useNow(60_000);
   const [filter, setFilter] = useState<Filter>("all");
-  const orders = useMemo(() => newestFirst(buyerOrders(snapshot.orders, snapshot.mandate)), [snapshot.orders, snapshot.mandate]);
-  const counts = useMemo(() => {
-    const tally: Record<OutcomeKey, number> = { auto: 0, approved: 0, waiting: 0, rejected: 0, blocked: 0, refused: 0 };
-    for (const order of orders) tally[orderOutcome(order).key] += 1;
-    return tally;
-  }, [orders]);
-  const shown = filter === "all" ? orders : orders.filter((order) => orderOutcome(order).key === filter);
-  const week = weekStats(orders, now);
+  const items = useMemo(() => historyItems(baskets, buyerOrders(snapshot.orders, snapshot.mandate)), [baskets, snapshot.orders, snapshot.mandate]);
+  const counts = useMemo(() => lightCounts(items), [items]);
+  const ready = snapshot.ready && basketsReady;
+  const waiting = counts.orange;
+  const now = useNow(60_000);
+
+  const tiles: { key: Filter; word: string; value: number; tone?: "success" | "warn" | "danger" }[] = [
+    { key: "all", word: items.length === 1 ? "order" : "orders", value: items.length },
+    { key: "green", word: "ordered", value: counts.green, tone: "success" },
+    { key: "orange", word: "needs you", value: counts.orange, tone: "warn" },
+    { key: "red", word: "blocked", value: counts.red + counts.refused, tone: "danger" },
+  ];
+  const pick = (key: Filter) => setFilter(filter === key && key !== "all" ? "all" : key);
+  const matches = (item: (typeof items)[number], key: Filter) => (key === "red" ? matchesLight(item, "red") || matchesLight(item, "refused") : matchesLight(item, key));
+  const shownItems = items.filter((item) => matches(item, filter));
 
   return (
-    <div className="page">
-      <PageHeader
-        title="Orders"
-        meta={`${count(orders.length)} ${orders.length === 1 ? "order" : "orders"}`}
-        lede={
-          snapshot.locked
-            ? LOCKED_NOTE
-            : snapshot.ready
-            ? `${eur(week.spent)} net confirmed this week. ${counts.waiting > 0 ? `${counts.waiting} ${counts.waiting === 1 ? "waits" : "wait"} for you.` : "Nothing waits for you."}`
-            : "Loading orders…"
-        }
-      />
-      <div className="filter-row chip-scroll" role="group" aria-label="Filter by outcome">
-        <button type="button" className="filter-chip" aria-pressed={filter === "all"} onClick={() => setFilter("all")}>
-          All <span className="count">{orders.length}</span>
-        </button>
-        {OUTCOME_FILTERS.map((item) => (
-          <button key={item.key} type="button" className="filter-chip" aria-pressed={filter === item.key} onClick={() => setFilter(item.key)}>
-            {item.label} <span className="count">{counts[item.key]}</span>
+    <div className="page orders-page">
+      <PageHeader title="Orders" meta={<time suppressHydrationWarning>{longDay(now)}</time>} />
+      <section className="glass pad verdict" aria-labelledby="orders-verdict">
+        <p className="verdict-label">Orders</p>
+        <h2 className="verdict-title" id="orders-verdict">
+          {snapshot.locked ? LOCKED_NOTE : !ready ? "Loading…" : waiting > 0 ? `${count(waiting)} ${waiting === 1 ? "order needs" : "orders need"} you.` : "Nothing needs you."}
+        </h2>
+        {ready && waiting > 0 ? (
+          <button type="button" className="btn btn-primary verdict-action" onClick={() => setFilter("orange")}>
+            Check {waiting === 1 ? "it" : `${count(waiting)} orders`}
+          </button>
+        ) : null}
+      </section>
+      <div className="count-tiles" role="group" aria-label="Show">
+        {tiles.map((tile) => (
+          <button key={tile.key} type="button" className="count-tile" data-tone={tile.value > 0 ? tile.tone : undefined} aria-pressed={filter === tile.key} onClick={() => pick(tile.key)}>
+            <span className="count-tile-number">{count(tile.value)}</span>
+            <span className="count-tile-word">{tile.word}</span>
           </button>
         ))}
       </div>
-      <div className="log-list">
-        <HistoryNote show={shown.some(isSeeded)} />
-        <OrdersTable orders={shown} ready={snapshot.ready} filtered={filter !== "all"} onOpen={ui.openOrder} />
-      </div>
+      {shownItems.length === 0 ? (
+        <p className="empty-frame quiet-empty">
+          {!ready ? (
+            "Loading…"
+          ) : (
+            <>
+              <PackageOpen aria-hidden="true" />
+              <span>{filter === "all" ? "No orders yet." : "None."}</span>
+              {filter === "all" ? (
+                <Link href="/buyer" className="text-link strong">
+                  Today
+                </Link>
+              ) : null}
+            </>
+          )}
+        </p>
+      ) : (
+        <div className="log-list">
+          <HistoryRows items={shownItems} onOpenOrder={ui.openOrder} />
+        </div>
+      )}
     </div>
   );
 }

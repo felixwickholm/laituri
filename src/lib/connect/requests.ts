@@ -8,7 +8,7 @@ export const DEMO_KEY = "demo-agent-token";
 export const authHeader = (key: string) => `Bearer ${key}`;
 
 /** What a buyer would say to their own agent. Pasted after connecting. */
-export const PROMPT = "Order 1,000 litres of lactose-free milk for Monday from Valio Aimo. Stay inside the mandate.";
+export const PROMPT = "Order 1,000 litres of lactose-free milk for Monday from Valio Aimo. Stay inside my limits.";
 
 /** The worked example: one product, one need, one delivery date. */
 export const MILK = {

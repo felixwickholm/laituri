@@ -1,8 +1,10 @@
 import { RuleId, type Check, type Order } from "@/lib/contracts";
-import { askSentence, asks, blockedLine, overBy, shortName } from "./format/rules";
+import { askSentence, asks, blockedLine, overBy } from "./format/rules";
 import { eur, parseEur } from "./format/money";
 import { stepText } from "./format/run-view";
 import { day } from "./format/time";
+import type { Basket } from "@/lib/contracts";
+import { basketOrderIds, currentBasket, lineCounts, workingCaption } from "./basket";
 import type { OrbState } from "./orb-params";
 import { buildRuns } from "./runs";
 import { agentSuspension } from "./suspension";
@@ -24,7 +26,7 @@ export const RECENT_MS = 4000;
 export const ACTING_MS = 1500;
 /** Every rule of the mandate, as many as the contract names; never a typed number. */
 export const RULES_TOTAL = RuleId.options.length;
-export const IDLE_CAPTION = `Idle. ${RULES_TOTAL} rules ready.`;
+export const IDLE_CAPTION = `Ready. It checks ${RULES_TOTAL} rules on every order.`;
 export const SUSPENDED_CAPTION = "Suspended by Valio Aimo.";
 
 function newest(orders: Order[]): Order | undefined {
@@ -80,10 +82,6 @@ function hexOf(hash: string): string {
   return hash.replace(/^sha256:/, "").replace(/[^0-9a-f]/gi, "");
 }
 
-function approverName(snapshot: ConsoleSnapshot): string {
-  const name = snapshot.mandate?.mandate.approval.approver.name;
-  return name ? shortName(name) : "a person";
-}
 
 function confirmedCaption(order: Order): string {
   const { totals, deliveryDate } = order.offer;
@@ -103,18 +101,40 @@ function runningCaption(snapshot: ConsoleSnapshot): string {
   return step ? stepText(step.text) : "Starting…";
 }
 
+/** A basket's own digits: its product codes and the net ordered so far. */
+function basketDigits(basket: Basket): string {
+  const codes = basket.lines.map((line) => line.product?.id ?? "").join("");
+  return `${codes}${basket.totals.netOrdered.toFixed(2)}`.replace(/\D/g, "");
+}
+
+/** The orb over a basket: the seal fills line by line while the agent works, then takes the basket's colour. */
+export function basketOrbView(basket: Basket): OrbView {
+  const n = lineCounts(basket);
+  const total = Math.max(basket.lines.length, 1);
+  const progress = { digits: basketDigits(basket), rulesPassed: total - n.working, rulesTotal: total };
+  if (basket.status === "running" || n.working > 0) return { state: "acting", caption: workingCaption(basket), ...progress };
+  if (n.orange > 0) return { state: "approval", caption: `${n.orange === 1 ? "1 line needs" : `${n.orange} lines need`} you.`, ...progress };
+  const blocked = n.red > 0 ? ` ${n.red === 1 ? "1 is" : `${n.red} are`} blocked.` : "";
+  return { state: "signed", caption: `Ordered ${n.green} of ${basket.lines.length} lines.${blocked}`, ...progress };
+}
+
 /**
  * Maps the console snapshot to what the orb shows, caption included. Precedence: a suspension by the wholesaler,
- * then an order that just changed (its checks replayed, then signed or blocked), then a running purchase,
- * then an order waiting for a person, then idle.
+ * then a basket the agent is working, then a single order that just changed (its checks replayed, then signed or
+ * blocked), then a running request, then an order waiting for a person, then this week's basket, then idle.
  */
-export function orbStateFor(snapshot: ConsoleSnapshot, nowMs: number): OrbView {
-  const latest = newest(snapshot.orders);
+export function orbStateFor(snapshot: ConsoleSnapshot, nowMs: number, baskets: Basket[] = []): OrbView {
+  const inBaskets = basketOrderIds(baskets);
+  const single = snapshot.orders.filter((order) => !inBaskets.has(order.id));
+  const latest = newest(single);
   const digits = latest ? orderDigits(latest) : hexOf(auditHead(snapshot));
 
   if (agentSuspension(snapshot.audit, snapshot.mandate?.mandate.agent.id)) {
     return { state: "blocked", caption: SUSPENDED_CAPTION, digits, rulesPassed: 0, rulesTotal: RULES_TOTAL };
   }
+
+  const basket = currentBasket(baskets, nowMs);
+  if (basket?.status === "running") return basketOrbView(basket);
 
   const since = latest ? sinceChange(latest, nowMs) : undefined;
   if (latest && since !== undefined && latest.status !== "rejected") {
@@ -129,16 +149,17 @@ export function orbStateFor(snapshot: ConsoleSnapshot, nowMs: number): OrbView {
     return { state: acting ? "acting" : "thinking", caption: runningCaption(snapshot), digits, rulesPassed: 0, rulesTotal: RULES_TOTAL };
   }
 
-  const waiting = [...snapshot.orders].filter((order) => order.status === "pending_approval").sort((a, b) => a.createdAt.localeCompare(b.createdAt)).pop();
+  const waiting = single.filter((order) => order.status === "pending_approval").sort((a, b) => a.createdAt.localeCompare(b.createdAt)).pop();
   if (waiting) {
     return {
       state: "approval",
-      caption: `Waiting for ${approverName(snapshot)}: ${shortAsk(asks(waiting)[0])}.`,
+      caption: `Waiting for the purchasing manager: ${shortAsk(asks(waiting)[0])}.`,
       digits: orderDigits(waiting),
       ...rules(waiting),
     };
   }
 
+  if (basket) return basketOrbView(basket);
   if (latest) return { state: "idle", caption: IDLE_CAPTION, digits, ...rules(latest) };
   return { state: "idle", caption: IDLE_CAPTION, digits, rulesPassed: RULES_TOTAL, rulesTotal: RULES_TOTAL };
 }

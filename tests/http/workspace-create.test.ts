@@ -7,7 +7,8 @@ import { WORKSPACE_COOKIE } from "@/lib/workspace/cookie";
 
 process.env.LAITURI_SANDBOX_CREATE_PER_10_MIN = "2";
 
-const from = (address: string) => ({ "x-forwarded-for": `${address}, 10.0.0.1` });
+// The proxy appends the address it saw; the entry the client wrote first is ignored.
+const from = (address: string) => ({ "x-forwarded-for": `10.0.0.1, ${address}` });
 
 async function create(address: string): Promise<Response> {
   return workspace.POST(jsonRequest("/api/v1/workspace", { method: "POST", headers: from(address) }));

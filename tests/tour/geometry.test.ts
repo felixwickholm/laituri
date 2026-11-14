@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clampToView, cubicBezier, dimPath, easeSheet, lerpBox, mergeHoles, placeCard, scrollDelta, union } from "@/lib/tour/geometry";
+import { besideRoom, clampToView, cubicBezier, dimPath, easeSheet, lerpBox, mergeHoles, noRoomAboveOrBelow, placeCard, scrollDelta, union } from "@/lib/tour/geometry";
 
 const VIEW = { w: 1440, h: 900 };
 const CARD = { w: 520, h: 240 };
@@ -64,5 +64,20 @@ describe("spotlight geometry", () => {
   it("scrolls a target into the open part of the screen", () => {
     expect(scrollDelta({ x: 0, y: 1200, w: 100, h: 100 }, VIEW, 300, 24)).toBe(1200 - (24 + (900 - 300 - 24 - 100) / 2));
     expect(scrollDelta({ x: 0, y: 1200, w: 100, h: 2000 }, VIEW, 300, 24)).toBe(1200 - 32);
+  });
+
+  it("narrows the card into the column beside a target taller than the screen, instead of covering its lower half", () => {
+    const basket = { x: 335, y: 8, w: 1062, h: 884 };
+    expect(noRoomAboveOrBelow([basket], CARD, VIEW)).toBe(true);
+    const room = besideRoom([basket], VIEW) as number;
+    expect(room).toBe(335 - 20 - 24);
+    const place = placeCard([basket], { w: room, h: 300 }, VIEW);
+    expect(place.side).toBe("left");
+    expect(place.x + room).toBeLessThanOrEqual(basket.x);
+  });
+
+  it("keeps the full card when there is room above or below, or no column is wide enough", () => {
+    expect(noRoomAboveOrBelow([{ x: 300, y: 100, w: 900, h: 300 }], CARD, VIEW)).toBe(false);
+    expect(besideRoom([{ x: 100, y: 8, w: 1240, h: 884 }], VIEW)).toBeUndefined();
   });
 });

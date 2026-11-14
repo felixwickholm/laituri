@@ -1,6 +1,7 @@
-import type { AuditVerification, Offer, OfferPreview, Order, Product, ProductFacts, QuoteResponse, SearchResponse } from "@/lib/contracts";
+import type { AuditVerification, Basket, Offer, OfferPreview, Order, Product, ProductFacts, QuoteResponse, SearchResponse } from "@/lib/contracts";
 import type { SignedMandate } from "@/lib/orders/types";
 import { eur } from "@/lib/offers/format";
+import { neverBuyOf } from "@/lib/policy/never-buy";
 
 /** Compact text versions of tool results, for clients that read only text content. */
 
@@ -62,12 +63,19 @@ export function quoteText(response: QuoteResponse): string {
   return lines.join("\n");
 }
 
+function neverBuyText(mandate: SignedMandate["mandate"]): string {
+  const list = neverBuyOf(mandate);
+  const items = [...list.products.map((item) => `${item.name} (${item.productId})`), ...list.words.map((word) => `"${word}" in the name`)];
+  return items.length ? items.join(", ") : "nothing listed";
+}
+
 export function mandateText({ mandate, jws }: SignedMandate): string {
   return [
     `Mandate ${mandate.id} v${mandate.version} from ${mandate.buyer.name} for ${mandate.agent.name} (${mandate.agent.id}).`,
     `Valid ${mandate.validFrom} to ${mandate.validUntil}.`,
     `Alone up to ${eur(mandate.limits.perOrder.amount)} per order and ${eur(mandate.limits.perWeek.amount)} per week.`,
     `Allowed categories: ${mandate.categories.allowed.join(", ")}. Excluded allergens: ${mandate.dietary.excludeAllergens.join(", ") || "none"}.`,
+    `Never buy: ${neverBuyText(mandate)}.`,
     `Substitutes: ${mandate.substitution.policy}, at most ${mandate.substitution.maxPriceIncreasePct} % dearer. Partial delivery ${mandate.delivery.allowPartial ? "allowed" : "not allowed"}.`,
     `Mandate JWS: ${jws}`,
   ].join("\n");
@@ -89,4 +97,16 @@ export function auditText(result: { verification: AuditVerification; checkpoint:
   const v = result.verification;
   const state = v.valid ? `valid across ${v.entries} entries` : `broken at entry ${v.brokenAt}: ${v.reason}`;
   return `Audit chain is ${state}. Signed checkpoint: size ${result.checkpoint.checkpoint.size}, head ${result.checkpoint.checkpoint.head}.`;
+}
+
+const STATE_WORD = { working: "working", green: "ordered", orange: "needs a person", red: "not ordered" } as const;
+
+export function basketText(basket: Basket): string {
+  const lines = basket.lines.map((line, n) => `${n + 1}. ${line.words}: ${STATE_WORD[line.state]}. ${line.reason}${line.orderId ? ` (order ${line.orderId})` : ""}`);
+  const next = basket.status === "running"
+    ? `Some lines are still working. Read basket ${basket.id} again shortly.`
+    : basket.totals.orange + basket.totals.red > 0
+      ? "Tell your human which lines need them. Do not order those lines another way."
+      : "Every line is ordered.";
+  return [`Basket ${basket.id} for ${basket.deliverBy}: ${basket.summary} Net ordered ${eur(basket.totals.netOrdered)}.`, ...lines, next].join("\n");
 }

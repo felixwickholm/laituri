@@ -4,10 +4,13 @@ import { createGateway } from "@/lib/gateway/gateway";
 import { inRun } from "@/lib/gateway/recorder";
 import { realDeps } from "@/lib/gateway/deps";
 import type { Deps } from "@/lib/gateway/types";
-import { buyerIds, currentMandate } from "@/lib/mandate";
+import { PRIMARY_BUYER_ID, buyerIds, currentMandate, updateMandate } from "@/lib/mandate";
 import { asSeeded } from "@/lib/provenance";
 import { store } from "@/lib/store";
+import { createVolatileStore } from "@/lib/store/memory";
 import { RecordedUpstream } from "@/lib/valio/recorded";
+import { currentWorkspace, inWorkspace, inheritedSlots, newWorkspace } from "@/lib/workspace/context";
+import { playWeeklyOrders } from "./baskets";
 import { SEED_REQUESTS } from "./plan";
 import { playRequest, startOf, type OfferHold, type PlayContext, type SeedClock } from "./play";
 import { SeedUpstream } from "./upstream";
@@ -54,8 +57,9 @@ function seedDeps(upstream: SeedUpstream, hold: OfferHold): Deps {
 }
 
 /**
- * Writes about a week of trade by the three demo buyers through the real gateway: every offer, order, approval
- * and audit entry is signed and chained as in live use, at past times, and marked seeded.
+ * Writes the demo history through the real gateway: four weeks of the three buyers' standing weekly orders, then
+ * about a week of their one-off requests. Every offer, order, approval and audit entry is signed and chained as in
+ * live use, at past times, and marked seeded.
  */
 export async function seedHistory(): Promise<{ requests: number; orders: number }> {
   const end = now();
@@ -78,8 +82,10 @@ export async function seedHistory(): Promise<{ requests: number; orders: number 
   const timeline = SEED_REQUESTS.map((request) => ({ request, start: startOf(request.when, end) }))
     .sort((a, b) => a.start.getTime() - b.start.getTime());
   let orders = 0;
+  let basketLines = 0;
   await asSeeded(() =>
     withClock(() => clock.current, async () => {
+      basketLines = await playWeeklyOrders(end, ctx);
       for (const [index, { request, start }] of timeline.entries()) {
         // One run per request, titled with the buyer's own words, so a run that only searched still reads as what was asked.
         const run = { id: `run_seed_${index + 1}`, title: request.words };
@@ -87,7 +93,24 @@ export async function seedHistory(): Promise<{ requests: number; orders: number 
       }
     }),
   );
-  return { requests: timeline.length, orders };
+  // With four weeks of history in place, the demo customer's agent reorders what it bought before alone and asks a
+  // person about a product it has never bought. Tests and evals start from an empty history and keep the default.
+  await updateMandate({ approval: { firstTimeProducts: true } }, PRIMARY_BUYER_ID);
+  // Every basket line is one request and one order through the gateway.
+  return { requests: timeline.length + basketLines, orders: orders + basketLines };
+}
+
+/**
+ * Writes the history in memory under the current workspace's id, so every signature is bound to it, then saves it
+ * into the workspace in one write: a store on disk would otherwise flush once per audit entry.
+ */
+async function seedInMemory(): Promise<{ requests: number; orders: number }> {
+  const target = currentWorkspace();
+  const scratch = newWorkspace({ id: target.id, kind: target.kind, label: target.label, store: createVolatileStore() });
+  const written = await inWorkspace(scratch, () => seedHistory());
+  await target.store.replaceState(scratch.store.copyState());
+  for (const [name, slot] of inheritedSlots(scratch)) target.slots.set(name, slot);
+  return written;
 }
 
 /** Seeds when the store holds no orders and no audit entries; records what happened for the health check. */
@@ -102,7 +125,7 @@ async function attempt(): Promise<SeedStatus> {
   if (orders.length > 0 || audit.length > 0) return { state: "skipped", reason: "The state already holds orders or audit entries." };
   try {
     const at = now().toISOString();
-    return { state: "seeded", at, ...(await seedHistory()) };
+    return { state: "seeded", at, ...(await seedInMemory()) };
   } catch (error) {
     return { state: "failed", reason: error instanceof Error ? error.message : String(error) };
   }

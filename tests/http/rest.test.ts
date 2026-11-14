@@ -11,12 +11,13 @@ import * as orders from "@/app/api/v1/orders/route";
 import * as search from "@/app/api/v1/products/search/route";
 import * as quotes from "@/app/api/v1/quotes/route";
 import { TOKEN_TYPE, trust } from "@/lib/trust";
+import { newWorkspaceSecret } from "@/lib/workspace/cookie";
 
 const PROBLEM = "application/problem+json";
 
 describe("REST problems", () => {
   it("rejects an invalid quote with violations", async () => {
-    const response = await quotes.POST(jsonRequest("/api/v1/quotes", { body: { lines: [], deliverBy: "Monday" } }));
+    const response = await quotes.POST(jsonRequest("/api/v1/quotes", { body: { lines: [], deliverBy: "Monday" }, headers: { authorization: `Bearer ${AGENT_TOKEN}` } }));
     expect(response.status).toBe(400);
     expect(response.headers.get("content-type")).toBe(PROBLEM);
     const body = await response.json();
@@ -26,7 +27,7 @@ describe("REST problems", () => {
   });
 
   it("rejects a body that is not JSON", async () => {
-    const response = await search.POST(jsonRequest("/api/v1/products/search", { body: "{nope" }));
+    const response = await search.POST(jsonRequest("/api/v1/products/search", { body: "{nope", headers: { authorization: `Bearer ${AGENT_TOKEN}` } }));
     expect(response.status).toBe(400);
     expect((await response.json()).detail).toMatch(/not valid JSON/);
   });
@@ -87,9 +88,15 @@ describe("human-only endpoints", () => {
       { cookie: `laituri_approver=${publicApproval}` },
     ];
     for (const headers of attempts) {
+      // Without any credential the shared workspace refuses the write before the approver check.
       const response = await decide(headers);
-      expect(response.status).toBe(403);
-      expect((await response.json()).code).toBe("approver_sign_in_required");
+      expect(response.status).toBe(401);
+      expect((await response.json()).code).toBe("credential_required");
+      // In a sandbox, the same forgeries reach the approver check and fail there.
+      const sandbox = `laituri_workspace=${newWorkspaceSecret()}`;
+      const inSandbox = await decide({ ...headers, cookie: headers.cookie ? `${sandbox}; ${headers.cookie}` : sandbox });
+      expect(inSandbox.status).toBe(403);
+      expect((await inSandbox.json()).code).toBe("approver_sign_in_required");
     }
   });
 
@@ -113,7 +120,7 @@ describe("human-only endpoints", () => {
     expect(response.status).toBe(200);
     const result = await response.json();
     expect(result.mandate.limits.perOrder.amount).toBe(2000);
-    expect(result.mandate.limits.perWeek.amount).toBe(5000);
+    expect(result.mandate.limits.perWeek.amount).toBe(7500);
     expect(typeof result.jws).toBe("string");
   });
 });

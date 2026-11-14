@@ -247,7 +247,7 @@ export class OrbRenderer {
       this.effectBucket[i] = e < 0.08 ? -1 : Math.min(EFFECT_LEVELS - 1, Math.floor(e * EFFECT_LEVELS));
     }
 
-    const dot = Math.max(0.9, (size / 440) * 1.45);
+    const dot = Math.max(0.9, (size / 440) * 1.45) * palette.dot;
     ctx.globalCompositeOperation = palette.theme === "dark" ? "lighter" : "source-over";
 
     for (let depth = 0; depth < DEPTH_LEVELS; depth++) {

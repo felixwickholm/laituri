@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { shortHash } from "@/lib/console/format/activity";
 import { eur, parseEur, percentOf, withEuroSign } from "@/lib/console/format/money";
 import { askedLine, matchedFacts, offeredLine, offeredShort } from "@/lib/console/format/proof";
-import { askReasons, blockedLine, handledState, ruleName, shortName } from "@/lib/console/format/rules";
+import { askSentence, asks, blockedLine, ruleName, shortName } from "@/lib/console/format/rules";
 import { age, clock, day } from "@/lib/console/format/time";
 import { weekSpend, weekStart } from "@/lib/console/format/week";
 import { blockedOrder, pendingOrder } from "./fixtures";
@@ -42,17 +42,15 @@ describe("time", () => {
 
 describe("reasons", () => {
   it("writes the per-order reason with both figures and the overrun", () => {
-    expect(askReasons(pendingOrder())).toEqual(["€318.00 over the €1,500.00 per-order limit."]);
+    expect(asks(pendingOrder()).map(askSentence)).toEqual(["€318.00 over the €1,500.00 per-order limit."]);
   });
 
   it("writes a blocked allergen as a rule", () => {
-    expect(blockedLine(blockedOrder())).toBe("Blocked. Contains nuts. The mandate forbids nuts.");
+    expect(blockedLine(blockedOrder())).toBe("Blocked. Contains nuts. Your limits forbid nuts.");
   });
 
   it("names rules and states in plain words", () => {
     expect(ruleName("spend.per_week")).toBe("Weekly limit");
-    expect(handledState(blockedOrder())).toBe("blocked");
-    expect(handledState(pendingOrder({ status: "confirmed" }))).toBe("auto");
     expect(shortName("Maria Lind, Head of Purchasing")).toBe("Maria Lind");
   });
 });

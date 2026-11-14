@@ -1,32 +1,13 @@
 import { describe, expect, it } from "vitest";
-import type { Order } from "@/lib/contracts";
 import { entriesPerDay, eventGroup } from "@/lib/console/format/log";
-import { buyerOrders, isSeeded, orderOutcome, weekStats } from "@/lib/console/format/orders";
+import { buyerOrders, isSeeded } from "@/lib/console/format/orders";
 import { duration } from "@/lib/console/format/time";
 import { todayVerdict } from "@/lib/console/format/verdict";
-import { blockedOrder, pendingOrder } from "./fixtures";
+import { basketOf, pendingOrder } from "./fixtures";
 
 const NOW = Date.parse("2026-11-14T10:00:00.000Z");
 
-function confirmed(id: string, net: number, approvedBy?: string): Order {
-  const order = pendingOrder({ id, status: "confirmed" });
-  order.offer = { ...order.offer, totals: { ...order.offer.totals, net: { amount: net, currency: "EUR" } } };
-  if (approvedBy) {
-    order.approval = { decidedBy: { id: "u", name: approvedBy }, decision: "approved", decidedAt: order.createdAt, jws: "a.b.c" };
-  }
-  return order;
-}
-
-describe("order outcomes", () => {
-  it("names how each order ended", () => {
-    expect(orderOutcome(confirmed("a", 10)).label).toBe("Confirmed automatically");
-    expect(orderOutcome(confirmed("b", 10, "Maria Lind, Head of Purchasing")).label).toBe("Approved by Maria Lind");
-    expect(orderOutcome(pendingOrder()).key).toBe("waiting");
-    const blocked = orderOutcome(blockedOrder());
-    expect(blocked.key).toBe("blocked");
-    expect(blocked.rule).toBe("Never-buy allergens");
-  });
-
+describe("buyer orders", () => {
   it("keeps only the mandate's buyer", () => {
     const other = pendingOrder({ id: "x", buyer: { id: "other", name: "Other" } });
     const mandate = { jws: "", mandate: { buyer: { id: "fi:ovt:003712345678" } } } as never;
@@ -39,23 +20,24 @@ describe("order outcomes", () => {
   });
 });
 
-describe("the week", () => {
-  it("sums confirmed spend in cents and counts the queue", () => {
-    const week = weekStats([confirmed("a", 0.1), confirmed("b", 0.2, "Maria Lind"), pendingOrder(), blockedOrder()], NOW);
-    expect(week.spent).toBe(0.3);
-    expect(week.confirmed).toBe(2);
-    expect(week.confirmedAuto).toBe(1);
-    expect(week.confirmedApproved).toBe(1);
-    expect(week.waiting).toBe(1);
-    expect(week.waitingAmount).toBe(1818);
-    expect(week.blocked).toBe(1);
+describe("the verdict", () => {
+  it("leads with the basket, then any single order that waits", () => {
+    const basket = basketOf(["green", "green", "orange", "red"]);
+    expect(todayVerdict({ basket, waitingOrders: 0, chainBroken: false, suspended: false })).toEqual({
+      text: "Your agent ordered 2 lines. 1 needs you. 1 is blocked.",
+      tone: "waiting",
+    });
+    expect(todayVerdict({ basket, waitingOrders: 1, chainBroken: false, suspended: false }).text).toBe("Your agent ordered 2 lines. 1 needs you. 1 is blocked. 1 other order needs you.");
   });
 
-  it("puts the decision first in the verdict", () => {
-    const week = weekStats([confirmed("a", 10), pendingOrder()], NOW);
-    expect(todayVerdict(week, false, true)).toMatchObject({ lead: "1 order needs you.", reason: "Everything else ran inside your mandate." });
-    expect(todayVerdict(week, true, true).lead).toBe("The log does not verify.");
-    expect(todayVerdict(weekStats([], NOW), false, false).lead).toBe("Nothing needs you yet.");
+  it("puts a changed record or a stopped agent first", () => {
+    const facts = { basket: basketOf(["green"]), waitingOrders: 0 };
+    expect(todayVerdict({ ...facts, chainBroken: true, suspended: false }).tone).toBe("danger");
+    expect(todayVerdict({ ...facts, chainBroken: false, suspended: true }).text).toBe("Valio Aimo stopped your agent. It cannot order now.");
+  });
+
+  it("points at the weekly order before any basket exists", () => {
+    expect(todayVerdict({ waitingOrders: 0, chainBroken: false, suspended: false })).toEqual({ text: "Your weekly order is ready to send.", tone: "calm" });
   });
 });
 

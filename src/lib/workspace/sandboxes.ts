@@ -1,6 +1,8 @@
 import { createHash, randomBytes } from "node:crypto";
 import { createVolatileStore } from "@/lib/store/memory";
-import { inheritedSlots, newWorkspace, type Workspace } from "./context";
+import { afterAuditWrites } from "@/lib/audit/chain";
+import { GatewayError } from "@/lib/gateway/errors";
+import { inWorkspace, inheritedSlots, newWorkspace, type Workspace } from "./context";
 import type { SandboxLimits } from "./limits";
 
 /** A sandbox's credential for one demo buyer's agent. Random: it neither derives from nor reveals the browser cookie. */
@@ -15,8 +17,11 @@ export interface SandboxInfo {
 }
 
 export interface Sandboxes {
-  /** The sandbox the browser secret names. Made from the template when there is none, or when it expired or was evicted. */
-  forSecret(secret: string): Promise<Workspace>;
+  /**
+   * The sandbox the browser secret names. Made from the template when there is none, or when it expired; `admit` runs
+   * just before a new one is made and may throw to refuse it.
+   */
+  forSecret(secret: string, admit?: () => void): Promise<Workspace>;
   /** A new sandbox for a client without a browser, such as curl or an agent's own code. Reached only by its agent keys. */
   forClient(): Promise<Workspace>;
   /** The sandbox and buyer an agent key belongs to; undefined for any other token. */
@@ -46,6 +51,13 @@ interface Entry {
   lastUsedAt: number;
 }
 
+/** Every sandbox is in use: a new one would push out a visitor who is still working, so none is made. */
+export class SandboxesFullError extends GatewayError {
+  constructor() {
+    super("Every demo sandbox is in use right now. Try again in a few minutes.", 503, "sandboxes_full");
+  }
+}
+
 const randomText = (bytes: number) => randomBytes(bytes).toString("base64url");
 
 /** Only a digest of the browser secret is kept, so a memory dump does not hand out sandboxes. */
@@ -59,8 +71,8 @@ function publicLabel(): string {
 }
 
 /**
- * In-memory sandboxes, at most `limits.max` at once: the least recently used is evicted first, and one unused for
- * `limits.idleMs` is dropped when next asked for. Get-or-create runs without an await in between, so concurrent
+ * In-memory sandboxes, at most `limits.max` at once. Only a sandbox unused for `limits.idleMs` is dropped: when every
+ * one is still in use, a new one is refused with 503 instead of evicting a visitor who is working. Get-or-create runs without an await in between, so concurrent
  * first requests with one secret end in one sandbox.
  */
 export function createSandboxes(options: SandboxOptions): Sandboxes {
@@ -85,13 +97,11 @@ export function createSandboxes(options: SandboxOptions): Sandboxes {
   }
 
   function makeRoom(): void {
-    for (const entry of bySecret.values()) {
-      if (expired(entry) || bySecret.size >= options.limits.max) drop(entry);
-    }
+    for (const entry of bySecret.values()) if (expired(entry)) drop(entry);
+    if (bySecret.size >= options.limits.max) throw new SandboxesFullError();
   }
 
   function create(secretDigest: string, template: Workspace): Entry {
-    makeRoom();
     const workspace = newWorkspace(
       { id: `ws_${randomText(12)}`, kind: "sandbox", label: publicLabel(), store: createVolatileStore(template.store.copyState()) },
       inheritedSlots(template),
@@ -108,7 +118,7 @@ export function createSandboxes(options: SandboxOptions): Sandboxes {
   }
 
   return {
-    async forSecret(secret) {
+    async forSecret(secret, admit) {
       const template = await options.template();
       const secretDigest = digest(secret);
       const entry = bySecret.get(secretDigest);
@@ -116,12 +126,15 @@ export function createSandboxes(options: SandboxOptions): Sandboxes {
         touch(entry);
         return entry.workspace;
       }
+      makeRoom();
+      admit?.();
       if (entry) drop(entry);
       return create(secretDigest, template).workspace;
     },
 
     async forClient() {
       const template = await options.template();
+      makeRoom();
       return create(digest(randomText(32)), template).workspace;
     },
 
@@ -141,7 +154,7 @@ export function createSandboxes(options: SandboxOptions): Sandboxes {
 
     async restore(workspace) {
       const template = await options.template();
-      await workspace.store.replaceState(template.store.copyState());
+      await inWorkspace(workspace, () => afterAuditWrites(() => workspace.store.replaceState(template.store.copyState())));
       for (const [name, slot] of inheritedSlots(template)) workspace.slots.set(name, slot);
     },
 

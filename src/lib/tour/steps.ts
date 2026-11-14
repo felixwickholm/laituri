@@ -1,308 +1,366 @@
-import { substitutionChoice } from "@/lib/console/format/substitution";
-import type { ConditionId, StoryFacts } from "./facts";
-import { RULE_ATTEMPTS } from "./facts";
-import type { PlanStep, TourState } from "./machine";
-import { runOf } from "./targets";
+import type { BasketLine } from "@/lib/contracts";
+import { fillCopy, type Counts, type StepCopy } from "./copy";
+import { lineWhy, type ConditionId, type TourFacts } from "./facts";
+import type { PlanStep } from "./machine";
 
 /** What the tour does in the product itself. The runner in the browser carries each one out. */
-export type ActionId = "typeRequest" | "sendRequest" | "startOverLimit" | "approveOnPhone" | "showDemand" | "startBreakMandate" | "awaitLogEdit";
+export type ActionId = "pressExample" | "startWeekly" | "resolveOnPhone";
 
-export interface StepCopy {
-  /** The one sentence a restaurant owner reads first. */
-  title: string;
-  /** A short second line, at most. */
-  detail?: string;
-}
+/** Valio Aimo's challenge sheet names the flow in four words; the card shows where the story is. */
+export type FlowStage = "request" | "lookup" | "order" | "approval";
+export const FLOW: readonly { id: FlowStage; label: string }[] = [
+  { id: "request", label: "Request" },
+  { id: "lookup", label: "Lookup" },
+  { id: "order", label: "Order" },
+  { id: "approval", label: "Approval" },
+];
 
-/** Where the spotlight goes: the first visible match of `target`, and of `also` at the same time. */
-export interface Spot {
+/** Every target falls back to the page's main region, so a page that is still changing never strands the tour. */
+export const MAIN_TARGET = "main#main";
+
+export interface TourStep extends PlanStep {
+  /** The first of these pages that exists in this build is the step's page. */
+  routes: readonly string[];
+  /** Spotlight: the first visible match of `target`, and of `also` at the same time; the main region when none is. */
   target: readonly string[];
   also?: readonly string[];
-}
-
-export interface PressAction {
-  action: ActionId;
-  label: string;
-  working: string;
-  until: ConditionId;
-  timeoutMs: number;
-  /** Only Next settles it; without this, the person doing it in the product (approving on the phone) counts too. */
-  requirePress?: boolean;
-  /** Where the spotlight moves once the press has settled. */
-  spot?: Spot;
-  copy: (facts: StoryFacts) => StepCopy;
-}
-
-export interface TourStep extends PlanStep, Spot {
-  id: string;
-  route: string;
-  /** Keep the page at its top, so its title stays in view, when the target fits there. */
-  pinTop?: boolean;
-  /** "phone" shows Maria's phone with the real approval page once the order is waiting. */
+  /** More single targets lit at the same time, each its own cut-out (the first cards of a grid). */
+  more?: readonly string[];
+  /** "phone" shows the purchasing manager's phone with the real page for the waiting lines. */
   view: "spotlight" | "phone";
+  /** Done once when the step first shows. */
   enter?: ActionId;
+  /** Done once when Next leaves the step, without waiting for it. */
+  leave?: ActionId;
+  /** The card describes the result only once this holds; until then it says what is under way. */
   until: ConditionId;
-  timeoutMs: number;
-  /** The quiet label on Next while the product is still working. */
-  waiting: string;
-  /** The label on Next once the outcome is in, when Next does more than move on. */
-  nextLabel?: string;
-  /** The step's outcome counts as on screen only once this matches too (for example, the log head showing broken). */
+  /** The result counts as on screen only once this selector matches too. */
   shownWhen?: string;
-  /** Every sentence is chosen from what is on screen now, never from what is about to be; `shown`: the outcome is. */
-  copy: (facts: StoryFacts, shown: boolean) => StepCopy;
-  /** Said instead of the detail line when the outcome did not arrive in time. */
-  fallback: string;
-  press?: boolean;
-  pressAction?: PressAction;
+  /** After this long without the result, the card adds `late` and still lets the visitor go on. */
+  timeoutMs: number;
+  /** Every card this step can show, by name. Numbers and names come from the facts, never from here. */
+  words: Readonly<Record<string, StepCopy>>;
+  /** Which card fits what is on screen now. */
+  pick: (facts: TourFacts, shown: boolean) => string;
+  late: string;
+  flow?: (facts: TourFacts, shown: boolean) => FlowStage;
 }
 
-/** Every Valio target falls back to the page's main region, so a page that is still changing never strands the tour. */
-export const MAIN_TARGET = "main#main";
-const LIVE_AGENT = [".live-agent"];
-/** The newest run block: the demo was reset, so it is the one the tour just started. */
-const NEWEST_RUN = '[data-tour="runs"] > .run:first-of-type';
+const BLOCKED: Partial<Record<NonNullable<BasketLine["reasonCode"]>, string>> = {
+  no_stock_in_time: "late",
+  cutoff_passed: "cutoff",
+  not_found: "missing",
+};
 
-function milkCopy(facts: StoryFacts): StepCopy {
-  if (!facts.milkQuoted) {
-    return { title: "The agent searches Valio Aimo’s catalogue and asks for a price.", detail: "Each new line is one step it took, in plain words." };
-  }
-  const title = facts.milkTotal
-    ? `Valio Aimo answers with a fixed price it has signed: ${facts.milkTotal}. Nobody can change it on the way.`
-    : "Valio Aimo answers with a fixed price it has signed. Nobody can change it on the way.";
-  if (facts.milk?.status === "confirmed") return { title, detail: "The offer met every rule, so the order is confirmed." };
-  return { title, detail: `The agent now checks the offer against ${facts.approverFirst}’s rules.` };
+/** The red line's card, by why it is red: nuts get their own words, the rest say what the line says. */
+function redWords(line: BasketLine): string {
+  if (line.reasonCode === "allergen") return /\bnut/i.test(line.reason) ? "nuts" : "allergen";
+  return (line.reasonCode && BLOCKED[line.reasonCode]) ?? "rules";
 }
 
-function rulesCopy(facts: StoryFacts): StepCopy {
-  if (facts.milk?.status !== "confirmed" || facts.milkRulesPassed === undefined) {
-    return { title: `Every order is checked against ${facts.approverFirst}’s rules before it is placed.`, detail: `${facts.approver} signed these rules once.` };
-  }
-  const passed = facts.milkRulesPassed;
-  return {
-    title:
-      passed === facts.rulesTotal
-        ? `All ${passed} of ${facts.approverFirst}’s rules passed, so the agent ordered on its own.`
-        : `${passed} of ${facts.rulesTotal} of ${facts.approverFirst}’s rules passed, and none stopped the order.`,
-    detail: `${facts.approver} signed these rules once. Each tick is one rule, checked on this order.`,
-  };
-}
+const SLOW = "The page is slow. Press Next to go on.";
 
-function overLimitCopy(facts: StoryFacts): StepCopy {
-  if (!facts.overLimit) return { title: "Now the agent places a larger order." };
-  return {
-    title:
-      facts.overBy && facts.limit
-        ? `This order is ${facts.overBy} over the ${facts.limit} limit. The agent stops, and ${facts.approverFirst} gets it on her phone.`
-        : `This order is over the limit. The agent stops, and ${facts.approverFirst} gets it on her phone.`,
-    detail: "Tap Approve and sign on the phone, or press Next and the tour approves it for you.",
-  };
-}
-
-function decidedCopy(facts: StoryFacts): StepCopy {
-  const who = facts.approverFirst;
-  switch (facts.overLimit?.status) {
-    case "confirmed":
-      return { title: `${who} approved it on her phone. Her approval is signed and logged.`, detail: "Only a person can approve. The agent has no key that could do it." };
-    case "blocked":
-      return {
-        title: `${who} approved it, but the stock ran short in the meantime, so the order was stopped. Nothing was bought.`,
-        detail: "Approving checks the mandate and the stock again. That check is signed and logged too.",
-      };
-    case "rejected":
-      return { title: `${who} rejected it on her phone. Her decision is signed and logged.`, detail: "Only a person can decide. The agent has no key that could do it." };
-    default:
-      return { title: `The order is still waiting for ${who}.`, detail: "Her decision did not arrive. Press Next to go on without it." };
-  }
-}
-
-function stockCopy(facts: StoryFacts): StepCopy {
-  if (!facts.shortStock) return { title: "The agent places its next order." };
-  const title =
-    facts.shortAvailable !== undefined
-      ? `Short stock: Valio Aimo had only ${facts.shortAvailable} of the ${facts.shortRequested} the agent asked for.`
-      : facts.shortReason
-        ? `Short stock. ${facts.shortReason}`
-        : "Short stock: Valio Aimo had too little of what the agent asked for.";
-  return { title, detail: substitutionChoice(facts.shortStock) ?? "Valio Aimo offered a signed alternative, and the rules allowed it." };
-}
-
-function attemptsCopy(facts: StoryFacts): StepCopy {
-  if (facts.refused >= RULE_ATTEMPTS) {
-    return { title: "Four attempts to break the rules. Each one was refused, and each refusal is signed.", detail: "Allergens, a changed price, a raised limit and approving its own order." };
-  }
-  return {
-    title: "Now the agent tries to cheat, on purpose.",
-    detail: facts.refused === 0 ? "Watch each attempt appear as the agent makes it." : `Refused so far: ${facts.refused} of ${facts.attempts}.`,
-  };
-}
-
-function logCopy(facts: StoryFacts, shown: boolean): StepCopy {
-  if (facts.brokenAt === undefined || !shown) {
-    return { title: "The agent’s last attempt: changing an entry in the log after the fact.", detail: "Your browser checks every signature in the log again." };
-  }
-  return {
-    title: `It changed entry ${facts.brokenAt} of this demo’s log. Your browser caught it at once.`,
-    detail: "Approvals stay paused until the log is restored from the last signed checkpoint. If a customer disputes an order, both sides check the same record in seconds.",
-  };
-}
+/** The challenge's own example: its result, inline under the "Order directly" box. */
+const EXAMPLE_RESULT = '[data-tour="milk-result"]';
 
 export const STEPS: readonly TourStep[] = [
   {
-    id: "request",
-    readMs: 5_000,
-    route: "/buyer",
-    target: ['[data-tour="composer"]', ".live-agent .composer"],
-    pinTop: true,
+    id: "today",
+    routes: ["/buyer"],
+    target: ['[data-choice="order"]', '[data-tour="today-choices"]', ".today-choices"],
+    also: ['[data-choice="plan"]'],
     view: "spotlight",
-    enter: "typeRequest",
     until: "now",
+    timeoutMs: 3_000,
+    words: {
+      shown: {
+        title: "This is the customer’s Today.",
+        detail: "Two big choices: order directly, or plan an event. Below them waits this week’s order.",
+      },
+    },
+    pick: () => "shown",
+    late: SLOW,
+  },
+  {
+    id: "example",
+    routes: ["/buyer"],
+    target: [EXAMPLE_RESULT, '[data-choice="order"]'],
+    also: ['[data-tour="milk-example"]'],
+    view: "spotlight",
+    enter: "pressExample",
+    until: "exampleDone",
     timeoutMs: 15_000,
-    waiting: "Typing the request…",
-    nextLabel: "Send it",
-    copy: () => ({
-      title: "A hotel kitchen’s AI agent is about to ask Valio Aimo for milk. No person is involved.",
-      detail: "The request is typed in. Press Send it and watch the agent work.",
-    }),
-    fallback: "The composer is slow to appear. Press Send it and the story goes on.",
+    words: {
+      working: {
+        title: "The challenge’s own example.",
+        detail: "Lactose-free milk by Monday. The agent looks it up and asks Valio Aimo for a signed fixed price.",
+      },
+      alone: {
+        title: "Request, lookup, order. No person needed.",
+        detail: "Valio Aimo signed a fixed price. The order is inside the customer’s limits, so the agent placed it alone.",
+      },
+      waits: {
+        title: "Request, lookup, order. Now a person approves.",
+        detail: "Valio Aimo signed a fixed price. The order is outside what the agent may do alone, so it waits.",
+      },
+      refused: {
+        title: "Request and lookup. Then the rules said no.",
+        detail: "The agent found the product, but the order is outside the customer’s limits. Nothing was ordered.",
+      },
+    },
+    pick: (facts) => facts.example ?? "working",
+    late: "The example is slow today. Press Next to go on.",
+    flow: (facts) => (facts.example ? "approval" : "lookup"),
   },
   {
-    id: "offer",
-    readMs: 5_000,
-    route: "/buyer",
-    target: [runOf("milk")],
-    also: LIVE_AGENT,
+    id: "basket",
+    routes: ["/buyer"],
+    // The verdict and its counts, not the whole card: the counts are where the lines turn green.
+    target: ['[data-tour="basket"] .weekly-tiles', '[data-tour="basket"]'],
+    also: ['[data-tour="basket"] .weekly-verdict-top'],
     view: "spotlight",
-    enter: "sendRequest",
-    until: "milkConfirmed",
-    timeoutMs: 25_000,
-    waiting: "Agent is working…",
-    copy: milkCopy,
-    fallback: "The offer is taking longer than usual. Press Next and it finishes in the background.",
+    enter: "startWeekly",
+    until: "basketDone",
+    timeoutMs: 40_000,
+    words: {
+      starting: { title: "Now the weekly order.", detail: "One tap starts it. The agent works through every line alone." },
+      working: {
+        title: "The agent works through {lines} lines.",
+        detail: "It finds each product, gets a signed price and checks the customer’s rules. Lines turn green as they are ordered.",
+      },
+      shown: {
+        title: "{alone} of {lines} lines ordered alone.",
+        detail: "Green means ordered, inside the customer’s limits. Nobody had to look at them.",
+      },
+    },
+    pick: (facts) => (facts.done ? "shown" : facts.basket ? "working" : "starting"),
+    late: "This takes a little longer. Press Next to go on.",
+    flow: (facts) => (facts.done ? "order" : "lookup"),
   },
   {
-    id: "rules",
-    readMs: 7_000,
-    route: "/buyer",
-    target: [`${runOf("milk")} [data-tour="checks"]`, '[data-tour="orb"]', ".live-agent-stage"],
+    id: "needs",
+    routes: ["/buyer"],
+    target: ['[data-tour="basket-line"][data-state="orange"]', '[data-tour="basket"]'],
+    also: ['[data-tour="basket-line"][data-state="orange"] ~ [data-tour="basket-line"][data-state="orange"]'],
     view: "spotlight",
-    until: "milkShown",
-    timeoutMs: 10_000,
-    waiting: "Checking the rules…",
-    copy: rulesCopy,
-    fallback: "The order is still being confirmed. Press Next to go on.",
+    until: "needsPerson",
+    timeoutMs: 20_000,
+    words: {
+      waiting: { title: "Some lines need a person.", detail: "The agent is still working. Orange means a person decides." },
+      shown: { title: "Why {needed} {needed?line needs:lines need} a person", detail: "{needWhy}" },
+    },
+    pick: (facts) => (facts.needed ? "shown" : "waiting"),
+    late: "No line needs a person yet. Press Next.",
+    flow: () => "approval",
   },
   {
     id: "phone",
-    readMs: 9_000,
-    pressReadMs: 7_000,
-    route: "/buyer",
-    target: ['[data-tour-scene="over-limit"]', '[data-tour="composer"]'],
+    routes: ["/buyer"],
+    target: ['[data-tour="basket-line"][data-state="orange"]', '[data-tour="basket"]'],
     view: "phone",
-    enter: "startOverLimit",
-    until: "overLimitWaiting",
-    timeoutMs: 25_000,
-    waiting: "Agent is working…",
-    copy: overLimitCopy,
-    fallback: "The order is slow to arrive. Press Next to go on without it.",
-    press: true,
-    pressAction: {
-      action: "approveOnPhone",
-      label: "Approve it",
-      working: "Signing…",
-      until: "overLimitDecided",
-      timeoutMs: 15_000,
-      copy: decidedCopy,
+    leave: "resolveOnPhone",
+    until: "needsPerson",
+    timeoutMs: 8_000,
+    words: {
+      waiting: { title: "Approve on the phone.", detail: "The lines are still on their way." },
+      shown: {
+        title: "Approve on the phone.",
+        detail: "The purchasing manager sees each waiting line with its reason. One tap decides. Try it, or press Next.",
+      },
+      answered: { title: "Done. A person decided.", detail: "One tap on the phone was enough. The choice is signed and in the record." },
     },
+    pick: (facts, shown) => (!shown ? "waiting" : facts.answeredLine ? "answered" : "shown"),
+    late: "No line needs a person yet. Press Next.",
+    flow: () => "approval",
   },
   {
-    id: "stock",
-    readMs: 10_000,
-    route: "/buyer",
-    target: [`${runOf("over-limit")} .run-reason`, runOf("over-limit")],
+    id: "blocked",
+    routes: ["/buyer"],
+    target: ['[data-tour="basket-line"][data-state="red"]', '[data-tour="basket"]'],
     view: "spotlight",
-    until: "shortStockDone",
-    timeoutMs: 20_000,
-    waiting: "Agent is working…",
-    copy: stockCopy,
-    fallback: "The agent is still working on this one. Press Next to go on.",
+    until: "blocked",
+    timeoutMs: 15_000,
+    words: {
+      waiting: { title: "The agent checks every line.", detail: "Red means the customer’s rules said no." },
+      nuts: { title: "Why {red} {red?line is:lines are} blocked", detail: "{redName} contains nuts. The customer’s own rule says never.{swapLine}" },
+      allergen: { title: "Why {red} {red?line is:lines are} blocked", detail: "{redWhy}{swapLine}" },
+      late: { title: "Why {red} {red?line is:lines are} blocked", detail: "{redName} cannot arrive in time.{swapLine}" },
+      cutoff: { title: "Why {red} {red?line is:lines are} blocked", detail: "The order time for that day has passed." },
+      missing: { title: "Why {red} {red?line is:lines are} blocked", detail: "Valio Aimo does not sell {redName}." },
+      rules: { title: "Why {red} {red?line is:lines are} blocked", detail: "{redWhy}{swapLine}" },
+      none: { title: "No line is blocked this time.", detail: "Red would mean the customer’s rules said no." },
+    },
+    pick: (facts) => (facts.redLine ? redWords(facts.redLine) : facts.done ? "none" : "waiting"),
+    late: "Press Next to go on.",
+  },
+  {
+    id: "limits",
+    routes: ["/buyer/mandate"],
+    target: ['[data-tour="limits"]', ".mandate-verdict"],
+    also: ['section[aria-labelledby="allergies-title"]', ".mandate-page > .count-tiles"],
+    view: "spotlight",
+    until: "now",
+    timeoutMs: 4_000,
+    words: {
+      shown: {
+        title: "The customer sets the limits.",
+        detail: "Money per order and per week, allergies, what never to buy. Inside them the agent orders alone. Outside them, a person decides.",
+      },
+    },
+    pick: () => "shown",
+    late: SLOW,
+  },
+  {
+    id: "shop",
+    routes: ["/buyer/shop"],
+    target: [".store-cards > :nth-child(1)", '[data-tour="shop-search"]'],
+    more: [".store-cards > :nth-child(2)", ".store-cards > :nth-child(3)"],
+    view: "spotlight",
+    until: "now",
+    shownWhen: ".store-cards > :nth-child(1)",
+    timeoutMs: 8_000,
+    words: {
+      shown: {
+        title: "The shop: every product, with pictures.",
+        detail: "The customer can also order by hand. Every order from here gets the same checks.",
+      },
+    },
+    pick: () => "shown",
+    late: SLOW,
+  },
+  {
+    id: "plan",
+    routes: ["/buyer/plan/recipes", "/buyer/plan"],
+    target: [".recipe-grid > li:nth-child(1)", '[data-tour="recipes"]', '[data-tour="plan-event"]'],
+    more: [".recipe-grid > li:nth-child(2)", ".recipe-grid > li:nth-child(3)"],
+    view: "spotlight",
+    until: "now",
+    timeoutMs: 5_000,
+    words: {
+      shown: {
+        title: "Plan an event with Valio recipes.",
+        detail: "Tell the assistant about the event. It suggests menus from Valio’s recipes and a list to order. Today offers ideas on its own.",
+      },
+    },
+    pick: () => "shown",
+    late: SLOW,
   },
   {
     id: "valio",
-    readMs: 7_000,
-    pressReadMs: 7_000,
-    route: "/valio",
-    target: ['[data-tour="valio-agents"]', 'section[aria-labelledby="agents-title"]', MAIN_TARGET],
+    routes: ["/valio"],
+    target: ['[data-tour="valio-overview"]', ".week-card", '[data-tour="valio-flow"]'],
+    also: ['[data-tour="valio-agents"]'],
     view: "spotlight",
     until: "now",
-    timeoutMs: 8_000,
-    waiting: "Opening Valio Aimo’s side…",
-    copy: () => ({
-      title: "This is Valio Aimo’s side. It sees every agent that buys, and what each one asked for.",
-      detail: "Which app each agent runs in, how often it called and what it bought.",
-    }),
-    fallback: "This page is still loading. Press Next to go on.",
-    press: true,
-    pressAction: {
-      action: "showDemand",
-      label: "Show the demand",
-      working: "Moving…",
-      until: "now",
-      timeoutMs: 2_000,
-      requirePress: true,
-      spot: {
-        // The flow ends in the demand that was not served, so one spotlight carries both; the panel is the fallback.
-        target: ['[data-tour="valio-flow"]', '[data-tour="valio-unserved"]', 'section[aria-labelledby="unserved-title"]', MAIN_TARGET],
+    timeoutMs: 4_000,
+    words: {
+      shown: {
+        title: "This is what Valio Aimo sees.",
+        detail: "Its customers’ agents and their orders, as they happen. Valio Aimo can pause any agent.",
       },
-      copy: () => ({
-        title: "It also sees where demand went, and what it could not serve, so it knows what to stock next.",
-        detail: "A webshop log never shows the orders that did not happen.",
-      }),
     },
+    pick: () => "shown",
+    late: SLOW,
   },
   {
-    id: "cheat",
-    readMs: 6_000,
-    route: "/buyer",
-    target: [`${runOf("break-mandate")} [data-tour="attempts"]`, `${NEWEST_RUN} [data-tour="attempts"]`, `${NEWEST_RUN} .attempts`, runOf("break-mandate")],
+    id: "demand",
+    routes: ["/valio/demand"],
+    target: ['[data-tour="valio-demand"]', ".week-card", '[data-tour="valio-unserved"]'],
     view: "spotlight",
-    enter: "startBreakMandate",
-    until: "rulesRefused",
-    timeoutMs: 30_000,
-    waiting: "Agent is trying…",
-    copy: attemptsCopy,
-    fallback: "The attempts are slow to arrive. Press Next to go on.",
+    until: "now",
+    timeoutMs: 4_000,
+    words: {
+      shown: {
+        title: "What customers wanted, and what was lost.",
+        detail: "Every request is counted: ordered, or lost and why. A webshop never sees the lost demand.",
+      },
+    },
+    pick: () => "shown",
+    late: SLOW,
   },
   {
-    id: "log",
-    readMs: 9_000,
-    route: "/buyer/log",
-    target: ['[data-tour="log-head"]', ".log-head"],
-    shownWhen: '[data-tour="log-head"]:not([data-state="checking"]):not([data-state="empty"])',
+    id: "security",
+    routes: ["/security"],
+    target: ['[data-tour="security-checks"]', ".sec-verdict", '[data-tour="security-attempts"]'],
     view: "spotlight",
-    enter: "awaitLogEdit",
-    until: "logBroken",
-    timeoutMs: 20_000,
-    waiting: "Checking the log…",
-    copy: logCopy,
-    fallback: "The check is slow to finish. Press Next to go on.",
+    until: "now",
+    timeoutMs: 4_000,
+    words: {
+      shown: {
+        title: "Every order is checked.",
+        detail: "Against the customer’s limits and Valio Aimo’s signed prices. Anything unusual is stopped and flagged, and a person decides.",
+      },
+    },
+    pick: () => "shown",
+    late: SLOW,
+  },
+  {
+    id: "record",
+    routes: ["/security"],
+    target: ['[data-tour="record-seal"]'],
+    view: "spotlight",
+    until: "now",
+    shownWhen: '[data-tour="record-seal"]:not([data-state="checking"])',
+    timeoutMs: 6_000,
+    words: {
+      shown: {
+        title: "Every step is sealed in the record.",
+        detail: "Each step is signed and chained to the one before. Anyone can check it on their own device.",
+      },
+    },
+    pick: () => "shown",
+    late: "The check is slow. Press Next to finish.",
   },
 ];
 
-/** Where the spotlight is now: after a settled press, at the press action's own spot. */
-export function spotOf(step: TourStep, state: Pick<TourState, "settled">): Spot {
-  if (step.pressAction?.spot && state.settled.includes(step.id)) return step.pressAction.spot;
-  return { target: step.target, also: step.also };
+/**
+ * The spotlight's selector groups: the step's own targets, then the page's main region as the last resort, and the
+ * targets lit at the same time. A hook another page has not built yet never strands the tour.
+ */
+export function spotGroups(step: Pick<TourStep, "target" | "also" | "more">): string[][] {
+  return [[...step.target, MAIN_TARGET], [...(step.also ?? [])], ...(step.more ?? []).map((selector) => [selector])].filter((group) => group.length > 0);
 }
 
-/** The sentence for the step as the product stands: the press action's once it has settled. */
-export function copyOf(step: TourStep, state: Pick<TourState, "settled" | "outcomes">, facts: StoryFacts): StepCopy {
-  return step.pressAction && state.settled.includes(step.id) ? step.pressAction.copy(facts) : step.copy(facts, state.outcomes[step.id] === "done");
+/** The page a step runs on in this build: the one chosen at Start, else its first page. */
+export function routeOf(step: Pick<TourStep, "id" | "routes">, routes: Partial<Record<string, string>>): string {
+  return routes[step.id] ?? step.routes[0];
 }
 
-/** The closing card: what was shown, each line tied to the judging criterion it answers. */
-export const END_LINES: readonly { text: string; criteria: string }[] = [
-  { text: "An AI agent bought at a signed, fixed price, and a person approved past the limit.", criteria: "Working end-to-end demo · Autonomy and controls" },
-  { text: "Short stock got a signed alternative. Every attempt to cheat was refused, and an edited log was caught.", criteria: "Robustness to exception situations" },
-  { text: "Valio Aimo sees every agent and the demand it missed. Any agent can connect.", criteria: "Solving the user need · Openness" },
-];
+/** The numbers and words a card may quote, all read from the product. */
+export function countsOf(facts: TourFacts): Counts {
+  const red = facts.redLine;
+  return {
+    lines: facts.lines,
+    alone: facts.alone,
+    needed: facts.needed,
+    red: facts.red,
+    steps: STEPS.length,
+    needWhy: facts.neededLines.length > 0 ? facts.neededLines.map(lineWhy).join(" ") : undefined,
+    redName: red ? capitalWords(red.words) : undefined,
+    redWhy: red ? lineWhy(red) : undefined,
+    swapLine: red ? (facts.swap ? ` A safe swap is offered: ${facts.swap}.` : "") : undefined,
+  };
+}
+
+function capitalWords(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+/** The card for the step as the product stands now; a template whose number is not known yet falls back to the first card. */
+export function copyOf(step: TourStep, facts: TourFacts, shown: boolean): StepCopy {
+  const counts = countsOf(facts);
+  const first = Object.values(step.words)[0];
+  return fillCopy(step.words[step.pick(facts, shown)] ?? first, counts) ?? fillCopy(first, counts) ?? first;
+}
+
+export const INTRO: StepCopy = { title: "Demo walkthrough", detail: "{steps} short steps through every part of Laituri. You only press Next." };
+
+/** The end card: one line, then three big ways on. */
+export const END = {
+  title: "That was Laituri.",
+  choices: [
+    { href: "/buyer", label: "Try it yourself" },
+    { href: "/buyer/plan", label: "Plan an event" },
+    { href: "/connect", label: "Connect your own agent" },
+  ],
+} as const;

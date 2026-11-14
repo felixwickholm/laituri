@@ -1,353 +1,4 @@
-/*
- * The app shell and the page frame.
- * Desktop: a 248px sidebar on the page ground, the canvas beside it, content capped at 1280px.
- * Below 1024px the sidebar folds into a top bar and a bottom tab bar.
- */
-
-.skip-link {
-  position: fixed;
-  z-index: 90;
-  top: 8px;
-  left: 8px;
-  padding: 8px 12px;
-  border-radius: var(--r-control);
-  background: var(--surface-inverse);
-  color: var(--text-inverse);
-  font-size: var(--fs-13);
-  font-weight: 550;
-  text-decoration: none;
-  transform: translateY(-160%);
-  transition: transform var(--d-fast) var(--ease-out);
-}
-.skip-link:focus-visible {
-  transform: none;
-}
-
-.shell {
-  display: grid;
-  grid-template-columns: 248px minmax(0, 1fr);
-  min-height: 100dvh;
-}
-
-.sidebar {
-  position: sticky;
-  z-index: 20;
-  top: 0;
-  display: flex;
-  flex-direction: column;
-  height: 100dvh;
-  padding: 20px 12px 16px;
-  border-right: 1px solid var(--line);
-  background: var(--bg);
-  overflow-y: auto;
-  scrollbar-width: none;
-}
-
-.brand {
-  display: inline-flex;
-  align-self: flex-start;
-  margin: 0 0 20px 8px;
-  color: var(--text-1);
-  text-decoration: none;
-  border-radius: var(--r-sm);
-}
-.wordmark {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: var(--fs-18);
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-
-/* The side switch: the most obvious control on the screen. Inverted ink marks the side you are on. */
-.side-switch {
-  position: relative;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  height: 44px;
-  padding: 4px;
-  border-radius: var(--r-full);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  isolation: isolate;
-}
-.side-switch-thumb {
-  position: absolute;
-  z-index: -1;
-  top: 4px;
-  bottom: 4px;
-  left: 4px;
-  width: calc(50% - 4px);
-  border-radius: var(--r-full);
-  background: var(--text-1);
-  transition: transform var(--d-base) var(--ease-out);
-}
-.side-switch[data-side="valio"] .side-switch-thumb {
-  transform: translateX(100%);
-}
-.side-switch a {
-  position: relative;
-  display: grid;
-  place-items: center;
-  border-radius: var(--r-full);
-  color: var(--text-2);
-  font-size: var(--fs-13);
-  font-weight: 600;
-  text-decoration: none;
-  white-space: nowrap;
-  transition:
-    color var(--d-hover) var(--ease-hover),
-    transform var(--d-press) var(--ease-out);
-}
-.side-switch a:active {
-  transform: scale(0.97);
-}
-.side-switch a[aria-current="page"] {
-  color: var(--bg);
-}
-@media (hover: hover) and (pointer: fine) {
-  .side-switch a:not([aria-current="page"]):hover {
-    color: var(--text-1);
-  }
-}
-
-.side-name {
-  margin: 10px 8px 0;
-  color: var(--text-3);
-  font-size: var(--fs-13);
-  line-height: 18px;
-}
-
-.side-nav {
-  margin-top: 24px;
-}
-.nav-list {
-  display: grid;
-  gap: 2px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.nav-item {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  height: 38px;
-  padding: 0 10px;
-  border: 0;
-  border-radius: var(--r-control);
-  background: transparent;
-  color: var(--text-2);
-  font: inherit;
-  font-size: var(--fs-13);
-  font-weight: 500;
-  text-align: left;
-  text-decoration: none;
-  cursor: pointer;
-  transition:
-    background-color var(--d-hover) var(--ease-hover),
-    color var(--d-hover) var(--ease-hover),
-    transform var(--d-press) var(--ease-out);
-}
-.nav-item:active:not(:disabled) {
-  transform: scale(0.98);
-}
-.nav-item:disabled {
-  opacity: 0.6;
-  cursor: progress;
-}
-.nav-item svg {
-  width: 18px;
-  height: 18px;
-  stroke-width: 1.75;
-  flex: none;
-  color: var(--text-3);
-  transition: color var(--d-hover) var(--ease-hover);
-}
-.nav-item[aria-current="page"] {
-  background: var(--surface-3);
-  color: var(--text-1);
-  font-weight: 600;
-}
-.nav-item[aria-current="page"] svg {
-  color: var(--text-1);
-}
-@media (hover: hover) and (pointer: fine) {
-  .nav-item:hover:not([aria-current="page"]):not(:disabled) {
-    background: var(--surface-2);
-    color: var(--text-1);
-  }
-  .nav-item:hover svg {
-    color: var(--text-1);
-  }
-}
-.nav-label {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.nav-count {
-  display: inline-grid;
-  place-items: center;
-  min-width: 22px;
-  height: 22px;
-  margin-left: auto;
-  padding: 0 6px;
-  border-radius: var(--r-full);
-  background: var(--warn-tint);
-  color: color-mix(in srgb, var(--warn) 80%, var(--text-1));
-  font-size: var(--fs-12);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-.nav-alarm {
-  width: 8px;
-  height: 8px;
-  margin-left: auto;
-  border-radius: var(--r-full);
-  background: var(--danger);
-}
-
-/* The sidebar's foot: two more links, the tour's dock, the quiet demo line and the account row. */
-.shell-tools {
-  display: grid;
-  gap: 12px;
-  margin-top: auto;
-  padding-top: 24px;
-}
-.sidebar .shell-tools > .nav-list {
-  padding-top: 12px;
-  border-top: 1px solid var(--line);
-}
-.shell-tools[data-variant="sheet"] {
-  gap: 20px;
-}
-
-.demo-menu {
-  display: grid;
-}
-.demo-trigger {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  height: 32px;
-  padding: 0 10px;
-  border: 0;
-  border-radius: var(--r-control);
-  background: transparent;
-  color: var(--text-3);
-  font: inherit;
-  font-size: var(--fs-12);
-  text-align: left;
-  cursor: pointer;
-  transition:
-    background-color var(--d-hover) var(--ease-hover),
-    color var(--d-hover) var(--ease-hover),
-    transform var(--d-press) var(--ease-out);
-}
-.demo-trigger:active {
-  transform: var(--press);
-}
-.demo-trigger[aria-expanded="true"] {
-  background: var(--surface-2);
-  color: var(--text-1);
-}
-.demo-trigger-word {
-  color: var(--text-2);
-  font-weight: 550;
-}
-.demo-trigger-label {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.demo-trigger svg {
-  flex: none;
-  width: 14px;
-  height: 14px;
-  margin-left: auto;
-}
-@media (hover: hover) and (pointer: fine) {
-  .demo-trigger:hover {
-    background: var(--surface-2);
-    color: var(--text-1);
-  }
-}
-
-.account-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  min-height: 40px;
-  padding: 0 0 0 4px;
-}
-.account-who {
-  display: flex;
-  flex: 1;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-.account-text {
-  display: grid;
-  min-width: 0;
-}
-.account-name {
-  overflow: hidden;
-  color: var(--text-1);
-  font-size: var(--fs-13);
-  font-weight: 600;
-  line-height: 18px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.account-role {
-  color: var(--text-3);
-  font-size: var(--fs-12);
-  line-height: 16px;
-}
-.account-demo {
-  flex: 1;
-}
-.account-wait {
-  flex: 1;
-}
-.account-off {
-  flex: 1;
-  padding-left: 6px;
-  color: var(--text-3);
-  font-size: var(--fs-12);
-}
-.avatar {
-  display: grid;
-  flex: none;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--r-full);
-  background: var(--accent-tint);
-  color: var(--accent);
-  font-size: var(--fs-12);
-  font-weight: 600;
-}
-
-.phone-bar,
-.tab-bar {
-  display: none;
-}
-
-.canvas {
-  min-width: 0;
-  padding: 36px clamp(24px, 3vw, 48px) 64px;
-  outline: none;
-}
+/* The page frame inside the shell's canvas: content capped at 1280px. The shell itself is in shell.css. */
 
 /* The page: one column of blocks, 24px apart, capped so lines stay readable on wide screens. */
 .page {
@@ -376,7 +27,7 @@
 }
 .page-meta {
   color: var(--text-3);
-  font-size: var(--fs-15);
+  font-size: var(--fs-base);
 }
 .page-actions {
   display: flex;
@@ -387,7 +38,7 @@
   max-width: 72ch;
   margin: 0;
   color: var(--text-2);
-  font-size: var(--fs-15);
+  font-size: var(--fs-base);
   line-height: 22px;
 }
 .verdict-lead {
@@ -412,7 +63,7 @@
 }
 .block-head h2 {
   margin: 0;
-  font-size: var(--fs-15);
+  font-size: var(--fs-base);
   line-height: 22px;
   font-weight: 600;
   letter-spacing: -0.01em;
@@ -423,7 +74,7 @@
 .block-meta {
   margin-left: auto;
   color: var(--text-3);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
 }
 
 .card {
@@ -434,7 +85,7 @@
 }
 .card-title {
   margin: 0 0 14px;
-  font-size: var(--fs-15);
+  font-size: var(--fs-base);
   line-height: 20px;
   font-weight: 600;
 }
@@ -445,7 +96,7 @@
   border-radius: var(--r-card);
   border: 1px dashed var(--line-strong);
   color: var(--text-3);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   line-height: 20px;
 }
 
@@ -453,71 +104,10 @@
   justify-self: start;
 }
 
-/* The week strip: one container split into equal cells by 1px seams. */
-.kpis {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 1px;
-  margin: 0;
-  border-radius: var(--r-card);
-  border: 1px solid var(--line);
-  background: var(--line);
-  overflow: hidden;
-}
-.kpi {
-  display: grid;
-  align-content: start;
-  gap: 6px;
-  padding: 18px 22px 20px;
-  background: var(--surface-1);
-}
-.kpi dt {
-  color: var(--text-3);
-  font-size: var(--fs-13);
-  font-weight: 500;
-}
-.kpi dd {
-  display: grid;
-  gap: 4px;
-  margin: 0;
-}
-.kpi-value {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: var(--fs-title);
-  line-height: 36px;
-  font-weight: 600;
-  letter-spacing: var(--track-title);
-  font-variant-numeric: tabular-nums;
-}
-.kpi-value svg {
-  width: 22px;
-  height: 22px;
-  stroke-width: 2;
-}
-.kpi-sub {
-  color: var(--text-3);
-  font-size: var(--fs-13);
-  line-height: 18px;
-}
-.kpi .meter {
-  margin-top: 8px;
-}
-.kpi-link {
-  color: inherit;
-  text-decoration: none;
-}
-@media (hover: hover) and (pointer: fine) {
-  .kpi-link:hover {
-    color: var(--accent);
-  }
-}
-
-/* Today: the agent's runs on the left, the live agent, the queue and the mandate on the right. */
+/* Today: the basket on the left, the live agent on the right, then what came before across the page. */
 .today-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 400px;
+  grid-template-columns: minmax(0, 1fr) 360px;
   align-items: start;
   gap: 24px;
 }
@@ -527,6 +117,11 @@
   align-content: start;
   gap: 24px;
   min-width: 0;
+}
+.today-side {
+  position: sticky;
+  top: 24px;
+  gap: 12px;
 }
 
 /* Tables: rules and alignment, no bands, no stripes. */
@@ -539,14 +134,14 @@
 .table-frame table {
   width: 100%;
   border-collapse: collapse;
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   line-height: 20px;
 }
 .table-frame th {
   padding: 12px 16px;
   border-bottom: 1px solid var(--line);
   color: var(--text-3);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   font-weight: 500;
   text-align: left;
   white-space: nowrap;
@@ -566,7 +161,7 @@
   display: block;
   margin-top: 2px;
   color: var(--text-3);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
 }
 .table-frame tbody tr {
   position: relative;
@@ -611,136 +206,21 @@
 
 @media (max-width: 1240px) {
   .today-grid {
-    grid-template-columns: minmax(0, 1fr) 360px;
-  }
-  .kpi {
-    padding: 16px 18px 18px;
+    grid-template-columns: minmax(0, 1fr) 320px;
   }
 }
 
 @media (max-width: 1023px) {
-  .shell {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .sidebar {
-    display: none;
-  }
-  .phone-bar {
-    position: sticky;
-    z-index: 30;
-    top: 0;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    height: 60px;
-    padding: 0 16px;
-    padding-top: env(safe-area-inset-top, 0px);
-    border-bottom: 1px solid var(--line);
-    background: var(--bg);
-  }
-  .phone-bar .brand {
-    margin: 0;
-    align-self: center;
-  }
-  .phone-bar .side-switch {
-    width: 220px;
-    height: 40px;
-  }
-  .tab-bar {
-    position: fixed;
-    z-index: 30;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    display: grid;
-    grid-template-columns: 4fr 1fr;
-    padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
-    border-top: 1px solid var(--line);
-    background: var(--surface-1);
-  }
-  /* The paused tour's pill sits just above the tab bar; empty, the slot takes no room. */
-  .phone-dock {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: calc(100% + 8px);
-    display: flex;
-    justify-content: center;
-    padding: 0 16px;
-    pointer-events: none;
-  }
-  .phone-dock > * {
-    pointer-events: auto;
-  }
-  .shell:has(.phone-dock:not(:empty)) .canvas {
-    padding-bottom: calc(152px + env(safe-area-inset-bottom, 0px));
-  }
-  .tab-list {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-  .tab-bar .nav-item {
-    flex-direction: column;
-    justify-content: center;
-    gap: 3px;
-    height: 54px;
-    padding: 0 2px;
-    font-size: var(--fs-12);
-    font-weight: 550;
-    text-align: center;
-  }
-  .tab-bar .nav-item[aria-current="page"] {
-    background: transparent;
-    color: var(--accent);
-  }
-  .tab-bar .nav-item[aria-current="page"] svg {
-    color: var(--accent);
-  }
-  .tab-bar .nav-count,
-  .tab-bar .nav-alarm {
-    position: absolute;
-    top: 4px;
-    left: calc(50% + 6px);
-    margin: 0;
-  }
-  .tab-bar .nav-count {
-    min-width: 20px;
-    height: 20px;
-  }
-  .canvas {
-    padding: 24px 20px calc(96px + env(safe-area-inset-bottom, 0px));
-  }
   .today-grid {
     grid-template-columns: minmax(0, 1fr);
   }
-  /* One column of blocks: what waits for a decision first, then the agent, then the history. */
-  .today-main,
+  /* One column: the basket first, the agent below it. */
   .today-side {
-    display: contents;
-  }
-  .today-grid #needs-you[data-waiting="true"] {
-    order: -2;
-  }
-  .today-grid .live-agent {
-    order: -1;
+    position: static;
   }
 }
 
 @media (max-width: 760px) {
-  .canvas {
-    padding-left: 16px;
-    padding-right: 16px;
-  }
-  .kpis {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .kpi {
-    padding: 14px 16px 16px;
-  }
   .filter-row {
     flex-wrap: nowrap;
     overflow-x: auto;
@@ -751,65 +231,4 @@
   .filter-row::-webkit-scrollbar {
     display: none;
   }
-}
-
-@media (max-width: 359px) {
-  .phone-bar .wordmark span {
-    display: none;
-  }
-  .phone-bar .side-switch {
-    width: auto;
-    flex: 1;
-    max-width: 260px;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .side-switch-thumb,
-  .skip-link {
-    transition: none;
-  }
-  .side-switch a:active,
-  .demo-trigger:active,
-  .nav-item:active:not(:disabled) {
-    transform: none;
-  }
-}
-
-/* The not-found page: the brand, one calm sentence and the ways back in. */
-.nf {
-  display: grid;
-  grid-template-rows: auto 1fr;
-  min-height: 100dvh;
-  padding: 24px clamp(16px, 4vw, 48px) 48px;
-}
-.nf-brand {
-  margin: 0;
-}
-.nf-body {
-  display: grid;
-  align-content: center;
-  justify-items: start;
-  gap: 12px;
-  width: 100%;
-  max-width: 560px;
-  margin: 0 auto;
-}
-.nf h1 {
-  margin: 0;
-  font-size: var(--fs-title);
-  line-height: 36px;
-  font-weight: 600;
-  letter-spacing: var(--track-title);
-}
-.nf-line {
-  margin: 0 0 12px;
-  color: var(--text-2);
-  font-size: var(--fs-15);
-  line-height: 22px;
-}
-.nf-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
 }

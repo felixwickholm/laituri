@@ -1,4 +1,4 @@
-import type { OfferLine, Product, Quantity, QuoteRequest, SearchHit, SignedOffer } from "@/lib/contracts";
+import type { OfferLine, Product, Quantity, QuoteRequest, QuoteResponse, SearchHit, SignedOffer } from "@/lib/contracts";
 import { lineOnTime, offerOnTime, offerOnlyLate, pickAlternative, rankByPrice, rankHits } from "./choose";
 import { shortDay } from "./dates";
 import type { AgentTransport, ParsedRequest } from "./types";
@@ -18,7 +18,8 @@ export interface SelectContext {
   pause(): Promise<void>;
 }
 
-export type Selection = { signed: SignedOffer } | { failure: string };
+/** The chosen offer and the quote it came from; on failure, the first quote, which answered the best match. */
+export type Selection = { signed: SignedOffer; quote: QuoteResponse } | { failure: string; quote?: QuoteResponse };
 
 interface Plan {
   /** Product ids to quote, in order. */
@@ -107,27 +108,29 @@ async function plan(ctx: SelectContext): Promise<Plan> {
 export async function selectOffer(ctx: SelectContext): Promise<Selection> {
   const { order, quotesUsed } = await plan(ctx);
   let quotes = quotesUsed;
-  let late: SignedOffer | undefined;
+  let late: { signed: SignedOffer; quote: QuoteResponse } | undefined;
+  let first: QuoteResponse | undefined;
   for (const productId of order) {
     if (quotes >= MAX_QUOTES) break;
     await ctx.say("Asked for a fixed-price offer.");
     const response = await ctx.transport.requestQuote(quoteRequest(ctx, [productId]));
     quotes++;
+    first ??= response;
     const { offer } = response.primary;
-    if (offerOnTime(offer)) return { signed: response.primary };
+    if (offerOnTime(offer)) return { signed: response.primary, quote: response };
     const product = ctx.products.find((p) => p.id === productId) ?? ctx.hits.find((h) => h.product.id === productId)?.product;
     await ctx.say(problemNote(fromLine(offer.lines[0], product), ctx.parsed.deliverBy));
     const alternative = pickAlternative(response);
     if (alternative) {
       await ctx.say(`Took the wholesaler's signed alternative. ${alternative.tradeoff}`);
-      return { signed: alternative.signed };
+      return { signed: alternative.signed, quote: response };
     }
-    if (!late && offerOnlyLate(offer)) late = response.primary;
+    if (!late && offerOnlyLate(offer)) late = { signed: response.primary, quote: response };
     await ctx.pause();
   }
   if (late) {
     await ctx.say(`Nothing arrives by ${shortDay(ctx.parsed.deliverBy)}. Taking the earliest date and letting the mandate decide.`);
-    return { signed: late };
+    return late;
   }
-  return { failure: `No offer covers ${quantityText(ctx.parsed.quantity)} by ${shortDay(ctx.parsed.deliverBy)}.` };
+  return { failure: `No offer covers ${quantityText(ctx.parsed.quantity)} by ${shortDay(ctx.parsed.deliverBy)}.`, quote: first };
 }

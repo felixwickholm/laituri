@@ -5,7 +5,7 @@ import { workspaceState } from "@/lib/workspace/context";
 import { knownHead } from "./head";
 import { verifyChain } from "./verify";
 
-export { appendAudit, type AuditInput } from "./chain";
+export { afterAuditWrites, appendAudit, type AuditInput } from "./chain";
 export { checkpoint, type Checkpoint } from "./checkpoint";
 export { forgetHead } from "./head";
 export {

@@ -5,7 +5,7 @@ import { json } from "@/lib/http/respond";
 import { catalogStatus } from "@/lib/http/health";
 import { seedStatus } from "@/lib/seed";
 import { storeStatus } from "@/lib/store";
-import { ping } from "@/lib/valio";
+import { ping, upstreamUsage } from "@/lib/valio";
 import { sandboxes, templateStatus } from "@/lib/workspace";
 import { sandboxLimits } from "@/lib/workspace/limits";
 
@@ -17,11 +17,12 @@ export const GET = route(async () => {
   const catalog = catalogStatus();
   const saved = storeStatus();
   const limits = sandboxLimits();
+  const usage = upstreamUsage();
   const healthy = upstream.ok && catalog.ready && !saved.recovery && !saved.lastSaveError;
   return json({
     status: healthy ? "ok" : "degraded",
     mode: upstream.mode,
-    upstream: { ok: upstream.ok, latencyMs: upstream.latencyMs, error: upstream.error },
+    upstream: { ok: upstream.ok, latencyMs: upstream.latencyMs, error: upstream.error, ...usage.workspace, total: usage.total, catalogueSize: catalog.size },
     catalog,
     seed: seedStatus(),
     agent: activeEngine(),

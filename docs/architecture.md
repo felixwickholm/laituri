@@ -171,11 +171,15 @@ Create a private sandbox with `POST /api/v1/workspace`: it returns one agent key
 | `request_quote` | `POST /api/v1/quotes` | Get a signed fixed-price offer |
 | `get_mandate` | `GET /api/v1/mandate` | Read your purchasing mandate |
 | `place_order` | `POST /api/v1/orders` | Place an order from a signed offer |
+| `place_basket` | `POST /api/v1/baskets` | Order a basket of many lines |
 | `get_order` | `GET /api/v1/orders/{id}` | Check an order's status |
 | `verify_audit` | `GET /api/v1/audit/verify` | Verify the audit trail |
+| `plan_menu` | `POST /api/v1/menus/plan` | Plan a menu for an event |
+| `list_recipes` | `GET /api/v1/recipes` | List the recipe library |
+| `plan_event` | `POST /api/v1/assistant/turn` | Talk an event through to a menu and an order |
 <!-- END:evidence:tools -->
 
-Discovery: `/api/v1/openapi.json`, `/.well-known/jwks.json`, `/.well-known/agent-card.json`, `/.well-known/ai-catalog.json`, `/.well-known/ucp`, `/.well-known/oauth-protected-resource`, `/llms.txt`.
+Discovery: `/api/v1/openapi.json`, `/.well-known/jwks.json`, `/.well-known/agent-card.json`, `/.well-known/ai-catalog.json`, `/.well-known/ucp`, `/.well-known/oauth-protected-resource`, `/llms.txt`. For a reader rather than a client: `/llms-full.txt` (the paper and the agent guide in one file), `/paper` and `/paper.md`, `/evidence.json`, `/robots.txt` and `/sitemap.xml`.
 
 ## Layout
 
@@ -186,6 +190,12 @@ src/lib/catalog         index, concept lexicon, search, substitutes
 src/lib/request         the buyer's words read and compared with each offer
 src/lib/offers          quote engine, pack maths, product facts, good/better/best alternatives
 src/lib/orders          placement, approvals, receipts
+src/lib/basket          weekly and menu baskets: one signed offer and order per line, reasons, drift, safe swaps
+src/lib/menu            event menus, scaling, shopping lists net of stock
+src/lib/recipes         recipe library, Valio recipes, swaps by recipe role
+src/lib/assistant       the event conversation that ends in menu cards and a basket
+src/lib/handoffs        questions handed to a person at Valio Aimo
+src/lib/suggestions     seasonal and event suggestions
 src/lib/policy          the mandate rules
 src/lib/mandate         the demo buyers' signed mandates
 src/lib/trust           keys, JWS, JWKS
@@ -196,8 +206,9 @@ src/lib/workspace       the shared workspace and the per-visitor sandboxes
 src/lib/seed            about a week of demo history, played through the real gateway
 src/lib/agent           the scripted buyer agent, and model-driven agents (Claude, Gemini) in agent/llm
 src/lib/voice           speech input and output adapters
-src/lib/evidence        the criteria-to-evidence source behind the README, docs/ and /evidence
-src/app                 landing, /buyer, /valio, /connect, /approve, /evidence, REST routes, MCP, discovery
+src/lib/discovery       llms.txt, llms-full.txt, agent card, AI catalog, UCP profile, JWKS, the paper as text
+src/lib/evidence        the criteria-to-evidence source behind the README, docs/, /evidence and /paper
+src/app                 / (to /buyer), /about, /buyer, /valio, /security, /connect, /approve, /evidence, /paper, REST routes, MCP, discovery
 evals                   scenario, guardrail, trust and openness suites
-docs                    architecture, evals, trust protocol, mandates, production path, judging map, decision records
+docs                    paper, architecture, evals, trust protocol, mandates, production path, judging map, decision records
 ```

@@ -1,0 +1,178 @@
+/*
+ * The design system's shared pieces (design-2114.md): glass surfaces, the page head, the verdict and the count tiles.
+ * Every screen builds from these; a screen's own CSS only places them.
+ */
+
+/* A frosted card: translucent fill, blur, 1px hairline, large radius, soft shadow. */
+.glass,
+.glass-strong {
+  border: 1px solid var(--glass-line);
+  border-radius: var(--r-card);
+  background: var(--glass-fill);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-edge), var(--glass-shadow-soft);
+}
+/* Floating layers and anything text scrolls under: sheets, popovers, the sidebar, the tab bar. */
+.glass-strong {
+  background: var(--glass-fill-strong);
+}
+.glass.pad,
+.glass-strong.pad {
+  padding: var(--pad-card);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass,
+  .glass-strong {
+    background: var(--surface-1);
+  }
+}
+
+/* The wide content column every screen sits in. */
+.page {
+  display: grid;
+  gap: var(--gap-section);
+  width: 100%;
+  max-width: var(--content-wide);
+  margin: 0 auto;
+}
+
+/* Page title with the date line under it. Actions, if any, sit at the right. */
+.page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-5);
+}
+.page-head h1 {
+  margin: 0;
+  font-size: var(--fs-page);
+  line-height: 1.05;
+}
+.page-head .page-date {
+  margin: var(--space-2) 0 0;
+  color: var(--text-2);
+  font-size: var(--fs-body-lg);
+  line-height: 1.4;
+}
+
+/* A section title inside the page: 22px, the text face, full ink. */
+.section-title {
+  margin: 0;
+  color: var(--text-1);
+  font-family: var(--font-sans);
+  font-size: var(--fs-section);
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+/* The one verdict per screen: the biggest words on it, one sentence, one big action. */
+.verdict {
+  display: grid;
+  gap: var(--space-4);
+  align-content: start;
+}
+.verdict-label {
+  margin: 0;
+  color: var(--text-2);
+  font-size: var(--fs-body);
+  font-weight: 600;
+}
+.verdict-title {
+  margin: 0;
+  color: var(--heading);
+  font-family: var(--font-display);
+  font-size: var(--fs-verdict);
+  font-weight: 800;
+  line-height: 1.05;
+  text-wrap: balance;
+}
+.verdict-line {
+  margin: 0;
+  max-width: 60ch;
+  color: var(--text-1);
+  font-size: var(--fs-body-lg);
+  line-height: 1.5;
+}
+.verdict-action {
+  justify-self: start;
+  margin-top: var(--space-2);
+}
+.verdict-action.btn {
+  height: 56px;
+  padding: 0 28px;
+  font-size: var(--fs-lg);
+}
+
+/* Four big count boxes: a number and one word. A state colour goes on the number only, with data-tone. */
+.count-tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--gap-card);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.count-tile {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+  padding: var(--space-5) var(--space-5) var(--space-4);
+  border: 1px solid var(--glass-line);
+  border-radius: calc(var(--r-card) - 4px);
+  background: var(--glass-fill);
+  color: inherit;
+  text-decoration: none;
+}
+.count-tile-number {
+  color: var(--text-1);
+  font-family: var(--font-display);
+  font-size: var(--fs-count);
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+/* A long figure ("€16,100.95", "100/100") shrinks to its box instead of running out of it. */
+.count-tile {
+  container-type: inline-size;
+}
+.count-tile-number[data-long] {
+  font-size: min(var(--fs-count), 19cqi);
+}
+.count-tile-word {
+  color: var(--text-2);
+  font-size: var(--fs-body);
+  line-height: 1.3;
+}
+.count-tile[data-tone="success"] .count-tile-number {
+  color: var(--success);
+}
+.count-tile[data-tone="warn"] .count-tile-number {
+  color: var(--warn);
+}
+.count-tile[data-tone="danger"] .count-tile-number {
+  color: var(--danger);
+}
+a.count-tile,
+button.count-tile {
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  transition: transform var(--d-press) var(--ease-out), border-color var(--d-hover) var(--ease-hover);
+}
+a.count-tile:active,
+button.count-tile:active {
+  transform: var(--press);
+}
+@media (hover: hover) and (pointer: fine) {
+  a.count-tile:hover,
+  button.count-tile:hover {
+    border-color: var(--line-strong);
+  }
+}
+@media (max-width: 719px) {
+  .count-tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

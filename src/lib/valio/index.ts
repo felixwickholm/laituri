@@ -1,3 +1,4 @@
+import { CachedUpstream } from "./cached";
 import { call, configFromEnv, UpstreamError } from "./http";
 import { LiveUpstream } from "./live";
 import { RecordedUpstream } from "./recorded";
@@ -6,6 +7,8 @@ import type { UpstreamClient } from "./types";
 export type { UpstreamAvailability, UpstreamClient, UpstreamPrice } from "./types";
 export { UpstreamError } from "./http";
 export { LiveUpstream } from "./live";
+export { UPSTREAM_ID_CAP } from "./budget";
+export { measuringUpstream, upstreamUsage, type UpstreamUsage } from "./meter";
 export { RecordedUpstream } from "./recorded";
 export { normaliseAvailability, normalisePrice } from "./normalise";
 
@@ -31,16 +34,26 @@ export function upstream(): UpstreamClient {
   let client = clients.get(mode);
   if (!client) {
     const config = configFromEnv();
-    client = mode === "live" && config ? new LiveUpstream(config) : new RecordedUpstream();
+    client = new CachedUpstream(mode === "live" && config ? new LiveUpstream(config) : new RecordedUpstream());
     clients.set(mode, client);
   }
   return client;
 }
 
-export async function ping(): Promise<PingResult> {
+/** Health is polled by every open page; one upstream ping per half minute keeps those polls off the API's rate limit. */
+const PING_TTL_MS = 30_000;
+let lastPing: { at: number; result: Promise<PingResult> } | undefined;
+
+export function ping(): Promise<PingResult> {
   const mode = upstreamMode();
+  if (mode === "recorded" || !configFromEnv()) return Promise.resolve({ ok: true, mode: "recorded" });
+  if (!lastPing || Date.now() - lastPing.at > PING_TTL_MS) lastPing = { at: Date.now(), result: pingNow(mode) };
+  return lastPing.result;
+}
+
+async function pingNow(mode: UpstreamMode): Promise<PingResult> {
   const config = configFromEnv();
-  if (mode === "recorded" || !config) return { ok: true, mode: "recorded" };
+  if (!config) return { ok: true, mode: "recorded" };
   const started = performance.now();
   try {
     await call(config, "/ping");

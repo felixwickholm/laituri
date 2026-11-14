@@ -3,10 +3,13 @@ import type { OrderStats, OutcomeCounts } from "./types";
 
 export const ORDER_OUTCOMES = OrderOutcome.options;
 
-export function orderOutcome(order: Order): OrderOutcome {
+/** An order as the overview reads it: `chosenByPerson` when a person chose it on a basket line. */
+export type CountedOrder = Order & { chosenByPerson?: true };
+
+export function orderOutcome(order: CountedOrder): OrderOutcome {
   switch (order.status) {
     case "confirmed":
-      return order.approval ? "confirmed_after_approval" : "confirmed_auto";
+      return order.approval || order.chosenByPerson ? "confirmed_after_approval" : "confirmed_auto";
     case "pending_approval":
       return "waiting";
     case "rejected":
@@ -35,4 +38,9 @@ export function orderStats(orders: Order[]): OrderStats {
     }),
   ) as OrderStats["byOutcome"];
   return { total: { count: orders.length, net: netOf(orders) }, byOutcome };
+}
+
+/** The orders, with those a person chose on a basket line marked: they were not confirmed without a person. */
+export function markChosen(orders: Order[], chosen: ReadonlySet<string>): CountedOrder[] {
+  return orders.map((order) => (chosen.has(order.id) ? { ...order, chosenByPerson: true as const } : order));
 }

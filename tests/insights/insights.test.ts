@@ -234,3 +234,24 @@ describe("supplier overview", () => {
     expect(supplierOverview({ now: NOW, orders: [], offers: [], requests: [], activity: [], suspensions: [], audit: [] }).includesSeeded).toBe(false);
   });
 });
+
+describe("baskets", () => {
+  it("counts a line as ordered without a person only when it is green and no person resolved it", async () => {
+    const { basketStats } = await import("@/lib/insights");
+    const resolved = { optionId: "line_2-approve", by: "Maria Lind", at: "2026-11-13T07:00:00.000Z", sentence: "Approved." };
+    const stats = basketStats([{ lines: [{ state: "green" }, { state: "green", resolved }, { state: "orange" }, { state: "working" }] }]);
+    expect(stats).toEqual({ count: 1, lines: 4, autoShare: 0.333 });
+  });
+
+  it("counts an order a person chose in a basket as confirmed after a person, not alone", () => {
+    const chosen = order({ id: "o9", status: "confirmed", net: 100, createdAt: "2026-11-13T08:00:00.000Z" });
+    const resolved = { optionId: "line_1-swap-1", by: "Maria Lind", at: "2026-11-13T08:00:00.000Z", sentence: "Swapped." };
+    const view = supplierOverview({
+      now: NOW, orders: [chosen], offers: [], requests: [], activity: [], suspensions: [], audit: [],
+      baskets: [{ lines: [{ state: "green", orderId: "o9", resolved }] }],
+    });
+    expect(view.orders.byOutcome.confirmed_auto.count).toBe(0);
+    expect(view.orders.byOutcome.confirmed_after_approval.count).toBe(1);
+  });
+});
+

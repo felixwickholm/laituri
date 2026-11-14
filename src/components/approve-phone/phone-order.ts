@@ -16,8 +16,19 @@ export function orderPhase(order: Order, nowMs: number): OrderPhase {
   return "decided";
 }
 
-/** The reason first: "€116.00 over the €1,500.00 per-order limit." */
+/** The words before a colon: "not UHT: Valio Arki Eila …" reads "not UHT". */
+function headOf(value: string): string {
+  const cut = value.indexOf(":");
+  return (cut > 0 ? value.slice(0, cut) : value).trim();
+}
+
+/**
+ * The reason first, in one short sentence. A request that the offer does not meet names the first mismatch
+ * ("Asked UHT. Offered not UHT."); otherwise the rule's own sentence ("€116.00 over the €1,500.00 per-order limit.").
+ */
 export function phoneReason(order: Order): string {
+  const miss = (order.offer.requestCheck ?? []).find((check) => check.result === "unmet");
+  if (miss) return `Asked ${headOf(miss.asked)}. Offered ${headOf(miss.offered)}.`;
   const [first] = asks(order);
   return first ? askSentence(first) : "A person must decide this order.";
 }

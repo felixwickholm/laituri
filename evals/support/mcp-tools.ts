@@ -20,7 +20,11 @@ const RECIPES: [name: string, args: (state: State) => Record<string, unknown>, k
   ["place_order", (state) => ({ offerJws: state.offerJws, mandateJws: state.mandateJws, idempotencyKey: "eval-mcp-order-0001" }),
     (result, state) => { state.orderId = String(result.id); }],
   ["get_order", (state) => ({ orderId: state.orderId })],
+  ["place_basket", () => ({ deliverBy: monday(), lines: [{ words: "lactose-free milk", quantity: { amount: 100, unit: "l" } }, { words: "eggs", quantity: { amount: 12, unit: "kg" } }] })],
   ["verify_audit", () => ({})],
+  ["plan_menu", () => ({ words: "We have a wedding on Saturday with 80 guests. Three courses." })],
+  ["list_recipes", () => ({})],
+  ["plan_event", () => ({ words: "We have a wedding on Saturday with 80 guests, no nuts." })],
 ];
 
 export async function listTools(): Promise<ListedTool[]> {

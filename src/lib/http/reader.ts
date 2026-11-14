@@ -20,7 +20,7 @@ export class CredentialRequiredError extends GatewayError {
 }
 
 /** A browser in its own sandbox, or a person signed in to this workspace. A shared-view cookie alone is not access. */
-async function fullAccess(request: Request): Promise<boolean> {
+export async function fullAccess(request: Request): Promise<boolean> {
   const { access } = await resolveWorkspace(request.headers);
   if (access === "browser") return true;
   const [approver, operator] = await Promise.all([sessionClaims(request.headers, "approver"), sessionClaims(request.headers, "operator")]);

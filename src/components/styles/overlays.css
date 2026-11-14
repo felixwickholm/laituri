@@ -1,4 +1,4 @@
-/* Things that float: the sign-in popover, the demo menu and the toasts. They scale or rise from where they belong. */
+/* Things that float: the sign-in popover, the More menu and the toasts. They scale or rise from where they belong. */
 
 .popover {
   position: absolute;
@@ -9,7 +9,7 @@
   background: var(--surface-1);
   box-shadow: var(--shadow-float);
   color: var(--text-2);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   line-height: 20px;
   transition:
     opacity 180ms var(--ease-out),
@@ -25,7 +25,7 @@
   gap: 8px;
   margin: 0 32px 6px 0;
   color: var(--text-1);
-  font-size: var(--fs-15);
+  font-size: var(--fs-base);
   line-height: 22px;
   font-weight: 600;
 }
@@ -58,7 +58,7 @@
 }
 .fine {
   color: var(--text-3);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   line-height: 19px;
 }
 .popover .fine.tone-danger {
@@ -66,7 +66,7 @@
   color: var(--danger);
 }
 
-/* The demo menu: grows from the "Demo" line in the sidebar; laid out in full in the phone's More sheet. */
+/* The More menu: grows from the "More" line in the sidebar; laid out in full in the phone's More sheet. */
 .demo-pop {
   padding: 6px;
   box-shadow: var(--shadow-2);
@@ -83,42 +83,10 @@
 .demo-section + .demo-section {
   border-top: 1px solid var(--line);
 }
-.demo-ws {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  margin: 0;
-  color: var(--text-2);
-  font-size: var(--fs-13);
-  line-height: 18px;
-}
-.demo-ws svg {
-  flex: none;
-  width: 14px;
-  height: 14px;
-  margin-top: 2px;
-  color: var(--text-3);
-}
-.demo-ws > span {
-  display: grid;
-  min-width: 0;
-}
-.demo-ws strong {
-  color: var(--text-1);
-  font-weight: 600;
-}
-.demo-ws[data-shared="true"] svg {
-  color: var(--warn);
-}
-.demo-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
 .demo-title {
   margin: 0;
   color: var(--text-1);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   font-weight: 600;
   line-height: 18px;
 }
@@ -131,7 +99,7 @@
   display: grid;
   grid-template-columns: 104px minmax(0, 1fr);
   gap: 8px;
-  font-size: var(--fs-12);
+  font-size: var(--fs-xs);
   line-height: 17px;
 }
 .demo-facts dt {
@@ -147,9 +115,6 @@
   align-items: center;
   gap: 8px 12px;
 }
-.demo-signin {
-  justify-items: start;
-}
 .sheet-body .demo-panel {
   border-radius: var(--r-card);
   background: var(--surface-2);
@@ -159,7 +124,7 @@
 }
 .sheet-body .demo-facts div {
   grid-template-columns: 128px minmax(0, 1fr);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
 }
 
 /* Toasts rise from the bottom of the canvas, clear of the sidebar and the phone tab bar. */
@@ -191,7 +156,7 @@
   background: var(--surface-inverse);
   color: var(--text-inverse);
   box-shadow: var(--shadow-2);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   font-weight: 550;
   transition:
     opacity var(--d-base) var(--ease-out),
@@ -250,7 +215,7 @@
   gap: 8px;
   margin: 0;
   color: var(--text-2);
-  font-size: var(--fs-12);
+  font-size: var(--fs-xs);
   line-height: 17px;
 }
 .ws-line svg {
@@ -275,7 +240,7 @@
 .ws-switch {
   justify-self: start;
   margin-left: 22px;
-  font-size: var(--fs-12);
+  font-size: var(--fs-xs);
 }
 .ws-indicator[data-shared="true"] .ws-line svg {
   color: var(--warn);
@@ -293,7 +258,7 @@
   border-radius: var(--r-card);
   background: var(--surface-2);
   color: var(--text-2);
-  font-size: var(--fs-13);
+  font-size: var(--fs-sm);
   line-height: 18px;
 }
 .ws-banner > svg {
@@ -333,14 +298,14 @@
 }
 .shared-lock h1 {
   margin: 0;
-  font-size: var(--fs-18);
+  font-size: var(--fs-lg);
   line-height: 24px;
   font-weight: 600;
 }
 .shared-lock p {
   margin: 0 0 12px;
   color: var(--text-2);
-  font-size: var(--fs-15);
+  font-size: var(--fs-base);
 }
 .shared-lock-actions {
   display: flex;

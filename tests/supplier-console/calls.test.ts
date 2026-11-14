@@ -26,9 +26,9 @@ describe("call lines", () => {
 
   it("says what a quote asked for and how it was answered", () => {
     const full = call("request_quote", "Asked for a quote for 200 l of Valio Hyvä suomalainen Arki® Eila® skimmed milk drink 1 l lactose free", "Full offer, 220.00 EUR net");
-    expect(callLine(full, NONE).sentence).toBe("Quote · 200 l Arki Eila skimmed lactose-free milk 1 l · €220.00");
+    expect(callLine(full, NONE).sentence).toBe("Price · 200 l Arki Eila skimmed lactose-free milk 1 l · €220.00");
     const partial = call("request_quote", "Asked for a quote for 40 l of Arla Whipping cream 1 L ESL lactose free", "Partial offer, 272.69 EUR net, 3 alternatives");
-    expect(callLine(partial, NONE).sentence).toMatch(/^Quote · 40 l .+ · partial, 3 alternatives$/);
+    expect(callLine(partial, NONE).sentence).toMatch(/^Price · 40 l .+ · partial, 3 alternatives$/);
     const none = call("request_quote", "Asked for a quote for 15 kg of Valio Edam 17 % e1 kg slices", "Not available, 0.00 EUR net");
     expect(callLine(none, NONE).sentence).toMatch(/· not available$/);
   });
@@ -46,9 +46,9 @@ describe("call lines", () => {
       status: "waiting",
       refs: { offerId: "off_1", orderId: "ord_1" },
     });
-    expect(callLine(held, nets)).toEqual({ sentence: "Order held for approval · €909.00", tone: "waiting" });
+    expect(callLine(held, nets)).toEqual({ sentence: "Order waits for the customer · €909.00", tone: "waiting" });
     const blocked = call("place_order", "Placed an order for 5 x ciabatta", "Blocked: may contain sesame.", { status: "blocked" });
-    expect(callLine(blocked, NONE)).toEqual({ sentence: "Order blocked by the buyer's rules", tone: "danger" });
+    expect(callLine(blocked, NONE)).toEqual({ sentence: "Order blocked by the customer's rules", tone: "danger" });
     const confirmed = call("place_order", "Placed an order for 10 x carrots", "Confirmed, 111.80 EUR net, receipt signed");
     expect(callLine(confirmed, NONE).sentence).toBe("Order confirmed · €111.80");
   });

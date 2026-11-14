@@ -1,16 +1,24 @@
 import { TOOLS } from "@/lib/mcp/tools";
 import { APPROVAL_ROW, NEVER, TOOL_COPY, type Access } from "@/lib/connect/tools";
 
-const ROWS = [...TOOLS.map((tool) => ({ name: tool.name, ...TOOL_COPY[tool.name] })), APPROVAL_ROW];
+/** The server's tools in its own order; a tool without plain words yet shows its own description. */
+const TOOL_ROWS = TOOLS.map((tool) => ({ name: tool.name, ...(TOOL_COPY[tool.name] ?? { does: tool.description, needs: "agent key" as Access }) }));
+const ROWS = [...TOOL_ROWS, APPROVAL_ROW];
 
 const ACCESS_TONE: Record<Access, string> = { open: "open", "agent key": "key", "a person, never an agent": "person" };
 
 /** The server's own tool list, so this table cannot drift from what an agent sees. */
 export function ToolTable() {
   return (
-    <section className="cx-tools" aria-labelledby="cx-tools-title">
-      <h2 id="cx-tools-title">What your agent can do</h2>
-      <p className="cx-sub">Seven MCP tools. The same operations are plain REST endpoints in the OpenAPI document.</p>
+    <section className="glass pad cx-tools" aria-labelledby="cx-tools-title">
+      <h2 id="cx-tools-title" className="section-title">
+        What your agent can do
+      </h2>
+      <p className="cx-never">{NEVER}</p>
+      <details className="cx-tools-more">
+        <summary>
+          {TOOL_ROWS.length} tools · <a href="/api/v1/openapi.json">OpenAPI</a>
+        </summary>
       <div className="cx-table-wrap">
         <table className="cx-table">
           <thead>
@@ -37,7 +45,7 @@ export function ToolTable() {
           </tbody>
         </table>
       </div>
-      <p className="cx-never">{NEVER}</p>
+      </details>
     </section>
   );
 }

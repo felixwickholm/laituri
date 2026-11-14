@@ -1,5 +1,6 @@
 import type { Product, ProductFilters, SearchHit, SearchRequest, SearchResponse } from "@/lib/contracts";
 import { productFacts } from "./facts";
+import { productImage } from "./images";
 import { parseQuery, type ParsedQuery } from "./query";
 import { rank, wordMatch, type Entry } from "./rank";
 import { productText, words } from "./text";
@@ -88,6 +89,7 @@ export function search(all: Entry[], request: SearchRequest): SearchResponse {
       product: entry.product,
       ...rank(entry, { ...parsed, claims }, concept),
       facts: productFacts(entry.product),
+      image: productImage(entry.product.id, entry.product.categoryGroup, entry.product.concept).src,
     }))
     .sort((a, b) => b.score - a.score || a.product.id.localeCompare(b.product.id))
     .slice(0, request.limit ?? 10);

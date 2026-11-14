@@ -85,7 +85,9 @@ export async function runPurchase(
     await say(`Looking for ${what}, ${quantityText(quantity)}, ${by}.`);
     await hooks.pause();
 
-    const candidates = await findCandidates(parsed, transport);
+    // The mandate first: the search leaves out what it never allows, so the agent finds what the kitchen may have.
+    const { jws: mandateJws, mandate } = await transport.getMandate();
+    const candidates = await findCandidates(parsed, transport, mandate.dietary);
     if (candidates.products.length === 0) {
       const why = candidates.matches > 0 ? " The matches are sold in another unit." : "";
       return finish("not_found", `Found nothing that matches "${what}".${why} No order placed.`, {}, "error");
@@ -107,7 +109,6 @@ export async function runPurchase(
     await say(`Offer signed by ${offer.issuer}: ${offerSubject(offer)}, ${euro(offer.totals.gross.amount)} with VAT. Valid ${validMinutes(offer)} minutes.`);
     await hooks.pause();
 
-    const { jws: mandateJws, mandate } = await transport.getMandate();
     const order = await transport.placeOrder({ offerJws: jws, mandateJws, idempotencyKey: randomUUID() });
     const result = outcome(order, mandate);
     const noteStatus: NoteStatus = result.status === "confirmed" ? "ok" : result.status === "waiting" ? "waiting" : "blocked";

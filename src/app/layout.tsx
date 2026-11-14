@@ -1,11 +1,21 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Barlow_Condensed, Figtree, JetBrains_Mono } from "next/font/google";
+import { headers } from "next/headers";
+import { SandboxSignIn } from "@/components/session/SandboxSignIn";
+import { LIVE_URL, PITCH } from "@/lib/evidence";
 import { DEFAULT_THEME, THEME_BOOT_SCRIPT } from "@/lib/theme/theme";
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-inter",
+/** Open stand-ins for Valio Aimo's licensed faces: Figtree for text, Barlow Condensed for headings and buttons. */
+const figtree = Figtree({
+  variable: "--font-figtree",
   subsets: ["latin"],
+});
+
+const barlow = Barlow_Condensed({
+  variable: "--font-barlow",
+  subsets: ["latin"],
+  weight: ["700", "800"],
 });
 
 const jetbrainsMono = JetBrains_Mono({
@@ -13,27 +23,53 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
 });
 
+const TITLE = "Laituri: the dock for AI agents";
+const DESCRIPTION = PITCH;
+
 export const metadata: Metadata = {
-  title: "Laituri · The loading dock for AI agents",
-  description:
-    "The loading dock for AI agents: a kitchen's own purchasing agent buys from Valio Aimo at signed fixed prices, inside limits a person signed, with a log anyone can verify.",
+  metadataBase: new URL(LIVE_URL),
+  title: { default: TITLE, template: "%s · Laituri" },
+  description: DESCRIPTION,
+  applicationName: "Laituri",
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      { url: "/brand/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico", sizes: "48x48" },
+    ],
+    apple: "/brand/apple-touch-icon.png",
+  },
+  openGraph: {
+    title: TITLE,
+    description: DESCRIPTION,
+    type: "website",
+    siteName: "Laituri",
+    locale: "en_GB",
+    images: [{ url: "/brand/og-image.png", width: 1200, height: 630, alt: TITLE }],
+  },
+  twitter: { card: "summary_large_image", title: TITLE, description: DESCRIPTION, images: ["/brand/og-image.png"] },
 };
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f6f7f9" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a0f1a" },
+    { media: "(prefers-color-scheme: light)", color: "#e9f1f3" },
+    { media: "(prefers-color-scheme: dark)", color: "#00222d" },
   ],
   viewportFit: "cover",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+/** The proxy's per-request nonce lets the theme script past the Content-Security-Policy; a prerendered page has none. */
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
   return (
-    <html lang="en" data-theme={DEFAULT_THEME} className={`${inter.variable} ${jetbrainsMono.variable} antialiased`} suppressHydrationWarning>
+    <html lang="en" data-theme={DEFAULT_THEME} className={`${figtree.variable} ${barlow.variable} ${jetbrainsMono.variable} antialiased`} suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <SandboxSignIn />
+      </body>
     </html>
   );
 }

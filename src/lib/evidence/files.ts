@@ -1,15 +1,32 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { evidence } from "./index";
+import { llmsFullText } from "@/lib/discovery/llms-full";
+import { paperAsText, readPaper } from "@/lib/discovery/paper";
+import { evidence, LIVE_URL } from "./index";
 import { renderBlock } from "./markdown";
 
 /** Which generated blocks each Markdown file holds. Node only: used by scripts/evidence.ts and the tests. */
 export const BLOCK_FILES: Record<string, string[]> = {
-  "README.md": ["numbers", "criteria", "privacy", "evals", "simulated"],
+  "README.md": ["numbers", "criteria", "privacy-brief", "evals", "simulated"],
   "docs/judging.md": ["judging"],
   "docs/evals.md": ["evals", "cases"],
   "docs/architecture.md": ["tools"],
   "docs/production.md": ["production"],
+  "docs/paper.md": [
+    "paper-abstract",
+    "numbers",
+    "paper-criteria",
+    "core",
+    "scenarios",
+    "problems",
+    "optional",
+    "threats",
+    "evals",
+    "simulated-full",
+    "production",
+    "questions",
+    "five-minutes",
+  ],
 };
 
 interface ReportCase {
@@ -71,6 +88,23 @@ export function replaceBlock(text: string, name: string, content: string): strin
   return `${text.slice(0, start)}${begin(name)}\n${content}\n${text.slice(stop)}`;
 }
 
+/**
+ * Files served as they are from public/, written from docs/paper.md after its blocks: the paper as Markdown and the
+ * whole picture for an AI in one fetch. Links in them name the live demo.
+ */
+export const PUBLIC_FILES: Record<string, (root: string) => string> = {
+  "public/paper.md": (root) => paperAsText(readPaper(root), LIVE_URL),
+  "public/llms-full.txt": (root) => llmsFullText(LIVE_URL, readPaper(root)),
+};
+
+function readOr(file: string): string | undefined {
+  try {
+    return readFileSync(file, "utf8");
+  } catch {
+    return undefined;
+  }
+}
+
 /** Blocks whose text differs from what the evidence source renders now, as "file#block". */
 export function staleBlocks(root: string): string[] {
   const stale: string[] = [];
@@ -80,6 +114,7 @@ export function staleBlocks(root: string): string[] {
       if (readBlock(text, name) !== render(root, file, name).trim()) stale.push(`${file}#${name}`);
     }
   }
+  for (const [file, make] of Object.entries(PUBLIC_FILES)) if (readOr(path.join(root, file)) !== make(root)) stale.push(file);
   return stale;
 }
 
@@ -92,6 +127,14 @@ export function writeBlocks(root: string): string[] {
     let text = before;
     for (const name of names) text = replaceBlock(text, name, render(root, file, name));
     if (text !== before) {
+      writeFileSync(full, text);
+      changed.push(file);
+    }
+  }
+  for (const [file, make] of Object.entries(PUBLIC_FILES)) {
+    const full = path.join(root, file);
+    const text = make(root);
+    if (readOr(full) !== text) {
       writeFileSync(full, text);
       changed.push(file);
     }

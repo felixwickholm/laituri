@@ -1,21 +1,17 @@
 "use client";
 
+import { basketStore } from "@/lib/console/basket-store";
 import { consoleStore } from "@/lib/console/store";
+import type { Basket, BasketLine } from "@/lib/contracts";
+import { tourBasket } from "@/lib/tour/facts";
 import type { ActionId } from "@/lib/tour/steps";
-import type { TourScene } from "@/lib/tour/targets";
 import { tourStore } from "./tour-store";
 
-/** What the tour types into the agent's composer, word for word the milk scene's request. */
-export const MILK_REQUEST = "1,000 litres of lactose-free milk by Monday";
-const TYPE_MS = 34;
-const SETTLE_MS = 450;
-const POLL_MS = 120;
+const POLL_MS = 100;
+/** How long the tour waits for the basket the page's own button started to appear in the list. */
+const BUTTON_MS = 10_000;
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
-
-function reducedMotion(): boolean {
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
 
 /** Resolves true once `check` holds, false after `timeoutMs`. */
 async function until(check: () => boolean, timeoutMs: number): Promise<boolean> {
@@ -27,140 +23,100 @@ async function until(check: () => boolean, timeoutMs: number): Promise<boolean> 
   return check();
 }
 
-async function element<T extends Element>(selector: string, timeoutMs: number): Promise<T | null> {
-  await until(() => document.querySelector(selector) !== null, timeoutMs);
-  return document.querySelector<T>(selector);
+function currentBasket(): Basket | undefined {
+  const { basketId, since } = tourStore.getSnapshot();
+  return tourBasket(basketStore.getSnapshot().baskets, basketId, since);
 }
-
-const idle = () => consoleStore.getSnapshot().run?.status !== "running";
-
-/** Sets a React-controlled input the way typing does, so the panel's own state follows. */
-function setInputValue(input: HTMLInputElement, value: string): void {
-  Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(input, value);
-  input.dispatchEvent(new Event("input", { bubbles: true }));
-}
-
-const runId = () => consoleStore.getSnapshot().run?.id;
 
 /**
- * Presses the panel's own scene button, or starts the scene directly when the panel is not on screen, and records
- * the id of the run that started, so every later step follows exactly that run.
+ * Signs this browser in as the purchasing manager with demo access, so the phone opens on the lines themselves and the
+ * first tap is the decision. A workspace without demo access keeps the phone's own sign-in.
  */
-async function startScene(scenario: TourScene): Promise<void> {
-  await until(idle, 20_000);
-  const before = runId();
-  const button = await element<HTMLButtonElement>(`[data-tour-scene="${scenario}"]`, 3000);
-  await until(() => !button?.disabled, 3000);
-  let started: string | undefined;
+async function signInManager(): Promise<void> {
+  if (consoleStore.getSnapshot().session?.signedIn) return;
+  await consoleStore.signIn({ demo: true }).catch(() => undefined);
+}
+
+/**
+ * Presses the page's own "start the weekly order" button, as a person would, and follows the basket it starts. Only
+ * when the button is not on screen does the tour start the same standing order directly, so there is never a second
+ * basket competing for the same stock.
+ */
+async function startWeekly(): Promise<void> {
+  const signIn = signInManager();
+  const button = document.querySelector<HTMLButtonElement>('[data-tour="start-weekly"]');
   if (button && !button.disabled) {
     button.click();
-    if (await until(() => runId() !== before, 5000)) started = runId();
+    void basketStore.tick();
+    if (await until(() => currentBasket() !== undefined, BUTTON_MS)) tourStore.dispatch({ type: "basket", id: (currentBasket() as Basket).id });
+  } else if (!currentBasket()) {
+    tourStore.dispatch({ type: "basket", id: await basketStore.startWeekly() });
   }
-  started ??= await consoleStore.startRun({ scenario });
-  tourStore.dispatch({ type: "run", scene: scenario, id: started });
+  await signIn;
 }
 
-/** Types the request into the composer letter by letter and leaves it there, unsent, for the person to read. */
-async function typeRequest(): Promise<void> {
-  const input = await element<HTMLInputElement>("#live-agent-ask", 8000);
-  await until(() => idle() && !input?.disabled, 10_000);
-  if (!input) return;
-  const step = reducedMotion() ? 0 : TYPE_MS;
-  for (let index = 1; index <= MILK_REQUEST.length; index++) {
-    setInputValue(input, MILK_REQUEST.slice(0, index));
-    if (step) await sleep(step);
-  }
-  await sleep(SETTLE_MS);
-}
-
-/** Sends what was typed: the scripted milk scene asks exactly those words, so the story is the same every time. */
-async function sendRequest(): Promise<void> {
-  const input = document.querySelector<HTMLInputElement>("#live-agent-ask");
-  if (input) setInputValue(input, "");
-  await startScene("milk");
+/** The option a person takes first on a waiting line: approve, else the first that orders something. */
+function firstOption(line: BasketLine) {
+  return line.options?.find((option) => option.kind === "approve") ?? line.options?.find((option) => option.kind !== "handoff" && option.kind !== "skip");
 }
 
 /**
- * Signs this browser in as the approver with demo access before the over-limit order exists, so the phone opens on
- * Approve and sign and the first tap is the approval itself. A workspace without demo access keeps the phone's own
- * sign-in.
+ * Leaving the phone step: if the visitor did not tap, the tour taps the first answer on the phone, as the purchasing
+ * manager would, or takes the same option directly when the phone frame is not reachable.
  */
-async function signInApprover(): Promise<void> {
-  if (consoleStore.getSnapshot().session?.signedIn) return;
-  try {
-    await consoleStore.signIn({ demo: true });
-  } catch {
+async function resolveOnPhone(): Promise<void> {
+  await basketStore.tick();
+  const basket = currentBasket();
+  const line = basket?.lines.find((item) => item.state === "orange" && !item.resolved);
+  // The visitor tapped already: one answer is the story, the other line keeps waiting for them.
+  if (!basket || !line || basket.lines.some((item) => item.resolved !== undefined && item.state !== "red")) return;
+  const frame = document.querySelector<HTMLIFrameElement>("[data-tour-phone] iframe");
+  const button = frame?.contentDocument?.querySelector<HTMLButtonElement>('[data-tour="resolve"]');
+  if (button && !button.disabled) {
+    button.click();
     return;
   }
+  const option = firstOption(line);
+  if (!option) return;
+  await signInManager();
+  await basketStore.resolve(basket.id, line.id, option.id).catch(() => undefined);
 }
 
-async function startOverLimit(): Promise<void> {
-  await signInApprover();
-  await startScene("over-limit");
-}
-
-/** Taps a button inside the phone frame once it is there and enabled. */
-function tapInPhone(selector: string): () => boolean {
-  return () => {
-    const frame = document.querySelector<HTMLIFrameElement>("[data-tour-phone] iframe");
-    const button = frame?.contentDocument?.querySelector<HTMLButtonElement>(selector);
-    if (!button || button.disabled) return false;
-    button.click();
-    return true;
-  };
-}
+/** How long the tour looks for the example's button while Today is still drawing. */
+const EXAMPLE_MS = 5_000;
 
 /**
- * Taps Approve inside the phone frame, as Maria would, after continuing with demo access on the phone when it asks.
- * Signs in with demo access and signs the approval directly if the frame is not reachable.
+ * Presses the challenge's own example on Today, as a person would: "1,000 litres of lactose-free milk by Monday".
+ * The page runs it and shows the four steps inline; a build without the button simply shows the box.
  */
-async function approveOnPhone(): Promise<void> {
-  const approve = tapInPhone("[data-phone-approve]");
-  if (!approve() && tapInPhone("[data-phone-demo]")()) await sleep(SETTLE_MS);
-  if (await until(approve, 4000)) return;
-  const order = consoleStore.getSnapshot().orders.find((item) => item.status === "pending_approval" && !item.seeded);
-  if (!order) return;
-  await signInApprover();
-  try {
-    consoleStore.apply(await consoleStore.decide(order, { decision: "approved" }));
-  } catch {
-    // A re-check that stopped the approval (409) stores the order as blocked; the next poll shows it.
-    await consoleStore.tick();
-  }
+async function pressExample(): Promise<void> {
+  const find = () => document.querySelector<HTMLButtonElement>('[data-tour="milk-example"]');
+  if (!(await until(() => find() !== null && !find()?.disabled, EXAMPLE_MS))) return;
+  find()?.click();
 }
 
-const broken = () => consoleStore.getSnapshot().chain.state === "broken";
+export const ACTIONS: Record<ActionId, () => Promise<void>> = { pressExample, startWeekly, resolveOnPhone };
 
-/**
- * The cheating scene's last attempt edits a log entry on its own; this waits for the browser to catch it. If the
- * scene ended without the edit (it was stopped early), the tour makes the same edit so the step still shows it.
- */
-async function awaitLogEdit(): Promise<void> {
-  if (await until(() => broken() || idle(), 20_000)) {
-    if (await until(broken, 4000)) return;
-  }
-  if (idle() && !broken()) await consoleStore.tamper();
-}
-
-/** Waits for a run the tour started to finish, so nothing it changes lands after the tour has cleaned up. */
-export async function runSettled(): Promise<void> {
-  await until(idle, 30_000);
-}
-
-export const ACTIONS: Record<ActionId, () => Promise<void>> = {
-  typeRequest,
-  sendRequest,
-  startOverLimit,
-  approveOnPhone,
-  showDemand: async () => undefined,
-  startBreakMandate: () => startScene("break-mandate"),
-  awaitLogEdit,
-};
-
-/**
- * Resets this browser's own sandbox, so the story always runs from the same state. No sign-in is needed: the reset
- * touches nobody else's copy. The phone step signs in with demo access when the tour gets there.
- */
+/** Resets this browser's own sandbox, so the story always runs from the same state. Nobody else's copy changes. */
 export async function prepareDemo(): Promise<void> {
   await consoleStore.reset();
+  await basketStore.tick();
+}
+
+/** Picks each step's page: the first of its pages that this build serves. */
+export async function chooseRoutes(steps: readonly { id: string; routes: readonly string[] }[]): Promise<Record<string, string>> {
+  const chosen: Record<string, string> = {};
+  await Promise.all(
+    steps.map(async (step) => {
+      for (const route of step.routes.slice(0, -1)) {
+        const response = await fetch(route, { method: "HEAD", cache: "no-store" }).catch(() => undefined);
+        if (response?.ok) {
+          chosen[step.id] = route;
+          return;
+        }
+      }
+      chosen[step.id] = step.routes[step.routes.length - 1];
+    }),
+  );
+  return chosen;
 }

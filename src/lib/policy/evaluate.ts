@@ -1,7 +1,7 @@
 import type { Check, Decision, Outcome } from "@/lib/contracts";
 import type { Base, EvaluateInput, Rule } from "./context";
 import { check } from "./format";
-import { categoryAllowed, dietaryAllergens, dietaryClaims, firstTimeProducts, matchConfidence } from "./rules/products";
+import { categoryAllowed, dietaryAllergens, dietaryClaims, firstTimeProducts, matchConfidence, neverBuy } from "./rules/products";
 import { deliveryDeadline, deliveryPartial, substitutionPolicy, substitutionPrice } from "./rules/fulfilment";
 import { spendPerOrder, spendPerWeek } from "./rules/spend";
 import { requestWords } from "./rules/request";
@@ -26,6 +26,7 @@ const RULES: Rule[] = [
   matchConfidence,
   requestWords,
   firstTimeProducts,
+  neverBuy,
 ];
 
 const NO_MANDATE = "Not checked. The mandate is not valid.";

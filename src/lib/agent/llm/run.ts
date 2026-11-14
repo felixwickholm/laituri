@@ -1,5 +1,6 @@
 import { runPurchase } from "../purchase";
 import type { AgentHooks, AgentTransport, PurchaseResult } from "../types";
+import { admitModelCall } from "./budget";
 import { providerFor, selectEngine, type EngineChoice } from "./engine";
 import { runModelPurchase } from "./loop";
 import type { AgentEngine } from "./types";
@@ -10,7 +11,10 @@ export function activeEngine(env: Record<string, string | undefined> = process.e
   return model ? { engine, model } : { engine };
 }
 
-/** Runs a free-text request with the selected engine. Without a usable model the scripted agent runs it. */
+/**
+ * Runs a free-text request with the selected engine. Without a usable model, or once the model budget for this caller
+ * or this day is spent, the scripted agent runs it.
+ */
 export async function runBuyerAgent(
   requestText: string,
   transport: AgentTransport,
@@ -18,8 +22,8 @@ export async function runBuyerAgent(
   choice: EngineChoice = selectEngine(),
 ): Promise<PurchaseResult> {
   const provider = providerFor(choice);
-  if (provider) return runModelPurchase(requestText, transport, hooks, provider);
-  if (!choice.unavailable) return runPurchase(requestText, transport, hooks);
+  if (provider && admitModelCall()) return runModelPurchase(requestText, transport, hooks, provider);
+  if (provider || !choice.unavailable) return runPurchase(requestText, transport, hooks);
   const step = { text: `The model agent is not available: ${choice.unavailable} The scripted agent runs this request.`, status: "error" as const };
   await hooks.note(step.text, step.status);
   const result = await runPurchase(requestText, transport, hooks);

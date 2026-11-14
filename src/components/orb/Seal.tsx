@@ -37,7 +37,7 @@ interface SealProps {
 
 /**
  * The Laituri seal: the outer ring is the signed mandate, each inner arc one of its rules, filling as the
- * rule passes. The dock in the middle is where the agent ties up.
+ * rule passes. Laituri's mark sits in the middle: the agent docked at the quay.
  */
 export function Seal({ state, rulesPassed, rulesTotal }: SealProps) {
   const total = Math.max(1, rulesTotal);
@@ -58,10 +58,9 @@ export function Seal({ state, rulesPassed, rulesTotal }: SealProps) {
         </g>
       ))}
       <circle className="seal-disc" cx={CENTRE} cy={CENTRE} r={DISC_R} />
-      <g className="seal-pier">
-        <rect x="70" y="86" width="60" height="7" rx="3.5" />
-        <path d="M80 93v24M100 93v24M120 93v24" />
-        <path className="seal-water" d="M66 111h8M86 111h8M106 111h8M126 111h8" />
+      <g className="seal-mark" transform="translate(82 82) scale(0.9)">
+        <path d="M0 4A4 4 0 0 1 4 0L8 0A4 4 0 0 1 12 4L12 28L36 28A4 4 0 0 1 40 32L40 36A4 4 0 0 1 36 40L4 40A4 4 0 0 1 0 36Z" />
+        <path className="seal-mark-agent" d="M20 4A4 4 0 0 1 24 0L36 0A4 4 0 0 1 40 4L40 16A4 4 0 0 1 36 20L24 20A4 4 0 0 1 20 16Z" />
       </g>
     </svg>
   );

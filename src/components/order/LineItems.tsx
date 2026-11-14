@@ -33,7 +33,7 @@ export function LineItems({ offer }: { offer: Offer }) {
                 {lineFacts(line)}
               </span>
             </span>
-            <span className="qty">{packCount(line)}</span>
+            <span className="line-qty">{packCount(line)}</span>
             <span className="money">
               {eur(line.lineNet.amount)}
               <span className="sub">

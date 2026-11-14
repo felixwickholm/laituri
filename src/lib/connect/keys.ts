@@ -19,7 +19,7 @@ export function buyersFirst(info: WorkspaceInfo | undefined, buyerId: string): A
 
 /** One plain line about where calls made with the shown key land. Nothing until the workspace is known. */
 export function keyNote(kind: WorkspaceInfo["kind"] | undefined): string | undefined {
-  if (kind === "sandbox") return "This key is yours: calls made with it appear in your own demo workspace.";
+  if (kind === "sandbox") return "This key is yours. Its calls show up only for you.";
   if (kind === "shared") return "These are the shared keys: calls made with them reach the shared workspace that every visitor sees.";
   return undefined;
 }

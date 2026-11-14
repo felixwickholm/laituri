@@ -49,7 +49,7 @@ export function demoFacts(mode: Health["mode"] | undefined): DemoFact[] {
 }
 
 export interface EngineChip {
-  /** "AI model: Gemini", or "Scripted demo agent" when no live model is connected. */
+  /** "AI model: Gemini", or "Built-in agent" when no live model is connected. */
   label: string;
   /** The model id, for a technical details row only. */
   model?: string;
@@ -61,7 +61,7 @@ const MODEL_NAMES = { gemini: "Gemini", claude: "Claude" } as const;
 export function engineChip(health: Health | undefined): EngineChip | undefined {
   const agent = health?.agent;
   if (!agent) return undefined;
-  if (agent.engine === "scripted") return { label: "Scripted demo agent" };
+  if (agent.engine === "scripted") return { label: "Built-in agent" };
   return { label: `AI model: ${MODEL_NAMES[agent.engine]}`, ...(agent.model ? { model: agent.model } : {}) };
 }
 
@@ -81,7 +81,7 @@ export const OPERATOR_NAME = "Valio Aimo operator";
 export interface Account {
   signedIn: boolean;
   name: string;
-  /** "demo access" after one-click demo access, the role title after a passcode. */
+  /** The role title: the screens name the role, the signed record names how the person signed in. */
   role: string;
   initials: string;
 }
@@ -91,7 +91,7 @@ export function accountFor(session: ConsoleSession | undefined, role: SessionRol
   const side = roleSession(session, role);
   const name = role === "operator" ? OPERATOR_NAME : shortName(side.name ?? approverName);
   const title = role === "operator" ? "Operator" : "Approver";
-  return { signedIn: side.signedIn, name, role: side.demo ? "demo access" : title, initials: initials(name) };
+  return { signedIn: side.signedIn, name, role: title, initials: initials(name) };
 }
 
 /**

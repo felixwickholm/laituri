@@ -3,6 +3,7 @@ import { now } from "@/lib/clock";
 import { cutPrice, raiseLimit } from "@/lib/demo/forge";
 import { issueMandate, type MandateClaims } from "@/lib/mandate";
 import type { Suite } from "../harness";
+import { BASKET_GUARDRAILS } from "../support/baskets";
 import { APPROVAL_GUARDRAILS } from "../support/guardrails-approval";
 import { BINDING_GUARDRAILS } from "../support/guardrails-binding";
 import { INPUT_GUARDRAILS } from "../support/guardrails-input";
@@ -11,7 +12,7 @@ import { RECHECK_GUARDRAILS } from "../support/guardrails-recheck";
 import { SCOPE_GUARDRAILS } from "../support/guardrails-scope";
 import { SPEND_GUARDRAILS } from "../support/guardrails-spend";
 import { gateway } from "@/lib/gateway";
-import { mandate, orderFrom, placeOrder, quoteLitres } from "../support/flow";
+import { MILK_ID, mandate, orderFrom, placeOrder, quoteLitres } from "../support/flow";
 import { expectRefused, guardrail, outcomeText } from "../support/hostile";
 import { payloadOf, signWithFreshKey, withPayload } from "../support/jws";
 
@@ -98,11 +99,24 @@ const MANDATE_GUARDRAILS = [
     checks.expect(orderFrom(reply)?.refusal?.code === "not_issued_here", "the refusal is not named as a mandate not in force here");
     return outcomeText(reply);
   }),
+  guardrail("G42", "Product on the buyer's never-buy list", "blocked by product.never_buy; dropping the list from the signed mandate is blocked by mandate.signature", async (hostile, checks) => {
+    const { mandate: current } = await mandate();
+    await gateway().updateMandate({ dietary: { neverBuy: { products: [{ productId: MILK_ID, name: "Valio lactose-free milk drink" }], words: [] } } });
+    const listed = await forgedOrder({});
+    const first = await hostile.try("never-buy product", () => placeOrder(listed.offerJws, listed.mandateJws, "eval-g42-never-buy"));
+    expectRefused(first, "product.never_buy", checks, "never-buy product");
+    const reason = orderFrom(first)?.decision.checks.find((check) => check.rule === "product.never_buy")?.message ?? "";
+    checks.expect(reason.includes("never-buy list"), `reason "${reason}", expected it to name the never-buy list`);
+    const dropped = await forgedOrder({ mandate: (jws) => withPayload<MandateClaims>(jws, (claims) => ({ ...claims, mandate: { ...claims.mandate, dietary: current.dietary } })) });
+    const second = await hostile.try("list dropped from the signed mandate", () => placeOrder(dropped.offerJws, dropped.mandateJws, "eval-g42-dropped"));
+    expectRefused(second, "mandate.signature", checks, "list dropped");
+    return `${outcomeText(first)} / ${outcomeText(second)}`;
+  }),
 ];
 
 export const guardrailsSuite: Suite = {
   id: "guardrails",
   name: "Guardrails",
   bar: 1,
-  cases: [...OFFER_GUARDRAILS, ...MANDATE_GUARDRAILS, ...SPEND_GUARDRAILS, ...APPROVAL_GUARDRAILS, ...INPUT_GUARDRAILS, ...SCOPE_GUARDRAILS, ...RECHECK_GUARDRAILS, ...PEOPLE_GUARDRAILS, ...BINDING_GUARDRAILS],
+  cases: [...OFFER_GUARDRAILS, ...MANDATE_GUARDRAILS, ...SPEND_GUARDRAILS, ...APPROVAL_GUARDRAILS, ...INPUT_GUARDRAILS, ...SCOPE_GUARDRAILS, ...RECHECK_GUARDRAILS, ...PEOPLE_GUARDRAILS, ...BINDING_GUARDRAILS, ...BASKET_GUARDRAILS],
 };

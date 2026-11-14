@@ -1,8 +1,8 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import type { WorkspaceInfo } from "@/lib/contracts";
-import { buyersFirst, keyFor, keyNote } from "@/lib/connect/keys";
-import { WorkspaceIndicator } from "../session/WorkspaceIndicator";
+import { buyersFirst, keyFor } from "@/lib/connect/keys";
 import { CodeBlock } from "./CodeBlock";
 
 interface Props {
@@ -12,20 +12,40 @@ interface Props {
   onBuyer: (buyerId: string) => void;
 }
 
-/** The agent key every command on this page carries, which demo buyer it acts for, and whose workspace it reaches. */
+/** True while a sideways-scrolling row has more to show at its right edge, so the edge can fade. */
+function useMoreRight<T extends HTMLElement>(items: number) {
+  const ref = useRef<T>(null);
+  const [more, setMore] = useState(false);
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    const measure = () => setMore(node.scrollLeft + node.clientWidth < node.scrollWidth - 2);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    node.addEventListener("scroll", measure, { passive: true });
+    return () => {
+      observer.disconnect();
+      node.removeEventListener("scroll", measure);
+    };
+  }, [items]);
+  return [ref, more] as const;
+}
+
+/** The agent key every command on this page carries, and which customer it acts for. */
 export function AgentKeyPanel({ info, primaryBuyerId, buyerId, onBuyer }: Props) {
   const buyers = buyersFirst(info, primaryBuyerId);
   const chosen = buyers.find((entry) => entry.buyer.id === buyerId);
-  const note = keyNote(info?.kind);
+  const [rowRef, more] = useMoreRight<HTMLDivElement>(buyers.length);
 
   return (
-    <div className="cx-key">
+    <div className="cx-key" data-tour="connect-key">
       <div className="cx-key-head">
         <h3>Agent key</h3>
         {chosen && <p className="cx-key-agent">Acts as {chosen.agent.name}</p>}
       </div>
       {buyers.length > 1 && (
-        <div className="segmented inline cx-buyers" role="group" aria-label="Demo buyer">
+        <div ref={rowRef} className="segmented inline cx-buyers" role="group" aria-label="Customer" data-overflow={more || undefined}>
           {buyers.map((entry) => (
             <button key={entry.buyer.id} type="button" aria-pressed={entry.buyer.id === buyerId} onClick={() => onBuyer(entry.buyer.id)}>
               {entry.buyer.name}
@@ -34,8 +54,6 @@ export function AgentKeyPanel({ info, primaryBuyerId, buyerId, onBuyer }: Props)
         </div>
       )}
       <CodeBlock code={{ value: keyFor(info, buyerId), label: `Copy the agent key${chosen ? ` for ${chosen.buyer.name}` : ""}` }} />
-      {note && <p className="cx-key-note">{note}</p>}
-      <WorkspaceIndicator variant="panel" />
     </div>
   );
 }

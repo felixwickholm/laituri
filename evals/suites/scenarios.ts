@@ -1,4 +1,6 @@
 import type { Suite } from "../harness";
+import { BASKET_CASES } from "../support/baskets";
+import { MENU_CASES } from "../support/menus";
 import { runScenario, type Scenario } from "../support/scenario";
 
 const LITRES = (amount: number) => ({ amount, unit: "l" as const });
@@ -135,11 +137,15 @@ export const scenariosSuite: Suite = {
   id: "scenarios",
   name: "Scenarios",
   bar: 0.9,
-  cases: SCENARIOS.map((scenario) => ({
-    id: scenario.id,
-    name: NAMES[scenario.id] ?? scenario.request,
-    expected: expectedText(scenario),
-    live: scenario.live,
-    run: () => runScenario(scenario),
-  })),
+  cases: [
+    ...SCENARIOS.map((scenario) => ({
+      id: scenario.id,
+      name: NAMES[scenario.id] ?? scenario.request,
+      expected: expectedText(scenario),
+      live: scenario.live,
+      run: () => runScenario(scenario),
+    })),
+    ...MENU_CASES,
+    ...BASKET_CASES,
+  ],
 };

@@ -154,5 +154,12 @@ export const SupplierOverview = z.object({
   orders: OrderStats,
   rules: z.array(RuleStat).describe("Mandate rules that held or stopped orders, most frequent first"),
   daily: z.array(DailyPoint).describe("The last 7 days, oldest first"),
+  baskets: z.object({
+    count: z.number().int().describe("Baskets the buyers' agents worked; each line is also its own request, offer and order above"),
+    lines: z.number().int(),
+    autoShare: z.number().describe("Share of finished lines ordered without a person, 0 to 1"),
+  }).optional().describe("Always present in answers from this version; optional for overviews recorded before baskets"),
+  handoffs: z.object({ open: z.number().int().describe("Questions from kitchens that wait for a person at Valio Aimo") })
+    .optional().describe("Always present in answers from this version"),
 });
 export type SupplierOverview = z.infer<typeof SupplierOverview>;

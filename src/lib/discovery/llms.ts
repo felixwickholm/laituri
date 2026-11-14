@@ -13,6 +13,9 @@ export function llmsText(origin: string): string {
 > Prices and stock are live from the challenge's mock API. Offers are signed by the wholesaler. Orders are simulated (simulated: true).
 > The agent orders alone only inside a buyer-signed mandate; larger or unusual orders wait for a named person. Every step is in a signed, hash-chained log.
 
+Read first: the paper at ${origin}/paper explains the design, maps each judging criterion to code, checks and measured results,
+and lists every limit. The whole picture in one fetch, as plain text: ${origin}/llms-full.txt.
+
 Base URL: ${urls.rest}
 OpenAPI 3.1: ${urls.openapi}
 Public keys (JWKS): ${urls.jwks}
@@ -28,7 +31,7 @@ Header: Authorization: Bearer <key from your sandbox>. Clients that cannot send 
 The shared demo workspace has fixed public tokens, used by the evals: demo-agent-token, demo-kaisla-token and demo-laine-token.
 Everyone shares it, so its weekly spend grows as people test and nobody can approve there without the passcode: use your own sandbox.
 Over REST, X-Agent-Client names your application (for example "Claude Code") in the wholesaler's view.
-Tools: search_catalog, get_product, request_quote, get_mandate, place_order, get_order, verify_audit.
+Tools: search_catalog, get_product, request_quote, get_mandate, place_order, place_basket, get_order, verify_audit, plan_menu, list_recipes, plan_event.
 
 **REST flow: "1,000 litres of lactose-free milk by Monday".**
 
@@ -59,6 +62,23 @@ curl -s ${urls.rest}/mandate ${auth}
 curl -s ${urls.rest}/orders ${auth} -H "Idempotency-Key: milk-2026-11-16-001" -d '{"offerJws":"<primary.jws from step 3>","mandateJws":"<jws from step 4>"}'
 With jq: OFFER=$(curl -s ... /quotes ... | jq -r .primary.jws); MANDATE=$(curl -s ... /mandate | jq -r .jws)
 
+**Many lines at once: a weekly order.** POST ${urls.rest}/baskets with deliverBy and lines of words and quantities (unit l, kg or pcs),
+or the MCP tool place_basket. Each line becomes its own signed offer and its own order under the mandate, four at a time.
+The answer is 202 with basketId; GET ${urls.rest}/baskets/{basketId} shows each line green (ordered alone), orange (waits for a person) or red (not ordered), with a plain reason.
+Orange and red lines are for your human; do not order them another way.
+curl -s ${urls.rest}/baskets ${auth} -d '{"deliverBy":"2026-11-16","lines":[{"words":"lactose-free milk","quantity":{"amount":1000,"unit":"l"}},{"words":"eggs","quantity":{"amount":36,"unit":"kg"}}]}'
+
+**Need -> recipe -> order: an event.** POST ${urls.rest}/menus/plan with the event in words (English or Finnish) or as guests, date and dietary,
+or the MCP tool plan_menu. The answer says back what it understood and gives three menus (good, better, best by cost per guest) from the recipe library
+(GET ${urls.rest}/recipes), fitted to your mandate and the guests' needs. A rule-breaking ingredient is swapped by its role in the recipe and the swap is stated.
+Each menu has a shopping list net of the kitchen's stock (GET ${urls.rest}/pantry): words, quantity, toOrder, product, estNet and availability for the delivery date.
+Prices are indicative; nothing is signed until you order. To order a menu, post its lines with toOrder above zero as a basket, using swap.words when a swap is set.
+curl -s ${urls.rest}/menus/plan ${auth} -d '{"words":"Wedding dinner for 80 on Friday, two guests are coeliac, no nuts"}'
+curl -s ${urls.rest}/baskets ${auth} -d '{"source":"menu","menuId":"<menus[i].id>","title":"Wedding dinner","deliverBy":"<the day before>","lines":[{"words":"salmon fillet","quantity":{"amount":13.5,"unit":"kg"}}]}'
+Without a guest count the answer has needs ["guests"] and a question to ask; menus is then empty.
+For a conversation instead, POST ${urls.rest}/assistant/turn {"words": ...} or the MCP tool plan_event, passing conversationId back each turn: a short reply, asks, menu cards and a ready order_menu basket.
+When the guest count changes, plan again with "previous":{"menuId":"<menus[i].id>","guests":80}: each menu then lists what changes.
+
 **Mandate rules.**
 
 - Up to the per-order and per-week net limits the agent may order alone; above them a human must approve.
@@ -83,6 +103,8 @@ Errors are application/problem+json with a code and a plain detail.
 
 ## Docs
 
+- [Paper](${origin}/paper): the design, each judging criterion with how to verify it, the example scenarios, the threat table and what is simulated
+- [Everything in one file](${origin}/llms-full.txt): the paper and this guide as plain text
 - [Evidence](${origin}/evidence): the five judging criteria with what was built, where in the code, how to check it and measured results
 - [Connect an agent](${origin}/connect): set-up lines for MCP clients and plain HTTP, and a test order
 

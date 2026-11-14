@@ -1,6 +1,7 @@
 import { CompactSign, compactVerify, decodeProtectedHeader, exportJWK, generateKeyPair, type CryptoKey } from "jose";
 import { createHash } from "node:crypto";
-import type { AgentSuspension, AuditEntry, Order, Product, SearchRequest, SearchResponse, SignedOffer } from "@/lib/contracts";
+import type { AgentSuspension, AuditEntry, Handoff, Order, Product, SearchRequest, SearchResponse, SignedOffer } from "@/lib/contracts";
+import type { StoredBasket } from "@/lib/basket/types";
 import { productFacts } from "@/lib/catalog/facts";
 import type { Catalog } from "@/lib/catalog/types";
 import type { DemandRecord } from "@/lib/demand/types";
@@ -94,6 +95,8 @@ export function memoryStore(): Store {
   let requests: DemandRecord[] = [];
   let mandates = new Map<string, string>();
   let suspensions = new Map<string, AgentSuspension>();
+  let baskets = new Map<string, StoredBasket>();
+  let handoffs = new Map<string, Handoff>();
   const after = <T extends { id: string }>(items: T[], id?: string) =>
     id ? items.slice(items.findIndex((item) => item.id === id) + 1) : [...items];
   return {
@@ -120,6 +123,8 @@ export function memoryStore(): Store {
       remove: async (agentId) => void suspensions.delete(agentId),
       list: async () => [...suspensions.values()],
     },
+    baskets: { put: async (b) => void baskets.set(b.id, b), get: async (id) => baskets.get(id), list: async () => [...baskets.values()] },
+    handoffs: { put: async (h) => void handoffs.set(h.id, h), get: async (id) => handoffs.get(id), list: async () => [...handoffs.values()] },
     reset: async () => {
       offers = new Map();
       orders = new Map();
@@ -128,6 +133,8 @@ export function memoryStore(): Store {
       requests = [];
       mandates = new Map();
       suspensions = new Map();
+      baskets = new Map();
+      handoffs = new Map();
     },
   };
 }

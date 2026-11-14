@@ -4,12 +4,14 @@ import { useEffect, type RefObject } from "react";
 import {
   HOLE_PAD,
   HOLE_RADIUS,
+  besideRoom,
   clampToView,
   dimPath,
   easeSheet,
   inflate,
   lerpBox,
   mergeHoles,
+  noRoomAboveOrBelow,
   placeCard,
   roundedRect,
   scrollDelta,
@@ -20,14 +22,21 @@ import {
 import { tourStore } from "./tour-store";
 
 /** The spotlight's travel between targets, matching the console's sheets. */
-const MOVE_MS = 320;
+const MOVE_MS = 240;
 /** Below this width the card is a bottom sheet and the target is kept above it. */
 export const SHEET_BELOW = 720;
-const PHONE_BAR = 64;
+/** Room kept above a target on a phone: the sticky top bar, measured, since its height follows the logo and the switch. */
+function phoneBar(): number {
+  return (document.querySelector(".phone-bar")?.getBoundingClientRect().bottom ?? 0) + 8;
+}
 /** While a new target's page is still loading above it, keep bringing it back into view. */
 const SETTLE_MS = 4000;
+/** Later, only a layout change above the target brings it back; a visitor's own scroll never moves it in the page. */
+const MOVED_PX = 48;
 /** A smooth scroll has finished by then. */
 const RESCROLL_MS = 900;
+/** A column beside the target narrower than this would squeeze the card's big type; the card sits at the foot instead. */
+const WIDE_ENOUGH = 420;
 /** How far the dimmed layer reaches past the screen, so its softened edge stays off screen. */
 const BLEED = 48;
 
@@ -98,6 +107,8 @@ export function useSpotlight(groups: readonly (readonly string[])[] | null, { di
     let side: CardSide | undefined;
     let targetSince = 0;
     let scrolledAt = 0;
+    let anchorY = 0;
+    let wide = { w: 0, h: 0 };
 
     const tick = (now: number) => {
       const view = { w: window.innerWidth, h: window.innerHeight };
@@ -115,13 +126,15 @@ export function useSpotlight(groups: readonly (readonly string[])[] | null, { di
       const cardSize = cardEl ? { w: cardEl.offsetWidth, h: cardEl.offsetHeight } : { w: 0, h: 0 };
       const boxes = targets.filter((element): element is Element => element !== null).map(boxOf);
       const all = union(boxes);
-      const drifted = all !== undefined && now - targetSince < SETTLE_MS && now - scrolledAt > RESCROLL_MS && offScreen(all, view);
+      const moved = all !== undefined && Math.abs(all.y + window.scrollY - anchorY) > MOVED_PX;
+      const drifted = all !== undefined && (now - targetSince < SETTLE_MS || moved) && now - scrolledAt > RESCROLL_MS && offScreen(all, view);
       if (all && (targetSince > scrolledAt || drifted)) {
         scrolledAt = now;
+        anchorY = all.y + window.scrollY;
         const beside = view.w - (all.x + all.w) >= cardSize.w + 44 || all.x >= cardSize.w + 44;
         const reserve = sheet ? cardSize.h + 16 : beside ? 24 : cardSize.h + 44;
         const fitsAtTop = all.y + window.scrollY + all.h <= view.h - reserve;
-        const delta = pinTop && fitsAtTop ? -window.scrollY : scrollDelta(all, view, reserve, sheet ? PHONE_BAR : 24);
+        const delta = pinTop && fitsAtTop ? -window.scrollY : scrollDelta(all, view, reserve, sheet ? phoneBar() : 24);
         if (Math.abs(delta) > 4) window.scrollBy({ top: delta, behavior: reduced ? "auto" : "smooth" });
       }
 
@@ -139,6 +152,17 @@ export function useSpotlight(groups: readonly (readonly string[])[] | null, { di
       tourStore.lastHoles = open;
 
       if (cardEl && floatCard && !sheet) {
+        // A target taller than the screen leaves no room above or below it: the card narrows into a column beside it
+        // when that column still holds a wide card, else it waits at the foot of the screen. The choice is made with
+        // the card's wide size, so a card that narrowed once does not stay narrow.
+        if (cardEl.dataset.narrow !== "true") wide = cardSize;
+        const room = noRoomAboveOrBelow(held, wide, view) ? besideRoom(held, view, 24, WIDE_ENOUGH) : undefined;
+        const narrow = room !== undefined ? `${room}px` : "";
+        if (cardEl.style.getPropertyValue("--tour-card-room") !== narrow) {
+          if (narrow) cardEl.style.setProperty("--tour-card-room", narrow);
+          else cardEl.style.removeProperty("--tour-card-room");
+          cardEl.dataset.narrow = String(room !== undefined && room < wide.w);
+        }
         const place = placeCard(held, cardSize, view);
         if (place.side !== side || !card) {
           cardMotion = { from: card, start: now };

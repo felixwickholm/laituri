@@ -1,10 +1,13 @@
 import { z } from "zod";
-import { PlaceOrderRequest, QuoteRequest, SearchRequest } from "@/lib/contracts";
+import { PlaceBasketInput, PlaceOrderRequest, QuoteRequest, SearchRequest } from "@/lib/contracts";
 import { checkpoint } from "@/lib/audit";
+import { placeBasket } from "@/lib/basket/place";
 import { gateway, type AgentRef } from "@/lib/gateway";
 import { CredentialRequiredError } from "@/lib/http/reader";
 import type { SchemaName } from "@/lib/openapi/schemas";
-import { auditText, mandateText, orderText, productText, quoteText, searchText } from "./summaries";
+import { ASSISTANT_TOOLS } from "./assistant-tools";
+import { MENU_TOOLS } from "./menu-tools";
+import { auditText, basketText, mandateText, orderText, productText, quoteText, searchText } from "./summaries";
 
 export interface ToolDefinition {
   name: string;
@@ -85,7 +88,7 @@ export const TOOLS: ToolDefinition[] = [
     name: "get_mandate",
     title: "Read your purchasing mandate",
     description:
-      "Use before ordering to learn your authority: spend limits, allowed categories, dietary rules, substitution and delivery rules. " +
+      "Use before ordering to learn your authority: spend limits, allowed categories, dietary rules, the never-buy list, substitution and delivery rules. " +
       "Returns the buyer-signed mandate JWS (pass it as mandateJws to place_order) and the readable limits.",
     operationId: "getMandate",
     input: NoInput,
@@ -106,6 +109,21 @@ export const TOOLS: ToolDefinition[] = [
     output: "Order",
     run: (agent, input) => gateway().placeOrder(agent, input),
     summarize: orderText,
+  }),
+  define({
+    name: "place_basket",
+    title: "Order a basket of many lines",
+    description:
+      "Use for a kitchen's weekly order or any order of several lines for one delivery day. Give each line in the buyer's words with a quantity " +
+      "({amount, unit: l, kg or pcs}) and the deliverBy date. The wholesaler's agent works every line as its own signed offer and its own order " +
+      "under your mandate, four at a time, and returns the basket: each line green (ordered alone), orange (waits for a person, with the reason) " +
+      "or red (not ordered, with the reason), plus totals and a one-sentence summary. Waits at most 30 seconds; if lines are still working, " +
+      "read the basket again with its id. Orange and red lines are for your human: stop and tell them, do not order those lines another way.",
+    operationId: "createBasket",
+    input: PlaceBasketInput,
+    output: "Basket",
+    run: (agent, input) => placeBasket(agent, keyBuyer(agent, "a basket"), input),
+    summarize: basketText,
   }),
   define({
     name: "get_order",
@@ -132,6 +150,8 @@ export const TOOLS: ToolDefinition[] = [
     run: async () => ({ verification: await gateway().verifyAudit(), checkpoint: await checkpoint() }),
     summarize: auditText,
   }),
+  ...MENU_TOOLS,
+  ...ASSISTANT_TOOLS,
 ];
 
 export function findTool(name: string): ToolDefinition | undefined {

@@ -69,21 +69,46 @@ describe("sandboxes", () => {
     expect(sandboxes.byAgentKey("demo-agent-token")).toBeUndefined();
   });
 
-  it("evicts the least recently used sandbox when full, and forgets its keys", async () => {
+  it("never evicts a sandbox in use: when every one is active a new one is refused with 503", async () => {
     const { sandboxes, clock } = setup(2);
-    const [oldest, newer] = [newWorkspaceSecret(), newWorkspaceSecret()];
-    const first = await sandboxes.forSecret(oldest);
+    const victim = newWorkspaceSecret();
+    const first = await sandboxes.forSecret(victim);
     const firstKey = sandboxes.info(first)!.agentKeys[0].key;
     clock.now = 10;
-    await sandboxes.forSecret(newer);
+    await sandboxes.forSecret(newWorkspaceSecret());
     clock.now = 20;
-    await sandboxes.forSecret(newer);
-    clock.now = 30;
+    const flood = sandboxes.forSecret(newWorkspaceSecret());
+    await expect(flood).rejects.toMatchObject({ status: 503, code: "sandboxes_full" });
+    expect(sandboxes.size()).toBe(2);
+    expect(sandboxes.byAgentKey(firstKey)?.workspace).toBe(first);
+    expect(await sandboxes.forSecret(victim)).toBe(first);
+  });
+
+  it("makes room by dropping only a sandbox left idle", async () => {
+    const { sandboxes, clock } = setup(2);
+    const idle = await sandboxes.forSecret(newWorkspaceSecret());
+    const idleKey = sandboxes.info(idle)!.agentKeys[0].key;
+    clock.now = IDLE_MS / 2;
+    const busy = await sandboxes.forSecret(newWorkspaceSecret());
+    clock.now = IDLE_MS + 1;
     await sandboxes.forSecret(newWorkspaceSecret());
     expect(sandboxes.size()).toBe(2);
-    expect(sandboxes.byAgentKey(firstKey)).toBeUndefined();
-    const replaced = await sandboxes.forSecret(oldest);
-    expect(replaced).not.toBe(first);
+    expect(sandboxes.byAgentKey(idleKey)).toBeUndefined();
+    expect(sandboxes.info(busy)).toBeDefined();
+  });
+
+  it("asks the admission before making a sandbox, and a refusal makes none", async () => {
+    const { sandboxes } = setup();
+    const secret = newWorkspaceSecret();
+    const refuse = () => {
+      throw new Error("refused");
+    };
+    await expect(sandboxes.forSecret(secret, refuse)).rejects.toThrow("refused");
+    expect(sandboxes.size()).toBe(0);
+    let asked = 0;
+    const workspace = await sandboxes.forSecret(secret, () => void asked++);
+    expect(await sandboxes.forSecret(secret, refuse)).toBe(workspace);
+    expect(asked).toBe(1);
   });
 
   it("replaces a sandbox left unused past the idle limit with a fresh one, silently", async () => {
@@ -116,16 +141,19 @@ describe("sandboxes", () => {
     await inWorkspace(one, async () => expect(inheritedHead().size).toBe(7));
   });
 
-  it("makes a sandbox for a client without a browser secret, with keys that reach only it, under the same eviction", async () => {
-    const { sandboxes } = setup(2);
+  it("makes a sandbox for a client without a browser secret, with keys that reach only it, under the same limit", async () => {
+    const { sandboxes, clock } = setup(2);
     const made = await sandboxes.forClient();
     const keys = sandboxes.info(made)?.agentKeys ?? [];
     expect(made.kind).toBe("sandbox");
     expect(keys).toHaveLength(3);
     expect(sandboxes.byAgentKey(keys[0].key)?.workspace).toBe(made);
     expect(await sandboxes.forClient()).not.toBe(made);
+    await expect(sandboxes.forClient()).rejects.toMatchObject({ status: 503 });
+    expect(sandboxes.byAgentKey(keys[0].key)?.workspace).toBe(made);
+    clock.now = IDLE_MS + 1;
     await sandboxes.forClient();
-    expect(sandboxes.size()).toBe(2);
+    expect(sandboxes.size()).toBe(1);
     expect(sandboxes.byAgentKey(keys[0].key)).toBeUndefined();
   });
 });

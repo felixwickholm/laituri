@@ -22,7 +22,7 @@ export interface ScenarioOutcome {
   results: PurchaseResult[];
 }
 
-export type ScenarioId = "milk" | "over-limit" | "break-mandate" | "two-kitchens";
+export type ScenarioId = "milk" | "over-limit" | "break-mandate" | "two-kitchens" | "weekly";
 
 export interface DemoRun {
   id: string;

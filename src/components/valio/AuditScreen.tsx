@@ -4,7 +4,6 @@ import { Download } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { EVENT_GROUPS, entriesPerDay, eventGroup, type EventGroup } from "@/lib/console/format/log";
 import { count } from "@/lib/console/format/money";
-import { isSeeded } from "@/lib/console/format/orders";
 import { LOCKED_NOTE } from "@/lib/console/paused";
 import { useConsole } from "@/lib/console/store";
 import { buyersOf, exportName, filterAudit, type AuditFilter } from "@/lib/supplier-console/format";
@@ -13,11 +12,9 @@ import { AuditSheet } from "../proof/AuditSheet";
 import { DayHistogram } from "../proof/DayHistogram";
 import { LogHead } from "../proof/LogHead";
 import { LogRows } from "../proof/LogRows";
-import { PageHeader } from "../shell/PageHeader";
 import { useUi } from "../shell/ui-context";
-import { HistoryNote } from "../ui/HistoryNote";
 import { useNow } from "../ui/useNow";
-import { BlockNote, ControlFoot } from "./bits";
+import { BlockNote, ValioHead } from "./bits";
 import { OfferSummary } from "./OfferSummary";
 
 const PAGE = 25;
@@ -68,10 +65,9 @@ export function AuditScreen() {
 
   return (
     <div className="page control-page">
-      <PageHeader
-        title="Audit"
-        meta={`${count(audit.length)} ${audit.length === 1 ? "entry" : "entries"}`}
-        lede="One log, two readers: the buyer and Valio Aimo verify the same entries with the same public keys."
+      <ValioHead
+        title="The record"
+        date={`${count(audit.length)} ${audit.length === 1 ? "entry" : "entries"} · sealed`}
         actions={
           <button
             type="button"
@@ -80,7 +76,7 @@ export function AuditScreen() {
             onClick={() => download(exportName(new Date().toISOString(), buyerName), [...filtered].reverse())}
           >
             <Download aria-hidden="true" />
-            Export JSON <span className="count">{count(filtered.length)}</span>
+            Download <span className="count">{count(filtered.length)}</span>
           </button>
         }
       />
@@ -98,11 +94,11 @@ export function AuditScreen() {
         <div className="log-filters">
           <div className="log-filter">
             <span className="log-filter-label" id="filter-buyer">
-              Buyer
+              Customer
             </span>
             <div className="filter-row chip-scroll" role="group" aria-labelledby="filter-buyer">
               <button type="button" className="filter-chip" aria-pressed={filter.buyer === "all"} onClick={() => choose({ buyer: "all" })}>
-                All buyers
+                All customers
               </button>
               {buyers.map((buyer) => (
                 <button key={buyer.id} type="button" className="filter-chip" aria-pressed={filter.buyer === buyer.id} onClick={() => choose({ buyer: buyer.id })}>
@@ -128,10 +124,9 @@ export function AuditScreen() {
           </div>
         </div>
         {shown.length === 0 ? (
-          <BlockNote>{locked ? LOCKED_NOTE : !ready ? "Loading the log…" : "No entries match these filters."}</BlockNote>
+          <BlockNote>{locked ? LOCKED_NOTE : !ready ? "Loading…" : "No entries match these filters."}</BlockNote>
         ) : (
           <div className="log-list">
-            <HistoryNote show={shown.some(isSeeded)} />
             <LogRows entries={shown} chain={chain} orders={orders} onOpen={setOpenSeq} />
           </div>
         )}
@@ -141,7 +136,6 @@ export function AuditScreen() {
           </button>
         ) : null}
       </section>
-      <ControlFoot />
       <AuditSheet entry={entry} open={openSeq !== null} chain={chain} jwks={jwks} onClose={closeEntry} onOpenOrder={openOrder} />
     </div>
   );

@@ -18,13 +18,17 @@ const GROUP_OF: Record<AuditEvent, EventGroup> = {
   "approval.rejected": "approvals",
   "mandate.updated": "mandate",
   "access.refused": "refused",
+  "basket.started": "orders",
+  "basket.line_resolved": "approvals",
+  "handoff.requested": "approvals",
+  "handoff.answered": "approvals",
 };
 
 export const EVENT_GROUPS: { key: EventGroup; label: string }[] = [
   { key: "orders", label: "Orders" },
   { key: "approvals", label: "Approvals" },
   { key: "agent", label: "Agent" },
-  { key: "mandate", label: "Mandate" },
+  { key: "mandate", label: "Your limits" },
   { key: "refused", label: "Refused" },
 ];
 
@@ -36,7 +40,7 @@ export function eventGroup(event: AuditEvent): EventGroup {
 export function actorKind(entry: Pick<AuditEntry, "actor">): string {
   switch (entry.actor.type) {
     case "human":
-      return "Approver";
+      return "Purchasing manager";
     case "supplier":
       return "Valio Aimo";
     default:

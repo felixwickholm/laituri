@@ -8,7 +8,7 @@ type RevealState = "shown" | "waiting" | "in";
  * A section whose parts rise in once when it scrolls into view. Without script, or when it is already
  * on screen at load, everything is simply shown. Children opt in with the `rv` class and a `--i` order.
  */
-export function Reveal({ as: Tag = "section", className, children, ...rest }: { as?: "section" | "footer" | "div"; className?: string; children: ReactNode; id?: string; "aria-labelledby"?: string }) {
+export function Reveal({ as: Tag = "section", className, children, ...rest }: { as?: "section" | "footer" | "div"; className?: string; children: ReactNode; id?: string; "aria-labelledby"?: string; "data-band"?: string }) {
   const ref = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {

@@ -164,6 +164,9 @@ describe("policy rules", () => {
     expect(statusOf("product.first_time", input({ ordered: [] }))).toBe("pass");
     expect(statusOf("product.first_time", input({ mandate: ask }))).toBe("pass");
     expect(statusOf("product.first_time", input({ mandate: ask, ordered: [] }))).toBe("ask");
+    // A line the offer delivers none of (the product a swap replaces) is not a new product the buyer gets.
+    const swapped = offer({}, [line({ quantity: 0 }), line({ productId: "464401", quantity: 10 })]);
+    expect(statusOf("product.first_time", input({ mandate: ask, offer: swapped, ordered: ["464401"] }))).toBe("pass");
   });
 });
 

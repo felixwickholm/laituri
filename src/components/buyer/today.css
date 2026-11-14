@@ -1,0 +1,673 @@
+/*
+ * Today (/buyer): two big choices, the weekly order as one verdict, ideas, a person. Built from system.css
+ * (glass, page-head, verdict, count tiles); this file only places them.
+ */
+
+.today-page {
+  padding-bottom: var(--space-6);
+}
+.today-locked {
+  margin: 0;
+  color: var(--warn);
+  font-weight: 600;
+}
+
+/* The two choices side by side; the catalogue opens under them across the page. On a phone it sits under "Order". */
+.today-choices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-areas:
+    "order plan"
+    "cat cat"
+    "assist assist";
+  gap: var(--gap-card);
+}
+.today-choice[data-choice="order"] {
+  grid-area: order;
+}
+.today-choice[data-choice="plan"] {
+  grid-area: plan;
+}
+.quick-catalogue {
+  grid-area: cat;
+}
+.today-assistant {
+  grid-area: assist;
+  position: relative;
+  min-width: 0;
+}
+.today-assistant-close {
+  position: absolute;
+  z-index: 1;
+  top: var(--space-3);
+  right: var(--space-3);
+}
+.today-choice {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: space-between;
+  gap: var(--space-5);
+  min-height: 200px;
+  padding: var(--pad-card);
+}
+.today-choice-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0;
+  color: var(--heading);
+  font-family: var(--font-display);
+  font-size: var(--fs-verdict);
+  font-weight: 800;
+  line-height: 1.05;
+}
+.today-choice-title svg {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  stroke-width: 1.75;
+}
+
+/* Both fields: big, rounded, the same height. */
+.quick-search,
+.plan-ask {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 60px;
+  padding: 0 8px 0 18px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-control);
+  background: var(--surface-1);
+  transition: border-color var(--d-hover) var(--ease-hover), box-shadow var(--d-hover) var(--ease-hover);
+}
+.quick-search:focus-within,
+.plan-ask:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-tint);
+}
+.quick-search input,
+.plan-ask input {
+  flex: 1;
+  min-width: 0;
+  height: 58px;
+  border: 0;
+  background: transparent;
+  color: var(--text-1);
+  font: inherit;
+  font-size: var(--fs-lg);
+  outline: none;
+}
+.quick-search input::placeholder,
+.plan-ask input::placeholder {
+  color: var(--text-3);
+}
+.quick-search input::-webkit-search-cancel-button {
+  display: none;
+}
+.quick-search-icon {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  color: var(--text-3);
+}
+.plan-mic[data-listening="true"] {
+  background: var(--danger-tint);
+  color: var(--danger);
+}
+.plan-go {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border: 0;
+  border-radius: var(--r-full);
+  background: var(--cta);
+  color: var(--on-cta);
+  cursor: pointer;
+  transition: transform var(--d-press) var(--ease-out), opacity var(--d-hover) var(--ease-hover);
+}
+.plan-go:active:not(:disabled) {
+  transform: scale(0.94);
+}
+.plan-go:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.plan-go svg {
+  width: 22px;
+  height: 22px;
+  stroke-width: 2.25;
+}
+
+/* The inline catalogue: rows, then a cart bar with the one Order button. */
+.quick-catalogue {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--pad-card) var(--space-5);
+}
+.quick-rows {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  transition: opacity var(--d-fast) var(--ease-out);
+}
+.quick-rows[data-stale] {
+  opacity: 0.6;
+}
+.quick-row {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--space-2) var(--space-5);
+  min-height: 64px;
+  padding: var(--space-2) var(--space-3);
+  margin: 0 calc(-1 * var(--space-3));
+  border-radius: var(--r-md);
+  transition: background-color var(--d-hover) var(--ease-hover);
+}
+.quick-row:has(.qty) {
+  background: var(--surface-2);
+}
+.quick-row-main {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.quick-row-name {
+  margin: 0;
+  color: var(--text-1);
+  font-size: var(--fs-base);
+  font-weight: 600;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.quick-row-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px var(--space-3);
+  margin: 0;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+.quick-row-price {
+  margin: 0;
+  color: var(--text-1);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.quick-add {
+  min-width: 96px;
+}
+.quick-note,
+.quick-error {
+  margin: 0;
+  padding: var(--space-3) 0;
+  color: var(--text-2);
+}
+.quick-error {
+  color: var(--danger);
+}
+.quick-cart {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-5);
+  position: sticky;
+  z-index: 2;
+  bottom: var(--space-3);
+  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-5);
+  border: 1px solid var(--glass-line);
+  border-radius: var(--r-lg);
+  background: var(--glass-fill-strong);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-edge), var(--glass-shadow-soft);
+}
+.quick-cart-sum {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-4);
+  margin: 0;
+  color: var(--text-2);
+  font-size: var(--fs-base);
+}
+.quick-cart-sum strong {
+  color: var(--text-1);
+  font-size: var(--fs-lg);
+}
+.quick-go {
+  min-width: 180px;
+}
+.quick-placed {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--r-control);
+  background: var(--success-tint);
+  color: var(--text-1);
+}
+.quick-placed[data-running="true"] {
+  background: var(--surface-2);
+}
+.quick-placed > svg {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  color: var(--success);
+}
+.quick-placed p {
+  flex: 1;
+  margin: 0;
+  font-size: var(--fs-base);
+}
+
+/* The weekly order: verdict and action at the top, four tiles, then only the lines that need a person. */
+.weekly-verdict {
+  scroll-margin-top: var(--space-5);
+  display: grid;
+  gap: var(--space-5);
+  min-height: 200px;
+}
+.weekly-verdict-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4) var(--space-6);
+}
+.weekly-verdict-top .verdict-title {
+  font-size: clamp(32px, 1.6vw + 22px, 48px);
+}
+.weekly-verdict[data-kind="needs"] .verdict-title {
+  color: var(--warn);
+}
+.weekly-verdict[data-kind="blocked"] .verdict-title {
+  color: var(--danger);
+}
+.weekly-verdict-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3) var(--space-5);
+}
+.weekly-verdict-actions .verdict-action {
+  margin-top: 0;
+}
+.weekly-verdict-phone {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.weekly-verdict-phone svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* The owner's traffic-light boxes: green, orange and red tinted, the number in the state colour. */
+.weekly-tiles .count-tile[data-state="green"][data-tone] {
+  background: var(--success-tint);
+  border-color: transparent;
+}
+.weekly-tiles .count-tile[data-state="orange"][data-tone] {
+  background: var(--warn-tint);
+  border-color: transparent;
+}
+.weekly-tiles .count-tile[data-state="red"][data-tone] {
+  background: var(--danger-tint);
+  border-color: transparent;
+}
+.weekly-tiles .count-tile:not([data-tone]):not([data-state="net"]):not([data-change]) .count-tile-number {
+  color: var(--text-4);
+}
+.weekly-tiles .count-tile-word {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+.weekly-tiles .count-tile-word svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+.weekly-tiles [data-state="green"] .count-tile-word svg {
+  color: var(--success);
+}
+.weekly-tiles [data-state="orange"] .count-tile-word svg {
+  color: var(--warn);
+}
+.weekly-tiles [data-state="red"] .count-tile-word svg {
+  color: var(--danger);
+}
+/* The net amount shrinks with its tile so "€12,345" never leaves the box; --chars is its length. */
+.weekly-tiles [data-state="net"] {
+  container-type: inline-size;
+}
+.weekly-tiles [data-state="net"] .count-tile-number {
+  display: flex;
+  align-items: flex-end;
+  height: var(--fs-count);
+  font-size: min(var(--fs-count), calc(100cqi / (var(--chars, 6) * 0.52)));
+  white-space: nowrap;
+}
+/* A little less side padding than the shared tile, so "Needs you" stays on one line in a four-tile row. */
+.weekly-tiles .count-tile {
+  padding-inline: var(--space-4);
+}
+.weekly-tiles .count-tile-word {
+  overflow-wrap: normal;
+  word-break: normal;
+}
+@media (max-width: 400px) {
+  .weekly-tiles .count-tile {
+    padding-inline: var(--space-3);
+  }
+}
+
+.weekly-lines {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.weekly-lines .basket-line {
+  margin: 0;
+  padding: var(--space-4);
+  border-top: 0;
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+}
+.weekly-lines .basket-line[data-state="orange"] {
+  background: var(--warn-tint);
+}
+.weekly-lines .basket-line[data-state="red"] {
+  background: var(--danger-tint);
+}
+/* One lime button per screen: on Today that is the verdict's; the line choices step down to outlined. */
+.weekly-lines .line-actions .btn-primary {
+  border-color: var(--accent);
+  background: transparent;
+  color: var(--accent);
+}
+.weekly-ordered .basket-line[data-state="green"] {
+  background: transparent;
+  padding: var(--space-3) var(--space-4);
+}
+.weekly-working {
+  margin: 0;
+  color: var(--text-2);
+}
+.weekly-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+.weekly-more {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: 0 var(--space-4) 0 var(--space-3);
+  border: 0;
+  border-radius: var(--r-full);
+  background: var(--surface-2);
+  color: var(--text-1);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform var(--d-press) var(--ease-out), background-color var(--d-hover) var(--ease-hover);
+}
+.weekly-more:active {
+  transform: var(--press);
+}
+.weekly-more svg {
+  width: 20px;
+  height: 20px;
+  transition: transform var(--d-base) var(--ease-out);
+}
+.weekly-more svg[data-open="true"] {
+  transform: rotate(180deg);
+}
+.weekly-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.weekly-open svg {
+  width: 18px;
+  height: 18px;
+}
+.draft-card .draft-drift {
+  margin: 0;
+}
+
+/* Ideas: one line each, one action. */
+.ideas {
+  display: grid;
+  gap: var(--space-4);
+}
+.ideas-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: var(--gap-card);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ideas-lede {
+  margin: calc(var(--space-3) * -1) 0 0;
+  color: var(--text-2);
+  font-size: var(--fs-body);
+}
+.idea {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    "icon text"
+    "icon act";
+  align-items: start;
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-5);
+}
+.idea > svg {
+  grid-area: icon;
+  width: 24px;
+  height: 24px;
+  color: var(--accent);
+}
+.idea-text {
+  grid-area: text;
+  margin: 0;
+  color: var(--text-1);
+  font-size: var(--fs-base);
+  font-weight: 600;
+  line-height: 1.35;
+}
+.idea-action {
+  grid-area: act;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+.idea-action svg {
+  width: 18px;
+  height: 18px;
+  transition: transform var(--d-fast) var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .idea-action:hover svg {
+    transform: translateX(3px);
+  }
+  .weekly-more:hover {
+    background: var(--surface-3);
+  }
+}
+
+.today-person {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+.today-person svg {
+  width: 18px;
+  height: 18px;
+}
+
+@media (max-width: 719px) {
+  .today-choices {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "order"
+      "cat"
+      "plan"
+      "assist";
+  }
+  .today-choice {
+    min-height: 0;
+    gap: var(--space-4);
+  }
+  .today-choice-title svg {
+    width: 28px;
+    height: 28px;
+  }
+  .quick-row {
+    grid-template-columns: 48px minmax(0, 1fr) auto;
+    grid-template-areas:
+      "img main main"
+      "img price buy";
+  }
+  .quick-row-img {
+    grid-area: img;
+    align-self: start;
+  }
+  .quick-row-main {
+    grid-area: main;
+  }
+  .quick-row-price {
+    grid-area: price;
+  }
+  .quick-row > :last-child {
+    grid-area: buy;
+  }
+  .weekly-verdict {
+    scroll-margin-top: 140px;
+  }
+  .quick-cart {
+    bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  }
+  .quick-go {
+    width: 100%;
+  }
+  .quick-row {
+    min-height: 0;
+    gap: var(--space-1) var(--space-4);
+  }
+  .weekly-verdict-actions,
+  .weekly-verdict-actions .verdict-action {
+    width: 100%;
+  }
+}
+
+/* The challenge's example request: one chip under the search; the agent's four steps appear under it. */
+.today-choice[data-choice="order"] {
+  align-content: start;
+}
+.milk-example {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+.milk-chip {
+  display: inline-flex;
+  align-items: flex-start;
+  justify-self: start;
+  gap: 8px;
+  max-width: 100%;
+  min-height: var(--hit, 44px);
+  padding: 10px 16px;
+  border: 1px solid var(--glass-line);
+  border-radius: var(--r-control);
+  background: var(--glass-fill);
+  color: var(--text-1);
+  font: inherit;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform var(--d-press) var(--ease-out),
+    border-color var(--d-hover) var(--ease-hover);
+}
+.milk-chip svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  margin-top: 1px;
+  color: var(--accent);
+}
+.milk-chip:active:not(:disabled) {
+  transform: var(--press);
+}
+.milk-chip:disabled {
+  cursor: progress;
+  color: var(--text-2);
+}
+@media (hover: hover) and (pointer: fine) {
+  .milk-chip:hover:not(:disabled) {
+    border-color: var(--line-strong);
+  }
+}
+.milk-result {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+  animation: milk-rise var(--d-base) var(--ease-out);
+}
+@keyframes milk-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.milk-open {
+  justify-self: start;
+}
+.milk-open svg {
+  width: 18px;
+  height: 18px;
+}
+.milk-failed {
+  margin: 0;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+@media (prefers-reduced-motion: reduce) {
+  .milk-result {
+    animation: none;
+  }
+}

@@ -1,7 +1,7 @@
 import "../store/temp-data-dir";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Actor } from "@/lib/contracts";
-import { appendAudit, checkpoint, forgetHead, GENESIS_HASH, verifyAuditLog, verifyChain } from "@/lib/audit";
+import { afterAuditWrites, appendAudit, checkpoint, forgetHead, GENESIS_HASH, verifyAuditLog, verifyChain } from "@/lib/audit";
 import { AuditBrokenError } from "@/lib/gateway/errors";
 import { store } from "@/lib/store";
 import { jwks, TOKEN_TYPE, trust, verifyWithJwks } from "@/lib/trust";
@@ -28,6 +28,21 @@ describe("audit chain", () => {
     expect(entries[1].prevHash).toBe(entries[0].hash);
     const result = await verifyAuditLog();
     expect(result).toEqual({ valid: true, entries: 5, head: entries[4].hash });
+  });
+
+  it("a reset while appends are in flight never leaves a broken link", async () => {
+    await appendFive();
+    const writes = [1, 2, 3].map((i) => appendAudit({ actor: agent, event: "catalog.searched", summary: `During ${i}.` }));
+    const reset = afterAuditWrites(async () => {
+      await store().reset();
+      forgetHead();
+    });
+    const after = appendAudit({ actor: agent, event: "catalog.searched", summary: "After the reset." });
+    await Promise.all([...writes, reset, after]);
+    const entries = await store().audit.list();
+    expect(entries.map((e) => e.summary)).toEqual(["After the reset."]);
+    expect(entries[0].prevHash).toBe(GENESIS_HASH);
+    expect((await verifyAuditLog()).valid).toBe(true);
   });
 
   it("verifies with the public JWKS only", async () => {

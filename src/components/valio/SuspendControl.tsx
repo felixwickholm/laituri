@@ -26,7 +26,7 @@ function entryFor(audit: AuditEntry[], agentId: string, suspended: boolean, sinc
 }
 
 /**
- * Suspends or resumes one agent, as the signed-in Valio Aimo operator: the same gate as the approver's, with
+ * Pauses one agent or lets it buy again, as the signed-in Valio Aimo operator: the same gate as the approver's, with
  * one-click demo access first and the passcode second. Suspending asks for a reason first; the change is written
  * to the signed log, and the entry is shown once it arrives.
  */
@@ -65,9 +65,9 @@ export function SuspendControl({ agent }: { agent: ControlAgent }) {
     <div className="suspend" data-suspended={suspended} ref={root}>
       {suspended ? (
         <div className="suspend-state" role="status">
-          <p className="suspend-title">Suspended{agent.suspendedAt ? ` at ${clock(agent.suspendedAt)}` : ""}</p>
+          <p className="suspend-title">Paused{agent.suspendedAt ? ` at ${clock(agent.suspendedAt)}` : ""}</p>
           <p className="suspend-text">
-            Valio Aimo refuses this agent&rsquo;s calls until it is resumed.{agent.reason ? ` Reason: ${agent.reason}` : ""}
+            Valio Aimo refuses this agent&rsquo;s calls. The customer sees why.{agent.reason ? ` Reason: ${agent.reason}` : ""}
           </p>
         </div>
       ) : null}
@@ -81,7 +81,7 @@ export function SuspendControl({ agent }: { agent: ControlAgent }) {
           }}
         >
           <label className="field-label" htmlFor={fieldId}>
-            Why suspend {agentName(agent.agent)}?
+            Why pause {agentName(agent.agent)}?
           </label>
           <textarea
             id={fieldId}
@@ -89,17 +89,17 @@ export function SuspendControl({ agent }: { agent: ControlAgent }) {
             rows={3}
             maxLength={300}
             value={reason}
-            placeholder="For example: unusual order volume, the buyer asked us to pause it"
+            placeholder="For example: too many orders, or the customer asked us to"
             onChange={(event) => setReason(event.target.value)}
             autoFocus
           />
-          <p className="suspend-hint">The reason is written to the signed log, where the buyer reads it too.</p>
+          <p className="suspend-hint">The customer sees this.</p>
           <div className="suspend-actions">
             <button type="button" className="btn btn-secondary" onClick={() => setStep({ kind: "idle" })} disabled={step.kind === "busy"}>
               Cancel
             </button>
             <button type="submit" className="btn btn-danger" disabled={step.kind === "busy" || reason.trim().length === 0}>
-              {step.kind === "busy" ? "Suspending…" : "Suspend agent"}
+              {step.kind === "busy" ? "Pausing…" : "Pause this agent"}
             </button>
           </div>
         </form>
@@ -107,11 +107,11 @@ export function SuspendControl({ agent }: { agent: ControlAgent }) {
         <div className="suspend-actions">
           {suspended ? (
             <button type="button" className="btn btn-secondary" onClick={() => void change(false)} disabled={step.kind === "busy"}>
-              {step.kind === "busy" ? "Resuming…" : "Resume agent"}
+              {step.kind === "busy" ? "Starting…" : "Let it buy again"}
             </button>
           ) : (
             <button type="button" className="btn btn-danger-quiet" onClick={() => setStep({ kind: "confirm" })}>
-              Suspend agent
+              Pause this agent
             </button>
           )}
         </div>
@@ -128,7 +128,7 @@ export function SuspendControl({ agent }: { agent: ControlAgent }) {
           <CircleCheck aria-hidden="true" />
           <div>
             <p className="signed-title">
-              {step.suspended ? "Suspended" : "Resumed"}. {entry ? `Signed and logged as entry ${entry.seq}.` : "Waiting for the signed log entry…"}
+              {step.suspended ? "Paused" : "Buying again"}. {entry ? `Written to the record as entry ${entry.seq}.` : "Writing it to the record…"}
             </p>
             {entry ? (
               <>
@@ -136,7 +136,7 @@ export function SuspendControl({ agent }: { agent: ControlAgent }) {
                 <p className="signed-meta">
                   {clock(entry.at)} ·{" "}
                   <Link href="/valio/audit" className="text-link">
-                    Open the audit log
+                    Open the record
                   </Link>
                 </p>
               </>

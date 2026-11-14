@@ -10,6 +10,7 @@ import {
   filterAudit,
   isActiveAgent,
   kitchenOutcomes,
+  orderBars,
   liveCalls,
   mainReason,
   overviewVerdict,
@@ -124,13 +125,13 @@ describe("words", () => {
   });
 
   it("reads an agent's status", () => {
-    expect(statusWord({ status: "suspended" })).toEqual({ word: "Suspended", tone: "danger" });
+    expect(statusWord({ status: "suspended" })).toEqual({ word: "Paused", tone: "danger" });
     expect(statusWord({ status: "idle" }).tone).toBe("neutral");
   });
 
   it("calls a caller without a key read-only, unless it is suspended", () => {
     expect(statusWord({ status: "active", agent: { id: KEYLESS_AGENT_ID } })).toEqual({ word: "Read-only", tone: "neutral" });
-    expect(statusWord({ status: "suspended", agent: { id: KEYLESS_AGENT_ID } }).word).toBe("Suspended");
+    expect(statusWord({ status: "suspended", agent: { id: KEYLESS_AGENT_ID } }).word).toBe("Paused");
     expect(statusWord({ status: "active", agent: HOTEL_AGENT }).word).toBe("Active");
     expect(isActiveAgent({ status: "active", agent: { id: KEYLESS_AGENT_ID, name: "Unidentified agent" } })).toBe(false);
     expect(isActiveAgent({ status: "active", agent: HOTEL_AGENT })).toBe(true);
@@ -178,7 +179,7 @@ describe("figures", () => {
     });
     const quiet = overviewVerdict(overview({ unmet: [], agents: [agent({ status: "suspended" })] }));
     expect(quiet.lead).toBe("1 agent bought €100.30 in the last 7 days.");
-    expect(quiet.reason).toBe("Every request was served. 1 agent is suspended.");
+    expect(quiet.reason).toBe("Every request was served. 1 agent is paused.");
     expect(overviewVerdict(overview({ agents: [] })).lead).toBe("No agent has connected yet.");
   });
 });
@@ -293,5 +294,16 @@ describe("rule titles", () => {
     expect(ruleTitle({ rule: "dietary.allergens", title: "Never-buy allergens", tier: "block" })).toBe("Never-buy allergens");
     expect(ruleTitle({ rule: "spend.per_order", title: "per order", tier: "ask" })).toBe("Per-order limit");
     expect(ruleTitle({ rule: "request.words", title: "request.words", tier: "ask" })).toBe("Buyer's words sent");
+  });
+});
+
+describe("order bars", () => {
+  it("leaves out outcomes with no order and names the rest plainly", () => {
+    const bars = orderBars({ confirmed_auto: 5, confirmed_after_approval: 0, waiting: 1, rejected: 0, blocked: 2, refused: 0 });
+    expect(bars.map((bar) => [bar.label, bar.count, bar.tone])).toEqual([
+      ["Confirmed alone", 5, "good"],
+      ["Waiting for the customer", 1, "warn"],
+      ["Blocked by a rule", 2, "lost"],
+    ]);
   });
 });

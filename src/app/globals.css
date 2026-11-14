@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "../components/styles/controls.css";
+@import "../components/styles/shell.css";
 @import "../components/styles/panes.css";
 @import "../components/styles/agent.css";
 @import "../components/styles/decision.css";
@@ -7,66 +8,104 @@
 @import "../components/styles/overlays.css";
 @import "../components/styles/sheet.css";
 @import "../components/styles/order.css";
+@import "../components/styles/basket.css";
 @import "../components/styles/forms.css";
 @import "../components/styles/orb.css";
 @import "../components/styles/landing.css";
 @import "../components/styles/connect.css";
+@import "../components/styles/shop.css";
 @import "../components/styles/valio.css";
+@import "../components/styles/security.css";
 @import "../components/styles/evidence.css";
 @import "../components/styles/tour.css";
+@import "../components/styles/menu.css";
+@import "../components/styles/system.css";
+@import "../components/styles/assistant.css";
 
 :root {
   color-scheme: light;
 
-  /* Surfaces: a cool paper ground, white cards, tone steps for elevation. */
-  --bg: #f6f7f9;
+  /*
+   * Valio Aimo's look (valioaimo-ux.md, read from valioaimo.fi on 14.11.2026): a light petrol-blue ground, white cards,
+   * petrol for every interaction, one lime button per screen. Green, amber and red mark state only.
+   */
+  --bg: #e9f1f3;
+  /* The page ground behind the glass: two soft petrol and lime washes over --bg, fixed to the viewport. */
+  --bg-wash:
+    radial-gradient(1200px 720px at 12% -8%, rgba(0, 86, 112, 0.08), transparent 62%),
+    radial-gradient(900px 640px at 100% 0%, rgba(192, 224, 33, 0.12), transparent 60%),
+    radial-gradient(1000px 800px at 70% 110%, rgba(0, 120, 150, 0.07), transparent 60%);
   --surface-1: #ffffff;
-  --surface-2: #f1f3f6;
-  --surface-3: #e9ecf1;
-  --surface-4: #dfe3ea;
-  --surface-inverse: #0e1726;
-  --text-inverse: #f6f7f9;
-  --line: #e4e7ec;
-  --line-strong: #cdd3dc;
+  --surface-2: #f9f9f9;
+  --surface-3: #e6eef1;
+  --surface-4: #d1dde3;
+  --surface-inverse: #005670;
+  --text-inverse: #ffffff;
+  --line: #e6e6e6;
+  --line-strong: #d1dde3;
 
-  --text-1: #0b1220;
-  --text-2: #475467;
-  --text-3: #5d6779;
-  --text-4: #8a94a6;
+  --text-1: #23282d;
+  --text-2: #4f4f4f;
+  --text-3: #5c6b73;
+  /* Disabled text and decoration only: 3:1. */
+  --text-4: #8a979e;
+  /* Headings are petrol, as on Valio Aimo's site. */
+  --heading: #005670;
 
-  /* One accent for interaction. Green, amber and red mark state only. */
-  --accent: #1f4fd8;
-  --accent-hover: #1a43b8;
-  --accent-tint: #eaf0fe;
+  --accent: #005670;
+  --accent-hover: #00445a;
+  --accent-tint: #d1dde3;
   --on-accent: #ffffff;
-  --success: #0f7553;
-  --success-tint: #e7f6ef;
-  --warn: #9a5207;
-  --warn-tint: #fdf2e3;
-  --danger: #c4321f;
-  --danger-tint: #fdecea;
+  /* The one main action per screen: lime with petrol text. */
+  --cta: #c0e021;
+  --cta-hover: #b2cf1a;
+  --on-cta: #005670;
+  --success: #007a3a;
+  --success-tint: #ebf5ef;
+  --warn: #7a5300;
+  --warn-tint: #fff8d6;
+  --warn-mark: #fddb32;
+  --danger: #c4261d;
+  --danger-tint: #ffecea;
+  --danger-mark: #f9423a;
+  --tag-new: #ecf5c5;
+  --tag-season: #eee8f5;
 
-  /* Floating layers only: sheets, popovers, the dock. */
-  --glass-bg: rgba(255, 255, 255, 0.82);
-  --glass-filter: blur(24px) saturate(180%);
-  --glass-border: rgba(11, 18, 32, 0.08);
-  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.6);
-  --glass-shadow: 0 24px 60px -20px rgba(11, 18, 32, 0.22);
-  --pane-border: #e4e7ec;
-  --label: #667085;
-  --scrim: rgba(11, 18, 32, 0.42);
+  /*
+   * Frosted glass, iOS style (felix-update-2114.md). Cards: a translucent fill, a blur, a 1px hairline and a soft
+   * shadow. Floating layers (sheets, popovers, the dock) use the stronger fill so text under them never shows through.
+   * Every text token keeps AA on the glass because the fill is at least 62% white over a near-white ground.
+   */
+  --glass-fill: rgba(255, 255, 255, 0.64);
+  --glass-fill-strong: rgba(255, 255, 255, 0.84);
+  --glass-blur: blur(24px) saturate(160%);
+  --glass-line: rgba(0, 86, 112, 0.12);
+  --glass-edge: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --glass-shadow-soft: 0 1px 2px rgba(0, 45, 59, 0.04), 0 18px 40px -24px rgba(0, 45, 59, 0.22);
+  --glass-bg: var(--glass-fill-strong);
+  --glass-filter: var(--glass-blur);
+  --glass-border: var(--glass-line);
+  --glass-highlight: var(--glass-edge);
+  --glass-shadow: 0 24px 56px -24px rgba(0, 45, 59, 0.32);
+  --pane-border: #e6e6e6;
+  --label: #005670;
+  --scrim: rgba(0, 45, 59, 0.55);
 
-  --shadow-1: 0 1px 2px rgba(11, 18, 32, 0.05), 0 0 0 1px rgba(11, 18, 32, 0.04);
-  --shadow-2: 0 8px 24px -8px rgba(11, 18, 32, 0.12), 0 0 0 1px rgba(11, 18, 32, 0.05);
-  --shadow-float: 0 40px 90px -35px rgba(31, 79, 216, 0.3), 0 0 0 1px rgba(11, 18, 32, 0.06);
+  --shadow-1: none;
+  --shadow-2: 0 0 0 1px #e6e6e6;
+  --shadow-float: 0 16px 40px -16px rgba(0, 45, 59, 0.28);
 
-  --r-xs: 4px;
-  --r-sm: 6px;
-  --r-md: 8px;
-  --r-lg: 12px;
-  --r-xl: 20px;
-  --r-card: 14px;
-  --r-control: 10px;
+  /* Our mark's agent block: our own blue, never a Valio Aimo colour (brand.md). */
+  --mark-agent: #1f4fd8;
+
+  /* iOS sheet radii: controls 14, cards 22, sheets 28, pills round. */
+  --r-xs: 6px;
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 28px;
+  --r-card: 22px;
+  --r-control: 14px;
   --r-full: 999px;
 
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
@@ -80,70 +119,106 @@
   --d-orb: 600ms;
 
   /* Type: four text sizes, two title sizes. Nothing else. */
-  --fs-12: 12px;
-  --fs-13: 13px;
-  --fs-15: 15px;
-  --fs-18: 18px;
-  --fs-title: 30px;
-  --fs-display: clamp(40px, 2.4vw + 22px, 56px);
-  --track-title: -0.03em;
+  --fs-xs: 13px;
+  --fs-sm: 15px;
+  --fs-base: 17px;
+  --fs-lg: 21px;
+  --fs-title: 34px;
+  --fs-display: clamp(42px, 2.6vw + 24px, 64px);
+  /* The condensed display face needs no negative tracking. */
+  --track-title: 0;
+  /* The screen's hierarchy, as in Kampek Brain: the most important thing is the biggest. */
+  --fs-body: 17px;
+  --fs-body-lg: 18px;
+  --fs-section: 22px;
+  --fs-page: clamp(32px, 0.8vw + 24px, 40px);
+  --fs-verdict: clamp(28px, 1vw + 22px, 40px);
+  --fs-count: clamp(40px, 1.6vw + 28px, 56px);
+
+  /* Space: generous, like Kampek Brain. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 40px;
+  --space-8: 48px;
+  --gap-section: clamp(32px, 3vw, 48px);
+  --gap-card: clamp(16px, 1.4vw, 24px);
+  --pad-card: clamp(22px, 2.2vw, 36px);
+  --content-wide: 1400px;
 
   /* Controls: one radius, two heights, one press. */
-  --control-h: 36px;
-  --control-h-big: 44px;
-  --press: scale(0.97);
+  --control-h: 40px;
+  --control-h-big: 48px;
+  --press: scale(0.985);
 
   --hit: 44px;
-  --topbar: 56px;
-  --gutter: clamp(16px, 2.6vw, 36px);
-  --content: 1328px;
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --topbar: 64px;
+  --gutter: clamp(20px, 4.9vw, 70px);
+  --content: 1180px;
+  --font-sans: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-barlow), var(--font-sans);
   --font-mono: var(--font-jetbrains-mono), ui-monospace, "SF Mono", monospace;
 }
 
+/* Derived from Valio Aimo's footer: a petrol ground, warm white text, lime for interaction. */
 :root[data-theme="dark"] {
   color-scheme: dark;
 
-  --bg: #0a0f1a;
-  --surface-1: #111827;
-  --surface-2: #172033;
-  --surface-3: #1e293d;
-  --surface-4: #28344b;
-  --surface-inverse: #f6f7f9;
-  --text-inverse: #0b1220;
-  --line: rgba(255, 255, 255, 0.08);
-  --line-strong: rgba(255, 255, 255, 0.14);
+  --bg: #00222d;
+  --bg-wash:
+    radial-gradient(1200px 720px at 12% -8%, rgba(0, 120, 150, 0.34), transparent 62%),
+    radial-gradient(900px 640px at 100% 0%, rgba(192, 224, 33, 0.07), transparent 60%),
+    radial-gradient(1000px 800px at 70% 110%, rgba(0, 86, 112, 0.4), transparent 60%);
+  --surface-1: #00394a;
+  --surface-2: #004558;
+  --surface-3: #005066;
+  --surface-4: #005c75;
+  --surface-inverse: #fffdf5;
+  --text-inverse: #005670;
+  --line: rgba(255, 255, 255, 0.12);
+  --line-strong: rgba(255, 255, 255, 0.2);
 
-  --text-1: #e8ecf3;
-  --text-2: #a3adbf;
-  --text-3: #8490a5;
-  --text-4: #6b7588;
+  --text-1: #fffdf5;
+  --text-2: #d1dde3;
+  --text-3: #a9bec8;
+  --text-4: #8aa6b2;
+  --heading: #fffdf5;
 
-  --accent: #6e9bff;
-  --accent-hover: #8aaeff;
-  --accent-tint: rgba(110, 155, 255, 0.14);
-  --on-accent: #0a0f1a;
-  --success: #34c08e;
-  --success-tint: rgba(52, 192, 142, 0.14);
-  --warn: #f0a23b;
-  --warn-tint: rgba(240, 162, 59, 0.14);
-  --danger: #ff6b5b;
-  --danger-tint: rgba(255, 107, 91, 0.14);
+  --accent: #c0e021;
+  --accent-hover: #d4e85a;
+  --accent-tint: rgba(192, 224, 33, 0.14);
+  --on-accent: #002d3b;
+  --cta: #c0e021;
+  --cta-hover: #d4e85a;
+  --on-cta: #002d3b;
+  --success: #6fd08f;
+  --success-tint: rgba(111, 208, 143, 0.14);
+  /* Orange, not Valio Aimo yellow: a thin yellow over petrol mixes to green. The tint is opaque for the same reason. */
+  --warn: #ffa040;
+  --warn-tint: #4f3319;
+  --danger: #ff8a84;
+  --danger-tint: rgba(255, 138, 132, 0.14);
 
-  --glass-bg: rgba(17, 24, 39, 0.78);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  --glass-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.7);
-  --pane-border: rgba(255, 255, 255, 0.08);
-  --label: #8490a5;
-  --scrim: rgba(3, 6, 12, 0.66);
+  --glass-fill: rgba(0, 62, 80, 0.52);
+  --glass-fill-strong: rgba(0, 52, 68, 0.86);
+  --glass-line: rgba(255, 255, 255, 0.12);
+  --glass-edge: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --glass-shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.2), 0 18px 40px -24px rgba(0, 0, 0, 0.55);
+  --glass-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.6);
+  --pane-border: rgba(255, 255, 255, 0.12);
+  --label: #d1dde3;
+  --scrim: rgba(0, 20, 27, 0.66);
 
-  --shadow-1: 0 0 0 1px rgba(255, 255, 255, 0.06);
-  --shadow-2: 0 0 0 1px rgba(255, 255, 255, 0.08);
-  --shadow-float: 0 40px 90px -35px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  --mark-agent: #6e9bff;
+  --shadow-1: none;
+  --shadow-2: 0 0 0 1px rgba(255, 255, 255, 0.1);
+  --shadow-float: 0 24px 60px -20px rgba(0, 0, 0, 0.6);
 }
 
-/* Phones get the 44px control everywhere. */
+/* Phones get the 48px control everywhere. */
 @media (max-width: 719px) {
   :root {
     --control-h: var(--control-h-big);
@@ -152,21 +227,27 @@
 
 @theme inline {
   --font-sans: var(--font-sans);
+  --font-display: var(--font-display);
   --font-mono: var(--font-mono);
 }
 
+html {
+  background: var(--bg);
+}
+body {
+  background: var(--bg-wash), var(--bg);
+  background-attachment: fixed;
+}
 html,
 body {
-  background: var(--bg);
   color: var(--text-1);
   transition: background-color var(--d-base) var(--ease-out), color var(--d-base) var(--ease-out);
 }
 
 body {
   font-family: var(--font-sans);
-  font-size: var(--fs-15);
-  line-height: 22px;
-  letter-spacing: -0.006em;
+  font-size: var(--fs-base);
+  line-height: 1.55;
   font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
@@ -177,12 +258,26 @@ li,
 dd {
   text-wrap: pretty;
 }
+
+/* Headings in the condensed display face, petrol, as on Valio Aimo's site. Line heights scale with the size, so a
+   raised size never clips. */
 h1,
 h2,
 h3,
 .run-title,
 .audit-title {
   text-wrap: balance;
+}
+h1,
+h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.05;
+  color: var(--heading);
+}
+h3 {
+  line-height: 1.25;
 }
 
 ::selection {
@@ -191,7 +286,7 @@ h3,
 }
 
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 3px solid var(--accent);
   outline-offset: 2px;
   border-radius: var(--r-sm);
 }
@@ -209,20 +304,6 @@ h3,
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
-}
-
-.glass {
-  background: var(--glass-bg);
-  -webkit-backdrop-filter: var(--glass-filter);
-  backdrop-filter: var(--glass-filter);
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--glass-highlight), var(--glass-shadow);
-}
-
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .glass {
-    background: var(--surface-1);
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

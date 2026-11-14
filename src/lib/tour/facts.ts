@@ -1,129 +1,104 @@
-import { RuleId, type Order } from "@/lib/contracts";
-import { eur, parseEur } from "@/lib/console/format/money";
-import { overBy, shortName } from "@/lib/console/format/rules";
-import { buildRuns } from "@/lib/console/runs";
-import type { ConsoleSnapshot } from "@/lib/console/types";
+import type { Basket, BasketLine } from "@/lib/contracts";
 
 /**
- * The facts the walkthrough's sentences quote, read from the live console. The demo is reset when the tour
- * starts, so every order and activity without the seeded mark belongs to the story being told.
+ * What the walkthrough's cards may say, read from the visitor's own demo copy: the weekly basket the tour started and
+ * the state of the record. Every number on a card comes from here, never from the step's text.
  */
-export interface StoryFacts {
-  /** "Maria", for "Maria's rules". */
-  approverFirst: string;
-  /** "Maria Lind" */
-  approver: string;
-  rulesTotal: number;
-  milk?: Order;
-  /** The agent has Valio Aimo's signed offer for the milk: the price is on screen. */
-  milkQuoted: boolean;
-  milkTotal?: string;
-  milkRulesPassed?: number;
-  overLimit?: Order;
-  overBy?: string;
-  limit?: string;
-  shortStock?: Order;
-  /** "51 of 200" units of the product the agent first asked for. */
-  shortAvailable?: number;
-  shortRequested?: number;
-  /** Why the product asked for fell short, as the signed offer says it, when it does not read "Only N of M". */
-  shortReason?: string;
-  /** The agent's attempts to break the rules in this story so far, and how many of them were refused. */
-  attempts: number;
-  refused: number;
-  brokenAt?: number;
+/** How the challenge's example on Today ended: ordered alone, waiting for a person, or refused. */
+export type ExampleState = "alone" | "waits" | "refused";
+
+export interface TourFacts {
+  basket?: Basket;
+  lines?: number;
+  /** Lines the agent ordered alone: green without a person's answer. */
+  alone?: number;
+  /** Lines that needed a person: waiting now, or answered already. */
+  needed?: number;
+  red?: number;
+  /** The basket has finished: every line is green, orange or red. */
+  done: boolean;
+  /** The first line that waits for a person, while it waits. */
+  orangeLine?: BasketLine;
+  /** A line that waited for a person and now has their answer. */
+  answeredLine?: BasketLine;
+  redLine?: BasketLine;
+  /** Every line that needed a person, in the basket's order: waiting now, or answered already. */
+  neededLines: BasketLine[];
+  /** The safe product a person can take instead of the red line, when the agent found one. */
+  swap?: string;
+  recordBroken: boolean;
+  example?: ExampleState;
 }
 
-const FALLBACK_APPROVER = "Maria Lind";
-/** Every rule a mandate can hold; an order states its own checks once it exists. */
-const RULES_TOTAL = RuleId.options.length;
-const SHORT = /Only (\d[\d,]*) of (\d[\d,]*)/i;
-/** The attempts shown before the log is edited: the mandate's own rules and the approval key. */
-export const RULE_ATTEMPTS = 4;
-
-function live<T extends object>(records: T[]): T[] {
-  return records.filter((record) => (record as { seeded?: unknown }).seeded !== true);
+/** The product's own sentence told about the customer: the screens say "your", the walkthrough's narrator does not. */
+export function narrate(text: string): string {
+  return text.replace(/\bYour\b/g, "The customer’s").replace(/\byour\b/g, "the customer’s");
 }
 
-function byCreated(orders: Order[]): Order[] {
-  return [...orders].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+function capital(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-function perOrderCheck(order: Order) {
-  return order.decision.checks.find((check) => check.rule === "spend.per_order");
+/** "Only 51 in stock." after a colon reads "only 51 in stock."; an acronym such as "UHT" keeps its capitals. */
+function afterColon(text: string): string {
+  return /^[A-Z][a-z]/.test(text) ? text.charAt(0).toLowerCase() + text.slice(1) : text;
 }
 
-function substituted(order: Order): boolean {
-  return order.offer.lines.some((line) => line.substituteFor);
+/** One line and its reason, as the card says it: "Butter: €150 over the customer’s order limit." */
+export function lineWhy(line: BasketLine): string {
+  return `${capital(line.words)}: ${afterColon(narrate(line.reason))}`;
 }
 
-function isOverLimit(order: Order): boolean {
-  return perOrderCheck(order)?.status === "ask";
+/** The product a substitute option orders, from its label ("Take Alpro Rice drink 1L instead"). */
+export function swapOf(line: BasketLine | undefined): string | undefined {
+  const option = line?.options?.find((item) => item.kind === "substitute");
+  if (!option) return undefined;
+  return /^Take (.+?) instead\.?$/.exec(option.label)?.[1] ?? option.label;
 }
 
-function number(text: string): number {
-  return Number(text.replace(/,/g, ""));
+/**
+ * The tour's basket: the one it started, else, once the tour has begun, the newest weekly basket that is not demo
+ * history. Start resets the visitor's copy, so no other such basket can exist. The server's clock may be a fixed demo
+ * clock, so times are never compared with the browser's.
+ */
+export function tourBasket(baskets: readonly Basket[], basketId: string | undefined, since: string | undefined): Basket | undefined {
+  if (basketId) return baskets.find((basket) => basket.id === basketId);
+  if (!since) return undefined;
+  return baskets.find((basket) => !basket.seeded && basket.source === "weekly");
 }
 
-export function storyFacts(snapshot: ConsoleSnapshot): StoryFacts {
-  const name = shortName(snapshot.mandate?.mandate.approval.approver.name ?? FALLBACK_APPROVER);
-  const orders = byCreated(live(snapshot.orders));
-  const milk = orders.find((order) => !substituted(order) && !isOverLimit(order));
-  const overLimit = orders.find(isOverLimit);
-  const shortStock = orders.find(substituted);
-  const activity = live(snapshot.activity);
-  const quote = activity.find((item) => item.tool === "request_quote" && item.status === "ok");
-  const quoted = parseEur(quote?.detail);
-  // The newest block of attempts is this story's: the demo was reset when the tour started.
-  const attempts = buildRuns(activity, orders).find((run) => run.kind === "attempts")?.attempts ?? [];
-  const facts: StoryFacts = {
-    approver: name,
-    approverFirst: name.split(" ")[0],
-    rulesTotal: RULES_TOTAL,
-    milk,
-    milkQuoted: quote !== undefined || milk !== undefined,
-    overLimit,
-    shortStock,
-    attempts: attempts.length,
-    refused: attempts.filter((attempt) => attempt.stopped === true).length,
+export function tourFacts(basket: Basket | undefined, recordBroken: boolean, example?: ExampleState): TourFacts {
+  if (!basket) return { done: false, neededLines: [], recordBroken, example };
+  const { totals, lines } = basket;
+  const answered = (line: BasketLine) => line.resolved !== undefined && line.state !== "red";
+  const neededLines = lines.filter((line) => line.state === "orange" || answered(line));
+  const redLine = lines.find((line) => line.state === "red");
+  return {
+    basket,
+    lines: totals.lines,
+    alone: lines.filter((line) => line.state === "green" && !line.resolved).length,
+    needed: neededLines.length,
+    red: totals.red,
+    done: basket.status === "done",
+    orangeLine: lines.find((line) => line.state === "orange" && !line.resolved),
+    answeredLine: lines.find(answered),
+    redLine,
+    neededLines,
+    swap: swapOf(redLine),
+    recordBroken,
+    example,
   };
-  if (quoted !== undefined) facts.milkTotal = eur(quoted);
-
-  if (milk) {
-    facts.milkTotal = eur(milk.offer.totals.net.amount);
-    facts.milkRulesPassed = milk.decision.checks.filter((check) => check.status === "pass").length;
-    facts.rulesTotal = Math.max(milk.decision.checks.length, facts.milkRulesPassed);
-  }
-  const check = overLimit ? perOrderCheck(overLimit) : undefined;
-  const observed = parseEur(check?.observed);
-  const limit = parseEur(check?.limit);
-  if (observed !== undefined && limit !== undefined) {
-    facts.overBy = eur(overBy(observed, limit));
-    facts.limit = eur(limit);
-  }
-  const reason = shortStock?.offer.lines.find((line) => line.substituteFor)?.substituteFor?.reason;
-  const short = reason?.match(SHORT);
-  if (short) {
-    facts.shortAvailable = number(short[1]);
-    facts.shortRequested = number(short[2]);
-  } else if (reason) {
-    facts.shortReason = reason;
-  }
-  if (snapshot.chain.state === "broken") facts.brokenAt = snapshot.chain.brokenAt;
-  return facts;
 }
 
-/** The conditions a step waits for, each a plain question about the live console. */
-export type ConditionId = "milkConfirmed" | "milkShown" | "overLimitWaiting" | "overLimitDecided" | "shortStockDone" | "rulesRefused" | "logBroken" | "now";
+/** The plain conditions a step waits for before its card may describe the result. */
+export type ConditionId = "now" | "exampleDone" | "basketStarted" | "basketDone" | "needsPerson" | "blocked" | "recordBroken";
 
-export const CONDITIONS: Record<ConditionId, (snapshot: ConsoleSnapshot, facts: StoryFacts) => boolean> = {
-  milkConfirmed: (_, facts) => facts.milk?.status === "confirmed",
-  /** The confirmed order and its passed rules are on screen once the run has ended. */
-  milkShown: (snapshot, facts) => facts.milk?.status === "confirmed" && snapshot.run?.status !== "running",
-  overLimitWaiting: (_, facts) => facts.overLimit !== undefined,
-  overLimitDecided: (_, facts) => facts.overLimit !== undefined && facts.overLimit.status !== "pending_approval",
-  shortStockDone: (snapshot, facts) => facts.shortStock !== undefined && snapshot.run?.status !== "running",
-  rulesRefused: (_, facts) => facts.refused >= RULE_ATTEMPTS,
-  logBroken: (snapshot) => snapshot.chain.state === "broken",
+export const CONDITIONS: Record<ConditionId, (facts: TourFacts) => boolean> = {
   now: () => true,
+  exampleDone: (facts) => facts.example !== undefined,
+  basketStarted: (facts) => facts.basket !== undefined,
+  basketDone: (facts) => facts.done,
+  needsPerson: (facts) => facts.orangeLine !== undefined || facts.answeredLine !== undefined,
+  blocked: (facts) => facts.redLine !== undefined,
+  recordBroken: (facts) => facts.recordBroken,
 };

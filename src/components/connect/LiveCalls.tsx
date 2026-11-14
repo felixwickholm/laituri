@@ -75,7 +75,7 @@ export function LiveCalls() {
   return (
     <section className="cx-live" aria-labelledby="cx-live-title">
       <div className="cx-live-head">
-        <h2 id="cx-live-title">Connected right now</h2>
+        <h3 id="cx-live-title">Right now</h3>
         <span className="state" data-tone={status.tone === "neutral" ? undefined : status.tone}>
           <span className="cx-live-dot" data-tone={status.tone} data-pulse={fresh.size > 0 ? "" : undefined} key={[...fresh].join()} aria-hidden="true" />
           {status.word}
@@ -86,7 +86,7 @@ export function LiveCalls() {
         {status.line}
       </p>
       {calls.length === 0 ? (
-        <p className="cx-empty">Paste the command into your agent, or send a test order below. Calls show up here within 2 seconds.</p>
+        <p className="cx-empty">Calls show up here.</p>
       ) : (
         <ol className="cx-calls" aria-live="polite">
           {calls.map((call) => (

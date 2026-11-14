@@ -2,18 +2,16 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, type KeyboardEvent as ReactKeyboardEvent } from "react";
-import { useConsole } from "@/lib/console/store";
-import { storyFacts } from "@/lib/tour/facts";
-import { canGoNext, pressPending, readKey, readMsOf, type TourState } from "@/lib/tour/machine";
-import { STEPS, copyOf, spotOf } from "@/lib/tour/steps";
-import { resolveTargets } from "@/lib/tour/targets";
-import { prepareDemo } from "./actions";
+import type { TourState } from "@/lib/tour/machine";
+import { STEPS, copyOf, routeOf, spotGroups } from "@/lib/tour/steps";
 import { EndCard } from "./EndCard";
 import { IntroCard } from "./IntroCard";
 import { PhoneStage } from "./PhoneStage";
 import { TourCard } from "./TourCard";
 import { tourStore } from "./tour-store";
 import { useSpotlight } from "./useSpotlight";
+import { useTourFacts } from "./useTourFacts";
+import { goNext } from "./useTourRunner";
 
 const FOCUSABLE = 'button:not([disabled]), a[href], iframe, input:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
@@ -37,27 +35,25 @@ function trapTab(event: ReactKeyboardEvent<HTMLDivElement>): void {
   }
 }
 
-/** The open tour: the dimmed page with its spotlight, and the intro, step or end card. */
+/** The open tour: the dimmed page with its spotlight, and the Start, step or end card. */
 export function TourLayer({ state }: { state: TourState }) {
-  const snapshot = useConsole();
   const router = useRouter();
+  const pathname = usePathname();
   const root = useRef<HTMLDivElement>(null);
   const dim = useRef<SVGPathElement>(null);
   const ring = useRef<SVGPathElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
-  const facts = storyFacts(snapshot);
+  const facts = useTourFacts(state);
 
-  const pathname = usePathname();
   // While the tour moves to the step's page, the card waits: its sentence is about that page, not this one.
-  const step = state.status === "step" && STEPS[state.index].route === pathname ? STEPS[state.index] : undefined;
+  const candidate = state.status === "step" ? STEPS[state.index] : undefined;
+  const step = candidate && routeOf(candidate, state.routes) === pathname ? candidate : undefined;
   const outcome = step ? state.outcomes[step.id] : undefined;
-  const phoneOrder = step?.view === "phone" ? facts.overLimit : undefined;
-  const spot = step && !phoneOrder ? spotOf(step, state) : undefined;
-  // A run target is left out until the tour has started that run; an empty group would match nothing anyway.
-  const groups = spot ? [spot.target, spot.also ?? []].map((group) => resolveTargets(group, state.runs)).filter((group) => group.length > 0) : null;
-  useSpotlight(groups, { dim, ring, card: cardRef }, { floatCard: step !== undefined && phoneOrder === undefined, pinTop: Boolean(step?.pinTop) });
+  const phoneFor = step?.view === "phone" && facts.basket && (facts.orangeLine || facts.answeredLine) ? facts.basket.id : undefined;
+  const groups = step && !phoneFor ? spotGroups(step) : null;
+  useSpotlight(groups, { dim, ring, card: cardRef }, { floatCard: step !== undefined && phoneFor === undefined, pinTop: false });
 
-  const next = useCallback(() => tourStore.dispatch({ type: "next" }), []);
+  const next = useCallback(() => goNext(tourStore.getSnapshot()), []);
   const back = useCallback(() => tourStore.dispatch({ type: "back" }), []);
   const close = useCallback(() => tourStore.dispatch({ type: "close" }), []);
 
@@ -74,7 +70,7 @@ export function TourLayer({ state }: { state: TourState }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [next, back, close]);
 
-  const phoneShown = phoneOrder !== undefined;
+  const phoneShown = phoneFor !== undefined;
   useEffect(() => {
     const layer = root.current;
     if (layer && !layer.contains(document.activeElement)) layer.querySelector<HTMLElement>("[data-tour-next]")?.focus({ preventScroll: true });
@@ -89,23 +85,8 @@ export function TourLayer({ state }: { state: TourState }) {
     [],
   );
 
-  const pressing = Boolean(step?.press && state.pressed.includes(step.id) && !state.settled.includes(step.id));
-  const waiting = step !== undefined && outcome === undefined;
-  const nextLabel = !step
-    ? "Next"
-    : waiting
-      ? step.waiting
-      : pressing
-        ? (step.pressAction?.working ?? "Working…")
-        : pressPending(STEPS, state)
-          ? (step.pressAction?.label ?? "Next")
-          : state.index === STEPS.length - 1
-            ? "Finish"
-            : (step.nextLabel ?? "Next");
-  const copy = step ? copyOf(step, state, facts) : undefined;
-  const readLeft = step && !waiting && !pressing ? readMsOf(step, state) : 0;
-  const reading = step && readLeft > 0 ? { key: readKey(step, state), ms: readLeft } : undefined;
-  const announcement = step && copy ? `Step ${state.index + 1} of ${STEPS.length}. ${copy.title}` : "";
+  const copy = step ? copyOf(step, facts, outcome === "done") : undefined;
+  const announcement = step && copy ? `Step ${state.index + 1} of ${STEPS.length}. ${copy.title} ${copy.detail ?? ""}` : "";
 
   const card =
     step && copy ? (
@@ -114,12 +95,10 @@ export function TourLayer({ state }: { state: TourState }) {
           index={state.index}
           total={STEPS.length}
           copy={copy}
-          note={outcome === "timeout" ? step.fallback : undefined}
-          nextLabel={nextLabel}
-          busy={waiting || pressing}
-          reading={reading}
-          canNext={canGoNext(STEPS, state)}
-          canBack={state.index > 0}
+          note={outcome === "timeout" ? step.late : undefined}
+          flow={step.flow?.(facts, outcome === "done")}
+          working={outcome === undefined}
+          last={state.index === STEPS.length - 1}
           onNext={next}
           onBack={back}
           onClose={close}
@@ -140,7 +119,7 @@ export function TourLayer({ state }: { state: TourState }) {
             starting={state.status === "starting"}
             error={state.error}
             steps={STEPS.length}
-            onStart={() => tourStore.dispatch({ type: "begin" })}
+            onStart={() => tourStore.dispatch({ type: "begin", at: new Date().toISOString() })}
             onClose={close}
           />
         </div>
@@ -150,22 +129,18 @@ export function TourLayer({ state }: { state: TourState }) {
         <div className="tour-center">
           <EndCard
             onGo={(href) => {
-              window.history.replaceState(null, "", window.location.pathname);
+              window.history.replaceState(window.history.state, "", window.location.pathname);
               close();
               router.push(href);
-            }}
-            onReset={async () => {
-              await prepareDemo();
-              close();
             }}
             onClose={close}
           />
         </div>
       ) : null}
 
-      {phoneOrder ? (
+      {phoneFor ? (
         <div key="phone" className="tour-phone-layout">
-          <PhoneStage orderId={phoneOrder.id} approver={facts.approverFirst} />
+          <PhoneStage basketId={phoneFor} />
           {card}
         </div>
       ) : (

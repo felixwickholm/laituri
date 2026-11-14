@@ -12,7 +12,7 @@ const lines = text.split("\n");
 function served(url: string): boolean {
   const pathname = new URL(url).pathname;
   const dir = path.join(process.cwd(), "src", "app", ...pathname.split("/").filter(Boolean));
-  return existsSync(path.join(dir, "page.tsx")) || existsSync(path.join(dir, "route.ts"));
+  return existsSync(path.join(dir, "page.tsx")) || existsSync(path.join(dir, "route.ts")) || existsSync(path.join(process.cwd(), "public", pathname));
 }
 
 describe("llms.txt", () => {

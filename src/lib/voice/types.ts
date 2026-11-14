@@ -8,6 +8,8 @@ export type TtsEngine = "elevenlabs" | "browser";
 /** What GET /api/v1/voice returns. */
 export interface VoiceSettings {
   tts: TtsEngine;
+  /** Where speech is heard: ElevenLabs through the server, or the browser's own recognition. */
+  stt?: TtsEngine;
 }
 
 export type ListenError = "not-allowed" | "no-speech" | "network" | "aborted" | "failed";

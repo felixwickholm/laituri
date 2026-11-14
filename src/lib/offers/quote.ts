@@ -1,5 +1,6 @@
 import type { Alternative, Product, QuoteRequest, QuoteResponse, SignedOffer } from "@/lib/contracts";
 import { NotFoundError, UpstreamError } from "@/lib/gateway/errors";
+import { UPSTREAM_ID_CAP } from "@/lib/valio/budget";
 import type { UpstreamAvailability, UpstreamPrice } from "@/lib/valio/types";
 import { checkRequest, offeredLines, readBuyerWords } from "@/lib/request";
 import { TIER_MEANING, planAlternatives, type Need } from "./alternatives";
@@ -12,8 +13,8 @@ import { marketOf } from "./market";
 import { stockLedger } from "./stock";
 import type { BuiltLine, Market, OfferDeps, QuoteContext } from "./types";
 
-const SUBSTITUTE_CANDIDATES = 12;
-const UPSTREAM_BATCH_LIMIT = 1000;
+/** The product asked for and its closest substitutes fill one line's share of the upstream cap. */
+const SUBSTITUTE_CANDIDATES = UPSTREAM_ID_CAP.quoteLine - 1;
 
 const UNIT_NAME = { l: "litre", kg: "kilo" } as const;
 
@@ -73,7 +74,7 @@ export async function quote(request: QuoteRequest, ctx: QuoteContext, deps: Offe
       ...request.lines.map((line) => line.productId),
       ...[...candidates.values()].flat().map((product) => product.id),
     ]),
-  ].slice(0, UPSTREAM_BATCH_LIMIT);
+  ].slice(0, UPSTREAM_ID_CAP.quoteLine * request.lines.length);
 
   const market = await fetchMarket(ids, request, ctx, deps);
   checkUnits(requested, market);

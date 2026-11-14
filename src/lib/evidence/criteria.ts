@@ -13,7 +13,9 @@ export function criteria(f: Facts): Criterion[] {
       built: [
         "Buyer side (/buyer): the agent takes \"1,000 litres of lactose-free milk by Monday\", gets a signed offer, and the order confirms; 1,600 litres waits for the approver.",
         "Approval on a phone-sized page (/approve/{orderId}): the approver's decision is signed with the approver key.",
-        "Wholesaler side (/valio): connected agents, demand, unmet requests and the same audit log.",
+        `A weekly order of ${f.upstream.basketLines} lines runs as one basket: each line gets its own signed offer and order and is shown green (ordered alone), orange (waits for a person) or red (not ordered), each with its reason.`,
+        "An event planned in conversation, typed or spoken (/buyer/plan, MCP plan_event), ends in menu cards and a basket that is ordered through the same signed flow.",
+        "Wholesaler side (/valio): connected agents, demand, unmet requests, questions handed to a person, and the same audit log.",
         "A guided walkthrough (/buyer?tour=1) drives these steps in the running product, not in a video.",
         `Price and availability come from the challenge's mock API in live mode, or from recorded answers for ${f.recordedProducts} products in recorded mode.`,
         "An outside process buys over plain HTTP with scripts/buyer-agent.ts.",
@@ -22,6 +24,8 @@ export function criteria(f: Facts): Criterion[] {
         "src/lib/gateway/gateway.ts",
         "src/lib/agent/purchase.ts",
         "src/lib/orders/place.ts",
+        "src/lib/basket/engine.ts",
+        "src/lib/assistant/turn.ts",
         "src/lib/demo/scenarios.ts",
         "src/lib/tour/steps.ts",
         "src/app/buyer/page.tsx",
@@ -32,6 +36,7 @@ export function criteria(f: Facts): Criterion[] {
         { kind: "url", value: "/buyer?tour=1" },
         { kind: "command", value: "npm run eval -- --suite scenarios" },
         { kind: "eval", value: "O8" },
+        { kind: "eval", value: "W1" },
         { kind: "command", value: "npx tsx scripts/buyer-agent.ts \"1,000 litres of lactose-free milk by Monday\"" },
       ],
       measured: [
@@ -87,6 +92,8 @@ export function criteria(f: Facts): Criterion[] {
       built: [
         `${f.mandateRules} named mandate rules run on every order; each result (pass, ask or block) is listed on the order with its reason.`,
         "Three tiers: the agent orders alone, a person is asked, or the order is refused.",
+        "Autonomy from history: with the buyer's history rule on (product.first_time, switched on /buyer/mandate), a product bought before is reordered alone inside the limits and a product never ordered before waits for a person. The demo customer Nordic Harbour Hotels has it on once its four weeks of history are seeded (src/lib/seed/index.ts); tests and evals start from an empty history with it off.",
+        "The buyer's never-buy list (products or words in a product name) blocks any line that would deliver one, a swap included (product.never_buy).",
         "Mandates and offers are bound by signature to the workspace that signed them; an order must carry the mandate in force there byte for byte.",
         "While the audit log does not verify, no order confirms alone (rule audit.integrity) and approvals are paused.",
         "Approvals are signed with the approver key. Agent credentials cannot approve, over REST or MCP.",
@@ -97,6 +104,7 @@ export function criteria(f: Facts): Criterion[] {
       where: [
         "src/lib/policy/evaluate.ts",
         "src/lib/policy/rules",
+        "src/lib/policy/rules/products.ts",
         "src/lib/mandate/index.ts",
         "src/lib/orders/approval.ts",
         "src/lib/gateway/suspension.ts",
@@ -110,9 +118,11 @@ export function criteria(f: Facts): Criterion[] {
         { kind: "eval", value: "G5" },
         { kind: "url", value: "/buyer/mandate" },
         { kind: "test", value: "tests/gateway/suspension.test.ts" },
+        { kind: "test", value: "tests/policy/never-buy.test.ts" },
+        { kind: "eval", value: "18" },
       ],
       measured: [suiteLine(f, "guardrails"), suiteLine(f, "trust"), `${f.mandateRules} mandate rules, ${f.signingKeys.length} signing keys (${f.signingKeys.join(", ")})`],
-      limit: "In the demo one server holds all three private keys, and the approver signs in with a passcode or one-click demo access that the audit log labels as such.",
+      limit: "In the demo one server holds all three private keys. In a visitor's own sandbox the browser is signed in as the approver and the operator without a passcode, and the audit log labels each such action \"demo access\"; the shared workspace needs a passcode.",
     },
     {
       name: "Robustness to exception situations",
@@ -121,6 +131,8 @@ export function criteria(f: Facts): Criterion[] {
         "When a request cannot be met in full and on time, the wholesaler returns signed counter-offers ranked good, better and best, and the buyer's mandate decides whether the agent may take one alone.",
       built: [
         "Short stock: a split (keep what is in stock, fill the rest like for like) or a full substitute, each signed and each checked against the buyer's words for what it delivers.",
+        "In a menu plan, an ingredient that is short, too late or breaks an allergen rule or a guest's need is swapped by its role in the recipe (cream in a sauce, milk as the liquid), first from the kitchen's own stock, with the trade-off in one sentence.",
+        "A basket line blocked for an allergen offers a product of the same kind that passes every never rule; the person's choice is ordered and checked like any order.",
         "A waiting order keeps its price until the order cut-off; stock is checked again at approval, and a shortfall returns fresh signed alternatives.",
         "Stock across orders: availability is the wholesaler's figure minus this workspace's own confirmed and waiting orders, checked again at placement.",
         "Lines of one product are merged before every limit, so splitting a line passes no ceiling.",
@@ -134,6 +146,9 @@ export function criteria(f: Facts): Criterion[] {
       where: [
         "src/lib/offers/alternatives.ts",
         "src/lib/offers/substitutes.ts",
+        "src/lib/recipes/roles.ts",
+        "src/lib/menu/shopping.ts",
+        "src/lib/basket/safe-swap.ts",
         "src/lib/policy/rules/fulfilment.ts",
         "src/lib/orders/lock.ts",
         "src/components/order/Alternatives.tsx",
@@ -144,12 +159,14 @@ export function criteria(f: Facts): Criterion[] {
         { kind: "eval", value: "13" },
         { kind: "eval", value: "G20" },
         { kind: "eval", value: "G14" },
+        { kind: "eval", value: "M2" },
+        { kind: "test", value: "tests/menu/swaps.test.ts" },
       ],
       measured: [
         suiteLine(f, "scenarios"),
         suiteLine(f, "guardrails"),
       ],
-      limit: "Substitutes are chosen like for like within the wholesaler's own concept and category, not through recipe logic.",
+      limit: "A single order or basket line gets like-for-like substitutes within the wholesaler's own concept and category; swaps by recipe role run only inside a menu plan. Nothing watches stock between orders, so a swap comes when the kitchen plans or orders.",
     },
     {
       name: "Openness and credible path toward production",
@@ -162,6 +179,7 @@ export function criteria(f: Facts): Criterion[] {
         "An outside agent that knows only the text of llms.txt, fetched over HTTP, buys the milk by following its REST flow.",
         "Standards table separates \"used\" (implemented and tested) from \"follows\" (names and shapes taken from the standard).",
         "Decision records in docs/decisions; assumptions and the path to production in docs/ and on /evidence.",
+        "A paper (/paper, docs/paper.md) and /llms-full.txt give the design, the evidence and the limits in one document; their numbers are generated from the same measured facts.",
         "MIT licence.",
       ],
       where: [

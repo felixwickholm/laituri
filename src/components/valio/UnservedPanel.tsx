@@ -6,7 +6,6 @@ import { conceptLabel, quantityText, unmetNet } from "@/lib/supplier-console/for
 import { agentName } from "@/lib/supplier-console/names";
 import type { UnmetRequest } from "@/lib/supplier-console/types";
 import { Dash } from "../ui/Dash";
-import { HistoryNote } from "../ui/HistoryNote";
 import { EmptyState, ReasonTag } from "./bits";
 
 /** The top unserved requests: what was asked, by whom, why it went unserved, and what it was worth. */
@@ -17,16 +16,15 @@ export function UnservedPanel({ unmet, limit = 5 }: { unmet: UnmetRequest[]; lim
     <section className="block" aria-labelledby="unserved-title" data-tour="valio-unserved">
       <header className="block-head">
         <h2 id="unserved-title">
-          Unserved demand {lost > 0 ? <span className="count">{eur(lost)}</span> : null}
+          Lost demand {lost > 0 ? <span className="count">{eur(lost)}</span> : null}
         </h2>
-        <span className="block-meta">Estimated, net</span>
         <Link href="/valio/demand#unserved" className="text-link block-link">
-          Demand
+          All
           <ArrowRight aria-hidden="true" />
         </Link>
       </header>
       {rows.length === 0 ? (
-        <EmptyState icon={PackageCheck} text="Every request was served on time and in full." />
+        <EmptyState icon={PackageCheck} text="Every request served." />
       ) : (
         <div className="card list-card">
           <ul className="unserved-list">
@@ -43,7 +41,6 @@ export function UnservedPanel({ unmet, limit = 5 }: { unmet: UnmetRequest[]; lim
               </li>
             ))}
           </ul>
-          <HistoryNote show={rows.some((item) => item.seeded)} />
         </div>
       )}
     </section>

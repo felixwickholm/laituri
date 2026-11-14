@@ -1,5 +1,6 @@
 "use client";
 
+import type { Basket, Handoff } from "@/lib/contracts";
 import { ApiError } from "@/lib/console/api";
 import type { Activity } from "@/lib/store/types";
 import { supplierApi } from "./api";
@@ -9,6 +10,7 @@ import type { ControlOverview } from "./types";
 
 const OVERVIEW_MS = 2000;
 const LIVE_MS = 1500;
+const QUESTIONS_MS = 4000;
 
 export const overviewPoller = new Poller<ControlOverview>(supplierApi.overview, OVERVIEW_MS);
 
@@ -33,4 +35,18 @@ export function useOverview(): Polled<ControlOverview> {
 
 export function useAllActivity(): Polled<Activity[]> {
   return usePolled(activityPoller);
+}
+
+/** Questions from kitchens to a person at Valio Aimo. Reading them all needs the operator session. */
+export const handoffsPoller = new Poller<Handoff[]>(supplierApi.handoffs, QUESTIONS_MS);
+
+/** Every buyer's multi-line orders, so a question or a weekly order reads as one event. */
+export const basketsPoller = new Poller<Basket[]>(supplierApi.baskets, OVERVIEW_MS);
+
+export function useHandoffs(): Polled<Handoff[]> {
+  return usePolled(handoffsPoller);
+}
+
+export function useBaskets(): Polled<Basket[]> {
+  return usePolled(basketsPoller);
 }

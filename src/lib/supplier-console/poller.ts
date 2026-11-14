@@ -7,6 +7,8 @@ export interface Polled<T> {
   data?: T;
   /** The last failure's sentence; cleared by the next success. */
   error?: string;
+  /** The server's machine code for the last failure, such as "operator_sign_in_required". */
+  code?: string;
   /** When the data last arrived, as epoch ms. */
   updatedAt?: number;
   /**
@@ -84,7 +86,8 @@ export class Poller<T> {
         if (!this.state.locked) this.set({ locked: true });
         this.text = "";
       } else {
-        this.set({ ...this.state, error: error instanceof Error ? error.message : "The server did not answer." });
+        const code = error instanceof ApiError ? error.code : undefined;
+        this.set({ ...this.state, error: error instanceof Error ? error.message : "The server did not answer.", code });
       }
     } finally {
       clearTimeout(this.timer);

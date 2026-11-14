@@ -8,15 +8,15 @@ const KEYLESS_DEFAULT_NAME = "Unidentified agent";
 
 /**
  * The client labels the server records, in words a buyer or a wholesaler reads without a glossary. The demo's own
- * scripted agent reads as a neutral "Demo agent"; its exact label stays in the agent sheet's technical details.
+ * scripted agent reads as a neutral "Laituri agent"; its exact label stays in the agent sheet's technical details.
  */
 const CLIENT_NAMES: Record<string, string> = {
   curl: "Command line",
   [UNKNOWN_CLIENT]: "Unknown app",
-  [SCRIPTED_CLIENT]: "Demo agent",
+  [SCRIPTED_CLIENT]: "Laituri agent",
 };
 
-/** "curl" -> "Command line", "Unknown client" -> "Unknown app", the scripted agent -> "Demo agent"; any other app keeps its own name. */
+/** "curl" -> "Command line", "Unknown client" -> "Unknown app", the scripted agent -> "Laituri agent"; any other app keeps its own name. */
 export function clientName(client: string): string {
   return CLIENT_NAMES[client] ?? client;
 }

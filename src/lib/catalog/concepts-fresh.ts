@@ -90,7 +90,9 @@ export const FRESH_CONCEPTS: ConceptDef[] = [
   },
   {
     id: "cheese", label: "cheese", categories: ["10600", "10602", "10603"], typical: { amount: 1, unit: "kg" },
-    terms: ["cheese", "juusto", "juustoa", "ost", "edam", "gouda", "emmental", "cheddar"],
+    // A variety (cheddar, edam, gouda, emmental) is not a synonym: it stays in the words as a requirement, so
+    // "cheddar cheese slices" is never met by edam slices. The include pattern still files those products as cheese.
+    terms: ["cheese", "juusto", "juustoa", "ost"],
     include: /(cheese|juusto|\bost\b|edam|gouda|emmental|cheddar)/,
     exclude: /(cottage|raejuust|feta|halloumi|mozzarella|cream cheese|tuorejuust|blue|mould|homejuust)/,
   },

@@ -2,6 +2,7 @@ import type { OfferLine, Product } from "@/lib/contracts";
 import { describeCheck } from "@/lib/request";
 import type { FullContext, Rule } from "../context";
 import { check, listText, plural } from "../format";
+import { neverBuyHit, neverBuyOf } from "../never-buy";
 
 export const categoryAllowed: Rule = {
   id: "category.allowed",
@@ -98,7 +99,8 @@ export const firstTimeProducts: Rule = {
   id: "product.first_time",
   needs: "both",
   run: ({ mandate, offer, orderedProductIds }) => {
-    const fresh = offer.lines.filter((line) => !orderedProductIds.has(line.productId));
+    // A line the offer delivers none of (the product a swap replaces) is not a product the buyer gets.
+    const fresh = offer.lines.filter((line) => line.quantity > 0 && !orderedProductIds.has(line.productId));
     const observed = `${plural(fresh.length, "new product")}`;
     if (!mandate.approval.firstTimeProducts) {
       return check("product.first_time", "pass", "New products do not need approval under this mandate.", { observed, limit: "not required" });
@@ -110,6 +112,34 @@ export const firstTimeProducts: Rule = {
       });
     }
     return check("product.first_time", "pass", "Every product has been ordered before.", { observed, limit: "approval for new products" });
+  },
+};
+
+/**
+ * The buyer's never-buy list: a listed product, or one whose name carries a listed word, blocks the order. Every line
+ * that delivers something counts, a swap included; a line the offer delivers none of does not.
+ */
+export const neverBuy: Rule = {
+  id: "product.never_buy",
+  needs: "both",
+  run: ({ mandate, offer, products }) => {
+    const list = neverBuyOf(mandate);
+    const size = list.products.length + list.words.length;
+    const limit = size ? `${plural(list.products.length, "product")}, ${plural(list.words.length, "word")}` : "none";
+    if (size === 0) return check("product.never_buy", "pass", "Your never-buy list is empty.", { limit });
+    for (const line of offer.lines) {
+      if (line.quantity <= 0) continue;
+      const product = products.get(line.productId);
+      const hit = neverBuyHit(mandate, { id: line.productId, name: product?.name ?? line.name });
+      if (hit) {
+        const why = hit.by === "word" ? ` Its name has "${hit.entry}".` : "";
+        return check("product.never_buy", "block", `${line.name} is on your never-buy list.${why}`, {
+          observed: hit.by === "word" ? `${line.productId} (${hit.entry})` : line.productId,
+          limit,
+        });
+      }
+    }
+    return check("product.never_buy", "pass", "No line is on your never-buy list.", { observed: "none", limit });
   },
 };
 

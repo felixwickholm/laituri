@@ -13,7 +13,8 @@ A buyer signs a mandate with its own key. The mandate says what the buyer's agen
 | Partial delivery, late delivery | Partial not allowed; late within the grace days | Later than the grace days |
 | Request match | Low confidence; a requirement in the buyer's words not met or not checkable for the product delivered (an attribute such as UHT or a fat level, a budget, a date, an instruction to hold, words not understood) | The offer certainly fails the words: wrong product, a missing claim, less than half the need asked for |
 | Buyer's words (request.words) | The offer carries no buyer words, so it could not be checked against them | |
-| First-time product | First order of a product when the mandate asks for it | |
+| First-time product (autonomy from history) | First order of a product when the mandate asks for it; a product bought before is reordered alone inside the other limits | |
+| Never-buy list (product.never_buy) | | A product on the buyer's list, or with a listed word in its name, on any line that delivers it, a swap included |
 | Audit log (audit.integrity) | The workspace's audit log does not verify; no order confirms alone until it does | |
 | Signatures, validity, expiry | | Invalid, replaced or expired mandate, or one from another workspace; altered, expired or already used offer, or one another workspace issued; wrong agent; cut-off passed |
 

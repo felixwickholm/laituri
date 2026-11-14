@@ -31,7 +31,7 @@ async function pendingInSandbox(key: string): Promise<Order> {
 }
 
 export const PEOPLE_GUARDRAILS = [
-  guardrail("G23", "Tokenless caller takes demo access in the shared workspace", "403 demo_access_sandbox_only for approver and operator; the order still waits", async (hostile, checks) => {
+  guardrail("G23", "Tokenless caller takes demo access in the shared workspace", "403 demo_access_sandbox_only for approver and operator, 401 for the approval; the order still waits", async (hostile, checks) => {
     const order = await pendingOrder("eval-g23-shared");
     const approver = await hostile.try("demo approver, no cookie", () => post("/api/v1/console/session", { demo: true }));
     const operator = await hostile.try("demo operator, no cookie", () => post("/api/v1/console/session", { demo: true, role: "operator" }));
@@ -39,13 +39,13 @@ export const PEOPLE_GUARDRAILS = [
     refusedWith(operator, 403, "demo_access_sandbox_only", checks, "demo operator");
     const cookie = approver.headers.get("set-cookie")?.split(";")[0] ?? "";
     const approve = await hostile.try("approve after the attempt", () => post(`/api/v1/approvals/${order.id}`, { decision: "approved" }, { cookie }));
-    refusedWith(approve, 403, "approver_sign_in_required", checks, "approval");
+    refusedWith(approve, 401, "credential_required", checks, "approval");
     const after = ok<Order>(await get(`/api/v1/orders/${order.id}`, AGENT_AUTH), "Order");
     checks.expect(after.status === "pending_approval", `the order is ${after.status}`);
     return `${outcomeText(approver)} / ${outcomeText(operator)} / approve ${outcomeText(approve)}; order still ${after.status}`;
   }, true),
 
-  guardrail("G24", "Sandbox key holder drops its token to approve its own order", "403 or 404 on every route a person uses; the order still waits", async (hostile, checks) => {
+  guardrail("G24", "Sandbox key holder drops its token to approve its own order", "401, 403 or 404 on every route a person uses; the order still waits", async (hostile, checks) => {
     const owner = newSandboxCookie();
     const key = ok<WorkspaceInfo>(await get("/api/v1/workspace", { cookie: owner }), "Workspace").agentKeys[0].key;
     const auth = { authorization: `Bearer ${key}` };
@@ -64,7 +64,7 @@ export const PEOPLE_GUARDRAILS = [
     const withKey = await hostile.try("approve with the key and the session", () => decide({ ...auth, cookie: `${ownSandbox}; ${session}` }));
 
     refusedWith(workspace, 403, "agent_not_allowed", checks, "workspace with key");
-    refusedWith(noToken, 403, "approver_sign_in_required", checks, "no token");
+    refusedWith(noToken, 401, "credential_required", checks, "no token");
     refusedWith(demoNoCookie, 403, "demo_access_sandbox_only", checks, "demo without cookie");
     refusedWith(elsewhere, 404, undefined, checks, "approval from another sandbox");
     refusedWith(withKey, 403, "agent_not_allowed", checks, "approval with the key");
@@ -73,7 +73,7 @@ export const PEOPLE_GUARDRAILS = [
     return `${[workspace, noToken, demoNoCookie, elsewhere, withKey].map(outcomeText).join(" / ")}; order still ${after.status}`;
   }),
 
-  guardrail("G25", "Suspended agent resumes itself", "403 agent_suspended with its token, 403 operator_sign_in_required without; still suspended", async (hostile, checks) => {
+  guardrail("G25", "Suspended agent resumes itself", "403 agent_suspended with its token, 401 credential_required without; still suspended", async (hostile, checks) => {
     ok(await post("/api/v1/products/search", { query: "maito" }, AGENT_AUTH), "Search");
     const cookie = await operatorCookie();
     const url = `/api/v1/supplier/agents/${encodeURIComponent(HARBOUR_AGENT)}/suspension`;
@@ -82,7 +82,7 @@ export const PEOPLE_GUARDRAILS = [
     const withToken = await hostile.try("resume with its token", () => post(url, { suspended: false }, AGENT_AUTH));
     const withoutToken = await hostile.try("resume without a token", () => post(url, { suspended: false }));
     refusedWith(withToken, 403, "agent_suspended", checks, "with token");
-    refusedWith(withoutToken, 403, "operator_sign_in_required", checks, "without token");
+    refusedWith(withoutToken, 401, "credential_required", checks, "without token");
     const stillRefused = await post("/api/v1/products/search", { query: "maito" }, AGENT_AUTH);
     refusedWith(stillRefused, 403, "agent_suspended", checks, "a call after the attempts");
     ok(await post(url, { suspended: false }, { cookie }), "Resumption");
