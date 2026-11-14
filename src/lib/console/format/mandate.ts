@@ -57,28 +57,19 @@ export function allergenRule(id: string): string {
   return ALLERGEN_RULES[id] ?? `No ${id.replace(/_/g, " ")}`;
 }
 
-export interface Tiers {
-  alone: string[];
-  ask: string[];
-  never: string[];
+function listWords(items: string[], last: "and" | "or"): string {
+  if (items.length <= 1) return items.join("");
+  return `${items.slice(0, -1).join(", ")} ${last} ${items[items.length - 1]}`;
 }
 
-/** The mandate read as three plain tiers: what the agent may do alone, when it asks, what it never does. */
-export function tiers(mandate: Mandate): Tiers {
-  const allergens = mandate.dietary.excludeAllergens.map((id) => allergenRule(id).replace(/^No /, ""));
-  const alone = [
-    `Orders up to ${eur(mandate.limits.perOrder.amount)}`,
-    `Up to ${eur(mandate.limits.perWeek.amount)} a week`,
-    `${mandate.categories.allowed.length} categories`,
-  ];
-  const ask = ["Anything over a limit", "Other categories"];
-  if (mandate.substitution.policy === "like_for_like") ask.push("A substitute of another kind");
-  if (!mandate.delivery.allowPartial) ask.push("Partial deliveries");
-  if (mandate.approval.firstTimeProducts) ask.push("First-time products");
-  const delay = mandate.delivery.maxDelayDays;
-  const never: string[] = [];
-  if (allergens.length) never.push(`Buy ${allergens.join(" or ")}`);
-  never.push(`Accept delivery over ${delay}\u00a0${delay === 1 ? "day" : "days"} late`, "Use an altered or expired offer");
-  if (mandate.substitution.policy === "none") never.push("Substitute a product");
-  return { alone, ask, never };
+/** The mandate in two plain sentences, for the summary card: what the agent may do, and what it asks or never does. */
+export function mandateSummary(mandate: Mandate): { may: string; limits: string } {
+  const categories = mandate.categories.allowed.length;
+  const may = `Your agent may spend up to ${eur(mandate.limits.perOrder.amount)} per order and ${eur(mandate.limits.perWeek.amount)} per week, in ${categories} ${categories === 1 ? "category" : "categories"}.`;
+  const asks = ["anything over a limit"];
+  if (mandate.approval.firstTimeProducts) asks.push("new products");
+  if (!mandate.delivery.allowPartial) asks.push("partial deliveries");
+  const allergens = mandate.dietary.excludeAllergens.map((id) => allergenRule(id).replace(/^No /, "").toLowerCase());
+  const never = allergens.length ? ` It never buys ${listWords(allergens, "or")}.` : "";
+  return { may, limits: `It asks you before ${listWords(asks, "and")}.${never}` };
 }

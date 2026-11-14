@@ -6,23 +6,28 @@ import { parseAmount } from "@/lib/console/format/mandate-patch";
 
 interface AmountInputProps {
   id: string;
+  /** The field's name for assistive tech; the sentence around it is the visible label. */
+  label: string;
   value: number;
   onChange: (value: number) => void;
 }
 
-/** A euro limit: grouped ("1,500") when resting, plain digits while the person types. */
-export function AmountInput({ id, value, onChange }: AmountInputProps) {
+/** A euro limit inside a rule sentence: grouped ("1,500") when resting, plain digits while the person types. */
+export function AmountInput({ id, label, value, onChange }: AmountInputProps) {
   const [draft, setDraft] = useState<string | null>(null);
+  const shown = draft ?? count(value);
   return (
-    <span className="money-field">
+    <span className="value-chip money">
       <span aria-hidden="true">€</span>
       <input
         id={id}
-        className="text-field num"
+        aria-label={label}
+        className="num"
         type="text"
         inputMode="decimal"
         autoComplete="off"
-        value={draft ?? count(value)}
+        size={Math.max(3, shown.length)}
+        value={shown}
         onFocus={() => setDraft(String(value))}
         onChange={(event) => {
           setDraft(event.target.value);

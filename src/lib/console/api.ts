@@ -1,6 +1,6 @@
 import type { ApprovalDecisionRequest, AuditEntry, Order, SignedOffer } from "@/lib/contracts";
 import type { MandatePatch } from "@/lib/orders/types";
-import type { Activity, ConsoleSession, DemoRun, Health, Jwks, Scenario, SignedMandate } from "./types";
+import type { Activity, ConsoleSession, DemoRun, Health, Jwks, Scenario, SignInCredentials, SignedMandate } from "./types";
 
 /** Thrown for any non-2xx answer. `detail` is the server's plain sentence and `code` its machine code. */
 export class ApiError extends Error {
@@ -76,7 +76,7 @@ export const api = {
   updateMandate: (patch: MandatePatch) => send<SignedMandate>("PUT", "/api/v1/mandate", patch),
 
   session: () => getJson<ConsoleSession>("/api/v1/console/session"),
-  signIn: (passcode?: string) => send<ConsoleSession>("POST", "/api/v1/console/session", passcode ? { passcode } : {}),
+  signIn: (credentials: SignInCredentials) => send<ConsoleSession>("POST", "/api/v1/console/session", credentials),
   signOut: () => send<ConsoleSession>("DELETE", "/api/v1/console/session"),
 
   jwks: () => getJson<Jwks>("/.well-known/jwks.json"),

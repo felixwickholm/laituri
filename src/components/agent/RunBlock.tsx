@@ -4,8 +4,9 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { runOutcome, runTitle, type RunContext } from "@/lib/console/format/run-view";
 import { plainSentence } from "@/lib/console/format/sentence";
-import { hourMinute } from "@/lib/console/format/time";
+import { duration, hourMinute } from "@/lib/console/format/time";
 import type { RunBlock as Run, RunStep } from "@/lib/console/runs";
+import { DemoTag } from "../ui/DemoTag";
 import { StateWord } from "../ui/StateWord";
 import { Attempts } from "./Attempts";
 import { ToolRows } from "./ToolRows";
@@ -33,15 +34,16 @@ interface RunBlockProps {
   run: Run;
   ctx: RunContext;
   newest: boolean;
+  seeded: boolean;
   onOpenOrder: (orderId: string) => void;
 }
 
-/** One buyer request. Finished runs fold to one row; the newest stays open and shows steps as they arrive. */
-export function RunBlock({ run, ctx, newest, onOpenOrder }: RunBlockProps) {
+/** One buyer request: their words, the steps in plain sentences, how it ended and how long it took. */
+export function RunBlock({ run, ctx, newest, seeded, onOpenOrder }: RunBlockProps) {
   const [expandedByUser, setExpanded] = useState<boolean | null>(null);
   const [allSteps, setAllSteps] = useState(false);
   const [toolsByUser, setTools] = useState<boolean | null>(null);
-  const expanded = run.kind === "attempts" || (expandedByUser ?? newest);
+  const expanded = expandedByUser ?? (newest || ctx.active);
   const showTools = toolsByUser ?? ctx.active;
   const outcome = runOutcome(run, ctx);
   const title = runTitle(run, ctx);
@@ -50,6 +52,8 @@ export function RunBlock({ run, ctx, newest, onOpenOrder }: RunBlockProps) {
   const steps = ctx.active || allSteps ? run.steps : tellingSteps(run.steps);
   const hidden = run.steps.length - steps.length;
   const stepCount = run.steps.length + run.attempts.length;
+  const took = Date.parse(run.endedAt) - Date.parse(run.startedAt);
+  const bodyId = `run-${run.id}`;
 
   useEffect(() => {
     if (!ctx.active) return;
@@ -59,32 +63,27 @@ export function RunBlock({ run, ctx, newest, onOpenOrder }: RunBlockProps) {
 
   return (
     <article className="run" data-active={ctx.active} data-expanded={expanded} aria-label={title}>
-      <button
-        type="button"
-        className="run-row"
-        aria-expanded={expanded}
-        disabled={run.kind === "attempts"}
-        onClick={() => setExpanded(!expanded)}
-      >
-        <span className="run-dot" data-tone={outcome.tone} aria-hidden="true" />
-        <span className="run-title" title={title}>
-          {title}
+      <button type="button" className="run-head" aria-expanded={expanded} aria-controls={bodyId} onClick={() => setExpanded(!expanded)}>
+        <span className="run-title">{run.kind === "attempts" ? title : `“${title}”`}</span>
+        <span className="run-time">
+          <time dateTime={run.startedAt}>{hourMinute(run.startedAt)}</time>
+          {ctx.active ? " · working" : ` · took ${duration(took)}`}
         </span>
-        <span className="run-time mono">{hourMinute(run.startedAt)}</span>
-        <span className="run-meta">
+        <span className="run-outcome">
           <StateWord word={outcome.word} tone={outcome.tone} />
           {outcome.detail ? <span className="run-detail">{outcome.detail}</span> : null}
+          {seeded ? <DemoTag /> : null}
         </span>
-        {run.kind === "attempts" ? null : <ChevronDown className="run-chevron" aria-hidden="true" />}
+        <ChevronDown className="run-chevron" aria-hidden="true" />
       </button>
       {expanded ? (
-        <div className="run-body">
+        <div className="run-body" id={bodyId}>
           {run.kind === "attempts" ? (
             <Attempts attempts={run.attempts} showTools={showTools} onOpenOrder={onOpenOrder} lastRef={lastStep} />
           ) : (
             <ol className="steps">
               {steps.map((step, index) => (
-                <li key={step.id} ref={index === steps.length - 1 ? lastStep : undefined} className="step" data-status={step.status} style={{ ["--i" as string]: Math.min(index, 5) }}>
+                <li key={step.id} ref={index === steps.length - 1 ? lastStep : undefined} className="step" data-status={step.status}>
                   <span className="step-text">{plainSentence(step.text)}</span>
                   {showTools ? <ToolRows tools={step.tools} /> : null}
                 </li>
@@ -103,7 +102,7 @@ export function RunBlock({ run, ctx, newest, onOpenOrder }: RunBlockProps) {
               </button>
             ) : null}
             {order ? (
-              <button type="button" className="text-link strong" onClick={() => onOpenOrder(order.id)}>
+              <button type="button" className="text-link strong push" onClick={() => onOpenOrder(order.id)}>
                 Order details
                 <ChevronRight aria-hidden="true" />
               </button>
@@ -114,3 +113,4 @@ export function RunBlock({ run, ctx, newest, onOpenOrder }: RunBlockProps) {
     </article>
   );
 }
+

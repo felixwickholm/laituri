@@ -9,6 +9,8 @@ const RULES = RuleId.options.length;
 
 const TITLES: Record<AuditEvent, string> = {
   "agent.connected": "Agent connected",
+  "agent.suspended": "Agent suspended by Valio Aimo",
+  "agent.resumed": "Agent resumed by Valio Aimo",
   "catalog.searched": "Catalogue searched",
   "offer.issued": "Offer signed by Valio Aimo",
   "order.requested": "Order requested",

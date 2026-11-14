@@ -12,7 +12,6 @@ export function LineItems({ offer }: { offer: Offer }) {
       <ol className="lines">
         {offer.lines.map((line, index) => (
           <li key={`${line.productId}-${index}`}>
-            <span className="idx mono">{String(index + 1).padStart(2, "0")}</span>
             <span className="name">
               {line.name}
               <span className="sub">

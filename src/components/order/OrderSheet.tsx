@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { eur } from "@/lib/console/format/money";
+import { isSeeded } from "@/lib/console/format/orders";
 import { blockedLine, shortName } from "@/lib/console/format/rules";
 import { dayAndTime } from "@/lib/console/format/time";
 import { PAUSED_LABEL, PAUSED_NOTE, pausedMessage } from "@/lib/console/paused";
@@ -48,7 +49,7 @@ export function OrderSheet({ orderId, onClose }: { orderId: string | null; onClo
     <Sheet
       open={Boolean(orderId)}
       onClose={onClose}
-      kicker="Simulated order"
+      kicker={order && isSeeded(order) ? "Simulated order · demo history" : "Simulated order"}
       title={order ? `${order.buyer.name} · ${eur(order.offer.totals.net.amount)}` : "Order"}
       lede={order ? `Placed by ${order.agent.name} · ${dayAndTime(order.createdAt)}` : undefined}
       footer={
@@ -56,16 +57,17 @@ export function OrderSheet({ orderId, onClose }: { orderId: string | null; onClo
           <>
             <span className="note">{paused ? PAUSED_NOTE : `Your decision is signed as ${shortName(approver)}.`}</span>
             <span className="end">
-              <button type="button" className="btn" disabled={busy} onClick={(event) => decide("rejected", event.currentTarget)}>
+              <button type="button" className="btn btn-secondary" disabled={busy} onClick={(event) => decide("rejected", event.currentTarget)}>
                 Reject
               </button>
               <button
                 type="button"
-                className={`btn ${paused ? "paused" : "btn-primary"}`}
+                className="btn btn-primary"
+                data-paused={paused}
                 disabled={busy || paused}
                 onClick={(event) => decide("approved", event.currentTarget)}
               >
-                {paused ? PAUSED_LABEL : "Approve order"}
+                {paused ? PAUSED_LABEL : "Approve"}
               </button>
             </span>
           </>

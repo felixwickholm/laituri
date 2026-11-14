@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronRight, Clock3, X } from "lucide-react";
+import { Check, ChevronRight, X } from "lucide-react";
 import { useRef, useState } from "react";
 import type { Order } from "@/lib/contracts";
 import { eur } from "@/lib/console/format/money";
@@ -22,7 +22,7 @@ interface ApprovalRowProps {
 
 const COLLAPSE_MS = 240;
 
-/** The money decision: amount, why it stopped, the request against the offer, and the two choices. */
+/** The money decision: the reason first, the amount large, the request against the offer, then the two choices. */
 export function ApprovalRow({ order, now, paused, onOpen }: ApprovalRowProps) {
   const [busy, setBusy] = useState<"approved" | "rejected" | null>(null);
   const [leaving, setLeaving] = useState(false);
@@ -55,21 +55,22 @@ export function ApprovalRow({ order, now, paused, onOpen }: ApprovalRowProps) {
   return (
     <li className="approval" data-leaving={leaving}>
       <div>
-        <article className="decision" aria-label={`Order ${order.id} waits for your approval`}>
-          <div className="flag">
-            <Clock3 width={14} height={14} aria-hidden="true" />
-            Needs your approval
-            <span className="age mono">{age(order.createdAt, now)}</span>
-          </div>
-          <div className="amount-line">
+        <article className="decision" aria-label={`Order of ${eur(order.offer.totals.net.amount)} waits for your approval`}>
+          <p className="decision-reason">{reasons[0] ?? "A person must decide this order."}</p>
+          <div className="decision-amount">
             <span className="amount">
               <CountUp value={order.offer.totals.net.amount} format={eur} />
             </span>
-            <span className="net">net · {order.buyer.name}</span>
+            <span className="net">net</span>
+            <span className="age">{age(order.createdAt, now) === "now" ? "just now" : `${age(order.createdAt, now)} ago`}</span>
           </div>
-          <ul className="reasons">
-            {reasons.length > 0 ? reasons.map((reason) => <li key={reason}>{reason}</li>) : <li>A person must decide this order.</li>}
-          </ul>
+          {reasons.length > 1 ? (
+            <ul className="decision-more">
+              {reasons.slice(1).map((reason) => (
+                <li key={reason}>{reason}</li>
+              ))}
+            </ul>
+          ) : null}
           <ul className="mini-proof" aria-label="Request versus offer">
             <li>
               <Check aria-hidden="true" />
@@ -83,21 +84,22 @@ export function ApprovalRow({ order, now, paused, onOpen }: ApprovalRowProps) {
           <div className="decide">
             <button
               type="button"
-              className={`btn big ${paused ? "paused" : "btn-primary"}`}
+              className="btn btn-primary big"
+              data-paused={paused}
               disabled={busy !== null || paused}
               onClick={(event) => decide("approved", event.currentTarget)}
             >
-              {paused ? PAUSED_LABEL : busy === "approved" ? "Signing…" : "Approve order"}
+              {paused ? PAUSED_LABEL : busy === "approved" ? "Signing…" : "Approve"}
             </button>
-            <button type="button" className="btn btn-ghost big" disabled={busy !== null} onClick={(event) => decide("rejected", event.currentTarget)}>
+            <button type="button" className="btn btn-secondary big" disabled={busy !== null} onClick={(event) => decide("rejected", event.currentTarget)}>
               {busy === "rejected" ? "Signing…" : "Reject"}
-            </button>
-            <button type="button" className="text-link strong details" onClick={() => onOpen(order.id)}>
-              Details
-              <ChevronRight aria-hidden="true" />
             </button>
           </div>
           {paused ? <p className="paused-note">{PAUSED_NOTE}</p> : null}
+          <button type="button" className="text-link strong" onClick={() => onOpen(order.id)}>
+            See the full check
+            <ChevronRight aria-hidden="true" />
+          </button>
         </article>
       </div>
     </li>

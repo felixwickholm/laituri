@@ -3,8 +3,12 @@
 import { ApiError, SIGN_IN_REQUIRED } from "@/lib/console/api";
 import { consoleStore } from "@/lib/console/store";
 
+/** Which way in the popover offers first: one-click demo access, or the approver's passcode. */
+export type SignInStart = "demo" | "passcode";
+
 export interface SignInRequest {
   anchor: DOMRect;
+  start: SignInStart;
   resolve: (signedIn: boolean) => void;
 }
 
@@ -25,12 +29,13 @@ export function currentSignIn(): SignInRequest | null {
 }
 
 /** Opens the sign-in popover next to `anchor`; resolves true once the approver is signed in. */
-export function requestSignIn(anchor: Element | null): Promise<boolean> {
+export function requestSignIn(anchor: Element | null, start: SignInStart = "demo"): Promise<boolean> {
   current?.resolve(false);
   const rect = anchor?.getBoundingClientRect() ?? new DOMRect(window.innerWidth - 24, 52, 0, 0);
   return new Promise((resolve) => {
     current = {
       anchor: rect,
+      start,
       resolve: (signedIn) => {
         current = null;
         emit();

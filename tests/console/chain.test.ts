@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { linkState } from "@/components/proof/ChainEntry";
+import { linkState } from "@/lib/console/format/chain";
 
 describe("linkState", () => {
   const broken = { state: "broken" as const, entries: 36, brokenAt: 34, reason: "Entry 34 was changed after it was written." };

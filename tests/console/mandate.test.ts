@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Mandate } from "@/lib/contracts";
-import { allergenRule, categoryLabel, tiers } from "@/lib/console/format/mandate";
+import { allergenRule, categoryLabel, mandateSummary } from "@/lib/console/format/mandate";
 import { changedFields, draftOf, parseAmount, patchOf } from "@/lib/console/format/mandate-patch";
 
 const mandate: Mandate = {
@@ -49,10 +49,9 @@ describe("mandate words", () => {
     expect(categoryLabel("produce")).toBe("Fruit and vegetables");
   });
 
-  it("reads the mandate as three tiers", () => {
-    const result = tiers(mandate);
-    expect(result.alone[0]).toBe("Orders up to €1,500.00");
-    expect(result.ask).toContain("Partial deliveries");
-    expect(result.never[0]).toBe("Buy nuts");
+  it("sums the mandate up in two plain sentences", () => {
+    const summary = mandateSummary(mandate);
+    expect(summary.may).toBe("Your agent may spend up to €1,500.00 per order and €5,000.00 per week, in 2 categories.");
+    expect(summary.limits).toBe("It asks you before anything over a limit and partial deliveries. It never buys nuts.");
   });
 });

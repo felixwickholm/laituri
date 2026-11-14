@@ -1,9 +1,9 @@
 export type StateTone = "success" | "waiting" | "danger" | "neutral";
 
-/** A state word that cross-fades (with a 2px blur) whenever its text changes. */
+/** A state as a pale pill of its own hue. The text fades when it changes. */
 export function StateWord({ word, tone }: { word: string; tone: StateTone }) {
   return (
-    <span className="state-swap" data-tone={tone}>
+    <span className="state" data-tone={tone}>
       <span key={word} className="state-text">
         {word}
       </span>

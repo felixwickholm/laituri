@@ -4,7 +4,7 @@ import { useSyncExternalStore } from "react";
 import type { ApprovalDecisionRequest, Order } from "@/lib/contracts";
 import type { MandatePatch } from "@/lib/orders/types";
 import { api } from "./api";
-import type { ConsoleSession, ConsoleSnapshot, DemoRun, Scenario, SignedMandate } from "./types";
+import type { ChainState, ConsoleSession, ConsoleSnapshot, DemoRun, Scenario, SignInCredentials, SignedMandate } from "./types";
 import { checkChain, forgetHead } from "./verify";
 
 const POLL_MS = 1000;
@@ -118,12 +118,18 @@ class ConsoleStore {
     }
   }
 
-  private async verify(): Promise<void> {
+  private async verify(): Promise<ChainState> {
     const version = ++this.verifyVersion;
     const { audit, jwks } = this.snapshot;
     if (audit.length > 0 && this.snapshot.chain.state === "empty") this.set({ chain: { state: "checking", entries: audit.length } });
     const chain = await checkChain(audit, jwks);
     if (version === this.verifyVersion) this.set({ chain });
+    return chain;
+  }
+
+  /** Runs the browser check again on the log as it is now, for a person who wants to see it happen. */
+  verifyNow(): Promise<ChainState> {
+    return this.verify();
   }
 
   async startRun(body: { scenario?: Scenario; request?: string }): Promise<void> {
@@ -150,8 +156,8 @@ class ConsoleStore {
     return mandate;
   }
 
-  async signIn(passcode?: string): Promise<ConsoleSession> {
-    const session = await api.signIn(passcode);
+  async signIn(credentials: SignInCredentials): Promise<ConsoleSession> {
+    const session = await api.signIn(credentials);
     this.set({ session });
     return session;
   }

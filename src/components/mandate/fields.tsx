@@ -1,35 +1,33 @@
 "use client";
 
 import { Plus, X } from "lucide-react";
-import { useState, type ReactNode } from "react";
-
-export function Group({ label, children, note }: { label: string; children: ReactNode; note?: ReactNode }) {
-  return (
-    <section className="group">
-      <h3>{label}</h3>
-      <div className="group-box">{children}</div>
-      {note ? <p className="group-note">{note}</p> : null}
-    </section>
-  );
-}
-
-export function Row({ label, hint, children, htmlFor }: { label: string; hint?: string; children: ReactNode; htmlFor?: string }) {
-  return (
-    <div className="set-row">
-      <div className="set-label">
-        {htmlFor ? <label htmlFor={htmlFor}>{label}</label> : <span>{label}</span>}
-        {hint ? <span className="hint">{hint}</span> : null}
-      </div>
-      <div className="set-control">{children}</div>
-    </div>
-  );
-}
+import { useState } from "react";
 
 export function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (next: boolean) => void; label: string }) {
   return (
     <button type="button" role="switch" aria-checked={checked} aria-label={label} className="toggle" onClick={() => onChange(!checked)}>
       <span className="knob" />
     </button>
+  );
+}
+
+interface ChoiceProps<T extends string> {
+  label: string;
+  value: T;
+  options: { value: T; label: string }[];
+  onChange: (next: T) => void;
+}
+
+/** A small segmented choice that sits inside a rule sentence. */
+export function Choice<T extends string>({ label, value, options, onChange }: ChoiceProps<T>) {
+  return (
+    <span className="segmented inline" role="group" aria-label={label}>
+      {options.map((option) => (
+        <button key={option.value} type="button" aria-pressed={value === option.value} onClick={() => onChange(option.value)}>
+          {option.label}
+        </button>
+      ))}
+    </span>
   );
 }
 

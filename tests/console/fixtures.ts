@@ -16,6 +16,7 @@ export function pendingOrder(overrides: Partial<Order> = {}): Order {
       id: "off_1",
       issuer: "Valio Aimo",
       customerNumber: "123",
+      buyer: { id: "fi:ovt:003712345678", name: "Nordic Harbour Hotels" },
       issuedAt: "2026-11-14T07:00:00.000Z",
       expiresAt: "2026-11-14T07:15:00.000Z",
       intent: "1,800 l lactose-free milk",

@@ -8,43 +8,57 @@
 @import "../components/styles/sheet.css";
 @import "../components/styles/order.css";
 @import "../components/styles/forms.css";
-@import "../components/styles/dock.css";
+@import "../components/styles/orb.css";
+@import "../components/styles/landing.css";
+@import "../components/styles/connect.css";
+@import "../components/styles/valio.css";
+@import "../components/styles/evidence.css";
+@import "../components/styles/tour.css";
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 
-  /* Surfaces: true black ground, lightness steps for elevation. */
-  --bg: #000000;
-  --surface-1: #0d0d0f;
-  --surface-2: #111113;
-  --surface-3: #1a1a1d;
-  --surface-4: #232327;
-  --line: rgba(255, 255, 255, 0.08);
-  --line-strong: rgba(255, 255, 255, 0.14);
+  /* Surfaces: a cool paper ground, white cards, tone steps for elevation. */
+  --bg: #f6f7f9;
+  --surface-1: #ffffff;
+  --surface-2: #f1f3f6;
+  --surface-3: #e9ecf1;
+  --surface-4: #dfe3ea;
+  --surface-inverse: #0e1726;
+  --text-inverse: #f6f7f9;
+  --line: #e4e7ec;
+  --line-strong: #cdd3dc;
 
-  --text-1: #f5f5f7;
-  --text-2: #a1a1a6;
-  --text-3: #8e8e93;
-  --text-4: #62666d;
+  --text-1: #0b1220;
+  --text-2: #475467;
+  --text-3: #667085;
+  --text-4: #8a94a6;
 
   /* One accent for interaction. Green, amber and red mark state only. */
-  --accent: #0a84ff;
-  --accent-tint: rgba(10, 132, 255, 0.14);
-  --success: #30d158;
-  --success-tint: rgba(48, 209, 88, 0.12);
-  --warn: #ff9f0a;
-  --warn-tint: rgba(255, 159, 10, 0.12);
-  --danger: #ff453a;
-  --danger-tint: rgba(255, 69, 58, 0.12);
+  --accent: #1f4fd8;
+  --accent-hover: #1a43b8;
+  --accent-tint: #eaf0fe;
+  --on-accent: #ffffff;
+  --success: #12805c;
+  --success-tint: #e7f6ef;
+  --warn: #b25e09;
+  --warn-tint: #fdf2e3;
+  --danger: #c4321f;
+  --danger-tint: #fdecea;
 
-  /* Glass: floating layers only. */
-  --glass-bg: rgba(28, 28, 30, 0.62);
+  /* Floating layers only: sheets, popovers, the dock. */
+  --glass-bg: rgba(255, 255, 255, 0.82);
   --glass-filter: blur(24px) saturate(180%);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  --glass-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
-  --pane-border: rgba(255, 255, 255, 0.07);
-  --label: #8e8e93;
+  --glass-border: rgba(11, 18, 32, 0.08);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  --glass-shadow: 0 24px 60px -20px rgba(11, 18, 32, 0.22);
+  --pane-border: #e4e7ec;
+  --label: #667085;
+  --scrim: rgba(11, 18, 32, 0.42);
+
+  --shadow-1: 0 1px 2px rgba(11, 18, 32, 0.05), 0 0 0 1px rgba(11, 18, 32, 0.04);
+  --shadow-2: 0 8px 24px -8px rgba(11, 18, 32, 0.12), 0 0 0 1px rgba(11, 18, 32, 0.05);
+  --shadow-float: 0 40px 90px -35px rgba(31, 79, 216, 0.3), 0 0 0 1px rgba(11, 18, 32, 0.06);
 
   --r-xs: 4px;
   --r-sm: 6px;
@@ -52,21 +66,67 @@
   --r-lg: 12px;
   --r-xl: 20px;
   --r-card: 14px;
-  --r-control: 12px;
+  --r-control: 10px;
   --r-full: 999px;
 
-  --ease-out: cubic-bezier(0.165, 0.84, 0.44, 1);
+  --ease-out: cubic-bezier(0.33, 1, 0.68, 1);
   --ease-hover: cubic-bezier(0.25, 0.46, 0.45, 0.94);
   --ease-sheet: cubic-bezier(0.32, 0.72, 0, 1);
+  --d-press: 120ms;
   --d-hover: 100ms;
   --d-fast: 150ms;
   --d-base: 220ms;
   --d-sheet: 320ms;
+  --d-orb: 600ms;
 
   --hit: 44px;
-  --topbar: 52px;
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", monospace;
+  --topbar: 56px;
+  --gutter: clamp(16px, 2.6vw, 36px);
+  --content: 1328px;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, "SF Mono", monospace;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #0a0f1a;
+  --surface-1: #111827;
+  --surface-2: #172033;
+  --surface-3: #1e293d;
+  --surface-4: #28344b;
+  --surface-inverse: #f6f7f9;
+  --text-inverse: #0b1220;
+  --line: rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(255, 255, 255, 0.14);
+
+  --text-1: #e8ecf3;
+  --text-2: #a3adbf;
+  --text-3: #8490a5;
+  --text-4: #6b7588;
+
+  --accent: #6e9bff;
+  --accent-hover: #8aaeff;
+  --accent-tint: rgba(110, 155, 255, 0.14);
+  --on-accent: #0a0f1a;
+  --success: #34c08e;
+  --success-tint: rgba(52, 192, 142, 0.14);
+  --warn: #f0a23b;
+  --warn-tint: rgba(240, 162, 59, 0.14);
+  --danger: #ff6b5b;
+  --danger-tint: rgba(255, 107, 91, 0.14);
+
+  --glass-bg: rgba(17, 24, 39, 0.78);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --glass-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.7);
+  --pane-border: rgba(255, 255, 255, 0.08);
+  --label: #8490a5;
+  --scrim: rgba(3, 6, 12, 0.66);
+
+  --shadow-1: 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --shadow-2: 0 0 0 1px rgba(255, 255, 255, 0.08);
+  --shadow-float: 0 40px 90px -35px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 
 @theme inline {
@@ -78,12 +138,13 @@ html,
 body {
   background: var(--bg);
   color: var(--text-1);
+  transition: background-color var(--d-base) var(--ease-out), color var(--d-base) var(--ease-out);
 }
 
 body {
   font-family: var(--font-sans);
-  font-size: 14px;
-  line-height: 20px;
+  font-size: 15px;
+  line-height: 22px;
   letter-spacing: -0.006em;
   font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
@@ -139,7 +200,7 @@ h3,
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .glass {
-    background: rgba(28, 28, 30, 0.97);
+    background: var(--surface-1);
   }
 }
 

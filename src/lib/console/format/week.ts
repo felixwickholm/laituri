@@ -11,7 +11,7 @@ const PARTS = new Intl.DateTimeFormat("en-CA", {
 const WEEKDAY_INDEX: Record<string, number> = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 };
 
 /** Helsinki calendar date and weekday (0 = Monday) of an instant. */
-function helsinkiDate(ms: number): { date: string; weekday: number } {
+export function helsinkiDate(ms: number): { date: string; weekday: number } {
   const parts = PARTS.formatToParts(new Date(ms));
   const pick = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? "";
   return { date: `${pick("year")}-${pick("month")}-${pick("day")}`, weekday: WEEKDAY_INDEX[pick("weekday")] ?? 0 };

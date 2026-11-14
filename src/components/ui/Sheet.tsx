@@ -16,12 +16,17 @@ interface SheetProps {
   children: ReactNode;
 }
 
-/** A right-hand glass sheet. Esc and the backdrop close it; Tab stays inside while it is open. */
+/** A right-hand sheet that floats over the page. Esc and the backdrop close it; Tab stays inside while it is open. */
 export function Sheet({ open, onClose, title, kicker, lede, footer, children }: SheetProps) {
   const [mounted, setMounted] = useState(open);
   const [closing, setClosing] = useState(false);
   const panel = useRef<HTMLDivElement>(null);
+  const closeRef = useRef(onClose);
   const titleId = useId();
+
+  useEffect(() => {
+    closeRef.current = onClose;
+  }, [onClose]);
 
   if (open && (!mounted || closing)) {
     setMounted(true);
@@ -46,7 +51,7 @@ export function Sheet({ open, onClose, title, kicker, lede, footer, children }: 
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.stopPropagation();
-        onClose();
+        closeRef.current();
         return;
       }
       if (event.key !== "Tab" || !node) return;
@@ -67,16 +72,16 @@ export function Sheet({ open, onClose, title, kicker, lede, footer, children }: 
       document.removeEventListener("keydown", onKey);
       previous?.focus?.({ preventScroll: true });
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!mounted) return null;
   return (
     <>
       <div className="sheet-backdrop" data-closing={closing} onClick={onClose} aria-hidden="true" />
-      <div ref={panel} className="sheet glass" role="dialog" aria-modal="true" aria-labelledby={titleId} data-closing={closing}>
+      <div ref={panel} className="sheet" role="dialog" aria-modal="true" aria-labelledby={titleId} data-closing={closing}>
         <header className="sheet-head">
           <div style={{ minWidth: 0 }}>
-            {kicker ? <div className="eyebrow-id">{kicker}</div> : null}
+            {kicker ? <div className="sheet-kicker">{kicker}</div> : null}
             <h2 id={titleId}>{title}</h2>
             {lede ? <p className="lede">{lede}</p> : null}
           </div>

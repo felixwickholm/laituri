@@ -26,19 +26,6 @@ export function draftOf(mandate: Mandate): MandateDraft {
   };
 }
 
-/** The mandate as it would read with the draft applied, for live previews. */
-export function applyDraft(mandate: Mandate, draft: MandateDraft): Mandate {
-  return {
-    ...mandate,
-    limits: { perOrder: { amount: draft.perOrder, currency: "EUR" }, perWeek: { amount: draft.perWeek, currency: "EUR" } },
-    categories: { allowed: draft.categories },
-    dietary: { ...mandate.dietary, excludeAllergens: draft.allergens },
-    substitution: { ...mandate.substitution, policy: draft.substitution },
-    delivery: { allowPartial: draft.allowPartial, maxDelayDays: draft.maxDelayDays },
-    approval: { ...mandate.approval, firstTimeProducts: draft.firstTimeProducts },
-  };
-}
-
 function sameList(a: string[], b: string[]): boolean {
   return a.length === b.length && [...a].sort().join("|") === [...b].sort().join("|");
 }

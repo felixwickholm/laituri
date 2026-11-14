@@ -26,14 +26,22 @@ export interface SignedMandate {
   mandate: Mandate;
 }
 
-/** The approver session. "open" means this server signs anyone in without a passcode. */
+/**
+ * The approver session. "open" means this server signs anyone in without a passcode.
+ * `demo` marks a session opened with one-click demo access; `demoAccess` says the server offers it.
+ */
 export interface ConsoleSession {
   signedIn: boolean;
   approver?: { id: string; name: string };
   mode?: "passcode" | "open";
+  demo?: boolean;
+  demoAccess?: boolean;
 }
 
-export type Scenario = "milk" | "over-limit" | "break-mandate";
+/** What a person signs in with: a passcode, or the server's demo access. */
+export type SignInCredentials = { passcode: string } | { demo: true };
+
+export type Scenario = "milk" | "over-limit" | "break-mandate" | "two-kitchens";
 
 export interface DemoRun {
   id: string;
@@ -49,7 +57,7 @@ export type ChainState =
   | { state: "verified"; entries: number; head?: string }
   | { state: "broken"; entries: number; brokenAt: number; reason: string };
 
-/** Every slice the control room renders, kept in one snapshot so panes stay consistent. */
+/** Every slice the console renders, kept in one snapshot so screens stay consistent. */
 export interface ConsoleSnapshot {
   ready: boolean;
   online: boolean;

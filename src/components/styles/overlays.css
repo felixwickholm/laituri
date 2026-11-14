@@ -1,15 +1,16 @@
-/* Popovers and menus: glass, scale from the trigger. */
+/* Things that float: the sign-in popover and the toasts. They scale or rise from where they belong. */
+
 .popover {
   position: absolute;
-  z-index: 40;
-  width: max-content;
-  max-width: 300px;
-  padding: 14px 16px;
-  border-radius: 14px;
-  font-size: 13px;
-  line-height: 19px;
+  z-index: 70;
+  padding: 18px;
+  border-radius: var(--r-card);
+  border: 1px solid var(--line);
+  background: var(--surface-1);
+  box-shadow: var(--shadow-float);
   color: var(--text-2);
-  transform-origin: top right;
+  font-size: 14px;
+  line-height: 20px;
   transition:
     opacity var(--d-base) var(--ease-out),
     transform var(--d-base) var(--ease-out);
@@ -19,108 +20,139 @@
   }
 }
 .popover h3 {
-  margin: 0 0 4px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 32px 6px 0;
   color: var(--text-1);
-  font-size: 14px;
-  font-weight: 590;
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 650;
+}
+.popover h3 svg {
+  flex: none;
+  transform: translateY(2px);
+  width: 16px;
+  height: 16px;
+  stroke-width: 2;
+  color: var(--text-3);
 }
 .popover p {
   margin: 0;
 }
-.popover p + p {
-  margin-top: 6px;
+.popover .close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+.signin-actions {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+.signin-actions .text-link {
+  justify-self: start;
+}
+.signin-actions .field-label {
+  margin-bottom: -6px;
+}
+.fine {
+  color: var(--text-3);
+  font-size: 13px;
+  line-height: 19px;
+}
+.popover .fine.tone-danger {
+  margin-top: 10px;
+  color: var(--danger);
 }
 
-.menu {
-  position: absolute;
-  z-index: 40;
-  min-width: 220px;
-  padding: 4px;
-  border-radius: var(--r-card);
-  transform-origin: top right;
-  transition:
-    opacity var(--d-fast) var(--ease-out),
-    transform var(--d-fast) var(--ease-out);
-  @starting-style {
-    opacity: 0;
-    transform: scale(0.96);
-  }
+/* The session block in the sidebar: one-click demo access, or who is signed in. */
+.session {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
 }
-.menu button {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.session-demo {
   width: 100%;
-  height: 40px;
-  padding: 0 10px;
-  border: 0;
-  border-radius: 10px;
-  background: transparent;
-  color: var(--text-1);
-  font: inherit;
-  font-size: 13px;
-  text-align: left;
-  cursor: pointer;
 }
-.menu button svg {
-  width: 15px;
-  height: 15px;
-  stroke-width: 1.75;
-  color: var(--text-3);
-}
-.menu button:hover,
-.menu button:focus-visible {
-  background: rgba(255, 255, 255, 0.06);
-}
-.menu .hint {
-  padding: 6px 10px 8px;
+.session-note {
+  padding: 0 2px;
   color: var(--text-3);
   font-size: 12px;
-  line-height: 16px;
+  line-height: 17px;
+}
+.session-passcode {
+  justify-self: start;
+  font-size: 13px;
+}
+.session-passcode svg {
+  width: 14px;
+  height: 14px;
+}
+.session[data-signed-in="true"] {
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-full);
+  background: var(--accent-tint);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 650;
+}
+.session-who {
+  display: grid;
+  min-width: 0;
+}
+.session-name {
+  overflow: hidden;
+  color: var(--text-1);
+  font-size: 14px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.session-role {
+  color: var(--text-3);
+  font-size: 12px;
 }
 
-/* Toasts: above the dock, centred on the middle pane so they never sit on pane text edges. */
+/* Toasts rise from the bottom of the canvas, clear of the sidebar and the phone tab bar. */
 .toasts {
   position: fixed;
-  z-index: 70;
-  left: 12px;
-  right: 12px;
-  bottom: calc(104px + env(safe-area-inset-bottom, 0px));
-  display: grid;
-  grid-template-columns: minmax(420px, 1fr) 420px 400px;
-  gap: 12px;
+  z-index: 75;
+  left: 0;
+  right: 0;
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  justify-content: center;
+  padding: 0 16px;
   pointer-events: none;
 }
-.toasts > .toast-stack {
-  grid-column: 2;
+.toast-stack {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
 }
-@media (max-width: 1099px) {
-  .toasts {
-    grid-template-columns: minmax(0, 1fr);
-    bottom: calc(148px + env(safe-area-inset-bottom, 0px));
-  }
-  .toasts > .toast-stack {
-    grid-column: 1;
-  }
-}
-.toast.glass {
-  background: rgba(28, 28, 30, 0.92);
-}
 .toast {
-  max-width: 100%;
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 40px;
-  padding: 9px 16px;
-  border-radius: var(--r-xl);
-  font-size: 13px;
-  font-weight: 510;
-  text-align: center;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 10px 18px;
+  border-radius: var(--r-full);
+  background: var(--surface-inverse);
+  color: var(--text-inverse);
+  box-shadow: var(--shadow-2);
+  font-size: 14px;
+  font-weight: 550;
   transition:
     opacity var(--d-base) var(--ease-out),
     transform var(--d-base) var(--ease-out);
@@ -130,9 +162,10 @@
   }
 }
 .toast svg {
+  flex: none;
   width: 16px;
   height: 16px;
-  stroke-width: 2;
+  stroke-width: 2.25;
 }
 .toast[data-tone="success"] svg {
   color: var(--success);
@@ -141,105 +174,22 @@
   color: var(--danger);
 }
 
-/* Guide: a spotlight ring and a TipKit-style popover. */
-.guide-scrim {
-  position: fixed;
-  inset: 0;
-  z-index: 80;
+/* Inside the app shell, centre on the canvas rather than the window. */
+.shell ~ .toasts {
+  left: 248px;
 }
-.guide-ring {
-  position: fixed;
-  z-index: 81;
-  border-radius: 14px;
-  box-shadow:
-    0 0 0 2px var(--accent),
-    0 0 0 9999px rgba(0, 0, 0, 0.5);
-  pointer-events: none;
-  transition:
-    transform 300ms var(--ease-sheet),
-    width 300ms var(--ease-sheet),
-    height 300ms var(--ease-sheet);
-}
-.tip {
-  position: fixed;
-  z-index: 82;
-  width: min(320px, calc(100vw - 32px));
-  padding: 16px;
-  border-radius: 14px;
-  transition:
-    opacity var(--d-base) var(--ease-out),
-    transform var(--d-base) var(--ease-out);
-  @starting-style {
-    opacity: 0;
-    transform: scale(0.96);
+@media (max-width: 1023px) {
+  .shell ~ .toasts {
+    left: 0;
+    bottom: calc(88px + env(safe-area-inset-bottom, 0px));
   }
-}
-.tip .arrow {
-  position: absolute;
-  width: 12px;
-  height: 12px;
-  background: rgba(30, 30, 33, 0.96);
-  border: 1px solid var(--glass-border);
-  transform: rotate(45deg);
-}
-.tip .arrow[data-dir="down"] {
-  left: calc(50% - 6px);
-  bottom: -7px;
-  border-width: 0 1px 1px 0;
-}
-.tip .arrow[data-dir="up"] {
-  left: 24px;
-  top: -7px;
-  border-width: 1px 0 0 1px;
-}
-.tip h2 {
-  margin: 0 28px 4px 0;
-  font-size: 15px;
-  line-height: 20px;
-  font-weight: 590;
-}
-.tip p {
-  margin: 0;
-  color: var(--text-2);
-  font-size: 13px;
-  line-height: 18px;
-}
-.tip .close {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-}
-.tip footer {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 14px;
-}
-.tip footer .step {
-  color: var(--text-3);
-  font-size: 12px;
-}
-.tip footer .keys {
-  display: flex;
-  gap: 4px;
-  margin-left: auto;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .popover,
-  .menu,
-  .tip,
-  @media (max-width: 1099px) {
-  .toasts {
-    bottom: calc(140px + env(safe-area-inset-bottom, 0px));
-  }
-}
-.toast {
+  .toast {
     @starting-style {
       transform: none;
     }
-  }
-  .guide-ring {
-    transition: none;
   }
 }

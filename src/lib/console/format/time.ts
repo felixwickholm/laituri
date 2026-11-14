@@ -79,3 +79,22 @@ export function age(iso: string, now: number): string {
   if (hours < 24) return `${hours}h`;
   return `${Math.round(hours / 24)}d`;
 }
+
+const LONG_DAY = new Intl.DateTimeFormat("en-GB", { timeZone: ZONE, weekday: "long", day: "numeric", month: "long" });
+
+/** "Saturday 14 November", Helsinki time. */
+export function longDay(ms: number): string {
+  const date = new Date(ms);
+  return valid(date) ? LONG_DAY.format(date).replace(",", "") : "–";
+}
+
+/** How long something took: "under 1 s", "6 s", "1 min 4 s", "2 h 5 min". */
+export function duration(ms: number): string {
+  if (!Number.isFinite(ms) || ms < 1000) return "under 1 s";
+  const seconds = Math.round(ms / 1000);
+  if (seconds < 60) return `${seconds}\u00a0s`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return seconds % 60 ? `${minutes}\u00a0min ${seconds % 60}\u00a0s` : `${minutes}\u00a0min`;
+  const hours = Math.floor(minutes / 60);
+  return minutes % 60 ? `${hours}\u00a0h ${minutes % 60}\u00a0min` : `${hours}\u00a0h`;
+}

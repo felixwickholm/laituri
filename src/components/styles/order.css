@@ -1,4 +1,167 @@
-/* Order detail: stepper, request-versus-offer proof, lines, checks, alternatives, signatures. */
+/* The orders table and the order sheet: stepper, request against offer, lines, checks, alternatives, signatures. */
+
+@media (min-width: 761px) {
+  .orders-table .cell-when {
+    width: 112px;
+    white-space: nowrap;
+  }
+  .orders-table .cell-asked {
+    width: 27%;
+  }
+  .orders-table .cell-ordered {
+    color: var(--text-2);
+  }
+  .orders-table .cell-delivery {
+    width: 108px;
+    color: var(--text-2);
+    white-space: nowrap;
+  }
+  .orders-table .cell-net {
+    width: 112px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .orders-table .cell-outcome {
+    width: 210px;
+  }
+  .orders-table .cell-outcome .sub {
+    margin-top: 6px;
+  }
+}
+
+.orders-table .delivery-inline {
+  display: none;
+}
+/* On narrower canvases the delivery date moves under what was ordered instead of taking a column. */
+@media (max-width: 1180px) and (min-width: 761px) {
+  .orders-table .cell-delivery,
+  .orders-table th:nth-child(4) {
+    display: none;
+  }
+  .orders-table .delivery-inline {
+    display: block;
+  }
+  .orders-table .cell-outcome {
+    width: 180px;
+  }
+}
+
+/* Below 760px each order is a two-line row: the request and the amount, then the rest in grey. */
+@media (max-width: 760px) {
+  .orders-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+  .orders-table,
+  .orders-table tbody {
+    display: block;
+  }
+  .orders-table tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "asked net"
+      "ordered ordered"
+      "when delivery"
+      "outcome outcome";
+    gap: 4px 12px;
+    padding: 14px 16px;
+    border-top: 1px solid var(--line);
+  }
+  .orders-table tbody tr:first-child {
+    border-top: 0;
+  }
+  .orders-table tbody td {
+    width: auto;
+    padding: 0;
+    border: 0;
+  }
+  .orders-table .cell-asked {
+    grid-area: asked;
+  }
+  .orders-table .cell-net {
+    grid-area: net;
+  }
+  .orders-table .cell-ordered {
+    grid-area: ordered;
+    color: var(--text-2);
+    font-size: 13px;
+  }
+  .orders-table .cell-ordered[data-same="true"] {
+    display: none;
+  }
+  .orders-table .cell-net {
+    font-weight: 600;
+  }
+  .orders-table .cell-when {
+    grid-area: when;
+    display: flex;
+    gap: 6px;
+    color: var(--text-3);
+    font-size: 13px;
+  }
+  .orders-table .cell-when .sub {
+    margin: 0;
+  }
+  .orders-table .cell-delivery {
+    grid-area: delivery;
+    color: var(--text-3);
+    font-size: 13px;
+    text-align: right;
+  }
+  .orders-table .cell-delivery::before {
+    content: "Delivers ";
+  }
+  .orders-table .cell-outcome {
+    grid-area: outcome;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    margin-top: 4px;
+  }
+  .orders-table .cell-outcome .sub {
+    margin: 0;
+  }
+  .orders-table .empty-row {
+    display: block;
+  }
+}
+
+/* The order sheet. */
+.section {
+  padding-top: 28px;
+}
+.section > h3 {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 12px;
+  color: var(--text-1);
+  font-size: 15px;
+  font-weight: 600;
+}
+.section-note,
+.notes {
+  margin: -6px 0 12px;
+  padding: 0;
+  color: var(--text-3);
+  font-size: 13px;
+  line-height: 19px;
+  list-style: none;
+}
+.notes {
+  margin: 10px 0 0;
+}
+.well {
+  border-radius: var(--r-card);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+}
+
 .stepper {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -11,37 +174,39 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  font-size: 12px;
-  line-height: 15px;
+  padding-right: 6px;
   color: var(--text-3);
+  font-size: 12px;
+  line-height: 16px;
 }
 .stepper li + li::before {
   content: "";
   position: absolute;
-  top: 8px;
-  right: calc(100% - 8px);
-  width: calc(100% - 16px);
-  height: 1px;
+  top: 9px;
+  right: calc(100% - 4px);
+  width: calc(100% - 26px);
+  height: 2px;
+  border-radius: 1px;
   background: var(--line-strong);
 }
-.stepper li[data-state="done"] + li::before,
 .stepper li[data-state="done"]::before {
-  background: var(--text-3);
+  background: var(--text-1);
 }
 .stepper .dot {
   position: relative;
   z-index: 1;
   display: grid;
   place-items: center;
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
   border-radius: var(--r-full);
-  border: 1px solid var(--text-4);
-  background: var(--bg);
+  border: 2px solid var(--line-strong);
+  background: var(--surface-1);
+  color: var(--surface-1);
 }
 .stepper .dot svg {
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   stroke-width: 3;
 }
 .stepper [data-state="done"] {
@@ -50,69 +215,71 @@
 .stepper [data-state="done"] .dot {
   border-color: var(--text-1);
   background: var(--text-1);
-  color: #000;
 }
 .stepper [data-state="current"] {
   color: var(--warn);
+  font-weight: 600;
 }
 .stepper [data-state="current"] .dot {
-  border: 2px solid var(--warn);
+  border-color: var(--warn);
 }
 .stepper [data-state="failed"] {
   color: var(--danger);
+  font-weight: 600;
 }
 .stepper [data-state="failed"] .dot {
   border-color: var(--danger);
   background: var(--danger);
-  color: #000;
 }
 .callout {
-  margin: 14px 0 0;
-  padding: 10px 12px;
-  border-radius: var(--r-md);
+  margin: 16px 0 0;
+  padding: 12px 14px;
+  border-radius: var(--r-control);
   background: var(--danger-tint);
-  font-size: 13px;
+  color: var(--text-1);
+  font-size: 14px;
+  line-height: 20px;
 }
 
 .proof-well {
-  padding: 14px;
+  padding: 16px;
 }
 .proof-well p {
   margin: 0;
-  font-size: 13px;
-  line-height: 19px;
+  font-size: 14px;
+  line-height: 21px;
 }
 .proof-well .asked {
   color: var(--text-2);
 }
 .proof-well .offered {
-  margin-top: 4px;
+  margin-top: 6px;
   color: var(--text-1);
-  font-weight: 510;
+  font-weight: 550;
 }
 .facts {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px 16px;
-  margin: 12px 0 0;
-  padding: 12px 0 0;
-  border-top: 1px solid var(--line);
+  gap: 10px 16px;
+  margin: 14px 0 0;
+  padding: 14px 0 0;
+  border-top: 1px solid var(--line-strong);
   list-style: none;
 }
 .facts li {
   display: grid;
-  grid-template-columns: 16px auto;
-  gap: 0 6px;
-  font-size: 12px;
-  line-height: 16px;
+  grid-template-columns: 16px minmax(0, 1fr);
+  gap: 0 8px;
+  font-size: 13px;
+  line-height: 18px;
 }
 .facts svg {
-  width: 14px;
-  height: 14px;
+  grid-row: span 2;
+  width: 15px;
+  height: 15px;
+  margin-top: 1px;
   stroke-width: 2.25;
   color: var(--success);
-  grid-row: span 2;
-  margin-top: 1px;
 }
 .facts li[data-ok="false"] svg {
   color: var(--danger);
@@ -123,41 +290,25 @@
 .facts .value {
   color: var(--text-1);
 }
-.notes,
-.section-note {
-  margin: 8px 0 0;
-  padding: 0;
-  list-style: none;
-  color: var(--text-3);
-  font-size: 12px;
-  line-height: 17px;
-}
-.section-note {
-  margin: -4px 0 10px;
-}
 
 .lines {
   margin: 0;
   padding: 0;
-  list-style: none;
-  border: 1px solid var(--line);
   border-radius: var(--r-card);
+  border: 1px solid var(--line);
+  list-style: none;
 }
 .lines li {
   display: grid;
-  grid-template-columns: 24px minmax(0, 1fr) auto auto;
-  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: baseline;
-  padding: 12px;
-  font-size: 13px;
+  gap: 12px;
+  padding: 12px 14px;
+  font-size: 14px;
+  line-height: 20px;
 }
 .lines li + li {
   border-top: 1px solid var(--line);
-}
-.lines .idx,
-.lines .qty {
-  color: var(--text-3);
-  font-size: 12px;
 }
 .lines .name {
   min-width: 0;
@@ -165,62 +316,58 @@
 .lines .sub {
   display: block;
   color: var(--text-3);
-  font-size: 12px;
+  font-size: 13px;
+}
+.lines .qty {
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
 }
 .lines .money {
   text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 .totals {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 6px 16px;
-  margin: 12px 12px 0 0;
-  font-size: 13px;
+  margin: 12px 14px 0 0;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
 }
 .totals dt {
-  text-align: right;
   color: var(--text-3);
+  text-align: right;
 }
 .totals dd {
   margin: 0;
   text-align: right;
 }
 .totals .strong {
-  font-weight: 600;
+  font-weight: 650;
 }
 
 .check-group + .check-group {
-  margin-top: 14px;
+  margin-top: 16px;
 }
+.check-group h4,
 .check-group summary {
-  margin: 0 0 4px;
-  font-size: 12px;
-  font-weight: 590;
-  color: var(--text-3);
-  cursor: pointer;
-  min-height: 28px;
   display: flex;
   align-items: center;
-  gap: 4px;
-}
-.check-group[data-status="skipped"] .msg,
-.check-group[data-status="skipped"] .rule {
+  gap: 6px;
+  min-height: 28px;
+  margin: 0 0 2px;
   color: var(--text-3);
+  font-size: 13px;
+  font-weight: 600;
 }
-.check-group h4 {
-  margin: 0 0 4px;
-  font-size: 12px;
-  font-weight: 590;
-  color: var(--text-3);
+.check-group summary {
+  cursor: pointer;
 }
 .check-group[data-status="ask"] h4 {
   color: var(--warn);
 }
 .check-group[data-status="block"] h4 {
   color: var(--danger);
-}
-.check-group .count {
-  font-weight: 400;
 }
 .check-group ul {
   margin: 0;
@@ -229,28 +376,32 @@
 }
 .check-group li {
   display: grid;
-  grid-template-columns: 16px 168px minmax(0, 1fr);
-  gap: 8px;
-  padding: 6px 0;
-  font-size: 12.5px;
-  line-height: 17px;
+  grid-template-columns: 16px 170px minmax(0, 1fr);
+  gap: 10px;
+  padding: 8px 0;
   border-bottom: 1px solid var(--line);
+  font-size: 13px;
+  line-height: 19px;
 }
 .check-group li svg {
-  width: 14px;
-  height: 14px;
+  width: 15px;
+  height: 15px;
+  margin-top: 2px;
   stroke-width: 2;
-  margin-top: 1px;
-  color: var(--text-3);
+  color: var(--success);
 }
-.check-group[data-status="ask"] svg {
+.check-group[data-status="ask"] li svg {
   color: var(--warn);
 }
-.check-group[data-status="block"] svg {
+.check-group[data-status="block"] li svg {
   color: var(--danger);
+}
+.check-group[data-status="skipped"] li svg {
+  color: var(--text-3);
 }
 .check-group .rule {
   color: var(--text-1);
+  font-weight: 500;
 }
 .check-group .msg {
   color: var(--text-3);
@@ -258,42 +409,59 @@
 
 .alts {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 8px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
-.alts li {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 12px;
-  font-size: 12px;
-  line-height: 16px;
+.alt {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 16px;
+  padding: 14px 16px;
+  border-radius: var(--r-card);
+  border: 1px solid var(--line);
+  font-size: 13px;
+  line-height: 19px;
 }
-.alts .tier {
-  color: var(--text-3);
-  font-weight: 590;
-}
-.alts .alt-total {
-  font-size: 16px;
-  line-height: 22px;
+.alt-tier {
   color: var(--text-1);
+  font-size: 15px;
+  font-weight: 650;
 }
-.alts .alt-delta,
-.alts .alt-when,
-.alts .alt-note {
+.alt-total {
+  grid-column: 2;
+  grid-row: 1;
+  color: var(--text-1);
+  font-size: 15px;
+  font-weight: 650;
+  text-align: right;
+}
+.alt-meaning {
+  grid-column: 1;
+  color: var(--text-2);
+}
+.alt-delta {
+  grid-column: 2;
+  grid-row: 2;
+  color: var(--text-3);
+  text-align: right;
+  white-space: nowrap;
+}
+.alt-what,
+.alt-when,
+.alt-note {
+  grid-column: 1 / -1;
   color: var(--text-3);
 }
-.alts .alt-what {
-  margin-top: 4px;
-  color: var(--text-2);
+.alt-what {
+  margin-top: 6px;
+  color: var(--text-1);
 }
 
 .sigs {
   display: grid;
-  gap: 12px;
+  gap: 14px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -304,38 +472,61 @@
   align-items: center;
   justify-content: space-between;
   gap: 4px 12px;
-  font-size: 13px;
+  font-size: 14px;
 }
 .sig-label {
-  font-weight: 510;
+  font-weight: 550;
 }
 .sig-state {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
   color: var(--text-3);
+  font-size: 13px;
 }
 .sig-state svg {
-  width: 14px;
-  height: 14px;
+  width: 15px;
+  height: 15px;
   stroke-width: 2;
+}
+/* State text stays in ink; only the icon carries the green. */
+.sig-state.tone-success {
+  color: var(--text-1);
+}
+.sig-state.tone-success svg {
+  color: var(--success);
 }
 .hash-well {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   margin-top: 6px;
   padding: 2px 2px 2px 12px;
   border-radius: var(--r-control);
   background: var(--surface-2);
-  font-size: 12px;
   color: var(--text-2);
+  font-size: 12px;
+}
+.hash-well .mono {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.id-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 28px 0 0;
+  color: var(--text-3);
+  font-size: 13px;
 }
 
 @media (max-width: 640px) {
   .stepper li {
     font-size: 11px;
+    line-height: 14px;
   }
   .check-group li {
     grid-template-columns: 16px minmax(0, 1fr);
@@ -348,10 +539,8 @@
   }
 }
 
-/* State text stays in ink; only the icon carries the green. */
-.sig-state.tone-success {
-  color: var(--text-1);
-}
-.sig-state.tone-success svg {
-  color: var(--success);
+.orders-table .cell-asked .demo-tag {
+  display: flex;
+  width: fit-content;
+  margin-top: 6px;
 }
