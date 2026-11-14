@@ -8,6 +8,7 @@ import type { Activity, DemoRun } from "@/lib/console/types";
 import { EmptyLine, Pane, type Feed } from "../shell/Pane";
 import { useUi } from "../shell/ui-context";
 import { RunBlock } from "./RunBlock";
+import { StartHere } from "./StartHere";
 
 interface AgentPaneProps {
   activity: Activity[];
@@ -47,13 +48,18 @@ export function AgentPane({ activity, orders, run, approver, feed, visible }: Ag
         <span className="meta mono">{calls === 1 ? "1 call" : `${calls} calls`}</span>
       </div>
       {runs.length === 0 ? (
-        <EmptyLine feed={feed}>Quiet. Start a scene in the dock, or connect your own agent.</EmptyLine>
+        feed === "ok" ? (
+          <StartHere />
+        ) : (
+          <EmptyLine feed={feed}>{null}</EmptyLine>
+        )
       ) : (
         <div className="runs">
           {runs.map((block, index) => (
             <RunBlock
               key={block.id}
               run={block}
+              newest={index === 0}
               ctx={{ orders: orderMap, active: running && index === 0, activeRequest: activeRequest(run), approver }}
               onOpenOrder={ui.openOrder}
             />

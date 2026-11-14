@@ -4,6 +4,7 @@ import { CircleCheck, CircleX } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { AuditEntry } from "@/lib/contracts";
 import { shortHash } from "@/lib/console/format/activity";
+import { auditTitle } from "@/lib/console/format/audit";
 import { plainSentence } from "@/lib/console/format/sentence";
 import { dayAndTime } from "@/lib/console/format/time";
 import type { ChainState, Jwks } from "@/lib/console/types";
@@ -53,8 +54,8 @@ export function AuditSheet({ entry, open, chain, jwks, onClose, onOpenOrder }: A
     <Sheet
       open={open && Boolean(entry)}
       onClose={onClose}
-      kicker={entry ? `Entry ${entry.seq}` : undefined}
-      title={entry?.event ?? "Entry"}
+      kicker={entry ? `Entry ${entry.seq} · ${entry.event}` : undefined}
+      title={entry ? auditTitle(entry) : "Entry"}
       lede={entry ? plainSentence(entry.summary) : undefined}
       footer={
         orderId ? (

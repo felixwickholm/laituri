@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { AuditEntry, Order } from "@/lib/contracts";
+import { auditTitle } from "@/lib/console/format/audit";
 import { plainSentence } from "@/lib/console/format/sentence";
 import { clock } from "@/lib/console/format/time";
 import type { ChainState, Jwks, SignedMandate } from "@/lib/console/types";
@@ -16,10 +17,7 @@ function AuditRow({ entry, chain, onOpen }: { entry: AuditEntry; chain: ChainSta
   return (
     <li>
       <button type="button" className="audit" data-broken={broken} data-after-break={after} onClick={() => onOpen(entry.seq)}>
-        <span className="event">
-          <span className="seq">{entry.seq}</span>
-          {entry.event}
-        </span>
+        <span className="audit-title">{auditTitle(entry)}</span>
         <time className="mono" dateTime={entry.at}>
           {clock(entry.at)}
         </time>

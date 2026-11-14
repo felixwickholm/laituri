@@ -1,10 +1,10 @@
 "use client";
 
-import { Check, Clock3, X } from "lucide-react";
+import { Check, ChevronRight, Clock3, X } from "lucide-react";
 import { useRef, useState } from "react";
 import type { Order } from "@/lib/contracts";
 import { eur } from "@/lib/console/format/money";
-import { askedLine, matchedFacts, offeredLine } from "@/lib/console/format/proof";
+import { askedLine, matchedFacts, offeredShort } from "@/lib/console/format/proof";
 import { askReasons, shortName } from "@/lib/console/format/rules";
 import { age } from "@/lib/console/format/time";
 import { consoleStore } from "@/lib/console/store";
@@ -75,18 +75,19 @@ export function ApprovalRow({ order, now, onOpen }: ApprovalRowProps) {
             </li>
             <li data-ok={matches}>
               {matches ? <Check aria-label="Matches the request" /> : <X aria-label="Differs from the request" />}
-              <span>{offeredLine(order.offer)}</span>
+              <span>{offeredShort(order.offer)}</span>
             </li>
           </ul>
           <div className="decide">
             <button type="button" className="btn btn-primary big" disabled={busy !== null} onClick={(event) => decide("approved", event.currentTarget)}>
               {busy === "approved" ? "Signing…" : "Approve order"}
             </button>
-            <button type="button" className="btn big" disabled={busy !== null} onClick={(event) => decide("rejected", event.currentTarget)}>
+            <button type="button" className="btn btn-ghost big" disabled={busy !== null} onClick={(event) => decide("rejected", event.currentTarget)}>
               {busy === "rejected" ? "Signing…" : "Reject"}
             </button>
-            <button type="button" className="btn btn-quiet big details" onClick={() => onOpen(order.id)}>
+            <button type="button" className="text-link strong details" onClick={() => onOpen(order.id)}>
               Details
+              <ChevronRight aria-hidden="true" />
             </button>
           </div>
         </article>

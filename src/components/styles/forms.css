@@ -283,3 +283,20 @@
     display: none;
   }
 }
+
+/* Section labels everywhere: small, uppercase, quiet, so headings never compete with data. */
+.section > h3,
+.group h3,
+.recent h3 {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--label);
+}
+.section > h3 .count,
+.recent h3 .count {
+  color: var(--label);
+  font-weight: 600;
+}

@@ -6,11 +6,9 @@ import { SessionButton } from "../session/SessionButton";
 import { useUi } from "./ui-context";
 import { Wordmark } from "./Wordmark";
 
-function modeLabel(health: Health | undefined): { long: string; short: string; live: boolean } {
-  if (!health) return { long: "Connecting", short: "…", live: false };
-  return health.mode === "live"
-    ? { long: "Live mock API", short: "Live", live: true }
-    : { long: "Recorded data", short: "Recorded", live: false };
+function modeLabel(health: Health | undefined): { long: string; live: boolean } {
+  if (!health) return { long: "Connecting", live: false };
+  return health.mode === "live" ? { long: "Live prices", live: true } : { long: "Recorded prices", live: false };
 }
 
 export function TopBar({ health, session }: { health?: Health; session?: ConsoleSession }) {
@@ -21,12 +19,13 @@ export function TopBar({ health, session }: { health?: Health; session?: Console
       <Wordmark />
       <span className="scope">Valio Aimo · agent ordering</span>
       <div className="chips">
-        <span className="status-chip optional" data-tone={mode.live ? "live" : undefined}>
+        <span
+          className="status-chip"
+          data-tone={mode.live ? "live" : undefined}
+          title="Prices and stock come from Valio Aimo's API. There is no order endpoint, so orders are confirmed here and marked simulated."
+        >
           <span className="dot" aria-hidden="true" />
-          {mode.long}
-        </span>
-        <span className="status-chip" title="There is no live order endpoint. Orders are confirmed here and marked simulated.">
-          <span className="long">Orders are simulated</span>
+          <span className="long">{mode.long} · simulated orders</span>
           <span className="short">Simulated</span>
         </span>
       </div>

@@ -1,5 +1,6 @@
 import type { Offer, OfferLine, Order } from "@/lib/contracts";
 import { count, eur } from "./money";
+import { shortProductName } from "./product";
 import { day, hourMinute } from "./time";
 
 const CLAIM_WORDS: Record<string, string> = {
@@ -34,10 +35,14 @@ export function offeredLine(offer: Offer): string {
   return `Offered: ${lines}${when}`;
 }
 
-/** Short one-line comparison for inbox rows: "Asked by Mon 16 Nov · Offered for Mon 16 Nov, €1,812.00". */
-export function compareLine(offer: Offer): string {
-  const when = offer.deliveryDate ? day(offer.deliveryDate) : "no date";
-  return `Asked by ${day(offer.deliverBy)} · Offered ${when}, ${eur(offer.totals.net.amount)} net`;
+/** The offer for a list or card, with short product names: "1,600 × Arki Eila semi-skimmed lactose-free milk 1 l". */
+export function offerSubject(offer: Offer): string {
+  return offer.lines.map((line) => `${count(line.quantity)} × ${shortProductName(line.name)}`).join("; ");
+}
+
+/** "Offered: 1,600 × Arki Eila … milk 1 l · Mon 16 Nov" */
+export function offeredShort(offer: Offer): string {
+  return `Offered: ${offerSubject(offer)}${offer.deliveryDate ? ` · ${day(offer.deliveryDate)}` : ""}`;
 }
 
 export interface MatchedFact {

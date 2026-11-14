@@ -1,5 +1,6 @@
 import type { Order } from "@/lib/contracts";
 import { eur } from "@/lib/console/format/money";
+import { offerSubject } from "@/lib/console/format/proof";
 import { askReasons, blockSentence, handledState, shortName } from "@/lib/console/format/rules";
 import { StateWord, type StateTone } from "../ui/StateWord";
 
@@ -26,7 +27,7 @@ export function decidedBy(order: Order): { word: string; tone: StateTone; why: s
 /** A decided order: who decided, the amount, what it was, and one line on why. */
 export function HandledRow({ order, onOpen }: { order: Order; onOpen: (orderId: string) => void }) {
   const view = decidedBy(order);
-  const what = order.offer.intent?.trim() || order.offer.lines.map((line) => line.name).join(", ");
+  const what = order.offer.intent?.trim() || offerSubject(order.offer);
   return (
     <li>
       <button type="button" className="handled" onClick={() => onOpen(order.id)}>

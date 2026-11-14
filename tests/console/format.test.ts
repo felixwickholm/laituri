@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { shortHash } from "@/lib/console/format/activity";
 import { eur, parseEur, percentOf, withEuroSign } from "@/lib/console/format/money";
-import { askedLine, compareLine, matchedFacts, offeredLine } from "@/lib/console/format/proof";
+import { askedLine, matchedFacts, offeredLine, offeredShort } from "@/lib/console/format/proof";
 import { askReasons, blockedLine, handledState, ruleName, shortName } from "@/lib/console/format/rules";
 import { age, clock, day } from "@/lib/console/format/time";
 import { weekSpend, weekStart } from "@/lib/console/format/week";
@@ -62,7 +62,7 @@ describe("request versus offer", () => {
     const { offer } = pendingOrder();
     expect(askedLine(offer)).toBe("Asked: 1,800 l lactose-free milk by Mon 16 Nov");
     expect(offeredLine(offer)).toBe("Offered: 1,800 × Valio Arki Eila 1 l = 1,800 l, Mon 16 Nov");
-    expect(compareLine(offer)).toBe("Asked by Mon 16 Nov · Offered Mon 16 Nov, €1,818.00 net");
+    expect(offeredShort(offer)).toBe("Offered: 1,800 × Arki Eila 1 l · Mon 16 Nov");
   });
 
   it("marks each matched fact", () => {

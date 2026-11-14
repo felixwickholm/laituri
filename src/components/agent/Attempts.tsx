@@ -1,3 +1,4 @@
+import { ChevronRight } from "lucide-react";
 import type { RefObject } from "react";
 import { plainSentence } from "@/lib/console/format/sentence";
 import type { Attempt } from "@/lib/console/runs";
@@ -30,8 +31,9 @@ export function Attempts({ attempts, showTools, onOpenOrder, lastRef }: Attempts
             <span className="attempt-rule">
               {attempt.rule ? <strong>{attempt.rule}.</strong> : null} {plainSentence(attempt.reason ?? "")}
               {attempt.orderId ? (
-                <button type="button" className="link-btn" onClick={() => onOpenOrder(attempt.orderId as string)}>
+                <button type="button" className="text-link strong inline" onClick={() => onOpenOrder(attempt.orderId as string)}>
                   See the check
+                  <ChevronRight aria-hidden="true" />
                 </button>
               ) : null}
             </span>

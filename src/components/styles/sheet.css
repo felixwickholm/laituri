@@ -16,12 +16,12 @@
 .sheet {
   position: fixed;
   z-index: 61;
-  top: 8px;
-  right: 8px;
-  bottom: 8px;
+  top: 12px;
+  right: 12px;
+  bottom: 12px;
   display: flex;
   flex-direction: column;
-  width: min(540px, calc(100vw - 16px));
+  width: min(540px, calc(100vw - 24px));
   border-radius: var(--r-xl);
   transform: translateX(0);
   transition: transform var(--d-sheet) var(--ease-sheet);

@@ -75,7 +75,7 @@ export function ControlRoom() {
             <p>{PRODUCT_SENTENCE}</p>
           </div>
         </div>
-        <main className="panes" data-under-chrome={!fresh && snapshot.ready}>
+        <main className="panes">
           <AgentPane
             activity={snapshot.activity}
             orders={snapshot.orders}

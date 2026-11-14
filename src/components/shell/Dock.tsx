@@ -22,9 +22,9 @@ interface DockProps {
 export function Dock({ run, fresh }: DockProps) {
   const [request, setRequest] = useState("");
   const [starting, setStarting] = useState<Scenario | "free" | null>(null);
-  const [active, setActive] = useState<Scenario | null>(null);
   const tamperAfter = useRef<string | null>(null);
   const running = run?.status === "running" || starting !== null;
+  const active = starting && starting !== "free" ? starting : run?.scenario ?? null;
 
   useEffect(() => {
     if (!run || run.status === "running") return;
@@ -39,7 +39,6 @@ export function Dock({ run, fresh }: DockProps) {
     setStarting(key);
     try {
       await consoleStore.startRun(body);
-      setActive(body.scenario ?? null);
       if (body.scenario === "break-mandate") tamperAfter.current = consoleStore.getSnapshot().run?.id ?? null;
     } catch (error) {
       toast(error instanceof Error ? error.message : "The scene could not start.", "danger");
@@ -58,7 +57,6 @@ export function Dock({ run, fresh }: DockProps) {
   async function reset() {
     try {
       await consoleStore.reset();
-      setActive(null);
       tamperAfter.current = null;
       toast("Reset. The log is empty and verified again.", "neutral");
     } catch {
@@ -66,7 +64,7 @@ export function Dock({ run, fresh }: DockProps) {
     }
   }
 
-  const status = running ? (run?.request ? `Agent is working on: ${run.request}` : "Agent is working…") : fresh ? "Start with scene 1" : undefined;
+  const status = running ? (run?.request ? `Agent is working on: ${run.request}` : "Agent is working…") : undefined;
 
   return (
     <>

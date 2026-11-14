@@ -37,9 +37,9 @@
 .decision {
   margin: 10px 12px 4px;
   padding: 16px;
-  border-radius: var(--r-lg);
+  border-radius: 14px;
   border: 1px solid rgba(255, 159, 10, 0.35);
-  background: #110d06;
+  background: rgba(255, 159, 10, 0.06);
 }
 .decision .flag {
   display: flex;
@@ -112,13 +112,19 @@
 }
 .decide {
   display: flex;
+  align-items: center;
   gap: 8px;
   margin-top: 14px;
 }
 .btn.big {
-  height: 44px;
+  height: 48px;
   padding: 0 16px;
-  font-size: 14px;
+  border-radius: 12px;
+  font-size: 15px;
+}
+.btn-ghost {
+  border-color: transparent;
+  color: var(--text-1);
 }
 .btn.big::after {
   inset: 0;
@@ -130,15 +136,10 @@
   margin-left: auto;
 }
 
-.recent {
-  margin-top: 12px;
-}
+
 .recent h3 {
   margin: 0;
-  padding: 10px 16px 6px;
-  color: var(--text-3);
-  font-size: 12px;
-  font-weight: 590;
+  padding: 24px 16px 8px;
 }
 .handled {
   display: grid;

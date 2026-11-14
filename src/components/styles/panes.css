@@ -1,22 +1,17 @@
-/* Shell: a glass chrome layer floats over three full-height panes; their content scrolls under it. */
+/* Shell: a glass top bar over three floating panes on true black. Each pane scrolls inside itself. */
 .room {
-  --chrome-h: var(--topbar);
-  position: relative;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
   height: 100dvh;
   overflow: hidden;
-  background: var(--bg);
+  background: #000;
 }
 
 .chrome {
-  position: absolute;
+  position: relative;
   z-index: 30;
-  top: 0;
-  left: 0;
-  right: 0;
-  border-width: 0 0 1px;
-  border-radius: 0;
+  margin: 12px 12px 0;
+  border-radius: var(--r-xl);
 }
 .topbar {
   display: flex;
@@ -62,8 +57,8 @@
   height: 24px;
   padding: 0 9px;
   border-radius: var(--r-full);
-  border: 1px solid var(--line-strong);
-  color: var(--text-2);
+  border: 1px solid var(--line);
+  color: var(--text-3);
   font-size: 12px;
   font-weight: 510;
   white-space: nowrap;
@@ -105,7 +100,7 @@
 .intro p {
   max-width: 900px;
   margin: 0;
-  padding: calc(var(--chrome-h) + 28px) 24px 24px;
+  padding: 28px 28px 8px;
   font-size: 23px;
   line-height: 31px;
   font-weight: 600;
@@ -116,14 +111,10 @@
 
 .panes {
   display: grid;
-  grid-template-columns: minmax(440px, 1fr) 420px 400px;
-  gap: 1px;
+  grid-template-columns: minmax(420px, 1fr) 420px 400px;
+  gap: 12px;
   min-height: 0;
-  background: var(--line);
-  border-top: 1px solid var(--line);
-}
-.panes[data-under-chrome="true"] {
-  border-top: 0;
+  padding: 12px;
 }
 
 .pane {
@@ -133,17 +124,19 @@
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
+  padding-bottom: 104px;
+  border-radius: var(--r-xl);
+  border: 1px solid var(--pane-border);
   background: var(--surface-1);
   scrollbar-width: thin;
   scrollbar-color: var(--surface-4) transparent;
-  padding-bottom: 120px;
-  transition: padding-top var(--d-sheet) var(--ease-sheet);
-}
-.panes[data-under-chrome="true"] .pane {
-  padding-top: var(--chrome-h);
 }
 
 .pane-head {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--surface-1);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -195,8 +188,11 @@
 
 /* Below 1100px: one pane at a time, chosen with a segmented control inside the chrome. */
 @media (max-width: 1099px) {
-  .room {
-    --chrome-h: calc(var(--topbar) + 53px);
+  .chrome {
+    margin: 8px 8px 0;
+  }
+  .panes {
+    padding: 8px;
   }
   .topbar .scope,
   .topbar .chips .optional {
@@ -228,8 +224,9 @@
   .pane {
     padding-bottom: 176px;
   }
+
   .intro p {
-    padding: calc(var(--chrome-h) + 20px) 16px 20px;
+    padding: 20px 16px 4px;
     font-size: 20px;
     line-height: 27px;
   }
@@ -273,8 +270,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .intro-wrap,
-  .pane {
+  .intro-wrap {
     transition-duration: 0ms;
   }
 }
