@@ -176,9 +176,10 @@ button.audit {
   font-size: 13px;
   line-height: 18px;
   color: var(--text-2);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 @media (hover: hover) and (pointer: fine) {
   button.audit:hover {
@@ -260,6 +261,9 @@ button.audit {
 .chain-item[data-link="broken"] .sentence {
   color: #ff8a82;
 }
+.chain-item[data-alert="true"] .audit-title {
+  color: #ff8a82;
+}
 .chain-item[data-link="untrusted"] .audit {
   opacity: 0.45;
 }
@@ -279,8 +283,10 @@ button.audit {
 /* A faint example in the empty pane. */
 .example {
   padding: 8px 0 0;
-  opacity: 0.3;
   pointer-events: none;
+}
+.example > :not(.example-label) {
+  opacity: 0.45;
 }
 .example-label {
   margin: 8px 16px 4px;
@@ -313,7 +319,7 @@ button.audit {
   align-items: center;
   gap: 2px;
   padding-left: 8px;
-  border-radius: var(--r-md);
+  border-radius: var(--r-control);
   background: var(--surface-2);
   font-size: 12px;
   color: var(--text-2);
@@ -323,7 +329,7 @@ button.audit {
   max-height: 320px;
   overflow: auto;
   padding: 12px 14px;
-  border-radius: 10px;
+  border-radius: var(--r-card);
   background: var(--surface-2);
   border: 1px solid var(--line);
   font-size: 12px;

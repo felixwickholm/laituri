@@ -13,6 +13,7 @@ export const AuditEvent = z.enum([
   "approval.granted",
   "approval.rejected",
   "mandate.updated",
+  "access.refused",
 ]);
 export type AuditEvent = z.infer<typeof AuditEvent>;
 

@@ -9,8 +9,8 @@ import { useDismiss } from "../ui/useDismiss";
 /** Tamper with the log, so the browser check can be seen failing. Reset restores it. */
 export async function tamperWithLog(): Promise<void> {
   try {
-    const seq = await consoleStore.tamper();
-    toast(`Entry ${seq} was changed on the server.`, "danger");
+    // The red proof header says what happened; no toast competes with it.
+    await consoleStore.tamper();
   } catch {
     toast("The log could not be changed.", "danger");
   }

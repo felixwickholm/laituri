@@ -84,7 +84,7 @@ export function ControlRoom() {
             feed={feed}
             visible={pane === "agent"}
           />
-          <ApprovalsPane orders={snapshot.orders} feed={feed} visible={pane === "approvals"} />
+          <ApprovalsPane orders={snapshot.orders} feed={feed} paused={snapshot.chain.state === "broken"} visible={pane === "approvals"} />
           <ProofPane audit={snapshot.audit} chain={snapshot.chain} orders={snapshot.orders} jwks={snapshot.jwks} mandate={snapshot.mandate} feed={feed} visible={pane === "proof"} />
         </main>
       </div>

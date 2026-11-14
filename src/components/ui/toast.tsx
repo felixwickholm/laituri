@@ -42,12 +42,14 @@ export function Toaster() {
   const items = useSyncExternalStore(subscribe, () => toasts, () => EMPTY);
   return (
     <div className="toasts" role="status" aria-live="polite">
-      {items.map((item) => (
-        <div key={item.id} className="toast glass" data-tone={item.tone}>
-          {item.tone === "danger" ? <AlertCircle aria-hidden="true" /> : item.tone === "success" ? <Check aria-hidden="true" /> : null}
-          {item.text}
-        </div>
-      ))}
+      <div className="toast-stack">
+        {items.map((item) => (
+          <div key={item.id} className="toast glass" data-tone={item.tone}>
+            {item.tone === "danger" ? <AlertCircle aria-hidden="true" /> : item.tone === "success" ? <Check aria-hidden="true" /> : null}
+            {item.text}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

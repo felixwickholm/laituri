@@ -67,7 +67,7 @@ describe("runs", () => {
     expect(runTitle(run, ctx)).toBe("1,800 l lactose-free milk");
     expect(runOutcome(run, ctx)).toEqual({ word: "Waiting for Maria Lind", detail: "€1,818.00 net", tone: "waiting" });
     const confirmed = pendingOrder({ status: "confirmed" });
-    expect(runOutcome(run, { ...ctx, orders: new Map([["ord_1", confirmed]]) }).detail).toBe("€2,063.43 with VAT · Mon 16 Nov");
+    expect(runOutcome(run, { ...ctx, orders: new Map([["ord_1", confirmed]]) }).detail).toBe("€1,818.00 net · Mon 16 Nov");
   });
 
   it("reads scene 3 as four attempts and the rule that stopped each", () => {

@@ -25,8 +25,8 @@ const RULES: Rule[] = [
   firstTimeProducts,
 ];
 
-const NO_MANDATE = "Cannot check without a valid mandate.";
-const NO_OFFER = "Cannot check without a valid offer.";
+const NO_MANDATE = "Not checked. The mandate is not valid.";
+const NO_OFFER = "Not checked. The offer is not valid.";
 
 /** Checks one order against the buyer's mandate. Pure: every input is passed in. */
 export function evaluate(input: EvaluateInput): Decision {
@@ -46,12 +46,12 @@ export function evaluate(input: EvaluateInput): Decision {
       case "nothing":
         return rule.run(base);
       case "mandate":
-        return mandate ? rule.run({ ...base, mandate, offer }) : check(rule.id, "block", NO_MANDATE);
+        return mandate ? rule.run({ ...base, mandate, offer }) : check(rule.id, "skipped", NO_MANDATE);
       case "offer":
-        return offer ? rule.run({ ...base, offer }) : check(rule.id, "block", NO_OFFER);
+        return offer ? rule.run({ ...base, offer }) : check(rule.id, "skipped", NO_OFFER);
       case "both":
-        if (!mandate) return check(rule.id, "block", NO_MANDATE);
-        if (!offer) return check(rule.id, "block", NO_OFFER);
+        if (!mandate) return check(rule.id, "skipped", NO_MANDATE);
+        if (!offer) return check(rule.id, "skipped", NO_OFFER);
         return rule.run({ ...base, mandate, offer });
     }
   });

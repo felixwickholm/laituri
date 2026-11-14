@@ -20,7 +20,8 @@ export function matchConfidence(request: QuoteRequest, catalog: Pick<Catalog, "g
 
 function fromIntent(request: QuoteRequest, intent: string, catalog: Pick<Catalog, "get" | "search">): Confidence {
   // The buyer's words usually carry a quantity and a date; only the product words are matched.
-  const phrase = parseRequest(intent, now()).phrase.trim() || intent;
+  const phrase = parseRequest(intent, now()).phrase.trim();
+  if (!/\p{L}{3,}/u.test(phrase)) return "medium";
   const result = catalog.search({ query: phrase.slice(0, 300), limit: 50 });
   const hitIds = new Set(result.hits.map((hit) => hit.product.id));
   const concept = result.interpretation.concept;

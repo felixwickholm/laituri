@@ -9,6 +9,7 @@ import { day } from "@/lib/console/format/time";
 import { weekSpend } from "@/lib/console/format/week";
 import { consoleStore, useConsole } from "@/lib/console/store";
 import { withApprover } from "../session/gate";
+import { CopyButton } from "../ui/CopyButton";
 import { Sheet } from "../ui/Sheet";
 import { toast } from "../ui/toast";
 import { useNow } from "../ui/useNow";
@@ -52,7 +53,7 @@ export function MandateSheet({ open, onClose }: { open: boolean; onClose: () => 
     <Sheet
       open={open}
       onClose={onClose}
-      kicker={m ? `${m.id} · version ${m.version}` : undefined}
+      kicker={m ? `Version ${m.version}` : undefined}
       title="What the agent may do alone"
       lede={m ? `${m.agent.name} buys for ${m.buyer.name}. Valid until ${day(m.validUntil)}.` : "Loading the signed mandate."}
       footer={
@@ -115,6 +116,10 @@ export function MandateSheet({ open, onClose }: { open: boolean; onClose: () => 
           <Group label="Approval">
             <Row label="Approver">
               <span className="value">{shortName(m.approval.approver.name)}</span>
+            </Row>
+            <Row label="Mandate ID">
+              <span className="value mono id-value">{m.id}</span>
+              <CopyButton value={m.id} label="Copy mandate ID" />
             </Row>
             <Row label="Ask before new products">
               <Toggle label="Ask before new products" checked={draft.firstTimeProducts} onChange={(next) => set("firstTimeProducts", next)} />

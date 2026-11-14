@@ -1,5 +1,11 @@
-import type { AuditEntry, AuditEvent } from "@/lib/contracts";
-import { shortName } from "./rules";
+import { RuleId, type AuditEntry, type AuditEvent, type Order } from "@/lib/contracts";
+import { eur } from "./money";
+import { offerSubject } from "./proof";
+import { askSentence, blockSentence, shortName } from "./rules";
+import { plainSentence } from "./sentence";
+import { day } from "./time";
+
+const RULES = RuleId.options.length;
 
 const TITLES: Record<AuditEvent, string> = {
   "agent.connected": "Agent connected",
@@ -13,6 +19,7 @@ const TITLES: Record<AuditEvent, string> = {
   "approval.granted": "Approved",
   "approval.rejected": "Rejected",
   "mandate.updated": "Mandate re-signed",
+  "access.refused": "Attempt refused",
 };
 
 /** A log entry's event in plain English: "Approved by Maria Lind", "Checked against the mandate". */
@@ -22,4 +29,80 @@ export function auditTitle(entry: Pick<AuditEntry, "event" | "actor">): string {
     return entry.actor.type === "human" ? `${title} by ${shortName(entry.actor.name)}` : entry.event === "approval.rejected" ? "Approval refused" : title;
   }
   return title;
+}
+
+type Data = Record<string, unknown>;
+
+function num(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+function netOf(data: Data): number | undefined {
+  const totals = data.totals as { net?: { amount?: unknown } } | undefined;
+  return num(totals?.net?.amount);
+}
+
+function checksOf(data: Data): { status?: string }[] {
+  return Array.isArray(data.checks) ? (data.checks as { status?: string }[]) : [];
+}
+
+function orderLine(order: Order): string {
+  return `${offerSubject(order.offer)} · ${eur(order.offer.totals.net.amount)} net`;
+}
+
+/**
+ * One short line of detail for a log row, written from the entry's structured data and its order.
+ * Falls back to the entry's own sentence when the data it needs is missing.
+ */
+export function auditDetail(entry: Pick<AuditEntry, "event" | "actor" | "summary" | "refs" | "data">, orders: Order[] = []): string {
+  const data = (entry.data ?? {}) as Data;
+  const order =
+    orders.find((item) => item.id === entry.refs.orderId) ?? orders.find((item) => item.offer.id === entry.refs.offerId);
+  switch (entry.event) {
+    case "agent.connected":
+      return `${entry.actor.name} connected`;
+    case "catalog.searched": {
+      const found = num(data.previews) ?? (Array.isArray(data.hits) ? data.hits.length : undefined);
+      if (found !== undefined && typeof data.query === "string") return `Found ${found} ${found === 1 ? "product" : "products"} for '${data.query}'`;
+      break;
+    }
+    case "offer.issued": {
+      if (order) return orderLine(order);
+      const net = netOf(data);
+      if (net !== undefined) return `${eur(net)} net${typeof data.deliveryDate === "string" ? ` · delivers ${day(data.deliveryDate)}` : ""}`;
+      break;
+    }
+    case "policy.evaluated": {
+      const outcome = data.outcome;
+      const open = checksOf(data);
+      if (outcome === "auto_approved") return `All ${RULES} checks passed`;
+      if (outcome === "needs_approval") {
+        const asks = open.filter((check) => check.status === "ask").length || 1;
+        return `${asks} of ${RULES} checks ${asks === 1 ? "needs" : "need"} a person`;
+      }
+      if (outcome === "blocked") {
+        const blocks = open.filter((check) => check.status === "block").length || 1;
+        return `${blocks} of ${RULES} checks ${blocks === 1 ? "blocks" : "block"} the order`;
+      }
+      break;
+    }
+    case "approval.requested": {
+      const ask = order?.decision.checks.find((check) => check.status === "ask");
+      if (ask) return askSentence(ask);
+      break;
+    }
+    case "order.blocked": {
+      const block = order?.decision.checks.find((check) => check.status === "block");
+      if (block) return blockSentence(block);
+      break;
+    }
+    case "access.refused":
+      return plainSentence(entry.summary);
+    case "mandate.updated":
+      if (num(data.version) !== undefined) return `Version ${data.version}, signed again by the buyer`;
+      break;
+    default:
+      if (order) return orderLine(order);
+  }
+  return plainSentence(entry.summary);
 }

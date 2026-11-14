@@ -63,7 +63,7 @@ export function mandateText({ mandate, jws }: SignedMandate): string {
 }
 
 export function orderText(order: Order): string {
-  const asks = order.decision.checks.filter((c) => c.status !== "pass").map((c) => `${c.rule}: ${c.message}`);
+  const asks = order.decision.checks.filter((c) => c.status === "ask" || c.status === "block").map((c) => `${c.rule}: ${c.message}`);
   const head = `Order ${order.id} is ${order.status} (${order.decision.outcome}), net ${eur(order.offer.totals.net.amount)}. Simulated order.`;
   const next =
     order.status === "pending_approval"

@@ -45,7 +45,7 @@ export function runTitle(run: RunBlock, ctx: RunContext): string {
   return run.steps[0]?.text ?? "Agent activity";
 }
 
-/** One state word and the key figure: "Confirmed · €1,146.35 with VAT · Mon 16 Nov". */
+/** One state word and the key figure, always net: "Confirmed · €1,010.00 net · Mon 16 Nov". */
 export function runOutcome(run: RunBlock, ctx: RunContext): RunOutcome {
   if (run.kind === "attempts") {
     const match = run.summary?.title.match(/^(\d+) of (\d+)/);
@@ -62,7 +62,7 @@ export function runOutcome(run: RunBlock, ctx: RunContext): RunOutcome {
     switch (order.status) {
       case "confirmed": {
         const by = order.approval ? ` · approved by ${shortName(order.approval.decidedBy.name)}` : "";
-        return { word: "Confirmed", detail: `${eur(totals.gross.amount)} with VAT · ${day(deliveryDate)}${by}`, tone: "success" };
+        return { word: "Confirmed", detail: `${eur(totals.net.amount)} net · ${day(deliveryDate)}${by}`, tone: "success" };
       }
       case "pending_approval":
         return { word: `Waiting for ${shortName(ctx.approver ?? "a person")}`, detail: `${eur(totals.net.amount)} net`, tone: "waiting" };

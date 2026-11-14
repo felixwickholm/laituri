@@ -64,7 +64,10 @@ describe("human-only endpoints", () => {
   it("refuses an agent token on approvals", async () => {
     const response = await decide(agentHeaders, "x");
     expect(response.status).toBe(403);
-    expect((await response.json()).detail).toBe("Agents cannot approve their own orders.");
+    expect((await response.json()).detail).toBe("Agents cannot approve or reject orders.");
+    const log = await (await audit.GET(jsonRequest("/api/v1/audit"))).json();
+    const entries = log.entries ?? log;
+    expect(entries.at(-1)).toMatchObject({ event: "access.refused", refs: { orderId: "x" } });
   });
 
   it("refuses an agent token on mandate update, reset and sign-in", async () => {

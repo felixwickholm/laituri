@@ -21,11 +21,12 @@ Tools: search_catalog, get_product, request_quote, get_mandate, place_order, get
 ## REST flow: "1,000 litres of lactose-free milk by Monday"
 1. Search. Read interpretation.confidence. Hits carry offerPreview when the wholesaler has a price: indicative live price, stock, delivery date,
 order cut-off and orderable. Pass need and deliverBy to get pack maths (unitsNeeded, estimatedNet). Only a signed offer fixes the price.
-Choose the hit that matches the need, has offerPreview.orderable true, and has the lowest offerPreview.comparisonPrice.
+When the match is clear (confidence high), hits are sorted best buy first: orderable on time, then lowest price per litre or kilo.
+Choose the first hit with offerPreview.orderable true.
 curl -s ${urls.rest}/products/search ${auth} -d '{"query":"laktoositon maito 1 l","filters":{"claims":["lactose_free"]},"limit":5,"need":{"amount":1000,"unit":"l"},"deliverBy":"2026-11-16"}'
 
 2. Quote for the product you chose. Quantities in l or kg are converted to whole sales units. The response has primary (the offer
-for what you asked) and alternatives (signed counter-offers when the request cannot be met in full and on time). Each has offer and jws.
+for what you asked) and alternatives (signed counter-offers when the request cannot be met in full and on time). primary has offer and jws. Each alternative has tier, tradeoff and signed, and signed has offer and jws.
 The offer is valid for 15 minutes (offer.expiresAt). Keep the jws of the one you take exactly as returned.
 curl -s ${urls.rest}/quotes ${auth} -d '{"lines":[{"productId":"464306","quantity":{"amount":1000,"unit":"l"}}],"deliverBy":"2026-11-16","intent":"1,000 litres of lactose-free milk by Monday","matchConfidence":"high"}'
 

@@ -7,6 +7,7 @@ import { eur } from "@/lib/console/format/money";
 import { askedLine, matchedFacts, offeredShort } from "@/lib/console/format/proof";
 import { askReasons, shortName } from "@/lib/console/format/rules";
 import { age } from "@/lib/console/format/time";
+import { PAUSED_LABEL, PAUSED_NOTE, pausedMessage } from "@/lib/console/paused";
 import { consoleStore } from "@/lib/console/store";
 import { withApprover } from "../session/gate";
 import { CountUp } from "../ui/CountUp";
@@ -15,13 +16,14 @@ import { toast } from "../ui/toast";
 interface ApprovalRowProps {
   order: Order;
   now: number;
+  paused: boolean;
   onOpen: (orderId: string) => void;
 }
 
 const COLLAPSE_MS = 240;
 
 /** The money decision: amount, why it stopped, the request against the offer, and the two choices. */
-export function ApprovalRow({ order, now, onOpen }: ApprovalRowProps) {
+export function ApprovalRow({ order, now, paused, onOpen }: ApprovalRowProps) {
   const [busy, setBusy] = useState<"approved" | "rejected" | null>(null);
   const [leaving, setLeaving] = useState(false);
   const inFlight = useRef(false);
@@ -43,7 +45,7 @@ export function ApprovalRow({ order, now, onOpen }: ApprovalRowProps) {
       else if (decision === "rejected") toast(`Rejected. Signed by ${who}.`, "neutral");
       else toast("The offer expired before approval. Order not placed.", "danger");
     } catch (error) {
-      toast(error instanceof Error ? error.message : "The decision was not saved.", "danger");
+      toast(pausedMessage(error) ?? (error instanceof Error ? error.message : "The decision was not saved."), "danger");
     } finally {
       inFlight.current = false;
       setBusy(null);
@@ -79,8 +81,13 @@ export function ApprovalRow({ order, now, onOpen }: ApprovalRowProps) {
             </li>
           </ul>
           <div className="decide">
-            <button type="button" className="btn btn-primary big" disabled={busy !== null} onClick={(event) => decide("approved", event.currentTarget)}>
-              {busy === "approved" ? "Signing…" : "Approve order"}
+            <button
+              type="button"
+              className={`btn big ${paused ? "paused" : "btn-primary"}`}
+              disabled={busy !== null || paused}
+              onClick={(event) => decide("approved", event.currentTarget)}
+            >
+              {paused ? PAUSED_LABEL : busy === "approved" ? "Signing…" : "Approve order"}
             </button>
             <button type="button" className="btn btn-ghost big" disabled={busy !== null} onClick={(event) => decide("rejected", event.currentTarget)}>
               {busy === "rejected" ? "Signing…" : "Reject"}
@@ -90,6 +97,7 @@ export function ApprovalRow({ order, now, onOpen }: ApprovalRowProps) {
               <ChevronRight aria-hidden="true" />
             </button>
           </div>
+          {paused ? <p className="paused-note">{PAUSED_NOTE}</p> : null}
         </article>
       </div>
     </li>

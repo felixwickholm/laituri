@@ -1,4 +1,4 @@
-import { Check, CircleAlert, Hand } from "lucide-react";
+import { Check, CircleAlert, Hand, Minus } from "lucide-react";
 import type { Check as PolicyCheck, Decision } from "@/lib/contracts";
 import { askSentence, blockSentence, ruleName } from "@/lib/console/format/rules";
 import { plainSentence } from "@/lib/console/format/sentence";
@@ -9,6 +9,24 @@ const GROUPS: { status: PolicyCheck["status"]; title: string }[] = [
   { status: "pass", title: "Passed" },
 ];
 
+function Row({ check }: { check: PolicyCheck }) {
+  return (
+    <li>
+      {check.status === "pass" ? (
+        <Check aria-hidden="true" />
+      ) : check.status === "ask" ? (
+        <Hand aria-hidden="true" />
+      ) : check.status === "block" ? (
+        <CircleAlert aria-hidden="true" />
+      ) : (
+        <Minus aria-hidden="true" />
+      )}
+      <span className="rule">{ruleName(check.rule)}</span>
+      <span className="msg">{detail(check)}</span>
+    </li>
+  );
+}
+
 function detail(check: PolicyCheck): string {
   if (check.status === "ask") return askSentence(check);
   if (check.status === "block") return blockSentence(check);
@@ -17,6 +35,8 @@ function detail(check: PolicyCheck): string {
 
 /** Every mandate check, grouped by outcome. All of them are always listed. */
 export function ChecksList({ decision }: { decision: Decision }) {
+  // A rule that could not run (the mandate or offer was invalid) is neither passed nor blocking.
+  const skipped = decision.checks.filter((check) => check.status === "skipped");
   return (
     <section className="section">
       <h3>
@@ -32,16 +52,24 @@ export function ChecksList({ decision }: { decision: Decision }) {
             </h4>
             <ul>
               {checks.map((check) => (
-                <li key={check.rule}>
-                  {check.status === "pass" ? <Check aria-hidden="true" /> : check.status === "ask" ? <Hand aria-hidden="true" /> : <CircleAlert aria-hidden="true" />}
-                  <span className="rule">{ruleName(check.rule)}</span>
-                  <span className="msg">{detail(check)}</span>
-                </li>
+                <Row key={check.rule} check={check} />
               ))}
             </ul>
           </div>
         );
       })}
+      {skipped.length > 0 ? (
+        <details className="check-group" data-status="skipped">
+          <summary>
+            Not checked <span className="count">{skipped.length}</span>
+          </summary>
+          <ul>
+            {skipped.map((check) => (
+              <Row key={check.rule} check={check} />
+            ))}
+          </ul>
+        </details>
+      ) : null}
     </section>
   );
 }

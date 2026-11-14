@@ -1,8 +1,9 @@
 import { createHash, timingSafeEqual } from "node:crypto";
+import { appendAudit } from "@/lib/audit";
 import { now } from "@/lib/clock";
 import { currentMandate } from "@/lib/mandate";
 import { trust } from "@/lib/trust";
-import { ForbiddenError, bearerToken } from "./agent";
+import { ANONYMOUS_AGENT, DEMO_AGENT_NAME, ForbiddenError, bearerToken } from "./agent";
 
 export const SESSION_COOKIE = "laituri_approver";
 const SESSION_HOURS = 12;
@@ -92,10 +93,45 @@ export async function readSession(headers: Headers): Promise<ConsoleSession> {
   return { signedIn: true, approver: { id: claims.sub, name: claims.name }, mode };
 }
 
+/** What a person may do in the console and an agent may not. */
+const HUMAN_ACTIONS = {
+  approve: "approve or reject orders",
+  mandate: "change the mandate",
+  reset: "reset the demo",
+} as const;
+export type HumanAction = keyof typeof HUMAN_ACTIONS;
+
+/**
+ * The guard for routes: like requireApprover, and every refusal goes into the audit log,
+ * so an attempt to act as the approver leaves a trace.
+ */
+export async function guardApprover(
+  headers: Headers,
+  action: HumanAction,
+  refs: { orderId?: string } = {},
+): Promise<{ id: string; name: string }> {
+  try {
+    return await requireApprover(headers, action);
+  } catch (error) {
+    if (error instanceof ForbiddenError) {
+      const byAgent = bearerToken(headers) !== undefined;
+      const who = byAgent ? DEMO_AGENT_NAME : "A caller without an approver session";
+      await appendAudit({
+        actor: { type: "agent", id: byAgent ? "agent:token" : ANONYMOUS_AGENT.id, name: byAgent ? DEMO_AGENT_NAME : ANONYMOUS_AGENT.name },
+        event: "access.refused",
+        summary: `${who} tried to ${HUMAN_ACTIONS[action]}. Refused: only the signed-in approver can.`,
+        refs,
+        data: { action, code: error.code },
+      });
+    }
+    throw error;
+  }
+}
+
 /** Human-only actions need a signed approver session. A header or an agent token is never enough. */
-export async function requireApprover(headers: Headers): Promise<{ id: string; name: string }> {
+export async function requireApprover(headers: Headers, action: HumanAction = "approve"): Promise<{ id: string; name: string }> {
   if (bearerToken(headers)) {
-    throw new ForbiddenError("Agents cannot approve their own orders.", "agent_not_allowed");
+    throw new ForbiddenError(`Agents cannot ${HUMAN_ACTIONS[action]}.`, "agent_not_allowed");
   }
   const session = await readSession(headers);
   if (!session.signedIn || !session.approver) {

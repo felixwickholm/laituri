@@ -69,11 +69,13 @@ flowchart LR
 
 | Key | Signs | Why |
 |---|---|---|
-| Buyer | The mandate | Only the buyer can widen what its agent may do |
+| Buyer | The mandate | A change of limits needs the approver's sign-in and a new buyer signature; an agent cannot make one |
 | Supplier | Offers, receipts, audit entries | The price is fixed and cannot be edited on the way |
 | Approver | Approvals and the console session | A person, not the agent, lifted the limit |
 
-An agent cannot raise its own limit, change a price, or approve its own order. Each attempt is refused and recorded.
+An agent cannot raise its own limit, change a price, or approve its own order. Each attempt is refused and written to the audit log.
+
+In this demo one server holds all three private keys (in `.data/keys`), so one deployment can play buyer, wholesaler and approver. In production each party keeps its own key: the wholesaler runs Laituri with the supplier key only, the buyer signs the mandate in its own system, and the approver signs with a personal credential.
 
 ### The mandate: allowed, ask, never
 
@@ -85,7 +87,7 @@ An agent cannot raise its own limit, change a price, or approve its own order. E
 | Substitution | Not like-for-like, or price up more than the cap | Any substitute when the policy says none |
 | Partial delivery, late delivery | Partial not allowed; late within the grace days | Later than the grace days |
 | Match confidence, first-time product | Low confidence; first order of a product | |
-| Signatures, validity, expiry | | Invalid mandate or offer, wrong agent, expired, cut-off passed |
+| Signatures, validity, expiry | | Invalid, replaced or expired mandate; altered, expired or already used offer; wrong agent; cut-off passed |
 
 ## How each judging criterion is met
 
@@ -99,19 +101,23 @@ An agent cannot raise its own limit, change a price, or approve its own order. E
 
 ## Standards used
 
+"Used" means implemented and testable here. "Follows" means the names, shapes or codes are taken from the standard so a later full implementation does not change the interface.
+
 | Area | Choice |
 |---|---|
 | Agent interface | Model Context Protocol (Streamable HTTP) and REST, OpenAPI 3.1 |
 | Signatures | JWS compact, ES256, keys published as JWKS (RFC 7515, 7517, 7638) |
-| Mandate | JWT shaped like the AP2 Open Checkout Mandate (`vct`, `constraints[]`, `exp`) |
-| Commerce vocabulary | UCP catalog, checkout and order terms, including escalation to a person |
-| Order response | Peppol BIS Ordering response codes: AP accepted, CA accepted with change, RE rejected |
-| Identifiers | GS1 GTIN for products; OVT / GLN for parties |
+| Mandate | Follows AP2 (Agent Payments Protocol): a signed JWT shaped like its Open Checkout Mandate (`vct`, `constraints[]`, `exp`) |
+| Commerce vocabulary | Follows UCP (Universal Commerce Protocol) terms for catalogue, checkout and order, including escalation to a person |
+| Order response | Follows Peppol BIS Ordering: the signed receipt carries its response code (AP accepted, CA accepted with change, RE rejected). No UBL document is produced yet |
+| Identifiers | Used: GS1 GTIN for products. Follows: OVT (Finnish e-invoice address) and GLN (GS1 location number) for parties |
 | Errors | RFC 9457 problem details |
 | Discovery | Agent card, AI catalog, `llms.txt`, OAuth protected-resource metadata |
 
 ## Assumptions, stated openly
 
+- **Reading is open in the demo.** Orders, the approval inbox, the mandate and the audit log can be read without signing in, so anyone can watch the console. They hold synthetic data only. Production puts every read behind the buyer's and the wholesaler's own access control.
+- "Lactose-free milk" is sold as "lactose-free milk drink" (maitojuoma) in the catalogue. Laituri treats the two as the same request and shows the product name it chose.
 - **Orders are simulated.** The mock API has price and availability only. Laituri creates the order, the receipt and the log itself and marks every order `simulated: true`.
 - A `closingTime` in the past means that delivery date can no longer be ordered.
 - An available amount of 9999999999 or 999999 means no tracked limit.
@@ -132,9 +138,9 @@ An agent cannot raise its own limit, change a price, or approve its own order. E
 1. Replace the simulated order with the real order entry of the ERP; return its number in the receipt.
 2. OAuth 2.1 with scoped tokens per agent (`catalog:read`, `quote:create`, `order:place`); the metadata endpoint is already in place.
 3. Keep the mandate limits in the customer master as well, so the supplier and the buyer hold the same signed copy.
-4. Buyer identity from a verifiable organisation credential (EU Business Wallet) instead of a demo key.
+4. Buyer identity from a verifiable organisation credential (the planned EU Business Wallet) instead of a demo key.
 5. Database with transactions and row locks in place of the single-process store.
-6. Anchor audit checkpoints in an external transparency service (SCITT), so completeness no longer depends on the verifier's memory.
+6. Anchor audit checkpoints in an external transparency service (SCITT, the IETF standard for signed transparency logs), so completeness no longer depends on the verifier's memory.
 7. Peppol order and order-response documents for customers that already trade over Peppol.
 
 ## Layout

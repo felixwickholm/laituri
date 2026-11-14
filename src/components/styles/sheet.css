@@ -83,6 +83,14 @@
   color: var(--text-3);
   font-size: 13px;
 }
+.sheet-foot .btn {
+  height: 44px;
+  padding: 0 16px;
+  font-size: 14px;
+}
+.sheet-foot .btn::after {
+  inset: 0;
+}
 .sheet-foot .end {
   display: flex;
   gap: 8px;
@@ -106,7 +114,7 @@
   font-weight: 400;
 }
 .well {
-  border-radius: var(--r-lg);
+  border-radius: var(--r-card);
   background: rgba(255, 255, 255, 0.035);
   border: 1px solid var(--line);
 }

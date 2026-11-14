@@ -67,7 +67,7 @@ export const dietaryAllergens: Rule = {
       });
     }
     const note = traces ? ` ${plural(traces, "line")} may contain traces.` : "";
-    return check("dietary.allergens", "pass", `No line contains ${listText(excluded)}.${note}`, { observed: "none", limit });
+    return check("dietary.allergens", "pass", `No line contains ${listText(excluded).replace(" and ", " or ")}.${note}`, { observed: "none", limit });
   },
 };
 

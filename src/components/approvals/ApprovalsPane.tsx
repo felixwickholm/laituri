@@ -12,7 +12,15 @@ import { HandledRow } from "./HandledRow";
 type Tab = "waiting" | "handled";
 const RECENT = 3;
 
-export function ApprovalsPane({ orders, feed, visible }: { orders: Order[]; feed: Feed; visible: boolean }) {
+interface ApprovalsPaneProps {
+  orders: Order[];
+  feed: Feed;
+  /** True while the log does not verify; the server refuses approvals then. */
+  paused: boolean;
+  visible: boolean;
+}
+
+export function ApprovalsPane({ orders, feed, paused, visible }: ApprovalsPaneProps) {
   const ui = useUi();
   const [tab, setTab] = useState<Tab>("waiting");
   const now = useNow(15_000);
@@ -50,7 +58,7 @@ export function ApprovalsPane({ orders, feed, visible }: { orders: Order[]; feed
           ) : (
             <ul className="inbox" aria-label="Orders waiting for approval">
               {waiting.map((order) => (
-                <ApprovalRow key={order.id} order={order} now={now} onOpen={ui.openOrder} />
+                <ApprovalRow key={order.id} order={order} now={now} paused={paused} onOpen={ui.openOrder} />
               ))}
             </ul>
           )}

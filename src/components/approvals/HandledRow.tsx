@@ -34,7 +34,7 @@ export function HandledRow({ order, onOpen }: { order: Order; onOpen: (orderId: 
         <span className="handled-state">
           <StateWord word={view.word} tone={view.tone} />
         </span>
-        <span className="amount">{eur(order.offer.totals.net.amount)}</span>
+        <span className="amount">{eur(order.offer.totals.net.amount)} net</span>
         <span className="what">{what}</span>
         <span className="why">{view.why}</span>
       </button>

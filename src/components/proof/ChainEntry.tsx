@@ -21,11 +21,13 @@ interface ChainEntryProps {
   detail: string;
   time: string;
   dateTime?: string;
+  /** A refused attempt: shown in red, though the entry itself verifies. */
+  alert?: boolean;
   onOpen?: () => void;
 }
 
 /** One link: a seal node on the chain line, a plain title, one line of detail and the time. */
-export function ChainEntry({ state, title, detail, time, dateTime, onOpen }: ChainEntryProps) {
+export function ChainEntry({ state, title, detail, time, dateTime, alert, onOpen }: ChainEntryProps) {
   const body = (
     <>
       <span className="chain-seg up" aria-hidden="true" />
@@ -42,7 +44,7 @@ export function ChainEntry({ state, title, detail, time, dateTime, onOpen }: Cha
     </>
   );
   return (
-    <li className="chain-item" data-link={state}>
+    <li className="chain-item" data-link={state} data-alert={alert}>
       {onOpen ? (
         <button type="button" className="audit" onClick={onOpen}>
           {body}

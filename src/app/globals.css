@@ -38,10 +38,10 @@
   --danger-tint: rgba(255, 69, 58, 0.12);
 
   /* Glass: floating layers only. */
-  --glass-bg: rgba(28, 28, 30, 0.72);
+  --glass-bg: rgba(28, 28, 30, 0.62);
   --glass-filter: blur(24px) saturate(180%);
   --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.1);
   --glass-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
   --pane-border: rgba(255, 255, 255, 0.07);
   --label: #8e8e93;
@@ -50,7 +50,9 @@
   --r-sm: 6px;
   --r-md: 8px;
   --r-lg: 12px;
-  --r-xl: 16px;
+  --r-xl: 20px;
+  --r-card: 14px;
+  --r-control: 12px;
   --r-full: 999px;
 
   --ease-out: cubic-bezier(0.165, 0.84, 0.44, 1);

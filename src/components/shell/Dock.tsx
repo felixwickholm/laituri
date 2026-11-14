@@ -69,17 +69,14 @@ export function Dock({ run, fresh }: DockProps) {
     }
   }
 
-  const status = running ? (run?.request ? `Agent is working on: ${run.request}` : "Agent is working…") : undefined;
 
   return (
     <>
-      {status ? (
-        <p className="dock-status" aria-live="polite">
-          {status}
-        </p>
-      ) : null}
       <div className="dock glass" data-guide="dock" role="toolbar" aria-label="Demo scenes">
         <span className="dock-progress" data-on={running} aria-hidden="true" />
+        <span className="sr-only" aria-live="polite">
+          {running ? `The agent is working on: ${run?.request || "a scene"}` : ""}
+        </span>
         <div className="scenes">
           {SCENES.map((scene) => (
             <button
@@ -110,7 +107,8 @@ export function Dock({ run, fresh }: DockProps) {
             id="ask-agent"
             value={request}
             onChange={(event) => setRequest(event.target.value)}
-            placeholder="Ask the agent to buy something…"
+            placeholder={running ? `Working on: ${run?.request || "a scene"}` : "Ask the agent to buy something…"}
+            disabled={running}
             autoComplete="off"
             enterKeyHint="send"
           />

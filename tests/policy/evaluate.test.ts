@@ -22,22 +22,22 @@ describe("policy outcome", () => {
     expect(decision.outcome).toBe("auto_approved");
   });
 
-  it("blocks dependent checks when the mandate is invalid", () => {
+  it("skips dependent checks when the mandate is invalid", () => {
     const decision = evaluate(input({ mandateValid: false }));
     expect(decision.checks).toHaveLength(15);
     expect(decision.outcome).toBe("blocked");
     expect(decision.checks.find((c) => c.rule === "spend.per_order")).toMatchObject({
-      status: "block",
-      message: "Cannot check without a valid mandate.",
+      status: "skipped",
+      message: "Not checked. The mandate is not valid.",
     });
     expect(decision.checks.find((c) => c.rule === "offer.expiry")?.status).toBe("pass");
   });
 
-  it("blocks dependent checks when the offer is invalid", () => {
+  it("skips dependent checks when the offer is invalid", () => {
     const decision = evaluate(input({ offerValid: false }));
     expect(decision.checks).toHaveLength(15);
     expect(decision.checks.find((c) => c.rule === "offer.signature")?.status).toBe("block");
-    expect(decision.checks.find((c) => c.rule === "match.confidence")?.message).toBe("Cannot check without a valid offer.");
+    expect(decision.checks.find((c) => c.rule === "match.confidence")?.message).toBe("Not checked. The offer is not valid.");
   });
 
   it("puts block above ask", () => {

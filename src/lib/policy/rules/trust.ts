@@ -7,7 +7,7 @@ export const mandateSignature: Rule = {
   run: ({ input }) => {
     const { valid, mandate, reason } = input.mandate;
     if (!valid || !mandate) {
-      return check("mandate.signature", "block", reason ?? "The mandate signature is not valid.", { observed: "invalid" });
+      return check("mandate.signature", "block", reason ?? "The mandate signature is not valid.", { observed: "not accepted" });
     }
     return check("mandate.signature", "pass", `The mandate is signed by ${mandate.buyer.name}.`, {
       observed: `${mandate.id} v${mandate.version}`,
@@ -60,7 +60,7 @@ export const offerSignature: Rule = {
   run: ({ input }) => {
     const { valid, offer, reason } = input.offer;
     if (!valid || !offer) {
-      return check("offer.signature", "block", reason ?? "The offer signature is not valid.", { observed: "invalid" });
+      return check("offer.signature", "block", reason ?? "The offer signature is not valid.", { observed: "not accepted" });
     }
     return check("offer.signature", "pass", "The offer is signed by the wholesaler and unchanged.", { observed: offer.id });
   },

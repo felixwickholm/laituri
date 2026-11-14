@@ -4,8 +4,10 @@ import { useState } from "react";
 import { eur } from "@/lib/console/format/money";
 import { blockedLine, shortName } from "@/lib/console/format/rules";
 import { dayAndTime } from "@/lib/console/format/time";
+import { PAUSED_LABEL, PAUSED_NOTE, pausedMessage } from "@/lib/console/paused";
 import { consoleStore, useConsole } from "@/lib/console/store";
 import { withApprover } from "../session/gate";
+import { CopyButton } from "../ui/CopyButton";
 import { Sheet } from "../ui/Sheet";
 import { toast } from "../ui/toast";
 import { Alternatives } from "./Alternatives";
@@ -17,7 +19,8 @@ import { Stepper } from "./Stepper";
 import { useOrderProof } from "./useOrderProof";
 
 export function OrderSheet({ orderId, onClose }: { orderId: string | null; onClose: () => void }) {
-  const { orders, jwks, mandate, audit } = useConsole();
+  const { orders, jwks, mandate, audit, chain } = useConsole();
+  const paused = chain.state === "broken";
   const order = orders.find((item) => item.id === orderId);
   const proof = useOrderProof(order, jwks, mandate, audit);
   const [busy, setBusy] = useState(false);
@@ -33,7 +36,7 @@ export function OrderSheet({ orderId, onClose }: { orderId: string | null; onClo
         toast(decided.status === "confirmed" ? `Approved. Signed by ${who}.` : `Rejected. Signed by ${who}.`, decided.status === "confirmed" ? "success" : "neutral");
       }
     } catch (error) {
-      toast(error instanceof Error ? error.message : "The decision was not saved.", "danger");
+      toast(pausedMessage(error) ?? (error instanceof Error ? error.message : "The decision was not saved."), "danger");
     } finally {
       setBusy(false);
     }
@@ -45,19 +48,24 @@ export function OrderSheet({ orderId, onClose }: { orderId: string | null; onClo
     <Sheet
       open={Boolean(orderId)}
       onClose={onClose}
-      kicker={order ? `${order.id} · ${order.simulated ? "Simulated order" : "Order"}` : orderId}
+      kicker="Simulated order"
       title={order ? `${order.buyer.name} · ${eur(order.offer.totals.net.amount)}` : "Order"}
       lede={order ? `Placed by ${order.agent.name} · ${dayAndTime(order.createdAt)}` : undefined}
       footer={
         pending ? (
           <>
-            <span className="note">Your decision is signed as {shortName(approver)}.</span>
+            <span className="note">{paused ? PAUSED_NOTE : `Your decision is signed as ${shortName(approver)}.`}</span>
             <span className="end">
               <button type="button" className="btn" disabled={busy} onClick={(event) => decide("rejected", event.currentTarget)}>
                 Reject
               </button>
-              <button type="button" className="btn btn-primary" disabled={busy} onClick={(event) => decide("approved", event.currentTarget)}>
-                Approve order
+              <button
+                type="button"
+                className={`btn ${paused ? "paused" : "btn-primary"}`}
+                disabled={busy || paused}
+                onClick={(event) => decide("approved", event.currentTarget)}
+              >
+                {paused ? PAUSED_LABEL : "Approve order"}
               </button>
             </span>
           </>
@@ -80,6 +88,10 @@ export function OrderSheet({ orderId, onClose }: { orderId: string | null; onClo
             simulated={order.simulated}
             buyer={{ name: order.buyer.name, approver: shortName(approver) }}
           />
+          <p className="id-line">
+            Order ID <span className="mono">{order.id}</span>
+            <CopyButton value={order.id} label="Copy order ID" />
+          </p>
         </>
       ) : (
         <p className="pane-empty">This order is not in the list any more. It may have been cleared by a reset.</p>

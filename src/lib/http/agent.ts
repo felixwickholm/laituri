@@ -6,6 +6,9 @@ export interface AgentIdentity {
   name: string;
 }
 
+/** Name shown when a refusal is logged for a token holder before its mandate is read. */
+export const DEMO_AGENT_NAME = "An agent with a token";
+
 export const ANONYMOUS_AGENT: AgentIdentity = { id: "agent:anonymous", name: "Unidentified agent" };
 
 /** Demo bearer tokens. Production replaces these with OAuth 2.1 access tokens. */

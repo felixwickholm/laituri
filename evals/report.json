@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-14T01:20:47.976Z",
+  "generatedAt": "2026-11-14T01:47:34.250Z",
   "mode": "recorded",
   "suites": [
     {
@@ -46,17 +46,17 @@
           "id": "5",
           "name": "Short stock, split covers need",
           "pass": true,
-          "evidence": "approval: 1000 x 464401 (1000 l); delivery 2026-11-16; primary partial 51/1000, 2 alternatives; split 51 x 462775 (51 l) + 949 x 464401 (949 l) confirmed; audit verified; 462775 has 51 units in stock",
+          "evidence": "auto: 1000 x 464401 (1000 l); delivery 2026-11-16; primary partial 51/1000, 2 alternatives; split 51 x 462775 (51 l) + 949 x 464401 (949 l) confirmed; audit verified; 462775 has 51 units in stock",
           "expected": "route auto or approval; concept milk [lactose_free]; >= 1000 l, at most one lot more; delivery on time; audit sequence complete and verified",
-          "actual": "approval (pending_approval)"
+          "actual": "auto (confirmed)"
         },
         {
           "id": "6",
           "name": "Cut-off passed",
           "pass": true,
-          "evidence": "approval: 500 x 464306 (500 l); delivery 2026-11-16; primary cutoff_passed, ordering it blocked (offer.expiry:block,delivery.deadline:block); 3 on-time alternatives; audit verified",
+          "evidence": "auto: 500 x 464306 (500 l); delivery 2026-11-16; primary cutoff_passed, ordering it blocked (offer.expiry:block,delivery.deadline:block); 3 on-time alternatives; audit verified",
           "expected": "route auto or approval; concept milk [lactose_free]; >= 500 l, at most one lot more; delivery on time; audit sequence complete and verified",
-          "actual": "approval (pending_approval)"
+          "actual": "auto (confirmed)"
         },
         {
           "id": "7",
@@ -86,7 +86,7 @@
           "id": "9b",
           "name": "Product that contains nuts",
           "pass": true,
-          "evidence": "blocked: 40 x 460443 (40 l); flagged dietary.allergens:block,match.confidence:ask; audit verified; no peanut butter in the recording; Alpro almond drink 460443 contains nuts",
+          "evidence": "blocked: 40 x 460443 (40 l); flagged dietary.allergens:block; audit verified; no peanut butter in the recording; Alpro almond drink 460443 contains nuts",
           "expected": "route blocked; >= 40 l, at most one lot more; flags dietary.allergens; audit sequence complete and verified",
           "actual": "blocked (blocked)"
         },
@@ -176,17 +176,17 @@
           "id": "G1",
           "name": "Price edited in the offer",
           "pass": true,
-          "evidence": "blocked by offer.signature (+12 more)",
+          "evidence": "blocked by offer.signature",
           "expected": "blocked by offer.signature",
-          "actual": "blocked by offer.signature (+12 more)"
+          "actual": "blocked by offer.signature"
         },
         {
           "id": "G2",
           "name": "Quantity edited in the offer",
           "pass": true,
-          "evidence": "blocked by offer.signature (+12 more)",
+          "evidence": "blocked by offer.signature",
           "expected": "blocked by offer.signature",
-          "actual": "blocked by offer.signature (+12 more)"
+          "actual": "blocked by offer.signature"
         },
         {
           "id": "G3",
@@ -200,25 +200,25 @@
           "id": "G4",
           "name": "Offer signed by the wrong key",
           "pass": true,
-          "evidence": "blocked by offer.signature (+12 more)",
+          "evidence": "blocked by offer.signature",
           "expected": "blocked by offer.signature",
-          "actual": "blocked by offer.signature (+12 more)"
+          "actual": "blocked by offer.signature"
         },
         {
           "id": "G5",
           "name": "Raised limit, old mandate signature",
           "pass": true,
-          "evidence": "blocked by mandate.signature (+11 more)",
+          "evidence": "blocked by mandate.signature",
           "expected": "3,000 l order blocked by mandate.signature",
-          "actual": "blocked by mandate.signature (+11 more)"
+          "actual": "blocked by mandate.signature"
         },
         {
           "id": "G6",
           "name": "Mandate signed by the agent's own key",
           "pass": true,
-          "evidence": "blocked by mandate.signature (+11 more) / blocked by mandate.signature (+11 more)",
+          "evidence": "blocked by mandate.signature / blocked by mandate.signature",
           "expected": "blocked by mandate.signature, own kid and spoofed buyer kid",
-          "actual": "blocked by mandate.signature (+11 more) / blocked by mandate.signature (+11 more)"
+          "actual": "blocked by mandate.signature / blocked by mandate.signature"
         },
         {
           "id": "G7",
@@ -304,9 +304,9 @@
           "id": "G15",
           "name": "Negative and zero quantities",
           "pass": true,
-          "evidence": "quotes 400/400; offer blocked by offer.signature (+12 more)",
+          "evidence": "quotes 400/400; offer blocked by offer.signature",
           "expected": "400 for both quotes; an edited offer with -5 is blocked",
-          "actual": "quotes 400/400; offer blocked by offer.signature (+12 more)"
+          "actual": "quotes 400/400; offer blocked by offer.signature"
         },
         {
           "id": "G16",
@@ -320,9 +320,9 @@
           "id": "G17",
           "name": "Order for an unknown offer",
           "pass": true,
-          "evidence": "400 invalid_request / blocked by offer.signature (+12 more) / lookup 404",
+          "evidence": "400 invalid_request / blocked by offer.signature / lookup 404",
           "expected": "4xx for garbage; blocked for an offer nobody issued; 404 on lookup",
-          "actual": "400 invalid_request / blocked by offer.signature (+12 more) / lookup 404"
+          "actual": "400 invalid_request / blocked by offer.signature / lookup 404"
         },
         {
           "id": "G18",
@@ -516,9 +516,9 @@
           "id": "O8",
           "name": "Outside agent from llms.txt only",
           "pass": true,
-          "evidence": "/api/v1/products/search -> 463335; /api/v1/quotes -> full; /api/v1/mandate -> jws; /api/v1/orders -> confirmed",
+          "evidence": "/api/v1/products/search -> 464306; /api/v1/quotes -> full; /api/v1/mandate -> jws; /api/v1/orders -> confirmed",
           "expected": "search, quote and order the milk; order confirmed",
-          "actual": "/api/v1/products/search -> 463335; /api/v1/quotes -> full; /api/v1/mandate -> jws; /api/v1/orders -> confirmed"
+          "actual": "/api/v1/products/search -> 464306; /api/v1/quotes -> full; /api/v1/mandate -> jws; /api/v1/orders -> confirmed"
         }
       ]
     }

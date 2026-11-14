@@ -2,8 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { AuditEntry, Order } from "@/lib/contracts";
-import { auditTitle } from "@/lib/console/format/audit";
-import { plainSentence } from "@/lib/console/format/sentence";
+import { auditDetail, auditTitle } from "@/lib/console/format/audit";
 import { clock } from "@/lib/console/format/time";
 import type { ChainState, Jwks, SignedMandate } from "@/lib/console/types";
 import { EmptyLine, Pane, type Feed } from "../shell/Pane";
@@ -45,9 +44,10 @@ export function ProofPane({ audit, chain, orders, jwks, mandate, feed, visible }
               key={item.seq}
               state={linkState(item.seq, chain)}
               title={auditTitle(item)}
-              detail={chain.state === "broken" && chain.brokenAt === item.seq ? chain.reason : plainSentence(item.summary)}
+              detail={chain.state === "broken" && chain.brokenAt === item.seq ? chain.reason : auditDetail(item, orders)}
               time={clock(item.at)}
               dateTime={item.at}
+              alert={item.event === "access.refused" || item.event === "order.blocked"}
               onOpen={() => setOpenSeq(item.seq)}
             />
           ))}

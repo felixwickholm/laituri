@@ -133,6 +133,12 @@
 .ask input::placeholder {
   color: var(--text-3);
 }
+.ask input:disabled {
+  cursor: progress;
+}
+.ask input:disabled::placeholder {
+  color: var(--text-2);
+}
 .ask:focus-within {
   border-color: var(--accent);
 }

@@ -19,7 +19,7 @@ export function concerns(decision: Decision, status: Check["status"]): Check[] {
 /** The checks that did not pass, in the compact form kept in audit data. */
 export function nonPassing(decision: Decision) {
   return decision.checks
-    .filter((check) => check.status !== "pass")
+    .filter((check) => check.status === "ask" || check.status === "block")
     .map(({ rule, status, message }) => ({ rule, status, message }));
 }
 

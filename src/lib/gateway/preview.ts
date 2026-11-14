@@ -32,6 +32,16 @@ function preview(hit: SearchHit, request: SearchRequest, market: Market): OfferP
   };
 }
 
+/** When every hit is the product asked for, the first hit is the one to buy: orderable on time, then cheapest per litre or kilo. */
+function bestBuyFirst(hits: SearchHit[]): SearchHit[] {
+  const rank = (hit: SearchHit) => (hit.offerPreview?.orderable ? 0 : 1);
+  const price = (hit: SearchHit) => hit.offerPreview?.comparisonPrice?.amount ?? Number.POSITIVE_INFINITY;
+  return hits
+    .map((hit, index) => ({ hit, index }))
+    .sort((a, b) => rank(a.hit) - rank(b.hit) || price(a.hit) - price(b.hit) || a.index - b.index)
+    .map(({ hit }) => hit);
+}
+
 /**
  * Adds indicative live price and availability to search hits, with one price call and one availability call.
  * A wholesaler outage leaves the hits without previews rather than failing the search.
@@ -52,13 +62,11 @@ export async function withPreviews(
       deps.upstream.availability(ids, deliverBy, customer),
     ]);
     const market: Market = { prices, availability, now: deps.now(), deliverBy };
-    return {
-      ...response,
-      hits: response.hits.map((hit) => {
-        const offerPreview = preview(hit, request, market);
-        return offerPreview ? { ...hit, offerPreview } : hit;
-      }),
-    };
+    const hits = response.hits.map((hit) => {
+      const offerPreview = preview(hit, request, market);
+      return offerPreview ? { ...hit, offerPreview } : hit;
+    });
+    return { ...response, hits: response.interpretation.confidence === "high" ? bestBuyFirst(hits) : hits };
   } catch {
     return response;
   }

@@ -20,7 +20,8 @@ export const RuleId = z.enum([
 export type RuleId = z.infer<typeof RuleId>;
 
 /** pass: inside the mandate. ask: a human must sign off. block: nobody can approve this through the agent channel. */
-export const CheckStatus = z.enum(["pass", "ask", "block"]);
+/** skipped: the rule could not run because the mandate or the offer is not valid. */
+export const CheckStatus = z.enum(["pass", "ask", "block", "skipped"]);
 export type CheckStatus = z.infer<typeof CheckStatus>;
 
 export const Check = z.object({
