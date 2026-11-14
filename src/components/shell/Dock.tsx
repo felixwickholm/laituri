@@ -1,10 +1,11 @@
 "use client";
 
 import { ArrowUp, RotateCcw } from "lucide-react";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent, type MouseEvent } from "react";
 import { consoleStore } from "@/lib/console/store";
 import type { DemoRun, Scenario } from "@/lib/console/types";
 import { tamperWithLog } from "../proof/ProofTools";
+import { withApprover } from "../session/gate";
 import { toast } from "../ui/toast";
 
 const SCENES: { id: Scenario; n: number; label: string; short: string }[] = [
@@ -54,9 +55,13 @@ export function Dock({ run, fresh }: DockProps) {
     void start({ request: text }, "free").then(() => setRequest(""));
   }
 
-  async function reset() {
+  async function reset(event: MouseEvent<HTMLButtonElement>) {
     try {
-      await consoleStore.reset();
+      const done = await withApprover(event.currentTarget, async () => {
+        await consoleStore.reset();
+        return true;
+      });
+      if (!done) return;
       tamperAfter.current = null;
       toast("Reset. The log is empty and verified again.", "neutral");
     } catch {

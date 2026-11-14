@@ -2,6 +2,9 @@ import type { z } from "zod";
 import { ValidationError } from "@/lib/gateway/errors";
 import { errorResponse } from "./respond";
 
+/** Signed offers and mandates fit well inside this; nothing legitimate is larger. */
+const MAX_BODY_CHARS = 64_000;
+
 type Params = Record<string, string>;
 type Context = { params: Promise<Params> };
 type Handler = (request: Request, params: Params) => Promise<Response>;
@@ -27,6 +30,7 @@ export async function readBody<S extends z.ZodType>(
   let body: unknown;
   try {
     const text = await request.text();
+    if (text.length > MAX_BODY_CHARS) throw new ValidationError("The request body is too large.");
     body = text ? JSON.parse(text) : {};
   } catch {
     throw new ValidationError("The request body is not valid JSON.");

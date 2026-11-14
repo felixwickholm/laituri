@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-14T01:01:00.239Z",
+  "generatedAt": "2026-11-14T01:13:54.623Z",
   "mode": "recorded",
   "suites": [
     {
@@ -46,17 +46,17 @@
           "id": "5",
           "name": "Short stock, split covers need",
           "pass": true,
-          "evidence": "auto: 1000 x 464401 (1000 l); delivery 2026-11-16; primary partial 51/1000, 2 alternatives; split 51 x 462775 (51 l) + 949 x 464401 (949 l) confirmed; audit verified; 462775 has 51 units in stock",
+          "evidence": "approval: 1000 x 464401 (1000 l); delivery 2026-11-16; primary partial 51/1000, 2 alternatives; split 51 x 462775 (51 l) + 949 x 464401 (949 l) confirmed; audit verified; 462775 has 51 units in stock",
           "expected": "route auto or approval; concept milk [lactose_free]; >= 1000 l, at most one lot more; delivery on time; audit sequence complete and verified",
-          "actual": "auto (confirmed)"
+          "actual": "approval (pending_approval)"
         },
         {
           "id": "6",
           "name": "Cut-off passed",
           "pass": true,
-          "evidence": "auto: 500 x 464306 (500 l); delivery 2026-11-16; primary cutoff_passed, ordering it blocked (offer.expiry:block,delivery.deadline:block); 3 on-time alternatives; audit verified",
+          "evidence": "approval: 500 x 464306 (500 l); delivery 2026-11-16; primary cutoff_passed, ordering it blocked (offer.expiry:block,delivery.deadline:block); 3 on-time alternatives; audit verified",
           "expected": "route auto or approval; concept milk [lactose_free]; >= 500 l, at most one lot more; delivery on time; audit sequence complete and verified",
-          "actual": "auto (confirmed)"
+          "actual": "approval (pending_approval)"
         },
         {
           "id": "7",
@@ -70,9 +70,9 @@
           "id": "8",
           "name": "Oat drink keeps vegan",
           "pass": true,
-          "evidence": "approval: 40 x 468465 (40 l); delivery 2026-11-16; audit verified",
+          "evidence": "auto: 40 x 468465 (40 l); delivery 2026-11-16; audit verified",
           "expected": "route auto or approval; concept oat_drink [vegan]; >= 40 l, at most one lot more; delivery on time; audit sequence complete and verified",
-          "actual": "approval (pending_approval)"
+          "actual": "auto (confirmed)"
         },
         {
           "id": "9",
@@ -86,7 +86,7 @@
           "id": "9b",
           "name": "Product that contains nuts",
           "pass": true,
-          "evidence": "blocked: 40 x 460443 (40 l); flagged category.allowed:ask,dietary.allergens:block; audit verified; no peanut butter in the recording; Alpro almond drink 460443 contains nuts",
+          "evidence": "blocked: 40 x 460443 (40 l); flagged dietary.allergens:block,match.confidence:ask; audit verified; no peanut butter in the recording; Alpro almond drink 460443 contains nuts",
           "expected": "route blocked; >= 40 l, at most one lot more; flags dietary.allergens; audit sequence complete and verified",
           "actual": "blocked (blocked)"
         },
@@ -240,9 +240,9 @@
           "id": "G9",
           "name": "Replay a confirmed offer, new keys",
           "pass": true,
-          "evidence": "5 sends of one 1010 EUR offer: 4 confirmed, 1 pending_approval",
-          "expected": "replays allowed and counted; the one over the week waits",
-          "actual": "5 sends of one 1010 EUR offer: 4 confirmed, 1 pending_approval"
+          "evidence": "4 sends of one offer: 1 confirmed, 3 blocked",
+          "expected": "one offer gives one order; every replay is blocked",
+          "actual": "4 sends of one offer: 1 confirmed, 3 blocked"
         },
         {
           "id": "G19",

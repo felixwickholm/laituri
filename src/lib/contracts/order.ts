@@ -17,7 +17,7 @@ export const Approval = z.object({
   decidedBy: z.object({ id: z.string(), name: z.string() }),
   decision: z.enum(["approved", "rejected"]),
   decidedAt: IsoDateTime,
-  note: z.string().optional(),
+  note: z.string().max(500).optional(),
   jws: Jws.describe("The approver's signature over the order id, offer id and decision"),
 });
 export type Approval = z.infer<typeof Approval>;
@@ -40,6 +40,6 @@ export type Order = z.infer<typeof Order>;
 
 export const ApprovalDecisionRequest = z.object({
   decision: z.enum(["approved", "rejected"]),
-  note: z.string().optional(),
+  note: z.string().max(500).optional(),
 });
 export type ApprovalDecisionRequest = z.infer<typeof ApprovalDecisionRequest>;

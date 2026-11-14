@@ -67,7 +67,7 @@ export function assembleOffer({ request, customerNumber, lines, now }: OfferInpu
     issuedAt,
     expiresAt: expiresAt.toISOString(),
     intent: request.intent,
-    matchConfidence: request.matchConfidence ?? "high",
+    matchConfidence: request.matchConfidence ?? "medium",
     deliverBy: request.deliverBy,
     deliveryDate: latest(delivering.map((l) => l.availability.deliveryDate), (a, b) => a > b),
     orderBy,

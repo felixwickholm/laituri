@@ -10,6 +10,7 @@ import { quote } from "@/lib/offers";
 import { offerSubject, productName } from "@/lib/offers/format";
 import * as orders from "@/lib/orders";
 import { SUPPLIER_ACTOR, agentActor } from "@/lib/orders/summaries";
+import { matchConfidence } from "./confidence";
 import { NotFoundError, ValidationError } from "./errors";
 import { offerSummary, orderDetail, orderStatus, orderTitle, quoteDetail, quoteTitle, searchDetail } from "./describe";
 import { withPreviews } from "./preview";
@@ -67,7 +68,8 @@ export function createGateway(deps: Deps): Gateway {
       const request = validate(QuoteRequest, input, "quote request");
       return recorder.track(agent, "request_quote", quoteTitle(request, deps.catalog), async () => {
         const { mandate } = await deps.mandates.current();
-        const response = await quote(request, { customerNumber: mandate.buyer.customerNumber }, deps);
+        const checked = { ...request, matchConfidence: matchConfidence(request, deps.catalog) };
+        const response = await quote(checked, { customerNumber: mandate.buyer.customerNumber }, deps);
         const { offer } = response.primary;
         await deps.audit.append({
           actor: SUPPLIER_ACTOR,

@@ -48,6 +48,7 @@ With jq: OFFER=$(curl -s ... /quotes ... | jq -r .primary.jws); MANDATE=$(curl -
 - pending_approval: stop and tell your human. Do not retry with another key. Poll GET ${urls.rest}/orders/{id}.
 - blocked: nothing was ordered; decision.checks says why.
 Retrying with the same Idempotency-Key returns the same order.
+One signed offer gives one order. For another order, ask for a new quote. Always send the current mandate.
 
 ## Proof
 GET ${urls.rest}/audit/verify checks the hash chain and every signature. GET ${urls.rest}/audit/checkpoint returns a signed head.

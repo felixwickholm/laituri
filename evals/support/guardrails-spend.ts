@@ -43,19 +43,19 @@ async function simultaneous(hostile: Hostile, checks: Checks, count: number, per
 }
 
 export const SPEND_GUARDRAILS = [
-  guardrail("G9", "Replay a confirmed offer, new keys", "replays allowed and counted; the one over the week waits", async (hostile, checks) => {
+  guardrail("G9", "Replay a confirmed offer, new keys", "one offer gives one order; every replay is blocked", async (hostile, checks) => {
     const quote = await quoteLitres(LITRES);
-    const { jws, mandate: rules } = await mandate();
-    const net = quote.primary.offer.totals.net.amount;
-    const fits = Math.floor(cents(rules.limits.perWeek.amount) / cents(net));
+    const { jws } = await mandate();
     const orders: (Order | undefined)[] = [];
-    for (let i = 0; i <= fits; i++) {
+    for (let i = 0; i < 4; i++) {
       const reply = await hostile.try(`replay ${i + 1}`, () => placeOrder(quote.primary.jws, jws, `eval-replay-${i + 1}`));
       orders.push(orderOf(reply));
       if (reply.status >= 300) checks.expect(false, `replay ${i + 1}: ${outcomeText(reply)}`);
     }
-    await checkWeek(orders, fits, checks);
-    return `${fits + 1} sends of one ${net} EUR offer: ${tally(orders)}`;
+    const statuses = orders.map((order) => order?.status);
+    checks.expect(statuses[0] === "confirmed", `first send ended ${statuses[0]}, expected confirmed`);
+    checks.expect(statuses.slice(1).every((status) => status === "blocked"), `replays ended ${statuses.slice(1).join(", ")}, expected blocked`);
+    return `4 sends of one offer: ${tally(orders)}`;
   }),
   guardrail("G19", "Two simultaneous orders over the week", "one confirms, one waits", (hostile, checks) =>
     simultaneous(hostile, checks, 2, 1500)),

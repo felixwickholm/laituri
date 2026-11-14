@@ -54,7 +54,7 @@ export const ProductFilters = z.object({
 export type ProductFilters = z.infer<typeof ProductFilters>;
 
 export const SearchRequest = z.object({
-  query: z.string().min(1).describe("What the buyer needs, in Finnish, Swedish or English"),
+  query: z.string().min(1).max(300).describe("What the buyer needs, in Finnish, Swedish or English"),
   filters: ProductFilters.optional(),
   limit: z.number().int().min(1).max(50).default(10),
   need: Quantity.optional().describe("How much is needed. Adds pack maths and an estimated total to each hit"),

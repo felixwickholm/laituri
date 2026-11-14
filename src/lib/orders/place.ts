@@ -6,7 +6,7 @@ import { serial } from "./lock";
 import { orderedProductIds, productsFor, weekSpendNet } from "./context";
 import { decodeUnverified, readOffer } from "./read-offer";
 import { SUPPLIER_ACTOR, agentActor, nonPassing, summaries } from "./summaries";
-import type { Caller, OrderDeps, StoredOrder } from "./types";
+import type { Caller, MandateRead, OfferRead, OrderDeps, StoredOrder } from "./types";
 
 export const UNKNOWN_AGENT = { id: "unknown", name: "Unknown agent" };
 /** The offer names no buyer, so an order without a valid mandate cannot say whose it is. */
@@ -53,13 +53,28 @@ export async function placeOrder(request: PlaceOrderRequest, deps: OrderDeps, ca
   }
 }
 
+/** A fixed-price offer covers one order. A second order needs a new quote, so stock is not promised twice. */
+function singleUse<T extends OfferRead>(read: T, orders: Order[]): T {
+  if (!read.valid || !read.offer) return read;
+  const used = orders.find((o) => o.offer.id === read.offer?.id && (o.status === "confirmed" || o.status === "pending_approval"));
+  return used ? { ...read, valid: false, reason: `This offer was already used for order ${used.id}. Ask for a new quote.` } : read;
+}
+
+/** Only the mandate in force counts. An older copy stays correctly signed after the buyer tightens the limits. */
+async function currentOnly(read: MandateRead, deps: OrderDeps): Promise<MandateRead> {
+  if (!read.valid || !read.mandate) return read;
+  const { mandate: current } = await deps.mandates.current();
+  if (current.id === read.mandate.id && current.version === read.mandate.version) return read;
+  return { ...read, valid: false, reason: "This mandate was replaced by a newer version. Read the current mandate and try again." };
+}
+
 async function createOrder(request: PlaceOrderRequest, deps: OrderDeps, caller?: Caller): Promise<Order> {
-  const offerRead = await readOffer(request.offerJws, deps);
-  const mandateRead = await deps.mandates.read(request.mandateJws);
+  const allOrders = await deps.store.orders.list();
+  const offerRead = singleUse(await readOffer(request.offerJws, deps), allOrders);
+  const mandateRead = await currentOnly(await deps.mandates.read(request.mandateJws), deps);
   const mandate = mandateRead.mandate;
   const now = deps.now();
   const at = now.toISOString();
-  const allOrders = await deps.store.orders.list();
   const buyerId = mandate?.buyer.id ?? UNVERIFIED_BUYER.id;
 
   const draft: Order = {

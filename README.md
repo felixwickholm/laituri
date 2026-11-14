@@ -119,6 +119,10 @@ An agent cannot raise its own limit, change a price, or approve its own order. E
 - Category groups (dairy, bakery, ...) and the product concept list are our own, built from the product data.
 - Availability returns the next delivery date whatever date is asked. Laituri compares that date with the requested one.
 - The demo uses a static bearer token for the agent and a passcode sign-in for the approver. Without `LAITURI_APPROVER_PASSCODE` the sign-in is open and the console says so; use that only locally.
+- One signed offer gives one order. Only the mandate version in force is accepted; an older signed copy is refused.
+- The agent may state how sure it is of a match, but the wholesaler checks the buyer's words against its own catalogue and never reports a higher confidence than it finds.
+- An approver can approve several waiting orders that together pass the weekly limit. That is the approver's decision; each order shows the limit it passed.
+- The demo controls (start a scene, alter one log entry to show detection) are open to visitors and refuse agent credentials. Reset needs the approver. A production deployment has none of them.
 - State is kept in memory with a JSON snapshot. One process serialises order decisions so two orders cannot pass a limit together.
 - Audit verification proves that entries were not changed, reordered or removed from the middle. That the newest entries are still there is checked against the last head the verifier saw.
 

@@ -9,7 +9,7 @@ export const QuoteLineRequest = z.object({
 export const QuoteRequest = z.object({
   lines: z.array(QuoteLineRequest).min(1).max(50),
   deliverBy: IsoDate.describe("Latest acceptable delivery date"),
-  intent: z.string().optional().describe("The buyer's original words, kept for the audit trail"),
+  intent: z.string().max(500).optional().describe("The buyer's original words, kept for the audit trail"),
   matchConfidence: z.enum(["high", "medium", "low"]).optional(),
 });
 export type QuoteRequest = z.infer<typeof QuoteRequest>;

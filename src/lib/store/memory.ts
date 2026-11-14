@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import type { AuditEntry, Order, SignedOffer } from "@/lib/contracts";
 import { dataDir } from "./data-dir";
@@ -25,6 +25,9 @@ function snapshotFile(): string {
   return path.join(dataDir(), "state.json");
 }
 
+/** The activity feed is a view for the console, not a record; the audit log is the record. */
+const MAX_ACTIVITY = 1000;
+
 /** Reads the last snapshot. A missing or unreadable file starts an empty state. */
 function loadState(file: string): State {
   try {
@@ -37,6 +40,8 @@ function loadState(file: string): State {
       mandateJws: typeof parsed.mandateJws === "string" ? parsed.mandateJws : undefined,
     };
   } catch {
+    // Keep an unreadable snapshot for inspection instead of overwriting it with an empty one.
+    if (existsSync(file)) renameSync(file, `${file}.unreadable-${Date.now()}`);
     return emptyState();
   }
 }
@@ -111,6 +116,7 @@ export function createMemoryStore(file: string = snapshotFile()): Store & { flus
     activity: {
       async append(activity) {
         state.activity.push(activity);
+        if (state.activity.length > MAX_ACTIVITY) state.activity.splice(0, state.activity.length - MAX_ACTIVITY);
         changed();
       },
       async list(afterId) {
