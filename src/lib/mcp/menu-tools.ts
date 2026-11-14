@@ -22,7 +22,11 @@ export const PlanMenuInput = z.object({
 });
 
 function planText(plan: MenuPlan): string {
-  const menus = plan.menus.map((menu) => `${menu.tier}: ${menu.name}, ${eur(menu.costPerGuest)} per guest (${menu.id})`);
+  // A per-guest cost that leaves items out says so in the same line, so a model never quotes it as the full cost.
+  const menus = plan.menus.map(
+    (menu) =>
+      `${menu.tier}: ${menu.name}, ${eur(menu.costPerGuest)} per guest${menu.unpriced ? `, not counting ${menu.unpriced} ${menu.unpriced === 1 ? "item" : "items"} without a price` : ""} (${menu.id})`,
+  );
   return [plan.understood, ...(plan.question ? [plan.question] : []), ...menus].join("\n");
 }
 

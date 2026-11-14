@@ -62,12 +62,13 @@ function operationObject(op: Operation) {
   };
 }
 
-/** Who may call: a bearer key (anonymous allowed for agent calls), any reader credential, a session, or anyone. */
+/** Who may call: a bearer key (a sandbox cookie also works from a browser), any reader credential, a session, or anyone. Only reading one product is anonymous. */
 function securityOf(op: Operation) {
   if (op.audience === "reader") return [{ bearer: [] }, { sandboxCookie: [] }, { approverSession: [] }, { operatorSession: [] }];
   if (op.audience === "human") return [{ approverSession: [] }];
   if (op.audience === "operator") return [{ operatorSession: [] }, ...(op.method === "get" ? [{ approverSession: [] }, { sandboxCookie: [] }] : [])];
-  return op.scope ? [{ bearer: [op.scope] }, {}] : [];
+  if (op.scope) return op.operationId === "getProduct" ? [{ bearer: [op.scope] }, {}] : [{ bearer: [op.scope] }, { sandboxCookie: [] }];
+  return [];
 }
 
 function example(value: unknown) {
