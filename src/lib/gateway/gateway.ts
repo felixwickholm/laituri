@@ -11,7 +11,7 @@ import { offerSubject, productName } from "@/lib/offers/format";
 import * as orders from "@/lib/orders";
 import { SUPPLIER_ACTOR, agentActor } from "@/lib/orders/summaries";
 import { matchConfidence } from "./confidence";
-import { NotFoundError, ValidationError } from "./errors";
+import { AuditBrokenError, NotFoundError, ValidationError } from "./errors";
 import { offerSummary, orderDetail, orderStatus, orderTitle, quoteDetail, quoteTitle, searchDetail } from "./describe";
 import { withPreviews } from "./preview";
 import { createRecorder } from "./recorder";
@@ -113,6 +113,10 @@ export function createGateway(deps: Deps): Gateway {
 
     async decideApproval(orderId, input) {
       const body = validate(ApprovalDecisionRequest, input, "approval decision");
+      if (body.decision === "approved") {
+        const log = await deps.audit.verify();
+        if (!log.valid) throw new AuditBrokenError(`Approvals are paused. ${log.reason ?? "The audit log does not verify."}`);
+      }
       const order = await orders.decideApproval(orderId, body, deps);
       const title = order.approval
         ? `${order.approval.decidedBy.name} ${order.approval.decision} the order for ${offerSubject(order.offer)}`

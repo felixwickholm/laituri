@@ -54,6 +54,15 @@ describe.skipIf(!recorded)("demo scenes on recorded data", () => {
     expect((await verifyAuditLog()).valid).toBe(true);
   });
 
+  it("pauses approvals while the log is broken", async () => {
+    await startRun({ scenario: "over-limit" }).done;
+    const [waiting] = await gateway().pendingApprovals();
+    await tamperAudit();
+    await expect(gateway().decideApproval(waiting.id, { decision: "approved" })).rejects.toMatchObject({ code: "audit_broken", status: 409 });
+    await restoreAudit();
+    expect((await gateway().decideApproval(waiting.id, { decision: "approved" })).status).toBe("confirmed");
+  });
+
   it("over-limit: leaves one or two orders for the approver", async () => {
     const { done } = startRun({ scenario: "over-limit" });
     await done;

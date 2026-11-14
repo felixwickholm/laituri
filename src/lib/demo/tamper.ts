@@ -3,6 +3,9 @@ import { StateError } from "@/lib/gateway/errors";
 import { store } from "@/lib/store";
 import { demoState } from "./state";
 
+/** The altered entry is put back after this long, so one visitor cannot leave the demo broken for the next. */
+const SELF_HEAL_MS = 5 * 60_000;
+
 /** A copy whose money figures are ten times higher. Hash and signature stay as they were. */
 function inflate(entry: AuditEntry): AuditEntry {
   const copy = structuredClone(entry);
@@ -24,6 +27,8 @@ export async function tamperAudit(): Promise<{ seq: number }> {
   const target = [...entries].reverse().find((entry) => entry.event.startsWith("order.")) ?? entries[Math.floor(entries.length / 2)];
   demoState().tampered = { seq: target.seq, original: target };
   await store().audit.replace(target.seq, inflate(target));
+  const timer = setTimeout(() => void restoreAudit(), SELF_HEAL_MS);
+  timer.unref?.();
   return { seq: target.seq };
 }
 

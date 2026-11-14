@@ -37,6 +37,13 @@ export class StateError extends GatewayError {
   }
 }
 
+/** The audit log no longer verifies, so nothing may be approved on top of it. */
+export class AuditBrokenError extends GatewayError {
+  constructor(message: string) {
+    super(message, 409, "audit_broken");
+  }
+}
+
 export class UpstreamError extends GatewayError {
   constructor(message: string, details?: unknown) {
     super(message, 502, "upstream_unavailable", details);

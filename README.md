@@ -123,6 +123,7 @@ An agent cannot raise its own limit, change a price, or approve its own order. E
 - The agent may state how sure it is of a match, but the wholesaler checks the buyer's words against its own catalogue and never reports a higher confidence than it finds.
 - An approver can approve several waiting orders that together pass the weekly limit. That is the approver's decision; each order shows the limit it passed.
 - The demo controls (start a scene, alter one log entry to show detection) are open to visitors and refuse agent credentials. Reset needs the approver. A production deployment has none of them.
+- While the log does not verify, approvals are paused. The altered entry in the demo is put back after five minutes.
 - State is kept in memory with a JSON snapshot. One process serialises order decisions so two orders cannot pass a limit together.
 - Audit verification proves that entries were not changed, reordered or removed from the middle. That the newest entries are still there is checked against the last head the verifier saw.
 
