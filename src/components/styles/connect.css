@@ -1,0 +1,840 @@
+/* Connect your agent (/connect). Every class starts with cx- so nothing leaks into the control room. */
+
+.cx {
+  --cx-code-bg: #0e1726;
+  --cx-code-text: #e8ecf3;
+  --cx-code-muted: #9aa6ba;
+  --cx-code-ok: #4fd1a1;
+  --cx-code-bad: #ff8a7a;
+  --cx-code-line: rgba(255, 255, 255, 0.08);
+  min-height: 100dvh;
+  background: var(--bg);
+}
+:root[data-theme="dark"] .cx {
+  --cx-code-bg: #070b14;
+  --cx-code-line: rgba(255, 255, 255, 0.07);
+}
+
+/* Top bar: plain, wordmark, two links, the theme switch. */
+.cx-top {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: var(--topbar);
+  padding: 0 var(--gutter);
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+}
+.cx-home {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-1);
+  text-decoration: none;
+  border-radius: var(--r-sm);
+}
+.cx-home .wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.cx-nav {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+.cx-nav a {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: var(--r-control);
+  color: var(--text-2);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background-color var(--d-hover) var(--ease-hover),
+    color var(--d-hover) var(--ease-hover),
+    transform var(--d-press) var(--ease-out);
+}
+.cx-nav a:active {
+  transform: scale(0.97);
+}
+
+.cx-main {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 48px var(--gutter) 40px;
+}
+.cx-head h1 {
+  font-size: 40px;
+  line-height: 1.05;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+.cx-head p {
+  margin-top: 12px;
+  color: var(--text-2);
+  font-size: 18px;
+  line-height: 1.5;
+}
+
+.cx h2 {
+  font-size: 18px;
+  line-height: 1.3;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+.cx-sub {
+  margin-top: 4px;
+  color: var(--text-2);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.cx-sub code {
+  font-size: 12.5px;
+  color: var(--text-1);
+  white-space: nowrap;
+}
+
+/* Cards: one tone step above the canvas and a quiet line. No shadow at rest. */
+.cx-setup,
+.cx-live,
+.cx-test,
+.cx-tools {
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  padding: 24px;
+  min-width: 0;
+}
+
+.cx-work {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 16px;
+  margin-top: 32px;
+  align-items: start;
+}
+.cx-endpoint {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px 16px;
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--line);
+}
+.cx-endpoint h3 {
+  font-size: 15px;
+  font-weight: 600;
+}
+.cx-endpoint .cx-sub {
+  grid-column: 2;
+  margin-top: 0;
+}
+
+/* App picker */
+.cx-apps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+.cx-app {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 0 12px;
+  white-space: nowrap;
+  border: 1px solid var(--line);
+  border-radius: var(--r-control);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color var(--d-hover) var(--ease-hover),
+    border-color var(--d-hover) var(--ease-hover),
+    color var(--d-hover) var(--ease-hover),
+    transform var(--d-press) var(--ease-out);
+}
+.cx-app svg {
+  flex: none;
+}
+.cx-app:active {
+  transform: scale(0.97);
+}
+.cx-app[aria-selected="true"] {
+  background: var(--accent-tint);
+  border-color: var(--accent);
+  color: var(--text-1);
+}
+.cx-app[aria-selected="true"] svg {
+  color: var(--accent);
+}
+
+/* Steps */
+.cx-guide {
+  margin-top: 24px;
+}
+.cx-variant {
+  display: inline-flex;
+  padding: 3px;
+  margin-bottom: 20px;
+  border-radius: var(--r-full);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+.cx-variant button {
+  height: 30px;
+  padding: 0 14px;
+  border-radius: var(--r-full);
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background-color var(--d-hover) var(--ease-hover),
+    color var(--d-hover) var(--ease-hover),
+    transform var(--d-press) var(--ease-out);
+}
+.cx-variant button:active {
+  transform: scale(0.97);
+}
+.cx-variant button[aria-pressed="true"] {
+  background: var(--surface-1);
+  color: var(--text-1);
+  box-shadow: 0 0 0 1px var(--line-strong);
+}
+.cx-steps {
+  display: grid;
+  gap: 20px;
+  counter-reset: cx-step;
+  list-style: none;
+}
+.cx-steps > li {
+  position: relative;
+  min-width: 0;
+  padding-left: 40px;
+  counter-increment: cx-step;
+}
+.cx-steps > li::before {
+  content: counter(cx-step);
+  position: absolute;
+  left: 0;
+  top: -1px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--r-full);
+  background: var(--surface-3);
+  color: var(--text-1);
+  font-size: 13px;
+  font-weight: 600;
+}
+.cx-steps p {
+  color: var(--text-1);
+  font-size: 15px;
+  line-height: 1.5;
+}
+.cx-steps .cx-code {
+  margin-top: 10px;
+}
+.cx-note,
+.cx-docs {
+  margin-top: 20px;
+  padding: 12px 14px;
+  border-radius: var(--r-control);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.cx-note {
+  background: var(--warn-tint);
+  color: var(--text-1);
+}
+.cx-docs {
+  background: var(--surface-2);
+  color: var(--text-2);
+}
+.cx-docs a,
+.cx-link {
+  color: var(--accent);
+  font-weight: 500;
+  text-underline-offset: 3px;
+}
+
+/* Code blocks: dark in both themes, mono, scroll inside themselves. */
+.cx-code {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  min-width: 0;
+  border-radius: var(--r-control);
+  background: var(--cx-code-bg);
+  box-shadow: inset 0 0 0 1px var(--cx-code-line);
+}
+.cx-code pre {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 12px 4px 12px 14px;
+  overflow-x: auto;
+  color: var(--cx-code-text);
+  font-size: 12.5px;
+  line-height: 1.6;
+  white-space: pre;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+.cx-code[data-wrap] pre {
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+.cx-code pre:focus-visible {
+  outline-offset: -2px;
+}
+.cx-code .icon-btn {
+  flex: none;
+  margin: 6px 6px 0 0;
+  color: var(--cx-code-muted);
+}
+.cx-code .icon-btn svg {
+  transition: transform var(--d-fast) var(--ease-out);
+}
+.cx-code .icon-btn:active svg {
+  transform: scale(0.9);
+}
+
+/* Live calls */
+.cx-live-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.cx-live-dot {
+  position: relative;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--r-full);
+  background: var(--success);
+}
+.cx-live-dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--success);
+  opacity: 0;
+}
+.cx-live-dot[data-pulse]::after {
+  animation: cx-ping 1200ms var(--ease-out) 2;
+}
+@keyframes cx-ping {
+  from {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(3.2);
+  }
+}
+.cx-empty {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: var(--r-control);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.cx-calls {
+  display: grid;
+  margin-top: 12px;
+  list-style: none;
+}
+.cx-call {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "who status"
+    "tool time";
+  gap: 2px 12px;
+  padding: 10px 8px;
+  margin: 0 -8px;
+}
+.cx-call + .cx-call {
+  border-top: 1px solid var(--line);
+}
+.cx-call[data-fresh] {
+  animation: cx-arrive 1600ms var(--ease-out);
+}
+@keyframes cx-arrive {
+  from {
+    background-color: var(--accent-tint);
+    transform: translateY(-4px);
+  }
+  30% {
+    transform: none;
+  }
+  to {
+    background-color: transparent;
+  }
+}
+.cx-call-agent {
+  grid-area: who;
+  min-width: 0;
+  color: var(--text-1);
+  font-size: 14px;
+  font-weight: 550;
+  overflow-wrap: anywhere;
+}
+.cx-call-tool {
+  grid-area: tool;
+  min-width: 0;
+  color: var(--text-2);
+  font-size: 12px;
+}
+.cx-call-client {
+  color: var(--text-3);
+}
+.cx-call-time {
+  grid-area: time;
+  justify-self: end;
+  color: var(--text-3);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.cx-status {
+  grid-area: status;
+  justify-self: end;
+  font-size: 12px;
+  font-weight: 600;
+}
+.cx-status[data-status="ok"] {
+  color: var(--success);
+}
+.cx-status[data-status="waiting"] {
+  color: var(--warn);
+}
+.cx-status[data-status="blocked"],
+.cx-status[data-status="error"] {
+  color: var(--danger);
+}
+
+/* Test order: stepper on the left, terminal on the right. */
+.cx-test {
+  display: grid;
+  grid-template-columns: 340px minmax(0, 1fr);
+  gap: 24px;
+  margin-top: 16px;
+}
+.cx-test-side {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.cx-stepper {
+  display: grid;
+  gap: 6px;
+  margin-top: 16px;
+  list-style: none;
+}
+.cx-stepper li {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 40px;
+  padding: 0 12px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--r-control);
+  color: var(--text-2);
+  font-size: 14px;
+  transition:
+    border-color var(--d-base) var(--ease-out),
+    background-color var(--d-base) var(--ease-out),
+    color var(--d-base) var(--ease-out);
+}
+.cx-stepper-mark {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--r-full);
+  background: var(--surface-3);
+  color: var(--text-2);
+  font-size: 11px;
+  font-weight: 600;
+}
+.cx-stepper-mark svg {
+  width: 13px;
+  height: 13px;
+  stroke-width: 2.5;
+}
+.cx-stepper-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+}
+.cx-stepper li[data-state="active"] {
+  border-color: var(--accent);
+  background: var(--accent-tint);
+  color: var(--text-1);
+}
+.cx-stepper li[data-state="active"] .cx-stepper-bar {
+  animation: cx-progress 1400ms var(--ease-out) forwards;
+}
+@keyframes cx-progress {
+  to {
+    transform: scaleX(0.92);
+  }
+}
+.cx-stepper li[data-state="done"] {
+  color: var(--text-1);
+}
+.cx-stepper li[data-state="done"] .cx-stepper-mark {
+  background: var(--success-tint);
+  color: var(--success);
+}
+.cx-stepper li[data-state="failed"] {
+  border-color: var(--danger);
+  color: var(--text-1);
+}
+.cx-stepper li[data-state="failed"] .cx-stepper-mark {
+  background: var(--danger-tint);
+  color: var(--danger);
+}
+.cx-test-actions {
+  margin-top: 16px;
+}
+.cx-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: var(--r-control);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color var(--d-hover) var(--ease-hover),
+    transform var(--d-press) var(--ease-out);
+}
+.cx-btn:active {
+  transform: scale(0.97);
+}
+.cx-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 4px;
+  font-size: 15px;
+  cursor: pointer;
+  transition:
+    opacity var(--d-fast) var(--ease-out),
+    transform var(--d-press) var(--ease-out);
+}
+.cx-link svg {
+  width: 16px;
+  height: 16px;
+}
+.cx-link:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.cx-link:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.cx-term {
+  min-width: 0;
+  min-height: 240px;
+  padding: 16px 18px;
+  overflow-x: auto;
+  border-radius: var(--r-control);
+  background: var(--cx-code-bg);
+  box-shadow: inset 0 0 0 1px var(--cx-code-line);
+  color: var(--cx-code-text);
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.cx-term-idle {
+  display: grid;
+  gap: 6px;
+  color: var(--cx-code-muted);
+}
+.cx-term-step + .cx-term-step {
+  margin-top: 14px;
+}
+.cx-term-step {
+  animation: cx-line 220ms var(--ease-out);
+}
+@keyframes cx-line {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+.cx-term-req span {
+  color: var(--cx-code-muted);
+}
+.cx-term-body {
+  color: var(--cx-code-muted);
+  overflow-wrap: anywhere;
+}
+.cx-term-wait {
+  color: var(--cx-code-muted);
+}
+.cx-term-res {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  color: var(--cx-code-bad);
+}
+.cx-term-res[data-ok] {
+  color: var(--cx-code-ok);
+}
+.cx-term-res svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  margin-top: 3px;
+  stroke-width: 2.5;
+}
+.cx-term-res span {
+  color: var(--cx-code-text);
+}
+
+/* Tools table */
+.cx-tools {
+  margin-top: 16px;
+}
+.cx-table-wrap {
+  margin-top: 16px;
+  overflow-x: auto;
+}
+.cx-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.cx-table th,
+.cx-table td {
+  padding: 12px 16px 12px 0;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--line);
+}
+.cx-table thead th {
+  padding-top: 0;
+  color: var(--text-3);
+  font-size: 13px;
+  font-weight: 500;
+}
+.cx-table tbody th {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-1);
+  white-space: nowrap;
+}
+.cx-table td:last-child,
+.cx-table th:last-child {
+  padding-right: 0;
+  white-space: nowrap;
+}
+.cx-table tr[data-human] th {
+  font-family: var(--font-sans);
+  font-size: 14px;
+}
+.cx-access {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: var(--r-full);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+.cx-access[data-tone="key"] {
+  background: var(--accent-tint);
+  color: var(--accent);
+}
+.cx-access[data-tone="person"] {
+  background: var(--warn-tint);
+  color: var(--warn);
+}
+.cx-never {
+  margin-top: 16px;
+  color: var(--text-1);
+  font-size: 15px;
+  font-weight: 550;
+}
+
+.cx-foot {
+  margin-top: 32px;
+  color: var(--text-3);
+  font-size: 13px;
+}
+
+/* The shared toaster sits above the control room's dock; here there is no dock. */
+.cx .toasts {
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  grid-template-columns: minmax(0, 1fr);
+}
+.cx .toasts > .toast-stack {
+  grid-column: 1;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cx-nav a:hover {
+    background: var(--surface-3);
+    color: var(--text-1);
+  }
+  .cx-app:hover:not([aria-selected="true"]) {
+    background: var(--surface-3);
+    color: var(--text-1);
+  }
+  .cx-variant button:hover:not([aria-pressed="true"]) {
+    color: var(--text-1);
+  }
+  .cx-btn:hover {
+    background: var(--accent-hover);
+  }
+  .cx-link:hover:not(:disabled),
+  .cx-docs a:hover {
+    text-decoration: underline;
+  }
+  .cx-code .icon-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--cx-code-text);
+  }
+}
+
+@media (max-width: 1023px) {
+  .cx-work,
+  .cx-test {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .cx-main {
+    padding-top: 28px;
+  }
+  .cx-head h1 {
+    font-size: 30px;
+  }
+  .cx-head p {
+    font-size: 16px;
+  }
+  .cx-setup,
+  .cx-live,
+  .cx-test,
+  .cx-tools {
+    padding: 18px 16px;
+  }
+  .cx-apps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .cx-steps > li {
+    padding-left: 34px;
+  }
+  .cx-steps .cx-code {
+    margin-left: -34px;
+  }
+  .cx-term {
+    min-height: 120px;
+  }
+  .cx-endpoint {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cx-endpoint .cx-sub {
+    grid-column: 1;
+  }
+  .cx-nav a {
+    padding: 0 8px;
+  }
+  .cx-table thead {
+    display: none;
+  }
+  .cx-table tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 4px 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .cx-table th,
+  .cx-table td {
+    padding: 0;
+    border: 0;
+  }
+  .cx-table td:nth-child(2) {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    color: var(--text-2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cx-call[data-fresh] {
+    animation: cx-arrive-fade 1600ms ease;
+  }
+  .cx-term-step {
+    animation: none;
+  }
+  .cx-live-dot[data-pulse]::after {
+    animation: none;
+  }
+  .cx-stepper li[data-state="active"] .cx-stepper-bar {
+    animation: none;
+    transform: scaleX(0.5);
+  }
+  .cx-app:active,
+  .cx-btn:active,
+  .cx-link:active:not(:disabled),
+  .cx-variant button:active,
+  .cx-nav a:active {
+    transform: none;
+  }
+}
+@keyframes cx-arrive-fade {
+  from {
+    background-color: var(--accent-tint);
+  }
+  to {
+    background-color: transparent;
+  }
+}
+
+@media (min-width: 1024px) {
+  .cx-live {
+    position: sticky;
+    top: 16px;
+  }
+}
