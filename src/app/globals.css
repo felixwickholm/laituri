@@ -1,7 +1,9 @@
 @import "tailwindcss";
 @import "../components/styles/controls.css";
 @import "../components/styles/panes.css";
-@import "../components/styles/rows.css";
+@import "../components/styles/agent.css";
+@import "../components/styles/decision.css";
+@import "../components/styles/proof.css";
 @import "../components/styles/overlays.css";
 @import "../components/styles/sheet.css";
 @import "../components/styles/order.css";

@@ -39,6 +39,7 @@ export interface DemoRun {
   id: string;
   status: "running" | "done" | "failed";
   request: string;
+  scenario?: Scenario;
   summary?: string;
 }
 

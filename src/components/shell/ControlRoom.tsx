@@ -13,8 +13,13 @@ import { ProofPane } from "../proof/ProofPane";
 import { SignInPopover } from "../session/SignInPopover";
 import { Toaster } from "../ui/toast";
 import { Dock } from "./Dock";
+import type { Feed } from "./Pane";
 import { PaneSwitch, type PaneId } from "./PaneSwitch";
 import { TopBar } from "./TopBar";
+import { buildRuns } from "@/lib/console/runs";
+
+/** What this is, in one breath, for someone who has ten seconds. */
+const PRODUCT_SENTENCE = "An AI agent buys from Valio Aimo within limits you signed. Past a limit, you decide. Every step is signed and checkable.";
 import { UiContext, type ConsoleUi, type SheetName } from "./ui-context";
 
 /** The one screen: agent, approvals and proof side by side, with the dock and sheets floating above. */
@@ -53,23 +58,34 @@ export function ControlRoom() {
     if (target === "agent" || target === "approvals" || target === "proof") setPane(target);
   }, []);
 
+  const runCount = useMemo(() => buildRuns(snapshot.activity).length, [snapshot.activity]);
+  const feed: Feed = !snapshot.ready ? "loading" : snapshot.online ? "ok" : "offline";
   const pending = snapshot.orders.filter((order) => order.status === "pending_approval").length;
   const fresh = snapshot.ready && snapshot.activity.length === 0 && snapshot.audit.length === 0 && !snapshot.run;
 
   return (
     <UiContext.Provider value={ui}>
       <div className="room">
-        <TopBar health={snapshot.health} session={snapshot.session} />
-        <PaneSwitch
-          value={pane}
-          onChange={setPane}
-          counts={{ agent: snapshot.activity.length, approvals: pending, proof: snapshot.audit.length }}
-          broken={snapshot.chain.state === "broken"}
-        />
-        <main className="panes">
-          <AgentPane activity={snapshot.activity} run={snapshot.run} online={snapshot.online} visible={pane === "agent"} />
-          <ApprovalsPane orders={snapshot.orders} visible={pane === "approvals"} />
-          <ProofPane audit={snapshot.audit} chain={snapshot.chain} visible={pane === "proof"} />
+        <div className="chrome glass">
+          <TopBar health={snapshot.health} session={snapshot.session} />
+          <PaneSwitch value={pane} onChange={setPane} counts={{ agent: runCount, approvals: pending, proof: snapshot.audit.length }} broken={snapshot.chain.state === "broken"} />
+        </div>
+        <div className="intro-wrap" data-open={fresh || !snapshot.ready} aria-hidden={!(fresh || !snapshot.ready)}>
+          <div className="intro">
+            <p>{PRODUCT_SENTENCE}</p>
+          </div>
+        </div>
+        <main className="panes" data-under-chrome={!fresh && snapshot.ready}>
+          <AgentPane
+            activity={snapshot.activity}
+            orders={snapshot.orders}
+            run={snapshot.run}
+            approver={snapshot.mandate?.mandate.approval.approver.name}
+            feed={feed}
+            visible={pane === "agent"}
+          />
+          <ApprovalsPane orders={snapshot.orders} feed={feed} visible={pane === "approvals"} />
+          <ProofPane audit={snapshot.audit} chain={snapshot.chain} orders={snapshot.orders} jwks={snapshot.jwks} mandate={snapshot.mandate} feed={feed} visible={pane === "proof"} />
         </main>
       </div>
       <Dock run={snapshot.run} fresh={fresh} />

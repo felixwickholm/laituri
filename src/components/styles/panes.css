@@ -1,30 +1,39 @@
-/* Shell: a 52px glass top bar over three full-bleed panes split by 1px lines. */
+/* Shell: a glass chrome layer floats over three full-height panes; their content scrolls under it. */
 .room {
+  --chrome-h: var(--topbar);
+  position: relative;
   display: grid;
-  grid-template-rows: var(--topbar) minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
   height: 100dvh;
   overflow: hidden;
+  background: var(--bg);
 }
 
-.topbar {
-  position: relative;
+.chrome {
+  position: absolute;
   z-index: 30;
+  top: 0;
+  left: 0;
+  right: 0;
+  border-width: 0 0 1px;
+  border-radius: 0;
+}
+.topbar {
   display: flex;
   align-items: center;
   gap: 12px;
   height: var(--topbar);
   padding: 0 12px 0 16px;
-  border-width: 0 0 1px;
-  border-radius: 0;
 }
 .topbar .brand {
   display: flex;
   align-items: center;
   gap: 10px;
   min-width: 0;
+  flex: none;
 }
 .topbar .product {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   letter-spacing: -0.02em;
 }
@@ -53,7 +62,7 @@
   height: 24px;
   padding: 0 9px;
   border-radius: var(--r-full);
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-strong);
   color: var(--text-2);
   font-size: 12px;
   font-weight: 510;
@@ -61,11 +70,6 @@
 }
 .status-chip .short {
   display: none;
-}
-@media (max-width: 640px) {
-  .status-chip .short {
-    display: inline;
-  }
 }
 .status-chip .dot {
   width: 6px;
@@ -81,47 +85,91 @@
   display: none;
 }
 
+/* The product in one sentence, shown until the first run starts. */
+.intro-wrap {
+  display: grid;
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transition:
+    grid-template-rows var(--d-sheet) var(--ease-sheet),
+    opacity var(--d-base) var(--ease-out);
+}
+.intro-wrap[data-open="false"] {
+  grid-template-rows: 0fr;
+  opacity: 0;
+}
+.intro {
+  min-height: 0;
+  overflow: hidden;
+}
+.intro p {
+  max-width: 900px;
+  margin: 0;
+  padding: calc(var(--chrome-h) + 28px) 24px 24px;
+  font-size: 23px;
+  line-height: 31px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--text-1);
+  text-wrap: balance;
+}
+
 .panes {
   display: grid;
   grid-template-columns: minmax(440px, 1fr) 420px 400px;
+  gap: 1px;
   min-height: 0;
+  background: var(--line);
+  border-top: 1px solid var(--line);
+}
+.panes[data-under-chrome="true"] {
+  border-top: 0;
 }
 
 .pane {
-  display: flex;
-  flex-direction: column;
+  position: relative;
   min-height: 0;
   min-width: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   background: var(--surface-1);
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-4) transparent;
+  padding-bottom: 120px;
+  transition: padding-top var(--d-sheet) var(--ease-sheet);
 }
-.pane + .pane {
-  border-left: 1px solid var(--line);
+.panes[data-under-chrome="true"] .pane {
+  padding-top: var(--chrome-h);
 }
 
 .pane-head {
   display: flex;
   align-items: center;
   gap: 10px;
-  flex: none;
-  height: 44px;
-  padding: 0 8px 0 16px;
+  height: 52px;
+  padding: 0 16px;
   border-bottom: 1px solid var(--line);
+  transition: background-color var(--d-base) var(--ease-hover);
 }
 .pane-num {
   display: inline-grid;
   place-items: center;
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   border-radius: var(--r-full);
-  border: 1px solid var(--line-strong);
-  color: var(--text-2);
+  background: var(--text-1);
+  color: #000;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
+  font-weight: 600;
   flex: none;
 }
 .pane-title {
-  font-size: 13px;
-  font-weight: 590;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   white-space: nowrap;
 }
 .pane-sub {
@@ -132,39 +180,23 @@
   text-overflow: ellipsis;
   min-width: 0;
 }
-.pane-tools {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-left: auto;
-  flex: none;
+.pane[data-alarm="true"] .pane-head {
+  background: var(--danger-tint);
 }
-.pane-body {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding-bottom: 120px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--surface-4) transparent;
+.pane[data-alarm="true"] .pane-num {
+  background: var(--danger);
 }
 .pane-empty {
-  padding: 14px 16px;
+  margin: 0;
+  padding: 16px;
   color: var(--text-3);
   font-size: 13px;
 }
-.pane-empty strong {
-  color: var(--text-2);
-  font-weight: 510;
-}
 
-/* Below 1100px: one pane at a time, chosen with a segmented control. */
+/* Below 1100px: one pane at a time, chosen with a segmented control inside the chrome. */
 @media (max-width: 1099px) {
   .room {
-    grid-template-rows: var(--topbar) auto minmax(0, 1fr);
-  }
-  .pane-head {
-    display: none;
+    --chrome-h: calc(var(--topbar) + 53px);
   }
   .topbar .scope,
   .topbar .chips .optional {
@@ -173,13 +205,12 @@
   .pane-switch {
     display: flex;
     justify-content: center;
-    padding: 8px 12px;
-    border-bottom: 1px solid var(--line);
-    background: var(--bg);
+    padding: 0 12px 9px;
   }
   .pane-switch .segmented {
     width: 100%;
     max-width: 480px;
+    background: rgba(0, 0, 0, 0.3);
   }
   .pane-switch .segmented button {
     flex: 1;
@@ -188,30 +219,62 @@
   .panes {
     grid-template-columns: minmax(0, 1fr);
   }
-  .pane + .pane {
-    border-left: 0;
-  }
   .pane[data-visible="false"] {
     display: none;
   }
-  .pane-body {
-    padding-bottom: 168px;
+  .pane-head {
+    display: none;
+  }
+  .pane {
+    padding-bottom: 176px;
+  }
+  .intro p {
+    padding: calc(var(--chrome-h) + 20px) 16px 20px;
+    font-size: 20px;
+    line-height: 27px;
   }
 }
 
 @media (max-width: 640px) {
   .topbar {
-    gap: 8px;
-    padding: 0 6px 0 12px;
+    gap: 6px;
+    padding: 0 4px 0 12px;
   }
   .topbar .chips .long {
     display: none;
+  }
+  .status-chip .short {
+    display: inline;
+  }
+  .topbar .actions {
+    gap: 0;
   }
   .topbar .actions .label {
     display: none;
   }
   .topbar .actions .btn {
-    width: 40px;
+    width: 44px;
+    height: 44px;
     padding: 0;
+  }
+}
+
+@media (max-width: 359px) {
+  .topbar .product {
+    display: none;
+  }
+}
+
+@media (min-width: 1280px) {
+  .intro p {
+    font-size: 24px;
+    line-height: 32px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .intro-wrap,
+  .pane {
+    transition-duration: 0ms;
   }
 }

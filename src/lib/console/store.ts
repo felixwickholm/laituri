@@ -128,7 +128,7 @@ class ConsoleStore {
 
   async startRun(body: { scenario?: Scenario; request?: string }): Promise<void> {
     const { runId } = await api.startRun(body);
-    const run: DemoRun = { id: runId, status: "running", request: body.request ?? body.scenario ?? "" };
+    const run: DemoRun = { id: runId, status: "running", request: body.request ?? "", scenario: body.scenario };
     this.set({ run });
     void this.tick();
   }

@@ -60,8 +60,30 @@
   background: rgba(255, 255, 255, 0.1);
 }
 .scene[data-active="true"] .n {
+  position: relative;
   background: var(--accent);
   color: #fff;
+}
+.scene[data-running="true"] .n::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: var(--r-full);
+  border: 2px solid var(--accent);
+  animation: scene-ring 1.6s var(--ease-out) infinite;
+}
+@keyframes scene-ring {
+  from {
+    opacity: 0.7;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.35);
+  }
+}
+.scene .short {
+  display: none;
 }
 .scene[data-hint="true"] .n {
   box-shadow: 0 0 0 2px var(--accent);
@@ -213,7 +235,28 @@
   }
 }
 
+@media (max-width: 640px) {
+  .scene .long {
+    display: none;
+  }
+  .scene .short {
+    display: inline;
+  }
+  .dock .scenes {
+    overflow: visible;
+  }
+  .scene {
+    flex: 1;
+    justify-content: center;
+    padding: 0 10px 0 6px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .scene[data-running="true"] .n::after {
+    animation: none;
+    opacity: 0.6;
+  }
   .dock-progress::after {
     animation-duration: 3s;
   }

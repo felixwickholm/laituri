@@ -160,6 +160,24 @@
     transform: scale(0.96);
   }
 }
+.tip .arrow {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: rgba(30, 30, 33, 0.96);
+  border: 1px solid var(--glass-border);
+  transform: rotate(45deg);
+}
+.tip .arrow[data-dir="down"] {
+  left: calc(50% - 6px);
+  bottom: -7px;
+  border-width: 0 1px 1px 0;
+}
+.tip .arrow[data-dir="up"] {
+  left: 24px;
+  top: -7px;
+  border-width: 1px 0 0 1px;
+}
 .tip h2 {
   margin: 0 28px 4px 0;
   font-size: 15px;

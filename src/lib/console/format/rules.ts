@@ -4,10 +4,10 @@ import { plainSentence } from "./sentence";
 
 /** Each policy rule in plain words, as a buyer would name it. */
 export const RULE_NAMES: Record<RuleId, string> = {
-  "mandate.signature": "Mandate signed by the buyer",
-  "mandate.validity": "Mandate valid for this agent",
-  "offer.signature": "Offer signed by Valio Aimo",
-  "offer.expiry": "Offer still valid and orderable",
+  "mandate.signature": "Mandate signature",
+  "mandate.validity": "Mandate validity",
+  "offer.signature": "Offer signature",
+  "offer.expiry": "Offer validity",
   "spend.per_order": "Per-order limit",
   "spend.per_week": "Weekly limit",
   "category.allowed": "Allowed categories",

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { activityView, shortHash } from "@/lib/console/format/activity";
+import { shortHash } from "@/lib/console/format/activity";
 import { eur, parseEur, percentOf, withEuroSign } from "@/lib/console/format/money";
 import { askedLine, compareLine, matchedFacts, offeredLine } from "@/lib/console/format/proof";
 import { askReasons, blockedLine, handledState, ruleName, shortName } from "@/lib/console/format/rules";
@@ -83,22 +83,7 @@ describe("request versus offer", () => {
   });
 });
 
-describe("activity rows", () => {
-  it("puts the amount on the right and colours only waiting and failures", () => {
-    const view = activityView({
-      id: "a1",
-      at: "2026-11-14T07:00:00.000Z",
-      agent: { id: "x", name: "Agent" },
-      kind: "tool",
-      title: "Placed an order for milk",
-      detail: "Waiting for approval: Order total 1,818.00 EUR is over the 1,500.00 EUR limit.",
-      status: "waiting",
-    });
-    expect(view.tone).toBe("waiting");
-    expect(view.result).toBe("Waiting");
-    expect(view.detail).toContain("€1,818.00");
-  });
-
+describe("hashes", () => {
   it("truncates hashes to 8 + 6", () => {
     expect(shortHash("1b090c55273ad706db8a193129023cec24b7c2d15e9a0f769b4853a29c084a58")).toBe("1b090c55…084a58");
   });
@@ -126,8 +111,4 @@ describe("plain sentences", () => {
     expect(askedLine({ ...offer, intent: "1,600 litres of milk by Monday" })).toBe("Asked: 1,600 litres of milk by Monday");
   });
 
-  it("shows no result word for a plain successful call", () => {
-    const view = activityView({ id: "a", at: "2026-11-14T07:00:00Z", agent: { id: "x", name: "A" }, kind: "note", title: "Asked for a fixed-price offer.", status: "ok", durationMs: 3 });
-    expect(view.result).toBe("");
-  });
 });

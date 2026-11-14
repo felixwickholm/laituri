@@ -7,10 +7,10 @@ import type { DemoRun, Scenario } from "@/lib/console/types";
 import { tamperWithLog } from "../proof/ProofTools";
 import { toast } from "../ui/toast";
 
-const SCENES: { id: Scenario; n: number; label: string }[] = [
-  { id: "milk", n: 1, label: "Milk by Monday" },
-  { id: "over-limit", n: 2, label: "Over the limit" },
-  { id: "break-mandate", n: 3, label: "Break the mandate" },
+const SCENES: { id: Scenario; n: number; label: string; short: string }[] = [
+  { id: "milk", n: 1, label: "Milk by Monday", short: "Milk" },
+  { id: "over-limit", n: 2, label: "Over the limit", short: "Limit" },
+  { id: "break-mandate", n: 3, label: "Break the mandate", short: "Break" },
 ];
 
 interface DockProps {
@@ -85,11 +85,16 @@ export function Dock({ run, fresh }: DockProps) {
               className="scene"
               disabled={running}
               data-active={active === scene.id}
+              data-running={active === scene.id && running}
+              aria-label={`Scene ${scene.n}: ${scene.label}`}
               data-hint={fresh && scene.n === 1 && !running}
               onClick={() => start({ scenario: scene.id }, scene.id)}
             >
               <span className="n">{scene.n}</span>
-              {scene.label}
+              <span className="long">{scene.label}</span>
+              <span className="short" aria-hidden="true">
+                {scene.short}
+              </span>
             </button>
           ))}
         </div>

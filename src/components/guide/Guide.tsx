@@ -22,7 +22,7 @@ function measure(target: string): Spot | undefined {
   const clampX = (x: number) => Math.min(Math.max(16, x), window.innerWidth - width - 16);
   if (rect.height > window.innerHeight * 0.5) {
     // A tall pane: the tip sits inside it, under its header.
-    return { ring, tip: { left: clampX(rect.left + 16), top: rect.top + 60 } };
+    return { ring, tip: { left: clampX(rect.left + 16), top: rect.top + 64 }, arrow: "up" };
   }
   const above = rect.top - 12 - 150;
   if (above > 16) return { ring, tip: { left: clampX(rect.left + rect.width / 2 - width / 2), top: above }, arrow: "down" };
@@ -77,6 +77,7 @@ export function Guide({ open, onClose, onStep }: GuideProps) {
       <div className="guide-scrim" onClick={finish} aria-hidden="true" />
       <div className="guide-ring" style={{ width: spot.ring.w, height: spot.ring.h, transform: `translate(${spot.ring.x}px, ${spot.ring.y}px)`, left: 0, top: 0 }} aria-hidden="true" />
       <div key={index} className="tip glass" role="dialog" aria-labelledby="tip-title" aria-describedby="tip-body" style={{ left: spot.tip.left, top: spot.tip.top, transformOrigin: spot.arrow === "down" ? "bottom center" : "top left" }}>
+        {spot.arrow ? <span className="arrow" data-dir={spot.arrow} aria-hidden="true" /> : null}
         <button type="button" className="icon-btn close" onClick={finish} aria-label="Close the guide">
           <X aria-hidden="true" />
         </button>

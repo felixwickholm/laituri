@@ -17,7 +17,7 @@ export function TopBar({ health, session }: { health?: Health; session?: Console
   const ui = useUi();
   const mode = modeLabel(health);
   return (
-    <header className="topbar glass">
+    <header className="topbar">
       <Wordmark />
       <span className="scope">Valio Aimo · agent ordering</span>
       <div className="chips">

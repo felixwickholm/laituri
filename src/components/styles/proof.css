@@ -1,0 +1,227 @@
+/* Pane 3: a pinned proof head, then the log, newest first. */
+.proof-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--line);
+}
+.proof-head[data-state="broken"] {
+  background: #1a0a09;
+  border-bottom-color: rgba(255, 69, 58, 0.4);
+}
+.chain-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 8px 0 12px;
+}
+.chain-row .meta {
+  color: var(--text-3);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.chain-row > div {
+  margin-left: auto;
+}
+.chain-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 9px;
+  border-radius: var(--r-sm);
+  font-size: 13px;
+  font-weight: 590;
+  white-space: nowrap;
+  color: var(--text-3);
+  flex: none;
+}
+.chain-badge svg {
+  width: 15px;
+  height: 15px;
+  stroke-width: 2;
+}
+.chain-badge[data-state="verified"] {
+  color: var(--success);
+  background: var(--success-tint);
+}
+.chain-badge[data-state="broken"] {
+  color: #fff;
+  background: var(--danger);
+}
+.alarm {
+  margin: 0;
+  padding: 0 16px 12px;
+  color: #ff8a82;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 510;
+}
+.proof-line {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  width: 100%;
+  padding: 0 16px 10px;
+  border: 0;
+  background: none;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.proof-line .order-id {
+  margin-left: auto;
+  color: var(--text-3);
+  font-size: 12px;
+}
+.stamp {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0 16px 12px;
+  color: var(--text-1);
+  font-size: 13px;
+  transition:
+    opacity 240ms var(--ease-out),
+    transform 240ms var(--ease-out);
+  @starting-style {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+}
+.stamp svg {
+  width: 15px;
+  height: 15px;
+  color: var(--success);
+  flex: none;
+}
+.stamp .mono {
+  margin-left: auto;
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.audit-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.audit {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 12px;
+  width: 100%;
+  padding: 11px 16px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    opacity 200ms var(--ease-out),
+    transform 200ms var(--ease-out);
+  @starting-style {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+.audit .event {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 18px;
+  color: var(--text-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.audit .seq {
+  color: var(--text-3);
+  margin-right: 8px;
+}
+.audit time {
+  font-size: 12px;
+  color: var(--text-3);
+  text-align: right;
+}
+.audit .sentence {
+  grid-column: 1 / -1;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--text-2);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.audit[data-broken="true"] {
+  background: var(--danger-tint);
+  box-shadow: inset 3px 0 0 var(--danger);
+}
+.audit[data-broken="true"] .event,
+.audit[data-broken="true"] .sentence {
+  color: #ff8a82;
+}
+.audit[data-after-break="true"] {
+  opacity: 0.45;
+}
+@media (hover: hover) and (pointer: fine) {
+  .audit:hover {
+    background: var(--surface-2);
+  }
+}
+
+/* Audit entry drawer. */
+.kv.record {
+  margin-top: 20px;
+  grid-template-columns: 112px minmax(0, 1fr);
+  row-gap: 12px;
+  align-items: start;
+}
+.kv.record dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+.kv .dim {
+  color: var(--text-3);
+}
+.hash-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding-left: 8px;
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  font-size: 12px;
+  color: var(--text-2);
+}
+.payload {
+  margin: 0;
+  max-height: 320px;
+  overflow: auto;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--text-2);
+  white-space: pre;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .audit,
+  .stamp {
+    transition-property: opacity;
+  }
+}
