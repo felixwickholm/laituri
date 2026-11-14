@@ -81,17 +81,8 @@ async function raisedLimit(ctx: ScenarioContext, say: Say): Promise<Order | unde
   return order;
 }
 
-/** Over HTTP when the server address is known, else through the same guard the approval route uses. */
-async function tryApproval(ctx: ScenarioContext, orderId: string): Promise<{ refused: boolean; via: string; reason: string }> {
-  if (ctx.baseUrl) {
-    const response = await fetch(`${ctx.baseUrl}/api/v1/approvals/${encodeURIComponent(orderId)}`, {
-      method: "POST",
-      headers: { authorization: `Bearer ${DEMO_TOKEN}`, "content-type": "application/json" },
-      body: JSON.stringify({ decision: "approved" }),
-    });
-    const body = (await response.json().catch(() => ({}))) as { detail?: string };
-    return { refused: response.status === 403, via: "http", reason: body.detail ?? `Status ${response.status}.` };
-  }
+/** Runs the same guard the approval route uses, with the agent's own credential. */
+async function tryApproval(): Promise<{ refused: boolean; via: string; reason: string }> {
   try {
     await requireApprover(new Headers({ authorization: `Bearer ${DEMO_TOKEN}` }));
     return { refused: false, via: "in-process", reason: "The guard let the agent through." };
@@ -109,7 +100,7 @@ async function selfApproval(ctx: ScenarioContext, say: Say, fallback?: Order): P
     return false;
   }
   await ctx.hooks.pause();
-  const { refused, via, reason } = await tryApproval(ctx, target.id);
+  const { refused, via, reason } = await tryApproval();
   const { mandate } = await ctx.transport.getMandate();
   const approver = personName(mandate.approval.approver.name);
   await appendAudit({
