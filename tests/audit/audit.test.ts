@@ -1,7 +1,7 @@
 import "../store/temp-data-dir";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Actor } from "@/lib/contracts";
-import { appendAudit, checkpoint, GENESIS_HASH, verifyAuditLog, verifyChain } from "@/lib/audit";
+import { appendAudit, checkpoint, forgetHead, GENESIS_HASH, verifyAuditLog, verifyChain } from "@/lib/audit";
 import { store } from "@/lib/store";
 import { jwks, trust, verifyWithJwks } from "@/lib/trust";
 
@@ -15,7 +15,10 @@ async function appendFive() {
 }
 
 describe("audit chain", () => {
-  beforeEach(() => store().reset());
+  beforeEach(async () => {
+    await store().reset();
+    forgetHead();
+  });
 
   it("appends linked, signed entries that verify", async () => {
     const entries = await appendFive();
@@ -69,5 +72,22 @@ describe("audit chain", () => {
     const { checkpoint: value, jws } = await checkpoint();
     expect(value).toMatchObject({ size: 5, head: entries[4].hash });
     expect((await trust().verify("supplier", jws)).payload).toEqual(value);
+  });
+
+  it("finds a log whose newest entries were removed", async () => {
+    const entries = await appendFive();
+    const verifier = (jws: string) => trust().verify("supplier", jws);
+    const recorded = { size: 5, head: entries[4].hash };
+    expect(await verifyChain(entries, verifier, recorded)).toMatchObject({ valid: true, entries: 5 });
+    expect(await verifyChain(entries.slice(0, 3), verifier, recorded)).toMatchObject({ valid: false, brokenAt: 4 });
+    expect(await verifyChain([], verifier, recorded)).toMatchObject({ valid: false, brokenAt: 1 });
+  });
+
+  it("finds a stored log that was wiped behind the service", async () => {
+    await appendFive();
+    await store().reset();
+    expect(await verifyAuditLog()).toMatchObject({ valid: false, entries: 0, brokenAt: 1 });
+    forgetHead();
+    expect(await verifyAuditLog()).toMatchObject({ valid: true, entries: 0 });
   });
 });

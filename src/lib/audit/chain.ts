@@ -2,6 +2,7 @@ import type { Actor, AuditEntry, AuditEvent } from "@/lib/contracts";
 import { now } from "@/lib/clock";
 import { store } from "@/lib/store";
 import { trust } from "@/lib/trust";
+import { rememberHead } from "./head";
 import { GENESIS_HASH, entryHash } from "./verify";
 
 export interface AuditInput {
@@ -40,6 +41,7 @@ async function write(input: AuditInput): Promise<AuditEntry> {
   draft.hash = await entryHash(draft);
   draft.signature = await trust().sign("supplier", { seq: draft.seq, hash: draft.hash }, { typ: "audit+jwt" });
   await log.append(draft);
+  rememberHead({ size: draft.seq, head: draft.hash });
   return draft;
 }
 

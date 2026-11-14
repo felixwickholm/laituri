@@ -1,0 +1,32 @@
+import type { OfferLine, Product } from "@/lib/contracts";
+import type { Catalog } from "@/lib/catalog/types";
+import type { Store } from "@/lib/store/types";
+import type { Signer } from "@/lib/orders/types";
+import type { UpstreamAvailability, UpstreamClient, UpstreamPrice } from "@/lib/valio/types";
+
+export interface OfferDeps {
+  catalog: Pick<Catalog, "get" | "substitutesFor">;
+  upstream: UpstreamClient;
+  trust: Signer;
+  store: Pick<Store, "offers">;
+  now: () => Date;
+}
+
+export interface QuoteContext {
+  customerNumber: string;
+}
+
+/** Live wholesaler answers for every product considered in one quote. */
+export interface Market {
+  prices: Map<string, UpstreamPrice>;
+  availability: Map<string, UpstreamAvailability>;
+  now: Date;
+  deliverBy: string;
+}
+
+/** An offer line plus the plain-language notes that explain it. */
+export interface BuiltLine {
+  line: OfferLine;
+  notes: string[];
+  product?: Product;
+}
