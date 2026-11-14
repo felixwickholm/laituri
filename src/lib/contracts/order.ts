@@ -22,6 +22,20 @@ export const Approval = z.object({
 });
 export type Approval = z.infer<typeof Approval>;
 
+/** The wholesaler's signed promise to keep an offer's price while a person decides, never past the order cut-off. */
+export const PriceHold = z.object({
+  heldUntil: IsoDateTime.describe("The order cut-off for the delivery date, or the offer's own expiry when there is none"),
+  jws: Jws.describe("Wholesaler signature (typ price-hold+jwt) over the order id, offer id, offer hash and heldUntil"),
+});
+export type PriceHold = z.infer<typeof PriceHold>;
+
+/** Why an order was refused before any mandate rule could run: a signed object did not verify or was not issued here. */
+export const Refusal = z.object({
+  code: z.enum(["invalid_signature", "not_issued_here"]),
+  message: z.string(),
+});
+export type Refusal = z.infer<typeof Refusal>;
+
 export const Order = z.object({
   id: z.string(),
   status: OrderStatus,
@@ -33,6 +47,8 @@ export const Order = z.object({
   offer: Offer,
   decision: Decision,
   approval: Approval.optional(),
+  priceHold: PriceHold.optional().describe("Present while or after the order waited for a person"),
+  refusal: Refusal.optional().describe("Present when the order was refused as invalid, not blocked by a mandate rule"),
   receiptJws: Jws.optional().describe("Wholesaler-signed order confirmation; present when confirmed"),
   simulated: z.literal(true).describe("The challenge environment has no order endpoint; commitment is simulated here"),
   seeded: z.literal(true).optional().describe("Demo history written at start-up through the real order path, not live use"),

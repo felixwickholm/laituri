@@ -25,12 +25,13 @@ export type MandateClaims = z.infer<typeof MandateClaims>;
 const seconds = (iso: string) => Math.floor(new Date(iso).getTime() / 1000);
 const money = (value: Money) => ({ amount: value.amount, currency: value.currency });
 
-export function toClaims(mandate: Mandate): MandateClaims {
+/** `audience` is the workspace the mandate is signed for; no other workspace accepts it. */
+export function toClaims(mandate: Mandate, audience: string): MandateClaims {
   return {
     vct: MANDATE_VCT,
     iss: mandate.buyer.id,
     sub: mandate.agent.id,
-    aud: mandate.supplier,
+    aud: audience,
     iat: Math.floor(now().getTime() / 1000),
     nbf: seconds(mandate.validFrom),
     exp: seconds(mandate.validUntil),
@@ -59,6 +60,7 @@ export function toClaims(mandate: Mandate): MandateClaims {
         type: "fi.valio.approval",
         approver: mandate.approval.approver,
         first_time_products: mandate.approval.firstTimeProducts,
+        require_request_words: mandate.approval.requireRequestWords,
       },
     ],
     mandate,
@@ -66,12 +68,12 @@ export function toClaims(mandate: Mandate): MandateClaims {
 }
 
 /** Parses claims and checks that the envelope agrees with the embedded mandate. */
-export function fromClaims(payload: unknown): { mandate?: Mandate; reason?: string } {
+export function fromClaims(payload: unknown): { mandate?: Mandate; audience?: string; reason?: string } {
   const parsed = MandateClaims.safeParse(payload);
   if (!parsed.success) return { reason: "The mandate does not have the expected shape." };
-  const { iss, sub, jti, mandate } = parsed.data;
+  const { iss, sub, jti, aud, mandate } = parsed.data;
   if (iss !== mandate.buyer.id) return { reason: "The mandate issuer is not the buyer named in it." };
   if (sub !== mandate.agent.id) return { reason: "The mandate subject is not the agent named in it." };
   if (jti !== mandate.id) return { reason: "The mandate id does not match its claims." };
-  return { mandate };
+  return { mandate, audience: aud };
 }

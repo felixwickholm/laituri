@@ -13,6 +13,10 @@ import {
 } from "@/lib/mandate";
 import { store } from "@/lib/store";
 import { TOKEN_TYPE, trust } from "@/lib/trust";
+import { inWorkspace, newWorkspace, workspaceAudience } from "@/lib/workspace/context";
+import { createVolatileStore } from "@/lib/store/memory";
+
+const otherWorkspace = () => newWorkspace({ id: "ws_other", kind: "sandbox", label: "Sandbox OTHR", store: createVolatileStore() });
 
 describe("mandate", () => {
   beforeEach(() => store().reset());
@@ -46,7 +50,7 @@ describe("mandate", () => {
   });
 
   it("rejects a mandate signed by the wrong role", async () => {
-    const jws = await trust().sign("supplier", toClaims(defaultMandate()), TOKEN_TYPE.mandate);
+    const jws = await trust().sign("supplier", toClaims(defaultMandate(), workspaceAudience()), TOKEN_TYPE.mandate);
     expect((await readMandate(jws)).valid).toBe(false);
   });
 
@@ -95,4 +99,24 @@ describe("mandate", () => {
   it("refuses an unknown buyer", async () => {
     await expect(currentMandate("fi:ovt:unknown")).rejects.toMatchObject({ status: 404 });
   });
+
+  it("binds a signed mandate to the workspace that signed it", async () => {
+    const jws = await issueMandate(defaultMandate());
+    const claims = JSON.parse(Buffer.from(jws.split(".")[1], "base64url").toString());
+    expect(claims.aud).toBe(workspaceAudience());
+    const elsewhere = await inWorkspace(otherWorkspace(), () => readMandate(jws));
+    expect(elsewhere).toMatchObject({ valid: false, reason: "The mandate was signed for another workspace." });
+  });
+
+  it("re-binds a mandate stored for another audience, keeping its terms and version", async () => {
+    const other = otherWorkspace();
+    const tightened = { ...defaultMandate(), version: 3, dietary: { ...defaultMandate().dietary, excludeAllergens: ["milk"] } };
+    const foreign = await issueMandate(tightened);
+    await inWorkspace(other, () => other.store.mandates.put(PRIMARY_BUYER_ID, foreign));
+    const current = await inWorkspace(other, () => currentMandate());
+    expect(current.mandate).toMatchObject({ version: 3, dietary: { excludeAllergens: ["milk"] } });
+    expect(current.jws).not.toBe(foreign);
+    expect((await inWorkspace(other, () => readMandate(current.jws))).valid).toBe(true);
+  });
 });
+

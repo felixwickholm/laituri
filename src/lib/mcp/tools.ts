@@ -2,6 +2,7 @@ import { z } from "zod";
 import { PlaceOrderRequest, QuoteRequest, SearchRequest } from "@/lib/contracts";
 import { checkpoint } from "@/lib/audit";
 import { gateway, type AgentRef } from "@/lib/gateway";
+import { CredentialRequiredError } from "@/lib/http/reader";
 import type { SchemaName } from "@/lib/openapi/schemas";
 import { auditText, mandateText, orderText, productText, quoteText, searchText } from "./summaries";
 
@@ -29,6 +30,12 @@ const define = <I extends z.ZodType, O>(tool: {
 }): ToolDefinition => tool as unknown as ToolDefinition;
 
 const NoInput = z.object({});
+
+/** The buyer whose records the agent may read: its key's buyer. A call without a key reads nobody's. */
+function keyBuyer(agent: AgentRef, what: string): string {
+  if (!agent.buyer) throw new CredentialRequiredError(what);
+  return agent.buyer.id;
+}
 
 export const TOOLS: ToolDefinition[] = [
   define({
@@ -83,7 +90,7 @@ export const TOOLS: ToolDefinition[] = [
     operationId: "getMandate",
     input: NoInput,
     output: "SignedMandate",
-    run: (agent) => gateway().getMandate(agent.buyer?.id),
+    run: (agent) => gateway().getMandate(keyBuyer(agent, "the mandate")),
     summarize: mandateText,
   }),
   define({
@@ -107,7 +114,10 @@ export const TOOLS: ToolDefinition[] = [
     operationId: "getOrder",
     input: z.object({ orderId: z.string().min(1) }),
     output: "Order",
-    run: (agent, input) => gateway().getOrder(agent, input.orderId),
+    run: (agent, input) => {
+      keyBuyer(agent, "an order");
+      return gateway().getOrder(agent, input.orderId);
+    },
     summarize: orderText,
   }),
   define({

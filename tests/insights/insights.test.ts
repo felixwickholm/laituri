@@ -99,7 +99,7 @@ describe("agents", () => {
       confirmedNet: 2626,
       status: "active",
     });
-    expect(harbour.orders).toEqual({ confirmed_auto: 1, confirmed_after_approval: 1, waiting: 0, rejected: 1, blocked: 1 });
+    expect(harbour.orders).toEqual({ confirmed_auto: 1, confirmed_after_approval: 1, waiting: 0, rejected: 1, blocked: 1, refused: 0 });
     expect(kaisla).toMatchObject({ agent: KAISLA_AGENT, buyer: KAISLA, clients: [], calls: 0, status: "active" });
   });
 

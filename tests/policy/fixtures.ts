@@ -17,7 +17,7 @@ export function mandate(patch: Partial<Mandate> = {}): Mandate {
     dietary: { excludeAllergens: ["peanut", "nuts"], blockMayContain: false, requiredClaims: [] },
     substitution: { policy: "like_for_like", maxPriceIncreasePct: 10 },
     delivery: { allowPartial: false, maxDelayDays: 1 },
-    approval: { approver: { id: "user:maria.lind", name: "Maria Lind" }, firstTimeProducts: false },
+    approval: { approver: { id: "user:maria.lind", name: "Maria Lind" }, firstTimeProducts: false, requireRequestWords: true },
     ...patch,
   };
 }
@@ -53,6 +53,7 @@ export function offer(patch: Partial<Offer> = {}, lines: OfferLine[] = [line()])
     lines,
     totals: { net: { amount: net, currency: "EUR" }, tax: { amount: 0, currency: "EUR" }, gross: { amount: net, currency: "EUR" } },
     notes: [],
+    requestCheck: [{ requirement: "product", asked: "milk", offered: "Milk drink", result: "met", certain: false }],
     source: { system: "test", pricedAt: "2026-11-14T06:55:00.000Z" },
     ...patch,
   };
@@ -86,6 +87,9 @@ export function input(over: {
   agentId?: string;
   weekSpendNet?: number;
   ordered?: string[];
+  auditLog?: EvaluateInput["auditLog"];
+  heldUntil?: string;
+  stockTaken?: string;
 } = {}): EvaluateInput {
   const products = over.products ?? [product()];
   return {
@@ -96,5 +100,8 @@ export function input(over: {
     weekSpendNet: over.weekSpendNet ?? 0,
     orderedProductIds: new Set(over.ordered ?? ["464306"]),
     now: NOW,
+    auditLog: over.auditLog ?? { valid: true },
+    ...(over.heldUntil ? { heldUntil: over.heldUntil } : {}),
+    ...(over.stockTaken ? { stockTaken: over.stockTaken } : {}),
   };
 }

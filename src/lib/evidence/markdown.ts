@@ -42,14 +42,14 @@ export function numbers(f: Facts): string {
   ].join("\n");
 }
 
-export function criteriaTable(e: Evidence, base = ""): string {
+/** The README's short form: the claim, the first thing built, the first measurement and how to check. The long form is in docs/judging.md. */
+export function criteriaTable(e: Evidence): string {
   const rows = e.criteria.map((c) => {
-    const built = [c.claim, ...c.built.slice(0, 3).map((item) => `• ${item}`)].map(cell).join("<br>");
-    const where = c.where.slice(0, 4).map((p) => pathLink(p, base)).join("<br>");
-    const proof = [...c.measured.map(cell), `Check: ${c.check.map(checkText).join("; ")}`].join("<br>");
-    return `| **${c.name}** (${c.weight}%) | ${built} | ${where} | ${proof} | ${cell(c.limit)} |`;
+    const built = [c.claim, `• ${c.built[0]}`].map(cell).join("<br>");
+    const proof = [cell(c.measured[0]), `Check: ${c.check.slice(0, 2).map(checkText).join("; ")}`].join("<br>");
+    return `| **${c.name}** (${c.weight}%) | ${built} | ${proof} | ${cell(c.limit)} |`;
   });
-  return ["| Criterion (weight) | What we built (first items; all in docs/judging.md) | Where in the code | Evidence | Known limit |", "|---|---|---|---|---|", ...rows].join("\n");
+  return ["| Criterion (weight) | What we built (all items in docs/judging.md) | Evidence | Known limit |", "|---|---|---|---|", ...rows].join("\n");
 }
 
 export function toolsTable(): string {
@@ -96,6 +96,17 @@ function assumptionList(items: Assumption[], base: string): string {
       return `- **${item.topic}.** ${item.text}${where}`;
     })
     .join("\n");
+}
+
+/** The README's short list of what is simulated. Each item in full, with its code, is in docs/judging.md. */
+export function simulatedBrief(e: Evidence): string {
+  return [
+    "Simulated or assumed (each in full, with the code behind it, in [docs/judging.md](docs/judging.md#simulated-assumed-and-not-built)):",
+    "",
+    ...e.simulated.map((item) => `- **${item.topic}:** ${item.brief}.`),
+    "",
+    `Not built: ${e.notBuilt.map((item) => item.topic).join(", ")}.`,
+  ].join("\n");
 }
 
 export function simulatedList(e: Evidence, base = ""): string {
@@ -182,8 +193,8 @@ export function suiteNumbers(f: Facts, id: string): string {
   return `${item.passed}/${item.total}`;
 }
 
-/** Every generated block by name. */
-export function renderBlock(name: string, e: Evidence = evidence()): string {
+/** Every generated block by name. `base` is the path from the Markdown file that holds it to the repo root. */
+export function renderBlock(name: string, e: Evidence = evidence(), base = ""): string {
   switch (name) {
     case "numbers":
       return numbers(e.facts);
@@ -194,15 +205,15 @@ export function renderBlock(name: string, e: Evidence = evidence()): string {
     case "evals":
       return evalsTable(e.facts);
     case "scenarios":
-      return scenarioTable(e);
+      return scenarioTable(e, base);
     case "privacy":
-      return privacyTable(e);
+      return privacyTable(e, base);
     case "simulated":
-      return simulatedList(e);
+      return simulatedBrief(e);
     case "production":
-      return productionList(e);
+      return productionList(e, base);
     case "judging":
-      return judging(e);
+      return judging(e, base);
     default:
       throw new Error(`No generated block is called ${name}.`);
   }

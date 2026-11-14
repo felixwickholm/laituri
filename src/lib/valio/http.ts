@@ -11,6 +11,7 @@ const MAX_RETRY_DELAY_MS = 5_000;
 /** The API rejects requests with more than 1000 product codes. */
 export const MAX_BATCH = 1000;
 
+/** A failed call to the wholesaler API. The message never names the API's address or path; endpoint and status are kept for the server only. */
 export class UpstreamError extends Error {
   constructor(
     message: string,
@@ -61,7 +62,7 @@ export async function call(config: UpstreamConfig, path: string, init: RequestIn
       await new Promise((resolve) => setTimeout(resolve, retryDelay(response)));
       continue;
     }
-    throw new UpstreamError(`The wholesaler API answered ${response.status} on ${path}.`, path, response.status);
+    throw new UpstreamError("The wholesaler API refused the request.", path, response.status);
   }
 }
 

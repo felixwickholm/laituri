@@ -1,13 +1,13 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
-import { IsoDate, Quantity, QuoteLineRequest, type Mandate, type Order, type QuoteRequest, type SignedOffer } from "@/lib/contracts";
+import { IsoDate, Quantity, QuoteLineRequest, type Mandate, type Offer, type Order, type QuoteRequest, type SignedOffer } from "@/lib/contracts";
 import { searchText } from "@/lib/mcp/summaries";
 import { describeCheck } from "@/lib/request";
 import { shortDay } from "../dates";
 import { offerSubject } from "../purchase";
 import { quoteRefusal } from "../refusal";
 import type { AgentTransport } from "../types";
-import { euro } from "../words";
+import { displayName, euro } from "../words";
 import type { ToolCall, ToolSpec } from "./types";
 
 /** What one run remembers between tool calls. Signed offers stay here; the model only sees their ids. */
@@ -38,6 +38,12 @@ type AnyTool = PurchaseTool<z.ZodType>;
 
 const define = <I extends z.ZodType>(tool: PurchaseTool<I>): AnyTool => tool as unknown as AnyTool;
 
+/** The step shown for a quote. An offer that delivers nothing has no price to show, so none is printed. */
+export function quoteNote(offer: Offer): string {
+  if (offer.fulfilment === "unavailable") return `${offer.issuer} could not offer ${offer.lines.map((line) => displayName(line.name)).join(" and ")}.`;
+  return `Offer signed by ${offer.issuer}: ${offerSubject(offer)}, ${euro(offer.totals.gross.amount)} with VAT.`;
+}
+
 function offerText(label: string, signed: SignedOffer, tradeoff?: string): string {
   const { offer } = signed;
   const when = offer.deliveryDate ? `delivery ${shortDay(offer.deliveryDate)}` : "no delivery date";
@@ -45,7 +51,8 @@ function offerText(label: string, signed: SignedOffer, tradeoff?: string): strin
   const why = tradeoff ? ` ${tradeoff}` : "";
   const open = (offer.requestCheck ?? []).filter((check) => check.result !== "met");
   const fidelity = open.length ? ` Against the buyer's words: ${open.map(describeCheck).join("; ")}.` : "";
-  return `${label} offer ${offer.id}: ${offerSubject(offer)}, ${offer.fulfilment}, net ${euro(offer.totals.net.amount)}, ${when}.${notes}${why}${fidelity}`;
+  const price = offer.fulfilment === "unavailable" ? "nothing to deliver" : `net ${euro(offer.totals.net.amount)}`;
+  return `${label} offer ${offer.id}: ${offerSubject(offer)}, ${offer.fulfilment}, ${price}, ${when}.${notes}${why}${fidelity}`;
 }
 
 function mandateSummary(mandate: Mandate): string {
@@ -100,7 +107,7 @@ const TOOLS: AnyTool[] = [
       return {
         kind: "reply",
         content: lines.join("\n"),
-        note: `Offer signed by ${offer.issuer}: ${offerSubject(offer)}, ${euro(offer.totals.gross.amount)} with VAT.`,
+        note: quoteNote(offer),
       };
     },
   }),

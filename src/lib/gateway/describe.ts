@@ -29,11 +29,18 @@ export function quoteTitle(request: QuoteRequest, catalog: Pick<Catalog, "get">)
   return `Asked for a quote for ${count(line.quantity.amount)} ${UNIT[line.quantity.unit]} of ${name}`;
 }
 
+/** "Full offer", or "Offer not as asked (claim, budget)" when the request check found the words not met. */
+function offerLabel(offer: Offer): string {
+  const open = (offer.requestCheck ?? []).filter((check) => check.result === "unmet" || check.result === "unchecked");
+  if (open.length === 0) return FULFILMENT[offer.fulfilment];
+  return `Offer not as asked (${[...new Set(open.map((check) => check.requirement))].join(", ")})`;
+}
+
 export function quoteDetail(response: QuoteResponse): string {
   const { offer } = response.primary;
   const alternatives = response.alternatives.length;
   const extra = alternatives === 0 ? "" : `, ${alternatives} ${alternatives === 1 ? "alternative" : "alternatives"}`;
-  return `${FULFILMENT[offer.fulfilment]}, ${eur(offer.totals.net.amount)} net${extra}`;
+  return `${offerLabel(offer)}, ${eur(offer.totals.net.amount)} net${extra}`;
 }
 
 /** offer.issued audit summary: "Valio Aimo offered 1,000 x Valio Eila 1 l for 1,010.00 EUR, delivered Monday 16 Nov." */

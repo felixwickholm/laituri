@@ -4,7 +4,8 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { CallToolRequestSchema, ListToolsRequestSchema, type CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { ZodError } from "zod";
 import type { AgentRef } from "@/lib/gateway";
-import { errorMessage, isGatewayError } from "@/lib/gateway/errors";
+import { isGatewayError } from "@/lib/gateway/errors";
+import { publicDetail } from "@/lib/http/respond";
 import { inlineSchema } from "@/lib/openapi/components";
 import { API_VERSION } from "@/lib/openapi/document";
 import { SCHEMAS } from "@/lib/openapi/schemas";
@@ -50,9 +51,8 @@ function describeError(error: unknown): string {
     const where = issue?.path.length ? ` at ${issue.path.join(".")}` : "";
     return `The input is not valid${where}: ${issue?.message ?? "unknown problem"}.`;
   }
-  if (isGatewayError(error)) return error.message;
-  console.error(error);
-  return `The call failed: ${errorMessage(error)}`;
+  if (isGatewayError(error)) return publicDetail(error);
+  return "Something went wrong on our side. Try again.";
 }
 
 /** A fresh MCP server bound to one caller. Stateless: one server per HTTP request. */

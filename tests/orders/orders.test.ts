@@ -125,9 +125,10 @@ describe("approvals", () => {
     expect(env.audit.entries.at(-1)?.event).toBe("approval.rejected");
   });
 
-  it("rejects an order whose offer expired while waiting", async () => {
+  it("rejects an order whose price hold ended while waiting", async () => {
     const { env, order } = await pending();
-    env.clock.current = new Date(Date.parse(order.offer.expiresAt) + 1000);
+    expect(order.priceHold).toBeDefined();
+    env.clock.current = new Date(Date.parse(order.priceHold!.heldUntil) + 1000);
     const decided = await decideApproval(order.id, { decision: "approved" }, env.deps, DECIDER);
     expect(decided.status).toBe("rejected");
     expect(decided.decision).toEqual(order.decision);
@@ -150,5 +151,46 @@ describe("approvals", () => {
     const { env, order } = await pending();
     await decideApproval(order.id, { decision: "rejected" }, env.deps, { ...DECIDER, via: "demo access" });
     expect(env.audit.entries.at(-1)?.data).toMatchObject({ via: "demo access" });
+  });
+});
+
+describe("a confirmation and its order are written together", () => {
+  it("completes a confirmation whose receipt was not saved on the retry, and never confirms twice", async () => {
+    const env = await setup();
+    const body = { offerJws: env.offerJws, mandateJws: env.mandateJws, idempotencyKey: KEY };
+    const put = env.store.orders.put;
+    let saves = 0;
+    env.store.orders.put = async (order) => {
+      saves += 1;
+      if (saves === 2) throw new Error("disk full");
+      return put(order);
+    };
+    await expect(placeOrder(body, env.deps, AGENT)).rejects.toThrow("disk full");
+    const [kept] = await env.store.orders.list();
+    expect(kept).toMatchObject({ status: "confirmed" });
+    expect(kept.receiptJws).toBeUndefined();
+
+    const retried = await placeOrder(body, env.deps, AGENT);
+    expect(retried.id).toBe(kept.id);
+    const receipt = await env.trust.verify<ReceiptPayload>("supplier", retried.receiptJws!, TOKEN_TYPE.receipt);
+    expect(receipt.payload).toMatchObject({ orderId: kept.id, auditSeq: 3 });
+    expect(env.audit.entries.filter((entry) => entry.event === "order.confirmed")).toHaveLength(1);
+  });
+
+  it("undoes the save when the confirmation cannot be logged, so a retry confirms once", async () => {
+    const env = await setup();
+    const body = { offerJws: env.offerJws, mandateJws: env.mandateJws, idempotencyKey: KEY };
+    const append = env.audit.append;
+    env.audit.append = async (input) => {
+      if (input.event === "order.confirmed") throw new Error("log unavailable");
+      return append(input);
+    };
+    await expect(placeOrder(body, env.deps, AGENT)).rejects.toThrow("log unavailable");
+    expect(await env.store.orders.list()).toEqual([]);
+
+    env.audit.append = append;
+    const order = await placeOrder(body, env.deps, AGENT);
+    expect(order.status).toBe("confirmed");
+    expect(env.audit.entries.filter((entry) => entry.event === "order.confirmed")).toHaveLength(1);
   });
 });

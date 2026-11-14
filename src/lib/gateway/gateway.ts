@@ -6,9 +6,10 @@ import {
   SearchRequest,
   SuspensionRequest,
   type Actor,
+  type QuoteResponse,
 } from "@/lib/contracts";
 import { supplierOverview } from "@/lib/insights";
-import { quote } from "@/lib/offers";
+import { quote, type QuoteContext } from "@/lib/offers";
 import { offerSubject, productName } from "@/lib/offers/format";
 import * as orders from "@/lib/orders";
 import { SUPPLIER_ACTOR, agentActor } from "@/lib/orders/summaries";
@@ -53,6 +54,27 @@ export function createGateway(deps: Deps): Gateway {
     return named ?? (await deps.mandates.current()).mandate.buyer.id;
   }
 
+  /** Prices and signs a quote, and logs the offer it issued. */
+  async function issueQuote(request: QuoteRequest, ctx: QuoteContext): Promise<QuoteResponse> {
+    const response = await quote(request, ctx, deps);
+    const { offer } = response.primary;
+    await deps.audit.append({
+      actor: SUPPLIER_ACTOR,
+      event: "offer.issued",
+      summary: offerSummary(offer, response.alternatives.length),
+      refs: { offerId: offer.id, buyerId: ctx.buyer.id },
+      data: {
+        totals: offer.totals,
+        fulfilment: offer.fulfilment,
+        deliveryDate: offer.deliveryDate,
+        expiresAt: offer.expiresAt,
+        alternatives: response.alternatives.length,
+        alternativeOfferIds: response.alternatives.map((alt) => alt.signed.offer.id),
+      },
+    });
+    return response;
+  }
+
   return {
     async searchCatalog(agentInput, input) {
       const agent = await caller(agentInput, "search_catalog");
@@ -93,22 +115,7 @@ export function createGateway(deps: Deps): Gateway {
       return recorder.track(agent, "request_quote", quoteTitle(request, deps.catalog), async () => {
         const { customerNumber, ...buyer } = await buyerOf(agent);
         const checked = { ...request, matchConfidence: matchConfidence(request, deps.catalog) };
-        const response = await quote(checked, { customerNumber, buyer }, deps);
-        const { offer } = response.primary;
-        await deps.audit.append({
-          actor: SUPPLIER_ACTOR,
-          event: "offer.issued",
-          summary: offerSummary(offer, response.alternatives.length),
-          refs: { offerId: offer.id, buyerId: buyer.id },
-          data: {
-            totals: offer.totals,
-            fulfilment: offer.fulfilment,
-            deliveryDate: offer.deliveryDate,
-            expiresAt: offer.expiresAt,
-            alternatives: response.alternatives.length,
-            alternativeOfferIds: response.alternatives.map((alt) => alt.signed.offer.id),
-          },
-        });
+        const response = await issueQuote(checked, { customerNumber, buyer });
         await recordQuote(agent, checked, response, deps);
         return response;
       }, (response) => ({ detail: quoteDetail(response), refs: { offerId: response.primary.offer.id } }));
@@ -160,6 +167,17 @@ export function createGateway(deps: Deps): Gateway {
         refs: { orderId: order.id, offerId: order.offer.id },
       });
       return order;
+    },
+
+    requote(order) {
+      const { offer } = order;
+      const lines = offer.lines
+        .filter((line) => line.quantity > 0)
+        .map((line) => ({ productId: line.productId, quantity: { amount: line.quantity, unit: "sales_unit" as const } }));
+      return issueQuote(
+        { lines, deliverBy: offer.deliverBy, intent: offer.intent, matchConfidence: offer.matchConfidence },
+        { customerNumber: offer.customerNumber, buyer: order.buyer },
+      );
     },
 
     getMandate: (named) => deps.mandates.current(named),

@@ -1,5 +1,5 @@
 import type { AuditEntry } from "@/lib/contracts";
-import { GENESIS_HASH, entryHash, type LogHead, type SignatureVerifier } from "./verify";
+import { GENESIS_HASH, hashMatches, type LogHead, type SignatureVerifier } from "./verify";
 
 /**
  * Why the stored tail cannot be extended, or undefined when it can. The tail must hash to its stored hash,
@@ -22,7 +22,7 @@ export async function tailProblem(
     return `Entry ${known.size} is not the one written earlier, so the log was rewritten.`;
   }
   if (!tail) return undefined;
-  if ((await entryHash(tail)) !== tail.hash) return `Entry ${tail.seq} was changed after it was written.`;
+  if (!(await hashMatches(tail))) return `Entry ${tail.seq} was changed after it was written.`;
   if (tail.prevHash !== (beforeTail?.hash ?? GENESIS_HASH)) {
     return `Entry ${tail.seq} does not link to the hash of the entry before it.`;
   }

@@ -1,7 +1,8 @@
-import type { Order } from "@/lib/contracts";
+import type { Alternative, Order } from "@/lib/contracts";
 import { PROBLEM_TYPE_BASE, json, type Problem } from "./respond";
 
 export const ORDER_BLOCKED = "order_blocked";
+export const APPROVAL_BLOCKED = "approval_blocked";
 
 /** A blocked order as a problem: the usual fields, plus the order itself so the agent can read which rule stopped it. */
 export interface BlockedOrderProblem extends Problem {
@@ -42,6 +43,31 @@ export function orderResponse(order: Order): Response {
   const headers = { location: `/api/v1/orders/${order.id}` };
   if (order.status !== "blocked") return json(order, { status: SUCCESS_STATUS[order.status], headers });
   const response = json(blockedProblem(order), { status: 422, headers });
+  response.headers.set("content-type", "application/problem+json");
+  return response;
+}
+
+/** An approval the re-check stopped: the blocked order, and fresh signed alternatives when its stock was taken. */
+export interface BlockedApprovalProblem extends BlockedOrderProblem {
+  alternatives: Alternative[];
+}
+
+/**
+ * The answer to a decision: 200 with the decided order, or 409 when the re-check at approval blocked it, carrying the
+ * order and the wholesaler's fresh alternatives so the agent can order one of them instead.
+ */
+export function approvalResponse(order: Order, alternatives: Alternative[]): Response {
+  if (order.status !== "blocked") return json(order);
+  const body: BlockedApprovalProblem = {
+    ...blockedProblem(order),
+    type: PROBLEM_TYPE_BASE + APPROVAL_BLOCKED,
+    title: "Approval stopped",
+    status: 409,
+    code: APPROVAL_BLOCKED,
+    detail: blockedDetail(order).replace("The order was blocked", "The approval was stopped"),
+    alternatives,
+  };
+  const response = json(body, { status: 409 });
   response.headers.set("content-type", "application/problem+json");
   return response;
 }

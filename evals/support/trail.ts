@@ -1,13 +1,13 @@
 import type { JSONWebKeySet } from "jose";
 import { decodeProtectedHeader } from "jose";
-import type { AuditEntry, Order, SignedOffer } from "@/lib/contracts";
+import type { AuditEntry, AuditRecord, Order, SignedOffer } from "@/lib/contracts";
 import { verifyChain, type LogHead } from "@/lib/audit/verify";
 import { TOKEN_TYPE, verifyWithJwks, type SignerRole, type TokenType } from "@/lib/trust";
 import { approverCookie, mandate, orderLitres } from "./flow";
 import { pendingOrder } from "./hostile";
 import { AGENT_AUTH, get, ok, post } from "./router";
 
-/** Everything a buyer or auditor can collect from the public interface after two orders. */
+/** Everything a buyer's approver, as auditor, can collect from the interface after two orders: the log in full, the public documents. */
 export interface Trail {
   jwks: JSONWebKeySet;
   offer: SignedOffer;
@@ -26,7 +26,7 @@ export async function buildTrail(): Promise<Trail> {
   const cookie = await approverCookie();
   const approved = ok<Order>(await post(`/api/v1/approvals/${pending.id}`, { decision: "approved" }, { cookie }), "Approval");
   const offer = ok<SignedOffer>(await get(`/api/v1/offers/${auto.offer.id}`, AGENT_AUTH), "Offer lookup");
-  const { entries } = ok<{ entries: AuditEntry[] }>(await get("/api/v1/audit"), "Audit log");
+  const { entries } = ok<{ entries: AuditEntry[] }>(await get("/api/v1/audit", { cookie }), "Audit log");
   const { checkpoint, jws } = ok<{ checkpoint: LogHead; jws: string }>(await get("/api/v1/audit/checkpoint"), "Checkpoint");
   const jwks = ok<JSONWebKeySet>(await get("/.well-known/jwks.json"), "JWKS");
   if (auto.status !== "confirmed" || approved.status !== "confirmed") {
@@ -58,6 +58,6 @@ export async function verifyAs<T>(jws: string, jwks: JSONWebKeySet, role: Signer
 }
 
 /** The audit chain check with signatures verified against the JWKS. */
-export function verifyEntries(entries: AuditEntry[], jwks: JSONWebKeySet, head?: LogHead) {
+export function verifyEntries(entries: AuditRecord[], jwks: JSONWebKeySet, head?: LogHead) {
   return verifyChain(entries, (jws) => verifyWithJwks(jws, jwks, TOKEN_TYPE.audit), head);
 }

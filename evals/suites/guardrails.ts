@@ -4,12 +4,14 @@ import { cutPrice, raiseLimit } from "@/lib/demo/forge";
 import { issueMandate, type MandateClaims } from "@/lib/mandate";
 import type { Suite } from "../harness";
 import { APPROVAL_GUARDRAILS } from "../support/guardrails-approval";
+import { BINDING_GUARDRAILS } from "../support/guardrails-binding";
 import { INPUT_GUARDRAILS } from "../support/guardrails-input";
 import { PEOPLE_GUARDRAILS } from "../support/guardrails-people";
 import { RECHECK_GUARDRAILS } from "../support/guardrails-recheck";
 import { SCOPE_GUARDRAILS } from "../support/guardrails-scope";
 import { SPEND_GUARDRAILS } from "../support/guardrails-spend";
-import { mandate, placeOrder, quoteLitres } from "../support/flow";
+import { gateway } from "@/lib/gateway";
+import { mandate, orderFrom, placeOrder, quoteLitres } from "../support/flow";
 import { expectRefused, guardrail, outcomeText } from "../support/hostile";
 import { payloadOf, signWithFreshKey, withPayload } from "../support/jws";
 
@@ -25,10 +27,12 @@ async function forgedOrder(forge: { offer?: (jws: string) => Promise<string> | s
 }
 
 const OFFER_GUARDRAILS = [
-  guardrail("G1", "Price edited in the offer", "blocked by offer.signature", async (hostile, checks) => {
+  guardrail("G1", "Price edited in the offer", "blocked by offer.signature, refused as an invalid signature", async (hostile, checks) => {
     const order = await forgedOrder({ offer: (jws) => withPayload<Offer>(jws, cutPrice) });
     const reply = await hostile.try("price edit", () => placeOrder(order.offerJws, order.mandateJws, "eval-g1-price"));
     expectRefused(reply, "offer.signature", checks, "price edit");
+    const refusal = orderFrom(reply)?.refusal;
+    checks.expect(refusal?.message === "Refused: the offer's signature did not verify.", `refusal ${refusal?.message ?? "none"}, expected its own reason`);
     return outcomeText(reply);
   }, true),
   guardrail("G2", "Quantity edited in the offer", "blocked by offer.signature", async (hostile, checks) => {
@@ -77,21 +81,21 @@ const MANDATE_GUARDRAILS = [
     expectRefused(second, "mandate.signature", checks, "spoofed kid");
     return `${outcomeText(first)} / ${outcomeText(second)}`;
   }),
-  guardrail("G7", "Expired mandate", "blocked by mandate.validity", async (hostile, checks) => {
+  guardrail("G7", "Mandate in force has expired", "blocked by mandate.validity", async (hostile, checks) => {
     const at = now().getTime();
-    const order = await forgedOrder({
-      mandate: (_, m) => issueMandate({ ...m, validFrom: new Date(at - 30 * DAY_MS).toISOString(), validUntil: new Date(at - DAY_MS).toISOString() }),
-    });
+    await gateway().updateMandate({ validFrom: new Date(at - 30 * DAY_MS).toISOString(), validUntil: new Date(at - DAY_MS).toISOString() });
+    const order = await forgedOrder({});
     const reply = await hostile.try("expired mandate", () => placeOrder(order.offerJws, order.mandateJws, "eval-g7-expired"));
     expectRefused(reply, "mandate.validity", checks, "expired mandate");
     return outcomeText(reply);
   }),
-  guardrail("G8", "Mandate for another agent", "blocked by mandate.validity", async (hostile, checks) => {
+  guardrail("G8", "Buyer-signed mandate for another agent, not the one in force", "refused by mandate.signature as not in force here", async (hostile, checks) => {
     const order = await forgedOrder({
       mandate: (_, m) => issueMandate({ ...m, agent: { id: "agent:someone-else", name: "Another agent" } }),
     });
     const reply = await hostile.try("other agent's mandate", () => placeOrder(order.offerJws, order.mandateJws, "eval-g8-other"));
-    expectRefused(reply, "mandate.validity", checks, "other agent's mandate");
+    expectRefused(reply, "mandate.signature", checks, "other agent's mandate");
+    checks.expect(orderFrom(reply)?.refusal?.code === "not_issued_here", "the refusal is not named as a mandate not in force here");
     return outcomeText(reply);
   }),
 ];
@@ -100,5 +104,5 @@ export const guardrailsSuite: Suite = {
   id: "guardrails",
   name: "Guardrails",
   bar: 1,
-  cases: [...OFFER_GUARDRAILS, ...MANDATE_GUARDRAILS, ...SPEND_GUARDRAILS, ...APPROVAL_GUARDRAILS, ...INPUT_GUARDRAILS, ...SCOPE_GUARDRAILS, ...RECHECK_GUARDRAILS, ...PEOPLE_GUARDRAILS],
+  cases: [...OFFER_GUARDRAILS, ...MANDATE_GUARDRAILS, ...SPEND_GUARDRAILS, ...APPROVAL_GUARDRAILS, ...INPUT_GUARDRAILS, ...SCOPE_GUARDRAILS, ...RECHECK_GUARDRAILS, ...PEOPLE_GUARDRAILS, ...BINDING_GUARDRAILS],
 };

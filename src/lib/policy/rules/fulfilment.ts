@@ -1,4 +1,4 @@
-import { untrackedOverReview } from "@/lib/offers/limits";
+import { mergedByProduct, untrackedOverReview } from "@/lib/offers/limits";
 import type { Rule } from "../context";
 import { check, plural } from "../format";
 
@@ -17,7 +17,11 @@ export const substitutionPolicy: Rule = {
     if (policy === "like_for_like" && unlike.length > 0) {
       return check("substitution.policy", "ask", `${unlike[0].name} is not a like-for-like substitute.`, { observed, limit: policy });
     }
-    return check("substitution.policy", "pass", `${observed} ${subs.length === 1 ? "fits" : "fit"} the substitution policy.`, { observed, limit: policy });
+    const swaps = subs.map((line) => `${line.name} replaces ${line.substituteFor?.name}`).join("; ");
+    const why = policy === "like_for_like"
+      ? "Another product, or another brand, of the same kind with every claim kept is allowed under like-for-like."
+      : "The mandate allows any substitute within its rules.";
+    return check("substitution.policy", "pass", `${swaps}. ${why}`, { observed, limit: policy });
   },
 };
 
@@ -53,7 +57,8 @@ export const deliveryPartial: Rule = {
     );
     const partial = offer.fulfilment === "partial" || short.length > 0;
     const limit = mandate.delivery.allowPartial ? "partial allowed" : "full delivery only";
-    const unvouched = offer.lines.map((line) => ({ line, quantity: untrackedOverReview(line) })).find(({ quantity }) => quantity);
+    // Lines of one product count together, so splitting a quantity over two lines does not avoid the review.
+    const unvouched = mergedByProduct(offer.lines).map((line) => ({ line, quantity: untrackedOverReview(line) })).find(({ quantity }) => quantity);
     if (!partial && unvouched) {
       return check(
         "delivery.partial",

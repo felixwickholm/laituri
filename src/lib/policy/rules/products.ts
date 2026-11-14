@@ -122,7 +122,8 @@ export const matchConfidence: Rule = {
   needs: "offer",
   run: ({ offer }) => {
     const level = offer.matchConfidence;
-    const open = (offer.requestCheck ?? []).filter((item) => item.result !== "met");
+    // A brand or product the offer substitutes is the substitution rule's to decide.
+    const open = (offer.requestCheck ?? []).filter((item) => item.result === "unmet" || item.result === "unchecked");
     const extra = { observed: open.length ? open.map((item) => item.requirement).join(", ") : level, limit: "every requirement in the words met" };
     const certain = open.filter((item) => item.certain);
     if (certain.length) {

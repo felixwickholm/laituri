@@ -1,6 +1,7 @@
 import { Offer, type Order } from "@/lib/contracts";
 import { ValidationError } from "@/lib/gateway/errors";
 import { TOKEN_TYPE } from "@/lib/trust/types";
+import { REFUSALS } from "./refusals";
 import type { OfferRead, OrderDeps } from "./types";
 
 /** Reads the payload of a compact JWS without checking the signature. Only for display and idempotency matching. */
@@ -15,8 +16,8 @@ export function decodeUnverified(jws: string): unknown {
 }
 
 /**
- * Verify the wholesaler's signature on an offer. An altered offer is still returned (as read, marked invalid)
- * so the order can be recorded as blocked. Only an offer that cannot be read at all is a request error.
+ * Verify the wholesaler's signature on an offer. An altered offer is still returned (as read, refused as invalid)
+ * so the order can be recorded as refused. Only an offer that cannot be read at all is a request error.
  */
 export async function readOffer(jws: string, deps: Pick<OrderDeps, "trust">): Promise<OfferRead & { offer: Offer }> {
   const verified = await deps.trust.verify<unknown>("supplier", jws, TOKEN_TYPE.offer);
@@ -26,11 +27,24 @@ export async function readOffer(jws: string, deps: Pick<OrderDeps, "trust">): Pr
     throw new ValidationError("The offer could not be read. Send the offer JWS exactly as received.");
   }
   if (verified.valid) return { valid: true, offer: parsed.data };
-  return {
-    valid: false,
-    offer: parsed.data,
-    reason: verified.reason ?? "The wholesaler's signature on the offer does not match its content.",
-  };
+  const refusal = REFUSALS.offerSignature;
+  return { valid: false, offer: parsed.data, reason: `${refusal.message.replace(/\.$/, "")}: ${verified.reason ?? "unknown reason"}.`, refusal };
+}
+
+/**
+ * An order may use only an offer this workspace issued: signed for its audience and kept, byte for byte, in its own
+ * store. A signed offer copied from another workspace is refused, so one offer can never be ordered in two.
+ */
+export async function issuedHere<T extends OfferRead & { offer: Offer }>(
+  read: T,
+  jws: string,
+  deps: Pick<OrderDeps, "store" | "audience">,
+): Promise<T> {
+  if (!read.valid) return read;
+  const kept = await deps.store.offers.get(read.offer.id);
+  if (read.offer.audience === deps.audience() && kept?.jws === jws) return read;
+  const refusal = REFUSALS.offerElsewhere;
+  return { ...read, valid: false, reason: refusal.message, refusal };
 }
 
 /** A fixed-price offer covers one order. A second order needs a new quote, so stock is not promised twice. */

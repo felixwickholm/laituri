@@ -7,21 +7,27 @@ import type {
   Mandate,
   Offer,
   Product,
+  Refusal,
 } from "@/lib/contracts";
 import type { Catalog } from "@/lib/catalog/types";
 import type { Store } from "@/lib/store/types";
 import type { SignerRole, TokenType, Verified } from "@/lib/trust/types";
+import type { UpstreamClient } from "@/lib/valio/types";
 
 export interface MandateRead {
   valid: boolean;
   mandate?: Mandate;
   reason?: string;
+  /** Set when the mandate is refused as invalid rather than out of date. */
+  refusal?: Refusal;
 }
 
 export interface OfferRead {
   valid: boolean;
   offer?: Offer;
   reason?: string;
+  /** Set when the offer is refused as invalid rather than used up or expired. */
+  refusal?: Refusal;
 }
 
 export interface PolicyInput {
@@ -32,6 +38,9 @@ export interface PolicyInput {
   weekSpendNet: number;
   orderedProductIds: Set<string>;
   now: Date;
+  auditLog: { valid: boolean; reason?: string };
+  heldUntil?: string;
+  stockTaken?: string;
 }
 
 export interface PolicyEngine {
@@ -73,7 +82,11 @@ export interface AuditLog {
 export interface OrderDeps {
   catalog: Pick<Catalog, "get">;
   trust: Signer & { verify<T>(role: SignerRole, jws: string, typ: TokenType): Promise<Verified<T>> };
-  store: Pick<Store, "offers" | "orders">;
+  store: Pick<Store, "offers" | "orders" | "audit">;
+  /** Stock is asked again when a person approves, since it may have changed while the order waited. */
+  upstream: Pick<UpstreamClient, "availability">;
+  /** The audience of the current workspace: an order accepts only offers signed for it. */
+  audience: () => string;
   policy: PolicyEngine;
   mandates: MandateService;
   audit: AuditLog;

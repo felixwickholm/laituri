@@ -33,7 +33,7 @@ export async function quoteLitres(
 }
 
 export async function mandate(): Promise<SignedMandate> {
-  return ok<SignedMandate>(await get("/api/v1/mandate"), "Mandate");
+  return ok<SignedMandate>(await get("/api/v1/mandate", AGENT_AUTH), "Mandate");
 }
 
 export function placeOrder(offerJws: string, mandateJws: string, key: string, headers: Record<string, string> = AGENT_AUTH): Promise<Reply> {

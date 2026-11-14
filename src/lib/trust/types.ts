@@ -1,6 +1,6 @@
 import type { JSONWebKeySet } from "jose";
 
-/** supplier signs offers, receipts and audit entries; buyer signs mandates; approver signs approvals. */
+/** supplier signs offers, price holds, receipts and audit entries; buyer signs mandates; approver signs approvals. */
 export type SignerRole = "supplier" | "buyer" | "approver";
 
 /**
@@ -14,6 +14,7 @@ export const TOKEN_TYPE = {
   receipt: "receipt+jwt",
   audit: "audit+jwt",
   checkpoint: "checkpoint+jwt",
+  priceHold: "price-hold+jwt",
   session: "console+jwt",
 } as const;
 export type TokenType = (typeof TOKEN_TYPE)[keyof typeof TOKEN_TYPE];

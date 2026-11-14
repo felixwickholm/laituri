@@ -43,11 +43,18 @@ describe("llms.txt", () => {
     expect(text).toMatch(/422 order_blocked[^\n]*order\.decision\.checks/);
   });
 
-  it("keeps what an outside agent needs to buy: the token, every tool and a curl line per step", () => {
-    expect(text).toContain("Authorization: Bearer demo-agent-token");
+  it("keeps what an outside agent needs to buy: its own sandbox key first, every tool and a curl line per step", () => {
+    const flow = text.slice(text.indexOf("**REST flow"));
+    expect(flow.split("\n").find((line) => line.includes("curl"))).toBe(`KEY=$(curl -s -X POST ${ORIGIN}/api/v1/workspace | jq -r '.agentKeys[0].key')`);
+    expect(text).toContain("Authorization: Bearer $KEY");
     for (const tool of TOOLS) expect(text).toContain(tool.name);
     for (const step of ["/products/search", "/quotes", "/mandate", "/orders"]) {
       expect(lines.some((line) => line.startsWith(`curl -s ${ORIGIN}/api/v1${step}`)), step).toBe(true);
     }
+  });
+
+  it("sends the buyer's words with every quote, and names the fixed tokens as the shared demo workspace", () => {
+    for (const line of lines.filter((each) => each.startsWith(`curl -s ${ORIGIN}/api/v1/quotes`))) expect(line).toMatch(/"intent":"[^"]+"/);
+    expect(text).toMatch(/shared demo workspace[^\n]*demo-agent-token/);
   });
 });

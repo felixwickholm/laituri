@@ -36,7 +36,7 @@ export function criteria(f: Facts): Criterion[] {
       ],
       measured: [
         suiteLine(f, "scenarios"),
-        "An agent that knows only the text of /llms.txt, fetched over HTTP from a server started for the eval, runs the curl lines of its REST flow in order (URLs, headers and bodies as written, filling each <field from step N> from that step's answer), searches, quotes and orders the milk, and the order confirms (eval O8)",
+        "An agent that knows only the text of /llms.txt, fetched over HTTP from a server started for the eval, creates its own sandbox with POST /api/v1/workspace, runs the curl lines of the REST flow in order with the returned key, searches, quotes and orders the milk, and the order confirms (eval O8)",
       ],
       limit: "Orders are simulated: the mock API has price and availability but no order endpoint, so Laituri writes the order and receipt itself and marks each one simulated: true.",
     },
@@ -48,8 +48,9 @@ export function criteria(f: Facts): Criterion[] {
       built: [
         "Search reads Finnish, Swedish or English needs as a product concept plus claims (for example lactose_free) and returns a match confidence.",
         "Pack maths: 1,000 l becomes 1,000 x 1 l; the scenario evals accept at most one lot more than asked.",
-        "Request check: product, every claim, words not understood, quantity (at most one lot over), date, a budget (\"under 50 euros\", \"alle 50 euroa\") and an order to wait (\"ask me first\", \"älä tilaa ennen kuin hyväksyn\"), each met, unmet or unchecked, signed inside the offer and shown on the order.",
-        "The match.confidence rule refuses a certain mismatch (wrong product, a missing claim, far too little) and sends anything unmet, unchecked or uncertain to a person with the requirement named.",
+        "Request check, for the product actually delivered: product, every claim and stated attribute (UHT or chilled, fat level, pack type), exclusions such as dairy-free also in a purpose clause, the brand (another brand is marked substituted and the mandate decides), quantity (at most one lot over), date, a budget, zero included, and any instruction to hold (\"do not order yet\", \"älä tilaa ennen kuin hyväksyn\"), each met, unmet, substituted or unchecked, signed inside the offer and shown on the order.",
+        "An order whose offer carries no buyer words waits for the approver (rule request.words), so an agent cannot skip the check by leaving the words out.",
+        "The match.confidence rule refuses a certain mismatch (wrong product, a missing claim, far too little) and sends anything unmet, unchecked, uncertain or not understood to a person with the requirement named.",
         `${f.demoBuyers} demo buyers with their own signed mandates (${f.buyerNames.join(", ")}). The same sentence confirms for the hotel and is blocked for the school kitchens, which exclude sesame even as a trace.`,
         "Every offer line carries the product's country of origin, labels, delivery reliability and category-average CO2 inside the signature; search can rank a clear match by price, reliability or sustainability.",
       ],
@@ -86,6 +87,8 @@ export function criteria(f: Facts): Criterion[] {
       built: [
         `${f.mandateRules} named mandate rules run on every order; each result (pass, ask or block) is listed on the order with its reason.`,
         "Three tiers: the agent orders alone, a person is asked, or the order is refused.",
+        "Mandates and offers are bound by signature to the workspace that signed them; an order must carry the mandate in force there byte for byte.",
+        "While the audit log does not verify, no order confirms alone (rule audit.integrity) and approvals are paused.",
         "Approvals are signed with the approver key. Agent credentials cannot approve, over REST or MCP.",
         "An agent cannot raise its own limit: a changed mandate without the buyer's signature is refused.",
         "The wholesaler can suspend an agent; every refused call, the suspension and the resumption are signed audit entries.",
@@ -117,7 +120,10 @@ export function criteria(f: Facts): Criterion[] {
       claim:
         "When a request cannot be met in full and on time, the wholesaler returns signed counter-offers ranked good, better and best, and the buyer's mandate decides whether the agent may take one alone.",
       built: [
-        "Short stock: a split (keep what is in stock, fill the rest like for like) or a full substitute, each signed.",
+        "Short stock: a split (keep what is in stock, fill the rest like for like) or a full substitute, each signed and each checked against the buyer's words for what it delivers.",
+        "A waiting order keeps its price until the order cut-off; stock is checked again at approval, and a shortfall returns fresh signed alternatives.",
+        "Stock across orders: availability is the wholesaler's figure minus this workspace's own confirmed and waiting orders, checked again at placement.",
+        "Lines of one product are merged before every limit, so splitting a line passes no ceiling.",
         "Order cut-off passed: the offer as asked is blocked and on-time alternatives come with it.",
         "Late delivery within the mandate's grace days asks a person; later is refused.",
         "A substitute that is not like for like, or costs more than the mandate's cap, asks a person; a mandate with no substitutes refuses it.",
@@ -155,7 +161,7 @@ export function criteria(f: Facts): Criterion[] {
         `${f.discoveryDocuments} discovery documents: OpenAPI is served beside the JWKS, agent card, AI catalog, UCP profile, OAuth protected-resource metadata and llms.txt.`,
         "An outside agent that knows only the text of llms.txt, fetched over HTTP, buys the milk by following its REST flow.",
         "Standards table separates \"used\" (implemented and tested) from \"follows\" (names and shapes taken from the standard).",
-        "Decision records in docs/decisions; assumptions and the path to production in this README and on /evidence.",
+        "Decision records in docs/decisions; assumptions and the path to production in docs/ and on /evidence.",
         "MIT licence.",
       ],
       where: [

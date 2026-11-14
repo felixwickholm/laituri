@@ -57,7 +57,8 @@ async function playTwoKitchens(): Promise<void> {
   expect((await verifyAuditLog()).valid).toBe(true);
 }
 
-describe.skipIf(!recorded)("scene: same sentence, two kitchens", () => {
+/** Each test seeds a signed week of trade through the real gateway; with every file running at once that takes a while. */
+describe.skipIf(!recorded)("scene: same sentence, two kitchens", { timeout: 60_000 }, () => {
   it("confirms for the hotel and blocks for the school kitchens on an empty state", async () => {
     process.env.LAITURI_SEED = "off";
     await playTwoKitchens();

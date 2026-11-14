@@ -17,6 +17,8 @@ export interface SandboxInfo {
 export interface Sandboxes {
   /** The sandbox the browser secret names. Made from the template when there is none, or when it expired or was evicted. */
   forSecret(secret: string): Promise<Workspace>;
+  /** A new sandbox for a client without a browser, such as curl or an agent's own code. Reached only by its agent keys. */
+  forClient(): Promise<Workspace>;
   /** The sandbox and buyer an agent key belongs to; undefined for any other token. */
   byAgentKey(key: string): { workspace: Workspace; buyerId: string } | undefined;
   /** Expiry and agent keys of a live sandbox. */
@@ -116,6 +118,11 @@ export function createSandboxes(options: SandboxOptions): Sandboxes {
       }
       if (entry) drop(entry);
       return create(secretDigest, template).workspace;
+    },
+
+    async forClient() {
+      const template = await options.template();
+      return create(digest(randomText(32)), template).workspace;
     },
 
     byAgentKey(key) {

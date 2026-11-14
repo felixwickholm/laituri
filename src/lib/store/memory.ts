@@ -156,6 +156,10 @@ function storeOver(initial: StoreState, file?: string, recovery?: Recovery): Mem
       async get(id) {
         return state.orders[id];
       },
+      async remove(id) {
+        const previous = state.orders[id];
+        commit(() => delete state.orders[id], () => restoreKey(state.orders, id, previous));
+      },
       async byIdempotencyKey(key) {
         return Object.values(state.orders).find((order) => idempotencyKeyOf(order) === key);
       },

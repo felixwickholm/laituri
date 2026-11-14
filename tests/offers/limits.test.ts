@@ -78,3 +78,48 @@ describe("the delivery date", () => {
     await expect(quote(request("464306", 100, "l", "2026-11-14"), QUOTE_CONTEXT, deps)).resolves.toBeDefined();
   });
 });
+
+describe("lines of one product count together", () => {
+  it("refuses two lines that pass the line ceiling only one at a time", async () => {
+    const { deps, upstream } = makeDeps();
+    const twoLines: QuoteRequest = {
+      lines: [
+        { productId: "464306", quantity: { amount: 15_000, unit: "l" } },
+        { productId: "464306", quantity: { amount: 15_000, unit: "l" } },
+      ],
+      deliverBy: DELIVER_BY,
+    };
+    await expect(quote(twoLines, QUOTE_CONTEXT, deps)).rejects.toMatchObject({ status: 422, code: "quantity_implausible", message: expect.stringContaining("30,000 l") });
+    expect(upstream.calls).toEqual([]);
+  });
+});
+
+describe("requests no offer can answer", () => {
+  it("answers a date that is not on the calendar with 422, before asking the wholesaler", async () => {
+    const { deps, upstream } = makeDeps();
+    for (const date of ["2027-02-31", "2026-13-45", "2026-02-31"]) {
+      await expect(quote(request("464306", 100, "l", date), QUOTE_CONTEXT, deps)).rejects.toMatchObject({
+        status: 422,
+        code: "invalid_date",
+        message: `The delivery date ${date} is not a date on the calendar.`,
+      });
+    }
+    expect(upstream.calls).toEqual([]);
+  });
+
+  it("answers an unknown product with 404 and signs nothing", async () => {
+    const { deps, store } = makeDeps();
+    await expect(quote(request("999999", 100), QUOTE_CONTEXT, deps)).rejects.toMatchObject({ status: 404, code: "not_found" });
+    expect(await store.offers.list()).toEqual([]);
+  });
+
+  it("answers a quantity in a unit the product is not sold by with 422 and signs nothing", async () => {
+    const { deps, store } = makeDeps();
+    await expect(quote(request("464306", 100, "kg"), QUOTE_CONTEXT, deps)).rejects.toMatchObject({
+      status: 422,
+      code: "unit_mismatch",
+      message: expect.stringContaining("by the litre"),
+    });
+    expect(await store.offers.list()).toEqual([]);
+  });
+});

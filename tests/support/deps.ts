@@ -24,7 +24,7 @@ export function testMandate(): Mandate {
     dietary: { excludeAllergens: ["nuts"], blockMayContain: false, requiredClaims: [] },
     substitution: { policy: "like_for_like", maxPriceIncreasePct: 10 },
     delivery: { allowPartial: false, maxDelayDays: 1 },
-    approval: { approver: { id: "user:maria", name: "Maria Lind" }, firstTimeProducts: false },
+    approval: { approver: { id: "user:maria", name: "Maria Lind" }, firstTimeProducts: false, requireRequestWords: true },
   };
 }
 
@@ -62,7 +62,7 @@ export function stubPolicy(): PolicyEngine & { calls: PolicyInput[] } {
       add("mandate.signature", mandate ? "pass" : "block", mandate ? "Mandate signed." : "The mandate signature is not valid.");
       add("offer.signature", offer ? "pass" : "block", offer ? "Offer signed." : "The offer signature is not valid.");
       if (offer) {
-        const expired = input.now.getTime() > Date.parse(offer.expiresAt);
+        const expired = input.now.getTime() > Date.parse(input.heldUntil ?? offer.expiresAt);
         const unorderable = offer.lines.some((l) => ["cutoff_passed", "unavailable", "blocked"].includes(l.availability.status));
         add("offer.expiry", expired || unorderable ? "block" : "pass", expired ? "The offer expired." : "Offer valid.");
       }
@@ -79,6 +79,9 @@ export function stubPolicy(): PolicyEngine & { calls: PolicyInput[] } {
     },
   };
 }
+
+/** The workspace audience offers and mandates are signed for in unit tests. */
+export const TEST_AUDIENCE = "laituri:workspace:test";
 
 export function makeDeps(overrides: Partial<Deps> = {}) {
   const trust = new FakeTrust();
@@ -97,6 +100,7 @@ export function makeDeps(overrides: Partial<Deps> = {}) {
     mandates: fakeMandates(trust),
     hash: sha256,
     now: () => clock.current,
+    audience: () => TEST_AUDIENCE,
     ...overrides,
   };
   return { deps, trust, upstream, store, audit, policy, clock };

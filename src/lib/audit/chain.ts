@@ -7,7 +7,7 @@ import { TOKEN_TYPE, trust } from "@/lib/trust";
 import { workspaceState } from "@/lib/workspace/context";
 import { knownHead, rememberHead } from "./head";
 import { tailProblem } from "./tail";
-import { GENESIS_HASH, entryHash } from "./verify";
+import { GENESIS_HASH, contentDigest, entryHash } from "./verify";
 
 export interface AuditInput {
   actor: Actor;
@@ -48,9 +48,11 @@ async function write(input: AuditInput): Promise<AuditEntry> {
     data: plainJson(input.data ?? {}),
     ...seededMark(),
     prevHash: last ? last.hash : GENESIS_HASH,
+    contentDigest: "",
     hash: "",
     signature: "",
   };
+  draft.contentDigest = await contentDigest(draft);
   draft.hash = await entryHash(draft);
   draft.signature = await trust().sign("supplier", { seq: draft.seq, hash: draft.hash }, TOKEN_TYPE.audit);
   await log.append(draft);

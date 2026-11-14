@@ -5,6 +5,7 @@ export const RuleId = z.enum([
   "mandate.validity",
   "offer.signature",
   "offer.expiry",
+  "audit.integrity",
   "spend.per_order",
   "spend.per_week",
   "category.allowed",
@@ -15,6 +16,7 @@ export const RuleId = z.enum([
   "delivery.partial",
   "delivery.deadline",
   "match.confidence",
+  "request.words",
   "product.first_time",
 ]);
 export type RuleId = z.infer<typeof RuleId>;

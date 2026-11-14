@@ -18,4 +18,4 @@ export const POST = route(async (request) => {
   return orderResponse(await gateway().placeOrder(agent, body));
 });
 
-export const GET = route(async (request) => json({ orders: await gateway().listOrders(await readerBuyer(request)) }));
+export const GET = route(async (request) => json({ orders: await gateway().listOrders(await readerBuyer(request, "orders")) }));

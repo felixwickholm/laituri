@@ -78,14 +78,13 @@ describe("quote", () => {
     expect(good.signed.offer.lines[0]).toMatchObject({ productId: "464306", quantity: 1000 });
   });
 
-  it("answers an unknown product as unavailable without crashing", async () => {
-    const { deps } = makeDeps();
-    const { primary, alternatives } = await quote(request("999999", 5, "sales_unit"), ctx, deps);
-    expect(primary.offer.fulfilment).toBe("unavailable");
-    expect(primary.offer.lines[0]).toMatchObject({ quantity: 0, availability: { status: "unavailable", requested: 5 } });
-    expect(primary.offer.notes).toEqual(["Product 999999 is not in the catalogue."]);
-    expect(primary.offer.totals.net.amount).toBe(0);
-    expect(alternatives).toEqual([]);
+  it("answers an unknown product with a plain 404 and signs nothing", async () => {
+    const { deps, store } = makeDeps();
+    await expect(quote(request("999999", 5, "sales_unit"), ctx, deps)).rejects.toMatchObject({
+      status: 404,
+      message: "Product 999999 is not in the catalogue. Search the catalogue for a product code.",
+    });
+    expect(await store.offers.list()).toEqual([]);
   });
 
   it("caps the offer expiry at the order cut-off", async () => {

@@ -45,7 +45,8 @@ function mcpCall(headers: Record<string, string>) {
 }
 
 async function agentStatus(agentId: string) {
-  const body = SupplierOverview.parse(await (await overview.GET(jsonRequest("/api/v1/supplier/overview"))).json());
+  const headers = { cookie: await operatorCookie() };
+  const body = SupplierOverview.parse(await (await overview.GET(jsonRequest("/api/v1/supplier/overview", { headers }))).json());
   return body.agents.find((agent) => agent.agent.id === agentId);
 }
 

@@ -39,6 +39,9 @@ export const OfferLine = z.object({
     requested: z.number().describe("Sales units needed to cover the request"),
     available: z.number().optional()
       .describe("Sales units the wholesaler counts in stock; absent when stock is untracked, because no count stands behind it"),
+    reserved: z.number().optional()
+      .describe("Sales units this workspace's own confirmed and waiting orders hold for that delivery date. The mock API does not " +
+        "decrement stock, so `available` is the wholesaler's figure minus these units"),
     stock: z.enum(["tracked", "untracked"]).optional()
       .describe("untracked: the wholesaler keeps no stock count for this product, so the offered quantity is not checked against stock. " +
         "Absent only on offers signed before this field was added"),
@@ -65,6 +68,7 @@ export type Fulfilment = z.infer<typeof Fulfilment>;
 export const Offer = z.object({
   id: z.string(),
   issuer: z.string(),
+  audience: z.string().optional().describe("The workspace that issued the offer; an order elsewhere refuses it. Absent only on offers signed before workspaces were bound"),
   customerNumber: z.string(),
   buyer: z.object({ id: z.string(), name: z.string() }).describe("The buyer the offer was made for; only that buyer's mandate can order it"),
   issuedAt: IsoDateTime,

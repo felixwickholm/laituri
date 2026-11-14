@@ -17,10 +17,12 @@ import type { OfferDeps } from "@/lib/offers/types";
 import type { SupplierOverview } from "@/lib/insights/types";
 import type { Decider, MandatePatch, OrderDeps, SignedMandate } from "@/lib/orders/types";
 import type { Activity, Store } from "@/lib/store/types";
+import type { UpstreamClient } from "@/lib/valio/types";
 
 /** Everything the engines need. Only deps.ts binds the real modules; tests pass fakes. */
 export interface Deps extends OfferDeps, OrderDeps {
   catalog: Catalog;
+  upstream: UpstreamClient;
   trust: OrderDeps["trust"];
   store: Store;
 }
@@ -56,6 +58,8 @@ export interface Gateway {
   listOrders(buyerId?: string): Promise<Order[]>;
   pendingApprovals(buyerId?: string): Promise<Order[]>;
   decideApproval(orderId: string, body: ApprovalDecisionRequest, decider?: Decider): Promise<Order>;
+  /** The wholesaler quotes an order's lines again, for when its stock was taken while it waited; signed for its buyer. */
+  requote(order: Order): Promise<QuoteResponse>;
   getMandate(buyerId?: string): Promise<SignedMandate>;
   updateMandate(patch: MandatePatch, decider?: Decider): Promise<SignedMandate>;
   auditLog(afterSeq?: number): Promise<AuditEntry[]>;

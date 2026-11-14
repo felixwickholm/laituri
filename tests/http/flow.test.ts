@@ -15,7 +15,7 @@ describe.skipIf(!hasFixtures)("milk flow over REST", () => {
     const quote = await quotes.POST(jsonRequest("/api/v1/quotes", { body: EXAMPLES.quote.request, headers: auth }));
     expect(quote.status).toBe(200);
     const { primary } = await quote.json();
-    const { jws: mandateJws } = await (await mandate.GET(jsonRequest("/api/v1/mandate"))).json();
+    const { jws: mandateJws } = await (await mandate.GET(jsonRequest("/api/v1/mandate", { headers: auth }))).json();
 
     const body = { offerJws: primary.jws, mandateJws };
     const place = () =>
@@ -35,7 +35,7 @@ describe.skipIf(!hasFixtures)("milk flow over REST", () => {
     const line = { ...EXAMPLES.quote.request.lines[0], quantity: { amount: 3000, unit: "l" } };
     const request = { ...EXAMPLES.quote.request, lines: [line], intent: "3000 litres of lactose-free milk" };
     const { primary } = await (await quotes.POST(jsonRequest("/api/v1/quotes", { body: request, headers: auth }))).json();
-    const { jws: mandateJws } = await (await mandate.GET(jsonRequest("/api/v1/mandate"))).json();
+    const { jws: mandateJws } = await (await mandate.GET(jsonRequest("/api/v1/mandate", { headers: auth }))).json();
     const place = () =>
       orders.POST(jsonRequest("/api/v1/orders", { body: { offerJws: primary.jws, mandateJws, idempotencyKey: "pending-key-0001" }, headers: auth }));
     const first = await place();
@@ -48,7 +48,7 @@ describe.skipIf(!hasFixtures)("milk flow over REST", () => {
 
   it("blocks an order from an unidentified agent", async () => {
     const quote = await (await quotes.POST(jsonRequest("/api/v1/quotes", { body: EXAMPLES.quote.request }))).json();
-    const { jws: mandateJws } = await (await mandate.GET(jsonRequest("/api/v1/mandate"))).json();
+    const { jws: mandateJws } = await (await mandate.GET(jsonRequest("/api/v1/mandate", { headers: auth }))).json();
     const place = () =>
       orders.POST(jsonRequest("/api/v1/orders", {
         body: { offerJws: quote.primary.jws, mandateJws, idempotencyKey: "anon-key-0001" },

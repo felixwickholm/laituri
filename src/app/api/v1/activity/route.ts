@@ -8,5 +8,5 @@ export const runtime = "nodejs";
 
 export const GET = route(async (request) => {
   const after = new URL(request.url).searchParams.get("after") || undefined;
-  return json({ activity: await gateway().activity(after, await readerBuyer(request)) });
+  return json({ activity: await gateway().activity(after, await readerBuyer(request, "activity")) });
 });

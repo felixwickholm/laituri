@@ -52,6 +52,33 @@ export const CLAIM_MODIFIERS: { claim: string; pattern: RegExp }[] = [
   { claim: "organic", pattern: /\b(organic|luomu\p{L}*|ekologisk\p{L}*)/u },
 ];
 
+/** A word that turns the claim right after it around: "not lactose-free", "ei luomu", "inte ekologisk". */
+export const NEGATION = /^(?:not|non|ei|eikä|inte|ej|icke)$/u;
+
+/** Not preceded by a letter or digit: a word start that, unlike \b, also knows ä and ö. */
+const START = String.raw`(?<![\p{L}\d])`;
+
+function freeFrom(english: string, finnish: string, swedish: string): RegExp {
+  return new RegExp(
+    `${START}(?:(?:${english}) free|free from (?:${english})|(?:without|no|non) (?:${english})|(?:${finnish})\\p{L}*|(?:${swedish})\\p{L}*|utan (?:${english}))`,
+    "u",
+  );
+}
+
+/**
+ * "Dairy-free", "nut-free" and their Finnish and Swedish forms: the product must not contain the allergen.
+ * Peanut comes before nuts, and the word start keeps "peanut free" from also reading as "nut free".
+ */
+export const EXCLUSION_MODIFIERS: { allergen: string; pattern: RegExp }[] = [
+  { allergen: "milk", pattern: freeFrom("dairy|milk", "maidoton|maidottom|maidotto", "mjölkfri|mejerifri") },
+  { allergen: "peanut", pattern: freeFrom("peanuts?", "maapähkinätön|maapähkinättöm", "jordnötsfri") },
+  { allergen: "nuts", pattern: freeFrom("nuts?", "pähkinätön|pähkinättöm", "nötfri") },
+  { allergen: "egg", pattern: freeFrom("eggs?", "kananmunaton|munaton|munattom", "äggfri") },
+  { allergen: "soy", pattern: freeFrom("soya?", "soijaton|soijattom", "sojafri") },
+  { allergen: "sesame", pattern: freeFrom("sesame", "seesamiton|seesamittom", "sesamfri") },
+  { allergen: "fish", pattern: freeFrom("fish", "kalaton|kalattom", "fiskfri") },
+];
+
 /** Soft preference: Finnish origin. */
 export const FINNISH_MODIFIER = /\b(finnish|from finland|suomalai\p{L}*|kotimai\p{L}*|finsk\p{L}*|inhemsk\p{L}*)/u;
 

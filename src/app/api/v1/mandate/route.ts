@@ -9,7 +9,7 @@ import { MandatePatchBody } from "@/lib/openapi/schemas";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-export const GET = route(async (request) => json(await gateway().getMandate(await readerBuyer(request))));
+export const GET = route(async (request) => json(await gateway().getMandate(await readerBuyer(request, "the mandate"))));
 
 export const PUT = route(async (request) => {
   const session = await guardApprover(request.headers, "mandate");

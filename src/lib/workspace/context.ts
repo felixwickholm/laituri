@@ -58,6 +58,11 @@ export function currentWorkspace(): Workspace {
   return context.getStore() ?? sharedWorkspace();
 }
 
+/** The audience every signed mandate and offer of a workspace carries, so that no other workspace accepts it. */
+export function workspaceAudience(workspace: Workspace = currentWorkspace()): string {
+  return `laituri:workspace:${workspace.id}`;
+}
+
 /**
  * Module state kept per workspace. Returns an accessor that gives the current workspace's value, created on first use.
  * With `inherit`, a new sandbox starts from a deep copy of the template's value instead.

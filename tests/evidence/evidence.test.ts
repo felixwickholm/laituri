@@ -157,8 +157,43 @@ describe("Markdown kept in sync", () => {
     expect(missing).toEqual([]);
   });
 
-  it("lists every MCP tool in the README", () => {
-    const readme = read("README.md");
-    for (const tool of TOOLS) expect(readme).toContain(`\`${tool.name}\``);
+  it("lists every MCP tool in docs/architecture.md", () => {
+    const architecture = read("docs/architecture.md");
+    for (const tool of TOOLS) expect(architecture).toContain(`\`${tool.name}\``);
+  });
+});
+
+describe("README.md stays short and leads with what matters", () => {
+  const readme = read("README.md");
+
+  it("stays under 15,000 bytes; the detail lives in docs/", () => {
+    expect(Buffer.byteLength(readme)).toBeLessThan(15_000);
+  });
+
+  it("holds the agreed sections in order", () => {
+    const headings = [...readme.matchAll(/^## (.+)$/gm)].map((match) => match[1]);
+    expect(headings).toEqual([
+      "See it in 2 minutes",
+      "How each judging criterion is met",
+      "What makes it different",
+      "What stays private",
+      "Quickstart",
+      "Eval results",
+      "Simulated, assumed and not built",
+      "Read more",
+      "Licence",
+    ]);
+  });
+
+  it("names the live demo and leads its differences with the signed request check", () => {
+    expect(readme).toContain(e.live);
+    const different = readme.slice(readme.indexOf("## What makes it different"));
+    expect(different.split("\n").find((line) => line.startsWith("- "))).toMatch(/checks the offer against the buyer's own words, and signs that check/);
+  });
+
+  it("links every docs page it moved detail to", () => {
+    for (const page of ["docs/judging.md", "docs/trust-protocol.md", "docs/mandates.md", "docs/architecture.md", "docs/production.md", "docs/evals.md"]) {
+      expect(readme).toContain(`](${page})`);
+    }
   });
 });

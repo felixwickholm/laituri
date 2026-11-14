@@ -1,5 +1,5 @@
 import type { AuditEntry } from "@/lib/contracts";
-import { GENESIS_HASH, entryHash } from "@/lib/audit/verify";
+import { GENESIS_HASH, contentDigest, entryHash } from "@/lib/audit/verify";
 import { TOKEN_TYPE, trust } from "@/lib/trust";
 
 /**
@@ -20,6 +20,7 @@ export async function rewriteLog(entries: AuditEntry[], keep: number, add: numbe
       hash: "",
       signature: "",
     };
+    entry.contentDigest = await contentDigest(entry);
     entry.hash = await entryHash(entry);
     entry.signature = await trust().sign("supplier", { seq: entry.seq, hash: entry.hash }, TOKEN_TYPE.audit);
     log.push(entry);

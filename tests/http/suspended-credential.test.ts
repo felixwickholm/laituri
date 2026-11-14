@@ -68,7 +68,6 @@ const SERVES_NOTHING: Partial<Record<string, Method[]>> = { mcp: ["GET", "DELETE
 const PUBLIC_DOCUMENTS = [
   "api/v1/openapi.json",
   "api/v1/health",
-  "api/v1/audit",
   "api/v1/audit/verify",
   "api/v1/audit/checkpoint",
   ".well-known/agent-card.json",
@@ -78,6 +77,18 @@ const PUBLIC_DOCUMENTS = [
   ".well-known/ucp",
   "evidence.json",
   "llms.txt",
+];
+
+/** Records only an agent key, the browser's own sandbox or a signed-in person may read. */
+const RECORD_READS = [
+  "api/v1/orders",
+  "api/v1/orders/[id]",
+  "api/v1/offers/[id]",
+  "api/v1/mandate",
+  "api/v1/approvals",
+  "api/v1/activity",
+  "api/v1/audit",
+  "api/v1/supplier/overview",
 ];
 
 function routeFolders(dir = APP_DIR): string[] {
@@ -175,5 +186,14 @@ describe.skipIf(!hasCatalog)("a suspended agent's credential", () => {
       expect.soft((await send(folder, method, handler)).status, `${method} /${folder}`).toBe(200);
     }
     expect(await refusals()).toBe(0);
+  });
+
+  it("gets no records back by dropping its token: every record read answers 401", async () => {
+    for (const folder of RECORD_READS) {
+      const [[method, handler]] = await handlers(folder);
+      const response = await send(folder, method, handler);
+      expect.soft(response.status, `${method} /${folder}`).toBe(401);
+      expect.soft((await response.json()).code, `${method} /${folder}`).toBe("credential_required");
+    }
   });
 });

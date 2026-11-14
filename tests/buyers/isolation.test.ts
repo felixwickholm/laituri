@@ -15,6 +15,7 @@ import type { Order, QuoteResponse } from "@/lib/contracts";
 import { gateway } from "@/lib/gateway";
 import { BUYER_IDS } from "@/lib/mandate";
 import { MILK } from "@/lib/openapi/examples";
+import { Browser } from "../http/browser";
 
 const KAISLA_TOKEN = "demo-kaisla-token";
 const LAINE_TOKEN = "demo-laine-token";
@@ -32,7 +33,11 @@ async function mandateOf(token: string) {
 }
 
 async function quote(token: string, litres: number): Promise<QuoteResponse> {
-  const request = { lines: [{ productId: MILK.productId, quantity: { amount: litres, unit: "l" } }], deliverBy: MILK.deliverBy };
+  const request = {
+    lines: [{ productId: MILK.productId, quantity: { amount: litres, unit: "l" } }],
+    deliverBy: MILK.deliverBy,
+    intent: `${litres} litres of lactose-free milk by Monday`,
+  };
   return body(await quotes.POST(jsonRequest("/api/v1/quotes", { body: request, headers: bearer(token) })));
 }
 
@@ -63,7 +68,7 @@ describe("three buyers, one front door", () => {
   });
 
   it("keeps meaning the primary buyer when a call names none", async () => {
-    const response = await mandate.GET(jsonRequest("/api/v1/mandate"));
+    const response = await new Browser().call(mandate.GET, "/api/v1/mandate");
     expect((await body<{ mandate: { buyer: { id: string } } }>(response)).mandate.buyer.id).toBe(BUYER_IDS.nordicHarbour);
   });
 
@@ -171,9 +176,10 @@ describe.skipIf(!hasFixtures)("isolation between buyers", () => {
       headers,
     }));
     await quote(AGENT_TOKEN, 10);
+    const cookie = await approverCookie(BUYER_IDS.nordicHarbour);
     const read = async (buyer: string) =>
       (await body<{ activity: { buyer?: { id: string }; client?: string; tool?: string }[] }>(
-        await activity.GET(jsonRequest(`/api/v1/activity?buyer=${buyer}`)),
+        await activity.GET(jsonRequest(`/api/v1/activity?buyer=${buyer}`, { headers: { cookie } })),
       )).activity.filter((item) => item.tool === "request_quote");
     const kaisla = await read(BUYER_IDS.kaisla);
     expect(kaisla).toHaveLength(1);

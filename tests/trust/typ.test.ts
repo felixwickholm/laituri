@@ -19,6 +19,7 @@ const SIGNER: Record<keyof typeof TOKEN_TYPE, SignerRole> = {
   receipt: "supplier",
   audit: "supplier",
   checkpoint: "supplier",
+      priceHold: "supplier",
   session: "approver",
 };
 
@@ -40,14 +41,14 @@ describe("token types", () => {
 
   it("names the wrong type as the reason when the key matches", async () => {
     const receipt = await trust().sign("supplier", { orderId: "ord_1" }, TOKEN_TYPE.receipt);
-    expect(await trust().verify("supplier", receipt, TOKEN_TYPE.offer)).toMatchObject({ valid: false, reason: "wrong token type" });
+    expect(await trust().verify("supplier", receipt, TOKEN_TYPE.offer)).toMatchObject({ valid: false, reason: expect.stringContaining("wrong token type") });
   });
 
   it("checks the type with the public key set when one is expected", async () => {
     const entry = await trust().sign("supplier", { seq: 1, hash: "h" }, TOKEN_TYPE.audit);
     const keys = await jwks("supplier");
     expect((await verifyWithJwks(entry, keys, TOKEN_TYPE.audit)).valid).toBe(true);
-    expect(await verifyWithJwks(entry, keys, TOKEN_TYPE.checkpoint)).toMatchObject({ valid: false, reason: "wrong token type" });
+    expect(await verifyWithJwks(entry, keys, TOKEN_TYPE.checkpoint)).toMatchObject({ valid: false, reason: expect.stringContaining("wrong token type") });
   });
 
   it("refuses a correctly signed token with no type header", async () => {
@@ -55,7 +56,7 @@ describe("token types", () => {
     const untyped = await new CompactSign(new TextEncoder().encode(JSON.stringify({ id: "off_1" })))
       .setProtectedHeader({ alg: "ES256", kid: key.kid })
       .sign(key.privateKey);
-    expect(await trust().verify("supplier", untyped, TOKEN_TYPE.offer)).toMatchObject({ valid: false, reason: "wrong token type" });
+    expect(await trust().verify("supplier", untyped, TOKEN_TYPE.offer)).toMatchObject({ valid: false, reason: expect.stringContaining("wrong token type") });
   });
 });
 
@@ -69,7 +70,7 @@ describe("token types where tokens are used", () => {
   it.each(["receipt", "audit", "checkpoint"] as const)("does not take an offer payload signed as a %s token as an offer", async (kind) => {
     const offer = await anOffer();
     const jws = await trust().sign("supplier", offer, TOKEN_TYPE[kind]);
-    expect(await readOffer(jws, { trust: trust() })).toMatchObject({ valid: false, reason: "wrong token type" });
+    expect(await readOffer(jws, { trust: trust() })).toMatchObject({ valid: false, reason: expect.stringContaining("wrong token type") });
     expect((await readOffer(await trust().sign("supplier", offer, TOKEN_TYPE.offer), { trust: trust() })).valid).toBe(true);
   });
 

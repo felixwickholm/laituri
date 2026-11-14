@@ -42,6 +42,7 @@ function nordicHarbour(): Terms {
     approval: {
       approver: { id: "user:maria.lind", name: "Maria Lind, Head of Purchasing" },
       firstTimeProducts: false,
+      requireRequestWords: true,
     },
   };
 }
@@ -69,6 +70,7 @@ function kaisla(): Terms {
     approval: {
       approver: { id: "user:antti.korhonen", name: "Antti Korhonen, Food Service Manager" },
       firstTimeProducts: false,
+      requireRequestWords: true,
     },
   };
 }
@@ -96,6 +98,7 @@ function laine(): Terms {
     approval: {
       approver: { id: "user:sofia.laine", name: "Sofia Laine, Owner" },
       firstTimeProducts: true,
+      requireRequestWords: true,
     },
   };
 }

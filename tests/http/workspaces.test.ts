@@ -54,7 +54,11 @@ async function chain(browser: Browser): Promise<{ entries: AuditEntry[]; verific
 
 /** A quote and an order with a sandbox agent key, as Claude or ChatGPT would place them. */
 async function buyWithKey(key: string, litres: number, idempotencyKey: string): Promise<Order> {
-  const request = { lines: [{ productId: MILK.productId, quantity: { amount: litres, unit: "l" } }], deliverBy: MILK.deliverBy };
+  const request = {
+    lines: [{ productId: MILK.productId, quantity: { amount: litres, unit: "l" } }],
+    deliverBy: MILK.deliverBy,
+    intent: `${litres} litres of lactose-free milk by Monday`,
+  };
   const quote = await read<QuoteResponse>(await quotes.POST(jsonRequest("/api/v1/quotes", { body: request, headers: bearer(key) })));
   const { jws } = await read<{ jws: string }>(await mandate.GET(jsonRequest("/api/v1/mandate", { headers: bearer(key) })));
   const placed = await orders.POST(jsonRequest("/api/v1/orders", { body: { offerJws: quote.primary.jws, mandateJws: jws, idempotencyKey }, headers: bearer(key) }));

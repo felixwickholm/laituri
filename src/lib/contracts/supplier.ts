@@ -14,7 +14,7 @@ const Party = z.object({ id: z.string(), name: z.string() });
 export const DemandOutcome = z.enum(["met_in_full", "met_with_alternative", "short_stock", "cutoff_passed", "not_found", "low_confidence"]);
 export type DemandOutcome = z.infer<typeof DemandOutcome>;
 
-export const OrderOutcome = z.enum(["confirmed_auto", "confirmed_after_approval", "waiting", "rejected", "blocked"]);
+export const OrderOutcome = z.enum(["confirmed_auto", "confirmed_after_approval", "waiting", "rejected", "blocked", "refused"]);
 export type OrderOutcome = z.infer<typeof OrderOutcome>;
 
 export const OutcomeCounts = z.object({
@@ -22,7 +22,8 @@ export const OutcomeCounts = z.object({
   confirmed_after_approval: z.number().int(),
   waiting: z.number().int(),
   rejected: z.number().int(),
-  blocked: z.number().int(),
+  blocked: z.number().int().describe("Stopped by one of the buyer's mandate rules"),
+  refused: z.number().int().describe("Refused as invalid: a signature did not verify, or the offer or mandate was not issued here"),
 });
 export type OutcomeCounts = z.infer<typeof OutcomeCounts>;
 
@@ -114,6 +115,7 @@ export const OrderStats = z.object({
     waiting: Tally,
     rejected: Tally,
     blocked: Tally,
+    refused: Tally,
   }),
   medianSecondsRequestToConfirmed: z.number().int().optional().describe(
     "Median seconds from the first search of a request (its first quote when it began with one) to an order that " +

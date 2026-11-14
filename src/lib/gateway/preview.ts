@@ -1,6 +1,7 @@
 import type { OfferPreview, SearchHit, SearchRequest, SearchResponse } from "@/lib/contracts";
 import { helsinkiDate, nextWorkingDay } from "@/lib/agent/dates";
 import { buildLine, isOnTime, quoteLine } from "@/lib/offers/lines";
+import { marketOf } from "@/lib/offers/market";
 import { contentPerUnit } from "@/lib/offers/packs";
 import type { Market } from "@/lib/offers/types";
 import { bestBuyFirst } from "./ranking";
@@ -36,7 +37,7 @@ function preview(hit: SearchHit, request: SearchRequest, market: Market): OfferP
 async function previewed(
   hits: SearchHit[],
   request: SearchRequest,
-  deps: Pick<Deps, "upstream" | "mandates" | "now">,
+  deps: Pick<Deps, "upstream" | "mandates" | "now" | "store">,
   buyerId?: string,
 ): Promise<SearchHit[]> {
   const ids = hits.map((hit) => hit.product.id);
@@ -48,7 +49,7 @@ async function previewed(
       deps.upstream.price(ids, deliverBy, customer),
       deps.upstream.availability(ids, deliverBy, customer),
     ]);
-    const market: Market = { prices, availability, now: deps.now(), deliverBy };
+    const market = marketOf(prices, availability, await deps.store.orders.list(), deps.now(), deliverBy);
     return hits.map((hit) => {
       const offerPreview = preview(hit, request, market);
       return offerPreview ? { ...hit, offerPreview } : hit;
@@ -67,7 +68,7 @@ async function previewed(
 export async function withPreviews(
   response: SearchResponse,
   request: SearchRequest,
-  deps: Pick<Deps, "upstream" | "mandates" | "now">,
+  deps: Pick<Deps, "upstream" | "mandates" | "now" | "store">,
   buyerId?: string,
 ): Promise<SearchResponse> {
   if (response.hits.length === 0) return response;

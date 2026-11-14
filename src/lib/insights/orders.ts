@@ -12,7 +12,7 @@ export function orderOutcome(order: Order): OrderOutcome {
     case "rejected":
       return "rejected";
     case "blocked":
-      return "blocked";
+      return order.refusal ? "refused" : "blocked";
   }
 }
 

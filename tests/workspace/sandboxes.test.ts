@@ -115,4 +115,17 @@ describe("sandboxes", () => {
     expect(await two.store.mandates.get("buyer:a")).toBe("changed too");
     await inWorkspace(one, async () => expect(inheritedHead().size).toBe(7));
   });
+
+  it("makes a sandbox for a client without a browser secret, with keys that reach only it, under the same eviction", async () => {
+    const { sandboxes } = setup(2);
+    const made = await sandboxes.forClient();
+    const keys = sandboxes.info(made)?.agentKeys ?? [];
+    expect(made.kind).toBe("sandbox");
+    expect(keys).toHaveLength(3);
+    expect(sandboxes.byAgentKey(keys[0].key)?.workspace).toBe(made);
+    expect(await sandboxes.forClient()).not.toBe(made);
+    await sandboxes.forClient();
+    expect(sandboxes.size()).toBe(2);
+    expect(sandboxes.byAgentKey(keys[0].key)).toBeUndefined();
+  });
 });

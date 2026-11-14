@@ -6,7 +6,7 @@ import { endpoints } from "./documents";
  */
 export function llmsText(origin: string): string {
   const urls = endpoints(origin);
-  const auth = `-H "Authorization: Bearer demo-agent-token" -H "Content-Type: application/json"`;
+  const auth = `-H "Authorization: Bearer $KEY" -H "Content-Type: application/json"`;
   return `# Laituri: agent ordering for Valio Aimo (demo)
 
 > An open front door that lets a buyer's purchasing agent buy from the food-service wholesaler Valio Aimo over MCP or REST.
@@ -17,17 +17,25 @@ Base URL: ${urls.rest}
 OpenAPI 3.1: ${urls.openapi}
 Public keys (JWKS): ${urls.jwks}
 
+**Start here: create your own sandbox.** POST ${urls.rest}/workspace with no credential makes a private copy of the demo
+and answers 201 with agentKeys: one key per demo buyer (Nordic Harbour Hotels first, then Kaisla School Kitchens and Ravintola Laine), each with its MCP address.
+No account, no cookie: the keys are the only way in, they work only in that sandbox, and an unused sandbox is dropped after an hour.
+Reading orders, offers, the mandate, approvals, activity or the audit log needs a key; without one the answer is 401 credential_required.
+An agent key reads its own buyer's records; in the audit log it sees its buyer's entries in full and every other entry as a stub that still verifies.
+
 **Connect by MCP.** Streamable HTTP, stateless, JSON responses: ${urls.mcp}
-Header: Authorization: Bearer demo-agent-token (without it you act as an unidentified agent and orders are blocked).
-Clients that cannot send a header may put the demo key in the address: ${urls.mcp}?key=demo-agent-token
-Two more demo buyers have their own token and mandate: demo-kaisla-token (Kaisla School Kitchens) and demo-laine-token (Ravintola Laine).
-These fixed tokens act in the shared workspace. Each visitor to the console gets a private sandbox with its own keys, one per buyer, shown on ${origin}/connect; calls with those keys land in that visitor's sandbox.
+Header: Authorization: Bearer <key from your sandbox>. Clients that cannot send a header use the mcpUrl the sandbox returned (${urls.mcp}?key=...).
+The shared demo workspace has fixed public tokens, used by the evals: demo-agent-token, demo-kaisla-token and demo-laine-token.
+Everyone shares it, so its weekly spend grows as people test and nobody can approve there without the passcode: use your own sandbox.
 Over REST, X-Agent-Client names your application (for example "Claude Code") in the wholesaler's view.
 Tools: search_catalog, get_product, request_quote, get_mandate, place_order, get_order, verify_audit.
 
 **REST flow: "1,000 litres of lactose-free milk by Monday".**
 
-1. Search. Read interpretation.confidence. Hits carry offerPreview when the wholesaler has a price: indicative live price, stock, delivery date,
+1. Create your sandbox and keep the first agent key (Nordic Harbour Hotels).
+KEY=$(curl -s -X POST ${urls.rest}/workspace | jq -r '.agentKeys[0].key')
+
+2. Search. Read interpretation.confidence. Hits carry offerPreview when the wholesaler has a price: indicative live price, stock, delivery date,
 order cut-off and orderable. Pass need and deliverBy to get pack maths (unitsNeeded, estimatedNet). Only a signed offer fixes the price.
 When the match is clear (confidence high), hits are sorted best buy first: orderable on time, then lowest price per litre or kilo.
 Every hit has facts the wholesaler vouches for: countryOfOrigin, labels, deliveryReliability (0 to 1) and categoryAverageCo2PerKg
@@ -36,18 +44,19 @@ send "prefer": "reliability" or "prefer": "sustainability" (certified labels suc
 An uncertain match keeps its relevance order. Choose the first hit with offerPreview.orderable true.
 curl -s ${urls.rest}/products/search ${auth} -d '{"query":"laktoositon maito 1 l","filters":{"claims":["lactose_free"]},"limit":5,"need":{"amount":1000,"unit":"l"},"deliverBy":"2026-11-16"}'
 
-2. Quote for the product you chose. Quantities in l or kg are converted to whole sales units. The response has primary (the offer
+3. Quote for the product you chose, and send the buyer's own words as intent: the wholesaler checks the offer against them and signs that check.
+Without intent the buyer's mandate sends the order to a person. Quantities in l or kg are converted to whole sales units. The response has primary (the offer
 for what you asked) and alternatives (signed counter-offers when the request cannot be met in full and on time). primary has offer and jws. Each alternative has tier, meaning, tradeoff and signed, and signed has offer and jws.
 Tiers: good is the cheapest like-for-like product, better keeps what is in stock and fills the rest or takes the most reliable product,
 best is an organic or Finnish-label product. Every offer line carries the same facts as search, inside the signed offer.
 The offer is valid for 15 minutes (offer.expiresAt). Keep the jws of the one you take exactly as returned.
 curl -s ${urls.rest}/quotes ${auth} -d '{"lines":[{"productId":"464306","quantity":{"amount":1000,"unit":"l"}}],"deliverBy":"2026-11-16","intent":"1,000 litres of lactose-free milk by Monday","matchConfidence":"high"}'
 
-3. Read your mandate. The response has mandate (readable limits) and jws. Keep jws.
+4. Read your mandate. The response has mandate (readable limits) and jws. Keep jws.
 curl -s ${urls.rest}/mandate ${auth}
 
-4. Order. Send the offer jws and the mandate jws unchanged, and a key you choose.
-curl -s ${urls.rest}/orders ${auth} -H "Idempotency-Key: milk-2026-11-16-001" -d '{"offerJws":"<primary.jws from step 2>","mandateJws":"<jws from step 3>"}'
+5. Order. Send the offer jws and the mandate jws unchanged, and a key you choose.
+curl -s ${urls.rest}/orders ${auth} -H "Idempotency-Key: milk-2026-11-16-001" -d '{"offerJws":"<primary.jws from step 3>","mandateJws":"<jws from step 4>"}'
 With jq: OFFER=$(curl -s ... /quotes ... | jq -r .primary.jws); MANDATE=$(curl -s ... /mandate | jq -r .jws)
 
 **Mandate rules.**

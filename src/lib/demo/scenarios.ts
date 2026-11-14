@@ -8,10 +8,11 @@ import type { ScenarioAgent, ScenarioContext, ScenarioId, ScenarioOutcome } from
 
 export const MILK_REQUEST = "1,000 litres of lactose-free milk by Monday";
 export const OVER_LIMIT_REQUEST = "1,600 litres of lactose-free milk by Monday";
-export const SHORT_STOCK_REQUEST = "200 litres of Arla lactose-free UHT milk by Monday";
+export const SHORT_STOCK_REQUEST = "200 litres of lactose-free skimmed milk by Monday";
 /**
- * The buyer means Arla's fat-free UHT milk drink, which has only 51 units in stock.
- * Search would rightly steer to a product in stock, so the request names the product code to show the counter-offer.
+ * The buyer's usual product is Arla's lactose-free fat-free milk drink, which has only 51 units in stock. Search would
+ * rightly steer to a product in stock, so the scene quotes that product code to show the counter-offer. The words state
+ * nothing the signed like-for-like alternative lacks (no brand, no UHT), so under like-for-like it is taken alone.
  */
 const SHORT_STOCK_PRODUCT = "462775";
 export const BREAK_MANDATE_TITLE = "Try to break the rules, five ways";

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { errorResponse } from "@/lib/http/respond";
+import { UPSTREAM_DETAIL, errorResponse } from "@/lib/http/respond";
 
 /**
  * Next bundles each route into its own module graph, so an error thrown by one copy of the errors module
@@ -18,12 +18,13 @@ describe("errors thrown by a second copy of the errors module", () => {
       [new copy.NotFoundError("Order ord_x was not found."), 404, "not_found"],
       [new copy.ValidationError("Bad."), 400, "invalid_request"],
       [new copy.StateError("Twice."), 409, "invalid_state"],
-      [new copy.UpstreamError("Down."), 502, "upstream_unavailable"],
+      [new copy.UpstreamError("Down at https://upstream.example/api/price."), 502, "upstream_unavailable"],
     ] as const;
     for (const [error, status, code] of cases) {
       const response = errorResponse(error);
       expect(response.status).toBe(status);
-      expect(await response.json()).toMatchObject({ status, code, detail: error.message, type: `urn:laituri:problem:${code}` });
+      const detail = status === 502 ? UPSTREAM_DETAIL : error.message;
+      expect(await response.json()).toMatchObject({ status, code, detail, type: `urn:laituri:problem:${code}` });
     }
   });
 

@@ -48,6 +48,8 @@ function latest(values: (string | undefined)[], pick: (a: string, b: string) => 
 
 export interface OfferInput {
   request: Pick<QuoteRequest, "deliverBy" | "intent" | "matchConfidence">;
+  /** The workspace the offer is signed for. */
+  audience: string;
   customerNumber: string;
   buyer: Offer["buyer"];
   lines: BuiltLine[];
@@ -57,7 +59,7 @@ export interface OfferInput {
 }
 
 /** Turn built lines into a fixed-price offer. Dates and cut-offs only count lines that deliver something. */
-export function assembleOffer({ request, customerNumber, buyer, lines, now, validityMs = VALIDITY_MS }: OfferInput): Offer {
+export function assembleOffer({ request, audience, customerNumber, buyer, lines, now, validityMs = VALIDITY_MS }: OfferInput): Offer {
   const offerLines = lines.map((built) => built.line);
   const delivering = offerLines.filter((line) => line.quantity > 0);
   const orderBy = latest(delivering.map((l) => l.availability.orderBy), (a, b) => Date.parse(a) < Date.parse(b));
@@ -67,6 +69,7 @@ export function assembleOffer({ request, customerNumber, buyer, lines, now, vali
   return {
     id: newId("off_"),
     issuer: ISSUER,
+    audience,
     customerNumber,
     buyer: { id: buyer.id, name: buyer.name },
     issuedAt,

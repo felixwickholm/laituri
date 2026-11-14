@@ -59,7 +59,7 @@ export const SEED_REQUESTS: SeedRequest[] = [
   { buyer: HARBOUR, client: SCRIPTED_CLIENT, when: { workingDaysAgo: 4, at: "07:55" },
     words: "120 kg of potatoes by tomorrow", query: "potatoes", quantity: kilos(120), order: "primary" },
   { buyer: HARBOUR, client: "Claude Code", when: { workingDaysAgo: 4, at: "09:24" },
-    words: "200 litres of Arla lactose-free UHT milk", query: "Arla lactose-free UHT milk", quantity: litres(200),
+    words: "200 litres of lactose-free skimmed milk", query: "lactose-free skimmed milk", quantity: litres(200),
     productId: ARLA_UHT_MILK, order: "alternative" },
   { buyer: HARBOUR, client: SCRIPTED_CLIENT, when: { workingDaysAgo: 3, at: "08:31" },
     words: "40 litres of Arla whipping cream for the weekend brunch", query: "whipping cream", quantity: litres(40),

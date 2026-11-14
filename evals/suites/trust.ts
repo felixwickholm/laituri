@@ -1,4 +1,5 @@
-import type { AuditEntry, Offer, Order } from "@/lib/contracts";
+import type { AuditEntry, AuditRecord, Offer, Order } from "@/lib/contracts";
+import { isStub } from "@/lib/audit";
 import { replacePayload } from "@/lib/demo/forge";
 import type { ReceiptPayload } from "@/lib/orders";
 import { store } from "@/lib/store";
@@ -7,7 +8,7 @@ import type { EvalCase, Suite } from "../harness";
 import { Checks } from "../support/checks";
 import { mandate, orderFrom, placeOrder } from "../support/flow";
 import { changeOneByte } from "../support/jws";
-import { get } from "../support/router";
+import { get, ok } from "../support/router";
 import { rewriteLog } from "../support/rewrite";
 import { buildTrail, verifyAs, verifyEntries, type Trail } from "../support/trail";
 
@@ -153,6 +154,19 @@ const CASES: EvalCase[] = [
     const verification = await verifyEntries(extended, jwks, head);
     checks.expect(!verification.valid, "a log cut and extended past the remembered head still verifies");
     return `kept ${entries.length - 2}, added 3, ${extended.length} entries for ${head.size} remembered: ${verification.reason}`;
+  }),
+  trustCase("T17", "Another buyer's agent verifies the whole chain", "the hotel's entries arrive as stubs without content; the chain verifies end to end; a changed stub is detected", async ({ jwks, head }, checks) => {
+    const { entries } = ok<{ entries: AuditRecord[] }>(await get("/api/v1/audit", { authorization: "Bearer demo-kaisla-token" }), "Audit log for Kaisla");
+    const stubs = entries.filter(isStub);
+    checks.expect(stubs.length > 0, "the school's agent got no stubs");
+    checks.expect(!JSON.stringify(stubs).includes("Nordic Harbour"), "a stub carries another buyer's content");
+    const verification = await verifyEntries(entries, jwks, head);
+    checks.expect(verification.valid, `chain with stubs: ${verification.reason}`);
+    const target = stubs[Math.floor(stubs.length / 2)];
+    const changed = entries.map((entry) => (entry === target ? { ...target, event: "approval.granted" as const } : entry));
+    const broken = await verifyEntries(changed, jwks);
+    checks.expect(!broken.valid && broken.brokenAt === target.seq, `a stub with a changed event: brokenAt ${broken.brokenAt}, expected ${target.seq}`);
+    return `${stubs.length} of ${entries.length} entries as stubs, verified to the checkpoint head; changed stub ${target.seq} detected`;
   }),
 ];
 

@@ -55,8 +55,9 @@ export function buildLine(productId: string, product: Product | undefined, units
   const deliveryDate = offered > 0 ? availability?.availableDate : undefined;
   const requested = units ?? 0;
   const counted = availability === undefined || Number.isFinite(availability.available);
+  const reserved = counted ? market.held.get(productId) ?? 0 : 0;
   const stock = counted
-    ? { stock: "tracked" as const, available: Math.max(0, availability?.available ?? 0) }
+    ? { stock: "tracked" as const, available: Math.max(0, availability?.available ?? 0), reserved }
     : { stock: "untracked" as const };
 
   const line: OfferLine = {
@@ -82,6 +83,9 @@ export function buildLine(productId: string, product: Product | undefined, units
     facts: productFacts(product),
   };
   const notes = note ? [note] : [];
+  if (reserved > 0 && product) {
+    notes.push(`${count(reserved)} units of ${line.name} are held by this workspace's other orders for that date; the stock shown is what is left.`);
+  }
   if (deliveryDate && deliveryDate > market.deliverBy) {
     notes.push(`${line.name} arrives on ${day(deliveryDate)}, after the requested ${day(market.deliverBy)}.`);
   }

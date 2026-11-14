@@ -82,7 +82,7 @@ describe.skipIf(!recorded)("demo scenes on recorded data", () => {
     expect(activity.every((a) => a.run)).toBe(true);
     expect(activity.some((a) => a.kind === "tool")).toBe(true);
     const titles = [...new Set(activity.map((a) => a.run?.title))];
-    expect(titles).toEqual(["1,600 litres of lactose-free milk by Monday", "200 litres of Arla lactose-free UHT milk by Monday"]);
+    expect(titles).toEqual(["1,600 litres of lactose-free milk by Monday", "200 litres of lactose-free skimmed milk by Monday"]);
     const second = activity.filter((a) => a.kind === "note" && a.run?.title === titles[1]).map((a) => a.title);
     expect(second.join("\n")).not.toContain("product 462775");
   });

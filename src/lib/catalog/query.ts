@@ -1,9 +1,11 @@
 import {
   CLAIM_MODIFIERS,
   CONCEPTS,
+  EXCLUSION_MODIFIERS,
   FAT_MODIFIERS,
   FAT_PREFIXES,
   FINNISH_MODIFIER,
+  NEGATION,
   type ConceptDef,
   type FatLevel,
 } from "./lexicon";
@@ -12,6 +14,10 @@ import { words } from "./text";
 export interface ParsedQuery {
   concept?: ConceptDef;
   claims: string[];
+  /** Claims the words rule out: "not lactose-free". */
+  negatedClaims: string[];
+  /** Allergens the product must not contain: "dairy-free" gives milk. */
+  exclusions: string[];
   fat?: FatLevel;
   finnish: boolean;
   quantity?: { amount: number; unit: "l" | "kg" };
@@ -79,12 +85,30 @@ function findConcepts(tokens: string[]): ConceptHit[] {
   return hits.sort((a, b) => b.score - a.score);
 }
 
+/** The claim, with the negation word before it when there is one: "not lactose free" -> negated. */
+function stripClaim(text: string, pattern: RegExp): { text: string; found: boolean; negated: boolean } {
+  const match = pattern.exec(text);
+  if (!match) return { text, found: false, negated: false };
+  const before = text.slice(0, match.index).trimEnd();
+  const lastWord = before.slice(before.lastIndexOf(" ") + 1);
+  const negated = NEGATION.test(lastWord);
+  const start = negated ? before.length - lastWord.length : match.index;
+  return { text: `${text.slice(0, start)} ${text.slice(match.index + match[0].length)}`, found: true, negated };
+}
+
 export function parseQuery(query: string): ParsedQuery {
   let text = words(query).join(" ");
   const claims: string[] = [];
-  for (const { claim, pattern } of CLAIM_MODIFIERS) {
+  const negatedClaims: string[] = [];
+  const exclusions: string[] = [];
+  for (const { allergen, pattern } of EXCLUSION_MODIFIERS) {
     const result = strip(text, pattern);
-    if (result.found) claims.push(claim);
+    if (result.found) exclusions.push(allergen);
+    text = result.text;
+  }
+  for (const { claim, pattern } of CLAIM_MODIFIERS) {
+    const result = stripClaim(text, pattern);
+    if (result.found) (result.negated ? negatedClaims : claims).push(claim);
     text = result.text;
   }
   const finnish = strip(text, FINNISH_MODIFIER);
@@ -115,5 +139,5 @@ export function parseQuery(query: string): ParsedQuery {
   const leftovers = rest.split(" ").filter((token) => token && !STOPWORDS.has(token) && !NUMBER.test(token));
   const otherConcepts = [...new Set(hits.filter((h) => !used.has(h.start)).map((h) => h.concept.id))]
     .filter((id) => id !== best?.concept.id);
-  return { concept: best?.concept, claims, fat, finnish: finnish.found, quantity, leftovers, otherConcepts };
+  return { concept: best?.concept, claims, negatedClaims, exclusions, fat, finnish: finnish.found, quantity, leftovers, otherConcepts };
 }

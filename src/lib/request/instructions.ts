@@ -31,17 +31,21 @@ function pattern(source: string): RegExp {
 const BUDGET = pattern(String.raw`(?:\b(?:${CEILING})\s*:?\s*)?${MONEY}(?!${PER_UNIT})(?:\s*(?:budget\p{L}*|budjeti\p{L}*|max(?:imum)?\b))?`);
 
 const WAIT_FOR_PERSON: RegExp[] = [
-  String.raw`\b(?:do not|don't|dont|never)\s+(?:order|buy|place|confirm)\b[^.!?;]*?\b(?:until|before|without)\b[^.!?;]*`,
+  String.raw`\b(?:do not|don't|dont|never|not)\s+(?:yet\s+)?(?:order|buy|place|confirm|send)\b[^.!?;]*`,
+  String.raw`\bnot\s+yet\b[^.!?;]*`,
   String.raw`\b(?:ask|check with)\s+(?:me|us)\b(?:\s+(?:first\b|before\b[^.!?;]*))?`,
-  String.raw`\b(?:wait|hold)\s+for\s+(?:(?:my|our|an?|the)\s+)?(?:approval|confirmation|ok)\b`,
-  String.raw`\b(?:only\s+)?(?:with|after|needs?|requires?)\s+(?:my|our)\s+approval\b`,
-  String.raw`\bälä\s+(?:tilaa|osta)\b[^.!?;]*?\b(?:ennen|ilman)\b[^.!?;]*`,
+  String.raw`\b(?:wait|hold)\b[^.!?;]*`,
+  String.raw`\b(?:only\s+)?(?:with|after|needs?|requires?)\s+(?:my|our)\s+(?:approval|ok|sign-off)\b`,
+  String.raw`\b(?:get|wait for)\s+(?:my|our)\s+(?:approval|ok|sign-off)\b[^.!?;]*`,
+  String.raw`\bälä\s+(?:vielä\s+)?(?:tilaa|osta)\b[^.!?;]*`,
+  String.raw`\bei\s+vielä\b[^.!?;]*`,
   String.raw`\bkysy\s+(?:(?:minulta|meiltä)(?:\s+ensin)?|ensin)\b`,
-  String.raw`\bodota\b[^.!?;]*?\bhyväksyn\p{L}*`,
-  String.raw`\bvasta\s+kun\b[^.!?;]*?\bhyväksy\p{L}*`,
-  String.raw`\b(?:beställ|köp)\s+inte\b[^.!?;]*?\b(?:förrän|innan|utan)\b[^.!?;]*`,
-  String.raw`\bfråga\s+(?:mig|oss)\s+först\b`,
-  String.raw`\bvänta\b[^.!?;]*?\bgodkänn\p{L}*`,
+  String.raw`\bodota\b[^.!?;]*`,
+  String.raw`\bvasta\s+kun\b[^.!?;]*?\bhyväksy\p{L}*[^.!?;]*`,
+  String.raw`\b(?:beställ|köp)\s+(?:inte|ännu inte)\b[^.!?;]*`,
+  String.raw`\binte\s+(?:än|ännu|beställa|köpa)\b[^.!?;]*`,
+  String.raw`\bfråga\s+(?:mig|oss)\b(?:\s+först\b)?`,
+  String.raw`\bvänta\b[^.!?;]*`,
 ].map(pattern);
 
 /** "1 000,50" or "1.000" -> number; a single comma or point with one or two digits after it is a decimal. */
@@ -68,7 +72,8 @@ export function readInstructions(text: string): BuyerInstructions {
   let budget: number | undefined;
   for (let match = BUDGET.exec(rest); match; match = BUDGET.exec(rest)) {
     const amount = amountOf(match.groups?.lead ?? match.groups?.trail ?? "");
-    if (amount > 0) budget = Math.min(budget ?? amount, amount);
+    // Zero is a ceiling too: "budget 0 euros" allows nothing to be ordered alone.
+    if (amount >= 0) budget = Math.min(budget ?? amount, amount);
     rest = cut(rest, match);
   }
   return { rest: rest.replace(/\s+/g, " ").trim(), budget, waitForPerson };

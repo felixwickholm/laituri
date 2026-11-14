@@ -62,19 +62,40 @@ interface Token {
   /** As the buyer wrote it, for the product phrase. */
   raw: string;
   used: boolean;
+  /** Which sentence or clause of the request the word is in. */
+  clause: number;
 }
+
+/** A sentence or clause ends at . ! ? ; or a line break, but not at the point inside a number such as 1.5. */
+const CLAUSE_END = /[!?;\n]|\.(?!\d)/;
+
+/** Words that tie a date to the request ("by Monday", "maanantaihin mennessä"); they are read with the date. */
+const DATE_BEFORE = new Set(["by", "on", "for", "until", "till", "before", "senast", "på", "innan"]);
+const DATE_AFTER = new Set(["mennessä", "asti"]);
 
 function tokenize(text: string): Token[] {
   // Join thousands written with a space ("1 000") before splitting into words.
   const joined = text.replace(/(\d)[\s ](?=\d{3}\b)/g, "$1");
-  return (joined.match(WORD) ?? []).map((word) => {
-    const raw = word.replace(/[,.]+$/, "");
-    return { text: raw.toLowerCase(), raw, used: false };
-  });
+  return joined.split(CLAUSE_END).flatMap((part, clause) =>
+    (part.match(WORD) ?? []).map((word) => {
+      const raw = word.replace(/[,.]+$/, "");
+      return { text: raw.toLowerCase(), raw, used: false, clause };
+    }),
+  );
+}
+
+/** Marks the date and the words that tie it to the request. */
+function markDate(tokens: Token[], at: number): void {
+  const date = tokens[at];
+  date.used = true;
+  const before = tokens[at - 1];
+  const after = tokens[at + 1];
+  if (before?.clause === date.clause && DATE_BEFORE.has(before.text)) before.used = true;
+  if (after?.clause === date.clause && DATE_AFTER.has(after.text)) after.used = true;
 }
 
 function findDate(tokens: Token[], today: string): string | undefined {
-  for (const token of tokens) {
+  for (const [at, token] of tokens.entries()) {
     const word = token.text;
     let date: string | undefined;
     if (/^\d{4}-\d{2}-\d{2}$/.test(word) && isValidDate(word)) date = word;
@@ -87,14 +108,15 @@ function findDate(tokens: Token[], today: string): string | undefined {
     for (const [pattern, weekday] of WEEKDAYS) if (!date && pattern.test(word)) date = nextWeekday(today, weekday);
     for (const [pattern, days] of RELATIVE) if (!date && pattern.test(word)) date = addDays(today, days);
     if (date) {
-      token.used = true;
+      markDate(tokens, at);
       return date;
     }
   }
   return undefined;
 }
 
-function findQuantity(tokens: Token[]): Quantity | undefined {
+/** The quantity, and the clause it is in. */
+function findQuantity(tokens: Token[]): { quantity?: Quantity; clause?: number } {
   const numberAt = (i: number): number | undefined => {
     const word = tokens[i]?.text;
     if (!word || tokens[i].used) return undefined;
@@ -109,15 +131,15 @@ function findQuantity(tokens: Token[]): Quantity | undefined {
     if (amount === undefined || !unit || amount <= 0) continue;
     tokens[i].used = true;
     if (!glued) tokens[i + 1].used = true;
-    return { amount: round(amount * unit[1]), unit: unit[0] };
+    return { quantity: { amount: round(amount * unit[1]), unit: unit[0] }, clause: tokens[i].clause };
   }
   for (let i = 0; i < tokens.length; i++) {
     const amount = numberAt(i);
     if (amount === undefined || amount <= 0) continue;
     tokens[i].used = true;
-    return { amount, unit: "sales_unit" };
+    return { quantity: { amount, unit: "sales_unit" }, clause: tokens[i].clause };
   }
-  return undefined;
+  return {};
 }
 
 function findProductCode(tokens: Token[]): string | undefined {
@@ -137,11 +159,22 @@ function trimmed(words: Token[]): string {
 /** The product words, and what the buyer said it is for: "milk for the breakfast buffets". */
 function phraseOf(tokens: Token[]): { phrase: string; purpose?: string } {
   const words = tokens.filter((t) => !t.used);
+  if (words.length === 0) return { phrase: "" };
   const start = words.findIndex((t) => !FILLER.has(t.text));
   const forAt = words.findIndex((t, i) => i > start && start >= 0 && t.text === "for");
   if (forAt === -1) return { phrase: trimmed(words) };
   const purpose = trimmed(words.slice(forAt + 1));
   return { phrase: trimmed(words.slice(0, forAt)), ...(purpose ? { purpose } : {}) };
+}
+
+/** The clause that names the order (the one with the quantity), and the other clauses' unread words as written. */
+function splitClauses(tokens: Token[], main: number): { order: Token[]; others: string[] } {
+  const others = new Map<number, string[]>();
+  for (const token of tokens) {
+    if (token.clause === main || token.used) continue;
+    others.set(token.clause, [...(others.get(token.clause) ?? []), token.raw]);
+  }
+  return { order: tokens.filter((t) => t.clause === main), others: [...others.values()].map((words) => words.join(" ")) };
 }
 
 /** Reads quantity, product, delivery date, a spending ceiling and an order to wait, in English or Finnish. */
@@ -150,12 +183,14 @@ export function parseRequest(text: string, now: Date): ParsedRequest {
   const instructions = readInstructions(text);
   const tokens = tokenize(instructions.rest);
   const stated = findDate(tokens, today);
-  const quantity = findQuantity(tokens);
+  const { quantity, clause = 0 } = findQuantity(tokens);
   const productId = findProductCode(tokens);
+  const { order, others } = splitClauses(tokens, clause);
   return {
     text,
     quantity,
-    ...phraseOf(tokens),
+    ...phraseOf(order),
+    otherClauses: others,
     productId,
     deliverBy: stated ?? nextWorkingDay(today),
     deliverByStated: stated !== undefined,

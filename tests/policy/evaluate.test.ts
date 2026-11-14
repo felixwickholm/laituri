@@ -16,7 +16,7 @@ function checkOf(rule: RuleId, data: EvaluateInput) {
 const base = mandate();
 
 describe("policy outcome", () => {
-  it("lists all 15 checks in rule order", () => {
+  it("lists every check in rule order", () => {
     const decision = evaluate(input());
     expect(decision.checks.map((c) => c.rule)).toEqual(RuleId.options);
     expect(decision.outcome).toBe("auto_approved");
@@ -24,7 +24,7 @@ describe("policy outcome", () => {
 
   it("skips dependent checks when the mandate is invalid", () => {
     const decision = evaluate(input({ mandateValid: false }));
-    expect(decision.checks).toHaveLength(15);
+    expect(decision.checks).toHaveLength(RuleId.options.length);
     expect(decision.outcome).toBe("blocked");
     expect(decision.checks.find((c) => c.rule === "spend.per_order")).toMatchObject({
       status: "skipped",
@@ -35,7 +35,7 @@ describe("policy outcome", () => {
 
   it("skips dependent checks when the offer is invalid", () => {
     const decision = evaluate(input({ offerValid: false }));
-    expect(decision.checks).toHaveLength(15);
+    expect(decision.checks).toHaveLength(RuleId.options.length);
     expect(decision.checks.find((c) => c.rule === "offer.signature")?.status).toBe("block");
     expect(decision.checks.find((c) => c.rule === "match.confidence")?.message).toBe("Not checked. The offer is not valid.");
   });
@@ -164,5 +164,70 @@ describe("policy rules", () => {
     expect(statusOf("product.first_time", input({ ordered: [] }))).toBe("pass");
     expect(statusOf("product.first_time", input({ mandate: ask }))).toBe("pass");
     expect(statusOf("product.first_time", input({ mandate: ask, ordered: [] }))).toBe("ask");
+  });
+});
+
+describe("the buyer's words must come with the quote", () => {
+  it("sends an offer quoted without the buyer's words to a person, by name", () => {
+    const check = checkOf("request.words", input({ offer: offer({ requestCheck: undefined }) }));
+    expect(check).toMatchObject({
+      status: "ask",
+      message: "The agent did not state what the buyer asked for, so the offer could not be checked against it.",
+    });
+  });
+
+  it("passes an offer that carries the request check, and a mandate that does not ask for the words", () => {
+    expect(statusOf("request.words", input())).toBe("pass");
+    const relaxed = mandate({ approval: { ...base.approval, requireRequestWords: false } });
+    expect(statusOf("request.words", input({ mandate: relaxed, offer: offer({ requestCheck: undefined }) }))).toBe("pass");
+  });
+});
+
+describe("a broken audit log pauses automatic confirmation", () => {
+  it("asks a person, naming why, while the log does not verify", () => {
+    const decision = evaluate(input({ auditLog: { valid: false, reason: "Entry 4 was changed after it was written." } }));
+    expect(decision.outcome).toBe("needs_approval");
+    expect(checkOf("audit.integrity", input({ auditLog: { valid: false, reason: "Entry 4 was changed after it was written." } })).message)
+      .toBe("The audit log does not verify, so no order is confirmed alone until it does. Entry 4 was changed after it was written.");
+  });
+});
+
+describe("a waiting order's price hold", () => {
+  it("keeps the offer good past its own expiry until the hold ends, and not after", () => {
+    const expired = offer({ expiresAt: "2026-11-14T06:00:00.000Z" });
+    expect(statusOf("offer.expiry", input({ offer: expired }))).toBe("block");
+    expect(statusOf("offer.expiry", input({ offer: expired, heldUntil: "2026-11-15T10:00:00.000Z" }))).toBe("pass");
+    expect(checkOf("offer.expiry", input({ offer: expired, heldUntil: "2026-11-14T06:30:00.000Z" })).message).toMatch(/price hold ended/);
+  });
+
+  it("blocks an offer whose stock this workspace's other orders took since", () => {
+    const check = checkOf("offer.expiry", input({ stockTaken: "Only 21 units of Arla milk are left after this workspace's other orders. Ask for a new quote." }));
+    expect(check).toMatchObject({ status: "block", message: expect.stringContaining("Only 21 units") });
+  });
+});
+
+describe("a substitute the buyer's words named by brand", () => {
+  it("is decided by the substitution rule, which names the swap, not by the request check", () => {
+    const swapped = line({
+      productId: "464401",
+      name: "Valio Eila skimmed milk drink 1 l",
+      substituteFor: { productId: "462775", name: "Arla milk drink 1 l UHT", reason: "short", likeForLike: true, priceChangePct: 2 },
+    });
+    const brandCheck = { requirement: "brand" as const, asked: '"arla"', offered: "another brand", result: "substituted" as const, certain: false };
+    const data = input({ offer: offer({ fulfilment: "substituted", requestCheck: [brandCheck] }, [swapped]) });
+    expect(statusOf("match.confidence", data)).toBe("pass");
+    expect(checkOf("substitution.policy", data).message).toMatch(/Valio Eila skimmed milk drink 1 l replaces Arla milk drink 1 l UHT/);
+    const none = mandate({ substitution: { policy: "none", maxPriceIncreasePct: 0 } });
+    expect(statusOf("substitution.policy", { ...data, mandate: { valid: true, mandate: none } })).toBe("block");
+  });
+});
+
+describe("untracked stock split over lines", () => {
+  it("asks for a person on 2 x 3,000 l as it does on one 6,000 l line", () => {
+    const untracked = (litres: number) =>
+      line({ quantity: litres, content: { amount: litres, unit: "l" }, availability: { status: "available", requested: litres, stock: "untracked", deliveryDate: "2026-11-16" } });
+    const wide = mandate({ limits: { perOrder: { amount: 1e6, currency: "EUR" }, perWeek: { amount: 1e7, currency: "EUR" } } });
+    expect(statusOf("delivery.partial", input({ mandate: wide, offer: offer({}, [untracked(6000)]) }))).toBe("ask");
+    expect(statusOf("delivery.partial", input({ mandate: wide, offer: offer({}, [untracked(3000), untracked(3000)]) }))).toBe("ask");
   });
 });

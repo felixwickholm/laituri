@@ -5,9 +5,11 @@ import { renderBlock } from "./markdown";
 
 /** Which generated blocks each Markdown file holds. Node only: used by scripts/evidence.ts and the tests. */
 export const BLOCK_FILES: Record<string, string[]> = {
-  "README.md": ["numbers", "criteria", "privacy", "tools", "evals", "scenarios", "simulated", "production"],
+  "README.md": ["numbers", "criteria", "privacy", "evals", "simulated"],
   "docs/judging.md": ["judging"],
   "docs/evals.md": ["evals", "cases"],
+  "docs/architecture.md": ["tools"],
+  "docs/production.md": ["production"],
 };
 
 interface ReportCase {
@@ -41,8 +43,14 @@ export function casesTable(root: string): string {
     .join("\n\n");
 }
 
-function render(root: string, name: string): string {
-  return name === "cases" ? casesTable(root) : renderBlock(name, evidence());
+/** Links in a block are relative to the Markdown file that holds it. */
+function baseOf(file: string): string {
+  const depth = path.dirname(file) === "." ? 0 : path.dirname(file).split("/").length;
+  return "../".repeat(depth);
+}
+
+function render(root: string, file: string, name: string): string {
+  return name === "cases" ? casesTable(root) : renderBlock(name, evidence(), baseOf(file));
 }
 
 const begin = (name: string) => `<!-- BEGIN:evidence:${name} -->`;
@@ -69,7 +77,7 @@ export function staleBlocks(root: string): string[] {
   for (const [file, names] of Object.entries(BLOCK_FILES)) {
     const text = readFileSync(path.join(root, file), "utf8");
     for (const name of names) {
-      if (readBlock(text, name) !== render(root, name).trim()) stale.push(`${file}#${name}`);
+      if (readBlock(text, name) !== render(root, file, name).trim()) stale.push(`${file}#${name}`);
     }
   }
   return stale;
@@ -82,7 +90,7 @@ export function writeBlocks(root: string): string[] {
     const full = path.join(root, file);
     const before = readFileSync(full, "utf8");
     let text = before;
-    for (const name of names) text = replaceBlock(text, name, render(root, name));
+    for (const name of names) text = replaceBlock(text, name, render(root, file, name));
     if (text !== before) {
       writeFileSync(full, text);
       changed.push(file);

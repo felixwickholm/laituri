@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import type { QuoteRequest } from "@/lib/contracts";
+import { RuleId, type QuoteRequest } from "@/lib/contracts";
 import { quote } from "@/lib/offers";
 import { placeOrder } from "@/lib/orders";
 import { evaluate } from "@/lib/policy/evaluate";
@@ -15,11 +15,11 @@ describe("placeOrder with the real policy", () => {
     delete process.env.LAITURI_NOW;
   });
 
-  it("auto-approves an order inside the mandate and lists all 15 checks", async () => {
+  it("auto-approves an order inside the mandate and lists every check", async () => {
     const env = await setup();
     env.deps.policy = { evaluate };
     const order = await placeOrder({ offerJws: env.offerJws, mandateJws: env.mandateJws, idempotencyKey: "real-policy-1" }, env.deps, AGENT);
-    expect(order.decision.checks).toHaveLength(15);
+    expect(order.decision.checks).toHaveLength(RuleId.options.length);
     expect(order.decision.checks.filter((c) => c.status !== "pass")).toEqual([]);
     expect(order.status).toBe("confirmed");
   });
@@ -38,7 +38,11 @@ describe("placeOrder with the real policy", () => {
     const total = env.quoted.primary.offer.totals.net.amount;
     const limits = { perOrder: { amount: total * 2, currency: "EUR" as const }, perWeek: { amount: total * 1.5, currency: "EUR" as const } };
     const { jws: mandateJws } = await env.deps.mandates.update({ limits });
-    const request: QuoteRequest = { lines: [{ productId: "464306", quantity: { amount: 1000, unit: "l" } }], deliverBy: DELIVER_BY };
+    const request: QuoteRequest = {
+      lines: [{ productId: "464306", quantity: { amount: 1000, unit: "l" } }],
+      deliverBy: DELIVER_BY,
+      intent: "1,000 litres of product 464306 by Monday",
+    };
     const offers = await Promise.all([1, 2, 3].map(() => quote(request, QUOTE_CONTEXT, env.deps)));
     const place = (offerJws: string, key: string) => placeOrder({ offerJws, mandateJws, idempotencyKey: key }, env.deps, AGENT);
 

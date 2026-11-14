@@ -32,7 +32,8 @@ describe("REST problems", () => {
   });
 
   it("returns 404 for an unknown order", async () => {
-    const response = await order.GET(jsonRequest("/api/v1/orders/ord-missing"), params({ id: "ord-missing" }));
+    const headers = { authorization: `Bearer ${AGENT_TOKEN}` };
+    const response = await order.GET(jsonRequest("/api/v1/orders/ord-missing", { headers }), params({ id: "ord-missing" }));
     expect(response.status).toBe(404);
     expect(response.headers.get("content-type")).toBe(PROBLEM);
     expect((await response.json()).code).toBe("not_found");
@@ -45,7 +46,7 @@ describe("REST problems", () => {
   });
 
   it("rejects a non-numeric audit cursor", async () => {
-    const response = await audit.GET(jsonRequest("/api/v1/audit?after=abc"));
+    const response = await audit.GET(jsonRequest("/api/v1/audit?after=abc", { headers: { authorization: `Bearer ${AGENT_TOKEN}` } }));
     expect(response.status).toBe(400);
   });
 });
@@ -65,7 +66,7 @@ describe("human-only endpoints", () => {
     const response = await decide(agentHeaders, "x");
     expect(response.status).toBe(403);
     expect((await response.json()).detail).toBe("Agents cannot approve or reject orders.");
-    const log = await (await audit.GET(jsonRequest("/api/v1/audit"))).json();
+    const log = await (await audit.GET(jsonRequest("/api/v1/audit", { headers: { cookie: await approverCookie() } }))).json();
     const entries = log.entries ?? log;
     expect(entries.at(-1)).toMatchObject({ event: "access.refused", refs: { orderId: "x" } });
   });
@@ -129,7 +130,7 @@ describe("orders and audit", () => {
   });
 
   it("lists orders and verifies the audit chain", async () => {
-    const list = await orders.GET(jsonRequest("/api/v1/orders"));
+    const list = await orders.GET(jsonRequest("/api/v1/orders", { headers: { authorization: `Bearer ${AGENT_TOKEN}` } }));
     expect(Array.isArray((await list.json()).orders)).toBe(true);
     const verification = await (await verify.GET(jsonRequest("/api/v1/audit/verify"))).json();
     expect(verification.valid).toBe(true);

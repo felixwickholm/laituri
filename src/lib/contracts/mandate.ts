@@ -43,6 +43,8 @@ export const Mandate = z.object({
   approval: z.object({
     approver: z.object({ id: z.string(), name: z.string() }),
     firstTimeProducts: z.boolean().describe("Ask a human before the first order of a product"),
+    requireRequestWords: z.boolean().default(true)
+      .describe("Send an order to the approver when its offer carries no buyer's words, so it could not be checked against them"),
   }),
 });
 export type Mandate = z.infer<typeof Mandate>;

@@ -103,6 +103,7 @@ export function memoryStore(): Store {
       get: async (id) => orders.get(id),
       byIdempotencyKey: async (key) => [...orders.values()].find((o) => o.idempotencyKey === key),
       list: async () => [...orders.values()],
+      remove: async (id) => void orders.delete(id),
     },
     audit: {
       append: async (e) => void audit.push(e),

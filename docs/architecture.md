@@ -2,6 +2,37 @@
 
 Laituri is one Next.js application. It plays three parties in the demo: the buyer (a kitchen and its approver), the wholesaler (Valio Aimo) and the agent's front door between them. Every agent call, from MCP, REST or the screens, goes through one gateway.
 
+## How it works
+
+```mermaid
+flowchart LR
+  subgraph Buyers["Demo buyers, each with a buyer-signed mandate"]
+    B1[Nordic Harbour Hotels' agent]
+    B2[Kaisla School Kitchens' agent]
+    B3[Ravintola Laine's agent]
+  end
+  B1 & B2 & B3 -->|MCP or REST| G
+  subgraph Laituri
+    G[Gateway<br/>one schema set] --> C[Catalogue<br/>search, pack maths]
+    G --> Q[Quote engine<br/>signed offers,<br/>request check,<br/>good / better / best]
+    G --> O[Orders<br/>mandate rules, receipts]
+    G --> S[Suspensions]
+    O --> L[Audit log<br/>hash chain, signed]
+    S --> L
+  end
+  Q -->|price, availability| V[(Valio Aimo mock API)]
+  A[Buyer's approver<br/>/buyer, /approve] -->|signed approval| O
+  W[Valio Aimo control side<br/>/valio: agents, demand, audit] -->|suspend, resume| S
+  L --> X[Verified with<br/>/.well-known/jwks.json]
+```
+
+1. **Search.** The catalogue reads "lactose-free milk" as a concept plus claims, ranks products, does the pack maths (1,000 l = 1,000 x 1 l) and states its match confidence.
+2. **Quote.** Live price and availability, less this workspace's own confirmed and waiting orders, become an offer signed by the wholesaler key. The wholesaler compares the buyer's words with the product each line delivers and signs that check into the offer. When the request cannot be met in full and on time, signed alternatives come with it, each checked the same way.
+3. **Order.** The agent sends the offer and its mandate, both unchanged and both bound to this workspace. Every mandate rule runs and is listed on the order with its result.
+4. **Approve.** An order in the "ask" tier waits for the buyer's named approver. The wholesaler signs and logs that it holds the price until the order cut-off. The approver decides on `/buyer` or on the phone page `/approve/{orderId}`; the decision is signed with the approver key. Approving checks the order again against the mandate in force and the stock; a "never" rule, an expired mandate, a used offer or a shortfall stops it.
+5. **Control.** The wholesaler watches agents and demand on `/valio` and can suspend an agent.
+6. **Prove.** Each step appends a signed entry to a hash chain, which both sides re-check in the browser.
+
 ## Components
 
 | Component | Path | What it does |
@@ -26,7 +57,7 @@ Laituri is one Next.js application. It plays three parties in the demo: the buye
 
 ## Data flow
 
-1. An agent calls a tool or route with its bearer token. [`src/lib/http/agent.ts`](../src/lib/http/agent.ts) maps the token to the agent and buyer named in that buyer's mandate.
+1. An agent calls a tool or route with its bearer token: a key from `POST /api/v1/workspace` or from a browser's sandbox, or a fixed demo token for the shared demo workspace. [`src/lib/http/agent.ts`](../src/lib/http/agent.ts) maps the token to the agent and buyer named in that buyer's mandate.
 2. The gateway refuses the call if the wholesaler has suspended the agent ([`src/lib/gateway/suspension.ts`](../src/lib/gateway/suspension.ts)), and records the call for the wholesaler's activity view.
 3. Search reads the local index. A quote asks the upstream client for live price and availability, builds the lines and signs the offer with the supplier key.
 4. An order carries the offer JWS and the mandate JWS. The order module verifies both, checks the offer has not been used, runs every policy rule and then confirms, waits for approval, or blocks.
@@ -76,17 +107,17 @@ sequenceDiagram
   participant L as Audit log
   A->>G: place_order(1,600 l offer, mandate)
   G->>G: spend.per_order says ask
-  G->>L: order.requested, policy.evaluated, approval.requested
+  G->>L: order.requested, policy.evaluated, approval.requested, price held until the cut-off
   G-->>A: pending_approval (stop and tell the human)
   P->>G: sign in (passcode or demo access)
   P->>G: approve, with a note
-  G->>G: offer still valid? sign approval with approver key
+  G->>G: price still held? mandate and stock still allow it? sign approval with approver key
   G->>L: approval.granted, order.confirmed
   A->>G: get_order
   G-->>A: confirmed, receipt JWS
 ```
 
-An agent token cannot approve over REST, and no MCP tool approves (evals G10 to G13). If the offer expired while waiting, the order is rejected and the reason logged.
+An agent token cannot approve over REST, and no MCP tool approves (evals G10 to G13). The price is held until the order cut-off for the delivery date, never beyond it. If the hold ended before the approver answered, the order is rejected and the reason logged; if stock fell short, the order is blocked and fresh signed alternatives come back.
 
 ## Sequence: exception with alternatives
 
@@ -127,3 +158,46 @@ sequenceDiagram
 - Server: the REST routes, the MCP endpoint, the gateway and everything it calls.
 - Browser: the screens (`src/components`, with `src/lib/console`, `src/lib/supplier-console` and `src/lib/tour`), chain and signature verification with the published keys, speech input (Web Speech API).
 - At start-up, [`src/instrumentation.ts`](../src/instrumentation.ts) seeds demo history when the state is empty.
+
+## Connect an agent
+
+Create a private sandbox with `POST /api/v1/workspace`: it returns one agent key per demo buyer and the MCP address, and works from curl or any agent. Then point an MCP client at `https://<host>/mcp` (Streamable HTTP), or follow `/llms.txt` with plain HTTP. The fixed tokens `demo-agent-token`, `demo-kaisla-token` and `demo-laine-token` belong to the shared demo workspace that the evals use. `/connect` has set-up lines for common agent applications.
+
+<!-- BEGIN:evidence:tools -->
+| Tool (MCP) | REST | Purpose |
+|---|---|---|
+| `search_catalog` | `POST /api/v1/products/search` | Search the wholesaler catalogue |
+| `get_product` | `GET /api/v1/products/{id}` | Read one product |
+| `request_quote` | `POST /api/v1/quotes` | Get a signed fixed-price offer |
+| `get_mandate` | `GET /api/v1/mandate` | Read your purchasing mandate |
+| `place_order` | `POST /api/v1/orders` | Place an order from a signed offer |
+| `get_order` | `GET /api/v1/orders/{id}` | Check an order's status |
+| `verify_audit` | `GET /api/v1/audit/verify` | Verify the audit trail |
+<!-- END:evidence:tools -->
+
+Discovery: `/api/v1/openapi.json`, `/.well-known/jwks.json`, `/.well-known/agent-card.json`, `/.well-known/ai-catalog.json`, `/.well-known/ucp`, `/.well-known/oauth-protected-resource`, `/llms.txt`.
+
+## Layout
+
+```
+src/lib/contracts       zod schemas: the single source for REST, MCP and the screens
+src/lib/valio           upstream client (live and recorded)
+src/lib/catalog         index, concept lexicon, search, substitutes
+src/lib/request         the buyer's words read and compared with each offer
+src/lib/offers          quote engine, pack maths, product facts, good/better/best alternatives
+src/lib/orders          placement, approvals, receipts
+src/lib/policy          the mandate rules
+src/lib/mandate         the demo buyers' signed mandates
+src/lib/trust           keys, JWS, JWKS
+src/lib/audit           hash chain, verification, checkpoint
+src/lib/gateway         one facade behind REST, MCP and the screens; agent suspension
+src/lib/insights        the wholesaler's overview: agents, demand, unmet requests, fired rules
+src/lib/workspace       the shared workspace and the per-visitor sandboxes
+src/lib/seed            about a week of demo history, played through the real gateway
+src/lib/agent           the scripted buyer agent, and model-driven agents (Claude, Gemini) in agent/llm
+src/lib/voice           speech input and output adapters
+src/lib/evidence        the criteria-to-evidence source behind the README, docs/ and /evidence
+src/app                 landing, /buyer, /valio, /connect, /approve, /evidence, REST routes, MCP, discovery
+evals                   scenario, guardrail, trust and openness suites
+docs                    architecture, evals, trust protocol, mandates, production path, judging map, decision records
+```

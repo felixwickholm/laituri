@@ -38,12 +38,12 @@ describe.runIf(hasFixtures)("offer lookup by an agent token", () => {
     expect(otherBody.detail).toBe(`Offer ${primary.offer.id} does not exist.`);
   });
 
-  it("returns the buyer's own offer to its token, and any offer to a reader without a token", async () => {
+  it("returns the buyer's own offer to its token, and nothing to a reader without any credential", async () => {
     const { primary } = await quoteFor(AGENT_TOKEN);
     const own = await readOffer(primary.offer.id, bearer(AGENT_TOKEN));
     expect(own.status).toBe(200);
     expect(((await own.json()) as SignedOffer).jws).toBe(primary.jws);
     const open = await readOffer(primary.offer.id);
-    expect(open.status).toBe(200);
+    expect(open.status).toBe(401);
   });
 });

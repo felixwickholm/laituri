@@ -49,6 +49,7 @@ const RECIPES: Record<string, (ctx: Context) => Recipe> = {
   // The evals run without an ElevenLabs key, so the documented answer is 404 voice_not_configured.
   speakText: () => ({ body: { text: "Order confirmed." }, expect: 404 }),
   getWorkspace: () => ({}),
+  createWorkspace: () => ({}),
   setWorkspaceView: () => ({ body: { view: "sandbox" } }),
 };
 
@@ -76,7 +77,7 @@ export interface OperationResult {
 function headersFor(operation: Operation, ctx: Context): Record<string, string> {
   if (operation.audience === "human") return { cookie: ctx.cookie };
   if (operation.audience === "operator") return { cookie: ctx.operatorCookie };
-  return operation.audience === "agent" ? AGENT_AUTH : {};
+  return operation.audience === "agent" || operation.audience === "reader" ? AGENT_AUTH : {};
 }
 
 /** Calls every operation once, the reset last, and compares the status with the documented success status. */

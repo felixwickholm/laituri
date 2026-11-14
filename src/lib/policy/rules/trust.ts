@@ -78,16 +78,23 @@ const UNORDERABLE: Record<string, string> = {
   blocked: "it is blocked for sale",
 };
 
+/** The observation a block carries when this workspace's other orders took the stock an offer counted on. */
+export const STOCK_TAKEN = "stock taken";
+
+/**
+ * The offer is still good: not past its expiry, or past the wholesaler's price hold for a waiting order; every line
+ * orderable; and the stock it counted on not taken since by this workspace's other orders.
+ */
 export const offerExpiry: Rule = {
   id: "offer.expiry",
   needs: "offer",
-  run: ({ offer, now }) => {
-    if (now.getTime() > new Date(offer.expiresAt).getTime()) {
-      return check("offer.expiry", "block", `The offer expired at ${localTime(offer.expiresAt)}.`, {
-        observed: now.toISOString(),
-        limit: offer.expiresAt,
-      });
+  run: ({ offer, now, heldUntil, stockTaken }) => {
+    const until = heldUntil ?? offer.expiresAt;
+    if (now.getTime() > new Date(until).getTime()) {
+      const what = heldUntil ? "The price hold ended" : "The offer expired";
+      return check("offer.expiry", "block", `${what} at ${localTime(until)}.`, { observed: now.toISOString(), limit: until });
     }
+    if (stockTaken) return check("offer.expiry", "block", stockTaken, { observed: STOCK_TAKEN, limit: until });
     const bad = offer.lines.find((line) => line.availability.status in UNORDERABLE);
     if (bad) {
       return check("offer.expiry", "block", `${bad.name} cannot be ordered because ${UNORDERABLE[bad.availability.status]}.`, {
@@ -95,9 +102,22 @@ export const offerExpiry: Rule = {
         limit: offer.expiresAt,
       });
     }
-    return check("offer.expiry", "pass", `The offer is valid until ${localTime(offer.expiresAt)}.`, {
-      observed: now.toISOString(),
-      limit: offer.expiresAt,
-    });
+    return check("offer.expiry", "pass", `The offer is valid until ${localTime(until)}.`, { observed: now.toISOString(), limit: until });
+  },
+};
+
+/** While the audit log does not verify, nothing new is confirmed on top of it: a person decides, and is told why. */
+export const auditIntegrity: Rule = {
+  id: "audit.integrity",
+  needs: "nothing",
+  run: ({ auditLog }) => {
+    if (auditLog.valid) return check("audit.integrity", "pass", "The audit log verifies.", { observed: "verifies" });
+    const reason = auditLog.reason ? ` ${auditLog.reason}` : "";
+    return check(
+      "audit.integrity",
+      "ask",
+      `The audit log does not verify, so no order is confirmed alone until it does.${reason}`,
+      { observed: "broken", limit: "a log that verifies" },
+    );
   },
 };

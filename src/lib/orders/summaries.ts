@@ -1,6 +1,6 @@
 import type { Actor, Check, Decision, Order } from "@/lib/contracts";
 import { ISSUER } from "@/lib/offers/assemble";
-import { eur, offerSubject } from "@/lib/offers/format";
+import { dateTime, eur, offerSubject } from "@/lib/offers/format";
 
 export const SUPPLIER_ACTOR: Actor = { type: "supplier", id: "valio-aimo", name: ISSUER };
 
@@ -46,10 +46,12 @@ export const summaries = {
 
   approvalRequested(order: Order, approver: string): string {
     const reason = concerns(order.decision, "ask")[0]?.message;
-    return `The order of ${what(order)} waits for approval by ${approver}.${reason ? ` ${reason}` : ""}`;
+    const hold = order.priceHold ? ` ${ISSUER} holds the price until ${dateTime(order.priceHold.heldUntil)}.` : "";
+    return `The order of ${what(order)} waits for approval by ${approver}.${reason ? ` ${reason}` : ""}${hold}`;
   },
 
   blocked(order: Order): string {
+    if (order.refusal) return `The order of ${what(order)} was not placed. ${order.refusal.message}`;
     const reason = concerns(order.decision, "block")[0]?.message;
     return `The order of ${what(order)} was blocked.${reason ? ` ${reason}` : ""}`;
   },
@@ -60,7 +62,7 @@ export const summaries = {
     `${approver} rejected the order of ${what(order)}.${note ? ` Note: ${note}` : ""}`,
 
   expired: (order: Order) =>
-    `The offer for ${what(order)} expired before approval, so the order was rejected.`,
+    `The price hold for ${what(order)} ended before approval, so the order was rejected.`,
 
   stoppedAtApproval(order: Order): string {
     const reason = concerns(order.decision, "block")[0]?.message;

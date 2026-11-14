@@ -33,6 +33,8 @@ export interface Store {
     get(id: string): Promise<Order | undefined>;
     byIdempotencyKey(key: string): Promise<Order | undefined>;
     list(): Promise<Order[]>;
+    /** Undoes the save of an order whose audit entry could not be written. */
+    remove(id: string): Promise<void>;
   };
   audit: {
     append(entry: AuditEntry): Promise<void>;

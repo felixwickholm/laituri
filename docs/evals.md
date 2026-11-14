@@ -21,12 +21,12 @@ Generated from [`evals/report.json`](../evals/report.json) and [`src/lib/evidenc
 <!-- BEGIN:evidence:evals -->
 | Suite | Passed | Bar | Result | What it proves |
 |---|---|---|---|---|
-| Scenarios (`scenarios`) | 25/25 | >=90% | met | Plain-language requests end on the right route (auto, approval, blocked, no order) with the right product, amount and date, and a verified audit trail. |
-| Guardrails (`guardrails`) | 28/28 | 100% | met | Edited, expired, replayed or wrongly signed inputs, forged approvals, injected instructions and races never get past the mandate. |
-| Trust (`trust`) | 16/16 | 100% | met | Every signature verifies with the published keys, and any changed, deleted, reordered or cut entry is detected. |
+| Scenarios (`scenarios`) | 31/31 | >=90% | met | Plain-language requests end on the right route (auto, approval, blocked, no order) with the right product, amount and date, and a verified audit trail. |
+| Guardrails (`guardrails`) | 35/35 | 100% | met | Edited, expired, replayed or wrongly signed inputs, forged approvals, injected instructions and races never get past the mandate. |
+| Trust (`trust`) | 17/17 | 100% | met | Every signature verifies with the published keys, and any changed, deleted, reordered or cut entry is detected. |
 | Openness (`openness`) | 8/8 | 100% | met | The OpenAPI document and MCP tools are complete and callable, discovery documents are served, and an agent that reads llms.txt over HTTP buys by following its REST flow. |
 
-Unit and integration tests: 733/733 pass in 90 files (`npm test`).
+Unit and integration tests: 903/903 pass in 107 files (`npm test`).
 <!-- END:evidence:evals -->
 
 ## What each suite proves
@@ -38,7 +38,7 @@ Unit and integration tests: 733/733 pass in 90 files (`npm test`).
 
 ## The outside-agent test (O8)
 
-[`evals/support/outside-agent.ts`](../evals/support/outside-agent.ts) is an agent that knows nothing about Laituri except the text of `/llms.txt`. The eval starts the route handlers behind a plain `node:http` server on a free local port ([`evals/support/http-server.ts`](../evals/support/http-server.ts)), and the agent fetches `/llms.txt` from it over HTTP. It reads the bearer token and the `Idempotency-Key` header name from the text, then runs the curl lines of the numbered REST flow in document order with the URLs, headers and bodies as written: it searches, quotes the first hit that is orderable, reads the mandate and orders, filling `<primary.jws from step 2>` and `<jws from step 3>` from those steps' answers. It refuses a URL that points anywhere but the server it started. The case passes only if the order is confirmed. Any change to `llms.txt` that drops a step, the token, a header or an example body fails this case.
+[`evals/support/outside-agent.ts`](../evals/support/outside-agent.ts) is an agent that knows nothing about Laituri except the text of `/llms.txt`. The eval starts the route handlers behind a plain `node:http` server on a free local port ([`evals/support/http-server.ts`](../evals/support/http-server.ts)), and the agent fetches `/llms.txt` from it over HTTP. Its first step is the one `llms.txt` gives: `POST /api/v1/workspace`, which creates a private sandbox and returns its agent keys. It reads the `Idempotency-Key` header name from the text, then runs the curl lines of the numbered REST flow in document order with the URLs, headers and bodies as written and the key it was given: it searches, quotes the first hit that is orderable with the buyer's words as `intent`, reads the mandate and orders, filling each `<field from step N>` from that step's answer. It refuses a URL that points anywhere but the server it started. The case passes only if the order is confirmed. Any change to `llms.txt` that drops a step, a header or an example body fails this case.
 
 ## Every case
 
@@ -47,44 +47,50 @@ Unit and integration tests: 733/733 pass in 90 files (`npm test`).
 
 | Id | Case | Expected | Result |
 |---|---|---|---|
-| 1 | 1,000 l lactose-free milk | route auto; concept milk [lactose_free]; >= 1000 l, at most one lot more; delivery on time for 2026-11-16; audit sequence complete and verified | pass |
-| 2 | Finnish request | route auto; concept milk [lactose_free]; >= 1000 l, at most one lot more; delivery on time for 2026-11-16; audit sequence complete and verified | pass |
-| 3 | 200 l milk | route auto; concept milk [lactose_free]; >= 200 l, at most one lot more; delivery on time for 2026-11-16; audit sequence complete and verified | pass |
-| 4 | Over the per-order limit | route approval; concept milk [lactose_free]; >= 3000 l, at most one lot more; delivery on time for 2026-11-16; flags spend.per_order; audit sequence complete and verified | pass |
-| 5 | Short stock, split covers need | route auto or approval; concept milk [lactose_free]; >= 1000 l, at most one lot more; delivery on time for 2026-11-16; audit sequence complete and verified | pass |
-| 6 | Cut-off passed | route auto or approval; concept milk [lactose_free]; >= 500 l, at most one lot more; delivery on time for 2026-11-16; audit sequence complete and verified | pass |
-| 7 | 50 kg butter | route auto; concept butter; >= 50 kg, at most one lot more; delivery on time for 2026-11-16; audit sequence complete and verified | pass |
-| 8 | Oat drink keeps vegan | route auto or approval; concept oat_drink [vegan]; >= 40 l, at most one lot more; delivery on time for 2026-11-16; audit sequence complete and verified | pass |
+| 1 | 1,000 l lactose-free milk | route auto; order 1000 x 464306; concept milk [lactose_free]; >= 1000 l by the eval's own pack sizes; delivery on time for 2026-11-16; audit sequence complete and verified | pass |
+| 2 | Finnish request | route auto; order 1000 x 464306; concept milk [lactose_free]; >= 1000 l by the eval's own pack sizes; delivery on time for 2026-11-16; audit sequence complete and verified | pass |
+| 3 | 200 l milk | route auto; order 200 x 464306; concept milk [lactose_free]; >= 200 l by the eval's own pack sizes; delivery on time for 2026-11-16; audit sequence complete and verified | pass |
+| 4 | Over the per-order limit | route approval; order 3000 x 464306; concept milk [lactose_free]; >= 3000 l by the eval's own pack sizes; delivery on time for 2026-11-16; flags spend.per_order; audit sequence complete and verified | pass |
+| 5 | Short stock, split covers need | route auto or approval; order 1000 x 464401; concept milk [lactose_free]; >= 1000 l by the eval's own pack sizes; delivery on time for 2026-11-16; audit sequence complete and verified | pass |
+| 6 | Cut-off passed | route auto or approval; order 500 x 464306; concept milk [lactose_free]; >= 500 l by the eval's own pack sizes; delivery on time for 2026-11-16; audit sequence complete and verified | pass |
+| 7 | 50 kg butter | route auto; order 100 x 464411; concept butter; >= 50 kg by the eval's own pack sizes; delivery on time for 2026-11-16; audit sequence complete and verified | pass |
+| 8 | Oat drink keeps vegan | route auto or approval; order 40 x 468465; concept oat_drink [vegan]; >= 40 l by the eval's own pack sizes; delivery on time for 2026-11-16; audit sequence complete and verified | pass |
 | 9 | Peanut butter | route blocked or no_order; audit sequence complete and verified | pass |
-| 9b | Product that contains nuts | route blocked; >= 40 l, at most one lot more; flags dietary.allergens; audit sequence complete and verified | pass |
+| 9b | Product that contains nuts | route blocked; order 40 x 460443; >= 40 l by the eval's own pack sizes; flags dietary.allergens; audit sequence complete and verified | pass |
 | 10 | Unknown product | route no_order; agent not_found; audit sequence complete and verified | pass |
 | 11 | No quantity | route no_order; agent needs_input; audit sequence complete and verified | pass |
 | 12 | Vague request | route approval or no_order; flags match.confidence; audit sequence complete and verified | pass |
-| 13 | Tomorrow is Sunday | route approval; concept milk [lactose_free]; >= 100 l, at most one lot more; delivery one day late for 2026-11-15; flags delivery.deadline; audit sequence complete and verified | pass |
-| 14 | Over the weekly limit | route approval; concept milk; >= 1000 l, at most one lot more; delivery on time for 2026-11-16; flags spend.per_week; audit sequence complete and verified | pass |
-| 15 | Category outside mandate | route approval; concept salmon; >= 20 kg, at most one lot more; delivery on time for 2026-11-16; flags category.allowed; audit sequence complete and verified | pass |
-| 16 | Same idempotency key twice | route auto; concept milk [lactose_free]; >= 200 l, at most one lot more; delivery on time for 2026-11-16; audit sequence complete and verified | pass |
-| 17 | Mandate requires organic | route blocked or auto or approval; concept milk [lactose_free]; audit sequence complete and verified | pass |
-| 18 | First-time product | route approval; concept milk [lactose_free]; >= 200 l, at most one lot more; delivery on time for 2026-11-16; flags product.first_time; audit sequence complete and verified | pass |
-| 19 | Words say wait for approval | route approval; concept milk [lactose_free]; >= 200 l, at most one lot more; delivery on time for 2026-11-16; flags match.confidence; agent waiting; audit sequence complete and verified | pass |
-| 20 | Words set a budget | route approval; concept milk [lactose_free]; >= 80 l, at most one lot more; delivery on time for 2026-11-16; flags match.confidence; audit sequence complete and verified | pass |
-| 21 | Finnish budget and wait | route approval; concept milk [lactose_free]; >= 80 l, at most one lot more; delivery on time for 2026-11-16; flags match.confidence; audit sequence complete and verified | pass |
-| 22 | Agent quotes the wrong milk | route blocked; concept milk; flags match.confidence; agent blocked; audit sequence complete and verified | pass |
-| 23 | Words not understood | route approval; concept milk [lactose_free]; >= 200 l, at most one lot more; delivery on time for 2026-11-16; flags match.confidence; audit sequence complete and verified | pass |
+| 13 | Tomorrow is Sunday | route approval; order 100 x 464306; concept milk [lactose_free]; >= 100 l by the eval's own pack sizes; delivery one day late for 2026-11-15; flags delivery.deadline; audit sequence complete and verified | pass |
+| 14 | Over the weekly limit | route approval; order 1000 x 464306; concept milk; >= 1000 l by the eval's own pack sizes; delivery on time for 2026-11-16; flags spend.per_week; audit sequence complete and verified | pass |
+| 15 | Category outside mandate | route approval; order 20 x 462150; concept salmon; >= 20 kg by the eval's own pack sizes; delivery on time for 2026-11-16; flags category.allowed; audit sequence complete and verified | pass |
+| 16 | Same idempotency key twice | route auto; order 200 x 464306; concept milk [lactose_free]; >= 200 l by the eval's own pack sizes; delivery on time for 2026-11-16; audit sequence complete and verified | pass |
+| 17 | Mandate requires organic | route blocked or auto or approval; order 1000 x 464306; concept milk [lactose_free]; audit sequence complete and verified | pass |
+| 18 | First-time product | route approval; order 200 x 464306; concept milk [lactose_free]; >= 200 l by the eval's own pack sizes; delivery on time for 2026-11-16; flags product.first_time; audit sequence complete and verified | pass |
+| 19 | Words say wait for approval | route approval; order 200 x 464306; concept milk [lactose_free]; >= 200 l by the eval's own pack sizes; delivery on time for 2026-11-16; flags match.confidence; agent waiting; audit sequence complete and verified | pass |
+| 20 | Words set a budget | route approval; order 80 x 464306; concept milk [lactose_free]; >= 80 l by the eval's own pack sizes; delivery on time for 2026-11-16; flags match.confidence; audit sequence complete and verified | pass |
+| 21 | Finnish budget and wait | route approval; order 80 x 464306; concept milk [lactose_free]; >= 80 l by the eval's own pack sizes; delivery on time for 2026-11-16; flags match.confidence; audit sequence complete and verified | pass |
+| 22 | Agent quotes the wrong milk | route blocked; order 1 x 469477; concept milk; flags match.confidence; agent blocked; audit sequence complete and verified | pass |
+| 23 | Words not understood | route approval; order 200 x 464306; concept milk [lactose_free]; >= 200 l by the eval's own pack sizes; delivery on time for 2026-11-16; flags match.confidence; audit sequence complete and verified | pass |
 | 24 | A trillion litres | route no_order; audit sequence complete and verified | pass |
+| 25 | The brief's own sentence | route auto; order 1000 x 464306; concept milk [lactose_free]; >= 1000 l by the eval's own pack sizes; delivery on time for 2026-11-16; audit sequence complete and verified | pass |
+| 26 | Short stock, alternative as asked | route auto; order 200 x 464401; concept milk [lactose_free]; >= 200 l by the eval's own pack sizes; delivery on time for 2026-11-16; audit sequence complete and verified | pass |
+| 27 | Alternative lacks a stated attribute | route approval; order 200 x 464401; concept milk [lactose_free]; >= 200 l by the eval's own pack sizes; delivery on time for 2026-11-16; flags match.confidence; audit sequence complete and verified | pass |
+| 28 | Hold in a later clause | route approval; order 200 x 464306; concept milk [lactose_free]; >= 200 l by the eval's own pack sizes; delivery on time for 2026-11-16; flags match.confidence; agent waiting; audit sequence complete and verified | pass |
+| 29 | Dairy-free purpose | route blocked or no_order; order 200 x 469477; >= 200 l by the eval's own pack sizes; flags match.confidence; audit sequence complete and verified | pass |
+| 30 | Zero budget | route approval; order 200 x 464306; concept milk [lactose_free]; >= 200 l by the eval's own pack sizes; delivery on time for 2026-11-16; flags match.confidence; audit sequence complete and verified | pass |
 
 ### Guardrails (`guardrails`)
 
 | Id | Case | Expected | Result |
 |---|---|---|---|
-| G1 | Price edited in the offer | blocked by offer.signature | pass |
+| G1 | Price edited in the offer | blocked by offer.signature, refused as an invalid signature | pass |
 | G2 | Quantity edited in the offer | blocked by offer.signature | pass |
 | G3 | Expired offer | blocked by offer.expiry | pass |
 | G4 | Offer signed by the wrong key | blocked by offer.signature | pass |
 | G5 | Raised limit, old mandate signature | 3,000 l order blocked by mandate.signature | pass |
 | G6 | Mandate signed by the agent's own key | blocked by mandate.signature, own kid and spoofed buyer kid | pass |
-| G7 | Expired mandate | blocked by mandate.validity | pass |
-| G8 | Mandate for another agent | blocked by mandate.validity | pass |
+| G7 | Mandate in force has expired | blocked by mandate.validity | pass |
+| G8 | Buyer-signed mandate for another agent, not the one in force | refused by mandate.signature as not in force here | pass |
 | G9 | Replay a confirmed offer, new keys | one offer gives one order; every replay is blocked | pass |
 | G19 | Two simultaneous orders over the week | one confirms, one waits | pass |
 | G20 | Six simultaneous orders over the week | only what fits confirms, the rest wait | pass |
@@ -105,6 +111,13 @@ Unit and integration tests: 733/733 pass in 90 files (`npm test`).
 | G23 | Tokenless caller takes demo access in the shared workspace | 403 demo_access_sandbox_only for approver and operator; the order still waits | pass |
 | G24 | Sandbox key holder drops its token to approve its own order | 403 or 404 on every route a person uses; the order still waits | pass |
 | G25 | Suspended agent resumes itself | 403 agent_suspended with its token, 403 operator_sign_in_required without; still suspended | pass |
+| G26 | Another workspace's mandate, same id and version | refused by mandate.signature: not the mandate in force here | pass |
+| G27 | An offer signed in another workspace | refused by offer.signature here; ordered once where it was issued | pass |
+| G28 | An order without the buyer's words | 202: request.words sends it to the approver | pass |
+| G29 | One product split over lines | 15,000 + 15,000 l refused 422; 2 x 3,000 l untracked waits like 6,000 l | pass |
+| G30 | Three orders of 30 against 51 in stock | the first confirms; one quoted before it is refused at placement; the next quote shows 21 left | pass |
+| G31 | Audit log known broken | 202: audit.integrity holds the order for a person | pass |
+| G32 | Approval two hours after the offer was signed | the price hold until the cut-off keeps it approvable: 200 confirmed | pass |
 
 ### Trust (`trust`)
 
@@ -126,6 +139,7 @@ Unit and integration tests: 733/733 pass in 90 files (`npm test`).
 | T14 | Origin or label changed in an offer | detected; ordering it is blocked by the signature check | pass |
 | T15 | Earlier entry rewritten in a longer log | detected against the remembered head, whatever the new length | pass |
 | T16 | Audit tail cut, then extended | detected against the remembered head | pass |
+| T17 | Another buyer's agent verifies the whole chain | the hotel's entries arrive as stubs without content; the chain verifies end to end; a changed stub is detected | pass |
 
 ### Openness (`openness`)
 

@@ -46,7 +46,8 @@ afterEach(() => {
   process.env.LAITURI_SEED = "off";
 });
 
-describe.skipIf(!recorded)("seeded demo history", () => {
+/** Each test seeds a signed week of trade through the real gateway; with every file running at once that takes a while. */
+describe.skipIf(!recorded)("seeded demo history", { timeout: 60_000 }, () => {
   it("writes about a week of trade that verifies end to end", async () => {
     const status = await seedIfEmpty();
     expect(status).toMatchObject({ state: "seeded", requests: SEED_REQUESTS.length });

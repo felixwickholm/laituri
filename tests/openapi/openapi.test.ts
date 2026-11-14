@@ -92,4 +92,19 @@ describe("OpenAPI document", async () => {
     expect(JSON.stringify(schemas.QuoteResponse)).toContain("meaning");
     expect(JSON.stringify(schemas.SearchRequest)).toContain("sustainability");
   });
+
+  it("says which reads need a credential, and how a client without a browser gets a sandbox", () => {
+    const paths = doc.paths as Record<string, Record<string, Json>>;
+    for (const [path, method] of [["/api/v1/orders", "get"], ["/api/v1/mandate", "get"], ["/api/v1/audit", "get"], ["/api/v1/approvals", "get"], ["/api/v1/activity", "get"]]) {
+      const operation = paths[path][method];
+      expect(operation["x-audience"], path).toBe("reader");
+      expect(operation.security, path).toEqual(expect.arrayContaining([{ bearer: [] }, { sandboxCookie: [] }]));
+      expect(operation.security, path).not.toContainEqual({});
+      expect(Object.keys(operation.responses as Json), path).toContain("401");
+    }
+    const create = paths["/api/v1/workspace"].post;
+    expect(create.operationId).toBe("createWorkspace");
+    expect(Object.keys(create.responses as Json)).toEqual(expect.arrayContaining(["201", "403", "429"]));
+    expect(JSON.stringify(doc.components)).toContain("POST /api/v1/workspace");
+  });
 });

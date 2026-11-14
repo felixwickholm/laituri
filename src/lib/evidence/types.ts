@@ -76,6 +76,11 @@ export interface Assumption {
   where: string[];
 }
 
+/** A simulated or assumed part, with a few words for the README's short list. */
+export interface Simulated extends Assumption {
+  brief: string;
+}
+
 export interface ProductionStep {
   step: string;
   why: string;
@@ -95,7 +100,7 @@ export interface Evidence {
   problems: Requirement[];
   scenarios: Scenario[];
   privacy: Requirement[];
-  simulated: Assumption[];
+  simulated: Simulated[];
   notBuilt: Assumption[];
   production: ProductionStep[];
   links: { label: string; href: string; note: string }[];

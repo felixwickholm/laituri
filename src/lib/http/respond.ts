@@ -1,5 +1,5 @@
 import { ZodError } from "zod";
-import { isGatewayError } from "@/lib/gateway/errors";
+import { isGatewayError, type GatewayError } from "@/lib/gateway/errors";
 
 export const PROBLEM_TYPE_BASE = "urn:laituri:problem:";
 
@@ -26,6 +26,7 @@ const TITLES: Record<number, string> = {
   405: "Method not allowed",
   409: "Conflict",
   422: "Cannot process",
+  429: "Too many requests",
   500: "Internal error",
   502: "Wholesaler unavailable",
   503: "Storage unavailable",
@@ -60,6 +61,14 @@ export function violationsOf(error: ZodError): Violation[] {
   }));
 }
 
+/** What a caller is told when the wholesaler's API failed: never its address, path, status or key. */
+export const UPSTREAM_DETAIL = "The wholesaler's price or stock service did not answer. Try again in a minute.";
+
+/** The sentence a caller sees for a gateway error. An upstream failure always gets the same plain sentence. */
+export function publicDetail(error: GatewayError): string {
+  return error.status === 502 ? UPSTREAM_DETAIL : error.message;
+}
+
 /** Maps any thrown value to a problem response. Unknown errors never leak internals. */
 export function errorResponse(error: unknown): Response {
   if (error instanceof ZodError) {
@@ -67,9 +76,8 @@ export function errorResponse(error: unknown): Response {
   }
   if (isGatewayError(error)) {
     const details = error.details instanceof ZodError ? violationsOf(error.details) : asViolations(error.details);
-    return problem(error.status, error.code, error.message, details);
+    return problem(error.status, error.code, publicDetail(error), error.status === 502 ? undefined : details);
   }
-  console.error(error);
   return problem(500, "internal_error", "Something went wrong on our side. Try again.");
 }
 

@@ -7,11 +7,17 @@ import { PINNED_NOW, type Verdict } from "../harness";
 import { Checks } from "./checks";
 import { auditVerifies, expectedEvents, nonPassing, orderEvents } from "./flow";
 import { EXTRAS, type ExtraName } from "./scenario-extras";
-import { addDays, coveredAmount, lineText, lotExcessLimit } from "./quantities";
+import { addDays, coveredAmount, lineText } from "./quantities";
 
 export type Route = "auto" | "approval" | "blocked" | "no_order";
 
 type QuoteLine = QuoteRequest["lines"][number];
+
+/** One line of the expected order: "1000 x 464306". */
+export interface OrderedLine {
+  sku: string;
+  units: number;
+}
 
 export interface Scenario {
   id: string;
@@ -21,6 +27,8 @@ export interface Scenario {
     concept?: string;
     claims?: string[];
     need?: Quantity;
+    /** The exact order on the pinned recording: product code and sales units, written out, never derived. */
+    order?: OrderedLine[];
     /** When the goods must arrive: by the date the words mean on the pinned clock, or one day after it. */
     delivery?: { by: string; arrives: "on_time" | "one_day_late" };
     /** Checks that must ask or block on the order. */
@@ -35,6 +43,8 @@ export interface Scenario {
   sendTwice?: boolean;
   /** The agent quotes this line instead of what it found, as a careless model might; the buyer's words go with it. */
   misquote?: QuoteLine;
+  /** A product code the buyer already chose: the agent quotes it without searching, as the demo's short-stock scene does. */
+  productId?: string;
   extra?: ExtraName;
   note?: string;
   live?: boolean;
@@ -78,12 +88,14 @@ function checkProducts(order: Order, expect: Scenario["expect"], checks: Checks)
   }
 }
 
-function checkQuantity(order: Order, need: Quantity, checks: Checks): void {
+/** The need is covered as the eval's own pack facts measure it, and the order is the one written out, unit for unit. */
+function checkQuantity(order: Order, need: Quantity, expected: OrderedLine[] | undefined, checks: Checks): void {
   const covered = coveredAmount(order.offer.lines, need.unit);
-  const limit = lotExcessLimit(order.offer.lines, need.unit);
-  if (!checks.expect(covered !== undefined, `ordered lines have no ${need.unit} content`) || covered === undefined) return;
+  if (!checks.expect(covered !== undefined, `no pack fact in ${need.unit} for ${lineText(order.offer.lines)}`) || covered === undefined) return;
   checks.expect(covered >= need.amount - 1e-9, `ordered ${covered} ${need.unit}, less than ${need.amount}`);
-  checks.expect(covered - need.amount <= limit + 1e-9, `ordered ${covered} ${need.unit}, more than one lot over ${need.amount}`);
+  if (!expected) return;
+  const wanted = expected.map(({ sku, units }) => `${units} x ${sku}`).join(" + ");
+  checks.expect(lineText(order.offer.lines) === wanted, `ordered ${lineText(order.offer.lines)}, expected ${wanted}`);
 }
 
 /**
@@ -110,7 +122,8 @@ export async function runScenario(scenario: Scenario): Promise<Verdict> {
   const countBefore = (await gateway().listOrders()).length;
   const replies: Order[] = [];
   const asked = scenario.misquote ? misquoting(base, scenario.misquote) : base;
-  const result = await runPurchase(scenario.request, scenario.sendTwice ? resending(asked, replies) : asked, QUIET);
+  const options = scenario.productId ? { productId: scenario.productId } : {};
+  const result = await runPurchase(scenario.request, scenario.sendTwice ? resending(asked, replies) : asked, QUIET, options);
   const order = result.orderId ? await gateway().getOrder(DEMO_AGENT, result.orderId) : undefined;
   const countAfter = (await gateway().listOrders()).length;
   const { expect } = scenario;
@@ -124,7 +137,7 @@ export async function runScenario(scenario: Scenario): Promise<Verdict> {
 
   if (order) {
     checkProducts(order, expect, checks);
-    if (expect.need) checkQuantity(order, expect.need, checks);
+    if (expect.need) checkQuantity(order, expect.need, expect.order, checks);
     if (expect.delivery) checks.note(`delivery ${checkDelivery(order, expect.delivery, checks)}`);
     for (const rule of expect.rules ?? []) {
       const status = order.decision.checks.find((check) => check.rule === rule)?.status ?? "missing";

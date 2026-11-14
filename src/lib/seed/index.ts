@@ -48,6 +48,7 @@ function seedDeps(upstream: SeedUpstream, hold: OfferHold): Deps {
     mandates: real.mandates,
     hash: real.hash,
     now: real.now,
+    audience: real.audience,
     offerValidityMs: () => hold.validityMs,
   };
 }

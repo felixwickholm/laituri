@@ -4,7 +4,8 @@ import { check } from "./format";
 import { categoryAllowed, dietaryAllergens, dietaryClaims, firstTimeProducts, matchConfidence } from "./rules/products";
 import { deliveryDeadline, deliveryPartial, substitutionPolicy, substitutionPrice } from "./rules/fulfilment";
 import { spendPerOrder, spendPerWeek } from "./rules/spend";
-import { mandateSignature, mandateValidity, offerExpiry, offerSignature } from "./rules/trust";
+import { requestWords } from "./rules/request";
+import { auditIntegrity, mandateSignature, mandateValidity, offerExpiry, offerSignature } from "./rules/trust";
 
 /** In RuleId order. */
 const RULES: Rule[] = [
@@ -12,6 +13,7 @@ const RULES: Rule[] = [
   mandateValidity,
   offerSignature,
   offerExpiry,
+  auditIntegrity,
   spendPerOrder,
   spendPerWeek,
   categoryAllowed,
@@ -22,6 +24,7 @@ const RULES: Rule[] = [
   deliveryPartial,
   deliveryDeadline,
   matchConfidence,
+  requestWords,
   firstTimeProducts,
 ];
 
@@ -37,6 +40,9 @@ export function evaluate(input: EvaluateInput): Decision {
     weekSpendNet: input.weekSpendNet,
     orderedProductIds: input.orderedProductIds,
     now: input.now,
+    auditLog: input.auditLog,
+    heldUntil: input.heldUntil,
+    stockTaken: input.stockTaken,
   };
   const mandate = input.mandate.valid ? input.mandate.mandate : undefined;
   const offer = input.offer.valid ? input.offer.offer : undefined;

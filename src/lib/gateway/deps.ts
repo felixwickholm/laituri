@@ -6,6 +6,7 @@ import { evaluate } from "@/lib/policy/evaluate";
 import { store } from "@/lib/store";
 import { sha256Hex, trust } from "@/lib/trust";
 import { upstream } from "@/lib/valio";
+import { workspaceAudience } from "@/lib/workspace/context";
 import type { Deps } from "./types";
 
 /** The real modules, resolved on first use so the catalogue index and keys load only when needed. */
@@ -33,5 +34,6 @@ export function realDeps(): Deps {
     },
     hash: sha256Hex,
     now,
+    audience: () => workspaceAudience(),
   };
 }

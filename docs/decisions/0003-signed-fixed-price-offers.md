@@ -15,7 +15,7 @@ The brief asks for ordering "based on fixed prices rather than a negotiated quot
 
 ## Decision outcome
 
-Option 3. Each offer is a compact JWS signed with the supplier key (ES256). It holds the fixed net price, availability, delivery date, cut-off, product facts, the buyer it is for and `expiresAt` (15 minutes). An order must carry the offer bytes unchanged; one offer gives one order.
+Option 3. Each offer is a compact JWS signed with the supplier key (ES256). It holds the fixed net price, availability, delivery date, cut-off, product facts, the buyer it is for and `expiresAt` (15 minutes). An order must carry the offer bytes unchanged; one offer gives one order. The offer also names the workspace that issued it inside the signature, and only that workspace accepts it. When an order waits for a person, the wholesaler signs a separate statement that holds the price until the order cut-off for the delivery date, never beyond it.
 
 ## Consequences
 

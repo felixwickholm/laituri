@@ -36,8 +36,10 @@ export interface ParsedRequest {
   quantity?: Quantity;
   /** The product in the buyer's words, without quantity, date, purpose or instructions. */
   phrase: string;
-  /** What the buyer said the goods are for ("the breakfast buffets"); context, not a requirement. */
+  /** What the buyer said the goods are for ("a dairy-free breakfast"); its claims are requirements too. */
   purpose?: string;
+  /** The other sentences and clauses of the request, without the instructions read from them. */
+  otherClauses: string[];
   /** A wholesaler product code named in the request, for example "product 462775". */
   productId?: string;
   deliverBy: string;
