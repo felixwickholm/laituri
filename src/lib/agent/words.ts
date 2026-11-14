@@ -35,6 +35,11 @@ const PACK_NOUN: Record<string, string> = {
   KG: "kilo pack",
 };
 
+/** A product name as a buyer would say it, without the "Suomesta" (from Finland) suffix some names carry. */
+export function displayName(name: string): string {
+  return name.replace(/\s+Suomesta$/i, "").trim();
+}
+
 /** "Maria Lind, Head of Purchasing" -> "Maria Lind". */
 export function personName(name: string): string {
   return name.split(",")[0].trim();

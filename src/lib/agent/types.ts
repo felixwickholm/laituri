@@ -43,6 +43,11 @@ export interface ParsedRequest {
   deliverByStated: boolean;
 }
 
+export interface PurchaseOptions {
+  /** A product code the buyer already chose. The agent skips the search and quotes it directly. */
+  productId?: string;
+}
+
 export type PurchaseStatus = "confirmed" | "waiting" | "blocked" | "not_found" | "needs_input" | "failed";
 
 export interface PurchaseStep {

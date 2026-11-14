@@ -56,14 +56,20 @@ function round(value: number): number {
 }
 
 interface Token {
+  /** Lower case, for matching. */
   text: string;
+  /** As the buyer wrote it, for the product phrase. */
+  raw: string;
   used: boolean;
 }
 
 function tokenize(text: string): Token[] {
   // Join thousands written with a space ("1 000") before splitting into words.
-  const joined = text.toLowerCase().replace(/(\d)[\s ](?=\d{3}\b)/g, "$1");
-  return (joined.match(WORD) ?? []).map((word) => ({ text: word.replace(/[,.]+$/, ""), used: false }));
+  const joined = text.replace(/(\d)[\s ](?=\d{3}\b)/g, "$1");
+  return (joined.match(WORD) ?? []).map((word) => {
+    const raw = word.replace(/[,.]+$/, "");
+    return { text: raw.toLowerCase(), raw, used: false };
+  });
 }
 
 function findDate(tokens: Token[], today: string): string | undefined {
@@ -121,10 +127,10 @@ function findProductCode(tokens: Token[]): string | undefined {
 }
 
 function phraseOf(tokens: Token[]): string {
-  const words = tokens.filter((t) => !t.used).map((t) => t.text);
-  while (words.length && FILLER.has(words[0])) words.shift();
-  while (words.length && FILLER.has(words[words.length - 1])) words.pop();
-  return words.join(" ");
+  const words = tokens.filter((t) => !t.used);
+  while (words.length && FILLER.has(words[0].text)) words.shift();
+  while (words.length && FILLER.has(words[words.length - 1].text)) words.pop();
+  return words.map((t) => t.raw).join(" ");
 }
 
 /** Reads quantity, product and delivery date from a buyer's request in English or Finnish. */

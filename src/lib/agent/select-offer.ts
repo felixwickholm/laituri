@@ -2,7 +2,7 @@ import type { OfferLine, Product, Quantity, QuoteRequest, SearchHit, SignedOffer
 import { lineOnTime, offerOnTime, offerOnlyLate, pickAlternative, rankByPrice, rankHits } from "./choose";
 import { shortDay } from "./dates";
 import type { AgentTransport, ParsedRequest } from "./types";
-import { euro, perUnitWord, problemNote, quantityText, type Situation } from "./words";
+import { displayName, euro, perUnitWord, problemNote, quantityText, type Situation } from "./words";
 
 const MAX_QUOTES = 3;
 const MAX_SKIP_NOTES = 2;
@@ -28,14 +28,14 @@ interface Plan {
 
 function fromLine(line: OfferLine, product: Product | undefined): Situation {
   const { status, available, deliveryDate } = line.availability;
-  return { name: line.name, salesUnit: line.salesUnit, status, available, deliveryDate, packContent: product?.content };
+  return { name: displayName(line.name), salesUnit: line.salesUnit, status, available, deliveryDate, packContent: product?.content };
 }
 
 function fromHit(hit: SearchHit): Situation {
   const { product, offerPreview } = hit;
   const availability = offerPreview?.availability;
   return {
-    name: product.name.en || product.name.fi,
+    name: displayName(product.name.en || product.name.fi),
     salesUnit: product.salesUnit,
     status: availability?.status ?? "unavailable",
     available: availability?.available,
@@ -82,17 +82,13 @@ async function fromComparisonQuote(ctx: SelectContext): Promise<Plan> {
   const pick = ranked.find((r) => lineOnTime(r.line, deliverBy)) ?? ranked.find((r) => orderable(r.line)) ?? ranked[0];
   const byId = new Map(ctx.products.map((p) => [p.id, p]));
   const skipped = ranked.slice(0, ranked.indexOf(pick)).map((r) => fromLine(r.line, byId.get(r.line.productId)));
-  await announce(ctx, skipped, pick.line.name, pick.price);
+  await announce(ctx, skipped, displayName(pick.line.name), pick.price);
   const rest = ranked.filter((r) => r !== pick && lineOnTime(r.line, deliverBy)).map((r) => r.line.productId);
   return { order: [pick.line.productId, ...rest], quotesUsed: 1 };
 }
 
 async function plan(ctx: SelectContext): Promise<Plan> {
-  if (ctx.products.length <= 1) {
-    const [product] = ctx.products;
-    await ctx.say(`Using ${product.name.en || product.name.fi} (product ${product.id}).`);
-    return { order: [product.id], quotesUsed: 0 };
-  }
+  if (ctx.products.length <= 1) return { order: ctx.products.map((p) => p.id), quotesUsed: 0 };
   const chosen = (await fromPreviews(ctx)) ?? (await fromComparisonQuote(ctx));
   await ctx.pause();
   return chosen;

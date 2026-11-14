@@ -12,6 +12,8 @@ export interface Activity {
   status: "ok" | "waiting" | "blocked" | "error";
   refs?: { offerId?: string; orderId?: string };
   durationMs?: number;
+  /** The purchase this belongs to, when a scripted run made it. Groups the activity pane exactly. */
+  run?: { id: string; title: string };
 }
 
 export interface Store {

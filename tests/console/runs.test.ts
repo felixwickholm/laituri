@@ -21,6 +21,26 @@ function tool(name: string, title: string, extra: Partial<Activity> = {}): Activ
 }
 
 describe("runs", () => {
+  it("groups tagged activity exactly by run id and titles it with the buyer's words", () => {
+    const first = { id: "run_a", title: "1,600 litres of lactose-free milk by Monday" };
+    const second = { id: "run_b", title: "200 litres of Arla lactose-free UHT milk by Monday" };
+    const activity = [
+      { ...note("Looking for lactose-free milk, 1,600 litres, by Mon 16 Nov."), run: first },
+      { ...tool("place_order", "Placed an order", { refs: { orderId: "ord_1" }, status: "waiting" }), run: first },
+      { ...note("Looking for Arla lactose-free UHT milk, 200 litres, by Mon 16 Nov."), run: second },
+      { ...tool("request_quote", "Asked for a quote"), run: second },
+      { ...note("Arla Milkdrink 1L lactose free fat free UHT: only 51 in stock."), run: second },
+      { ...note("Looking for something else, 5 litres, by Mon 16 Nov."), run: second },
+      note("Looking for butter, 5 kg, by Mon 16 Nov."),
+    ];
+    const runs = buildRuns(activity, []);
+    expect(runs.map((run) => run.runId)).toEqual([undefined, "run_b", "run_a"]);
+    expect(runs[1].steps).toHaveLength(3);
+    const ctx = { orders: new Map(), active: false };
+    expect(runTitle(runs[1], ctx)).toBe("200 litres of Arla lactose-free UHT milk by Monday");
+    expect(runTitle(runs[2], ctx)).toBe("1,600 litres of lactose-free milk by Monday");
+  });
+
   it("groups each request into one block, newest first, steps oldest first", () => {
     const activity = [
       note("Harbour purchasing agent connected"),

@@ -8,6 +8,7 @@ export type {
   AgentTransport,
   NoteStatus,
   ParsedRequest,
+  PurchaseOptions,
   PurchaseResult,
   PurchaseStatus,
   PurchaseStep,

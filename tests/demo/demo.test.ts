@@ -60,6 +60,13 @@ describe.skipIf(!recorded)("demo scenes on recorded data", () => {
     const pending = await gateway().pendingApprovals();
     expect(pending.length).toBeGreaterThanOrEqual(1);
     expect(pending.length).toBeLessThanOrEqual(2);
+    const activity = (await store().activity.list()).filter((a) => !a.title.endsWith(" connected"));
+    expect(activity.every((a) => a.run)).toBe(true);
+    expect(activity.some((a) => a.kind === "tool")).toBe(true);
+    const titles = [...new Set(activity.map((a) => a.run?.title))];
+    expect(titles).toEqual(["1,600 litres of lactose-free milk by Monday", "200 litres of Arla lactose-free UHT milk by Monday"]);
+    const second = activity.filter((a) => a.kind === "note" && a.run?.title === titles[1]).map((a) => a.title);
+    expect(second.join("\n")).not.toContain("product 462775");
   });
 
   it("break-mandate: all four attempts are stopped and nothing is confirmed", async () => {

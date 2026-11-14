@@ -23,6 +23,9 @@ export interface Attempt {
 
 export interface RunBlock {
   id: string;
+  /** Set when the activity carried an exact run tag; then title is the buyer's request. */
+  runId?: string;
+  title?: string;
   agent: Activity["agent"];
   startedAt: string;
   endedAt: string;
@@ -59,6 +62,8 @@ function startsBlock(item: Activity, block: RunBlock | undefined, previousAt: nu
 function newBlock(item: Activity): RunBlock {
   return {
     id: item.id,
+    runId: item.run?.id,
+    title: item.run?.title,
     agent: item.agent,
     startedAt: item.at,
     endedAt: item.at,
@@ -130,7 +135,13 @@ export function buildRuns(activity: Activity[], orders: Order[] = []): RunBlock[
       owner.endedAt = item.at;
       continue;
     }
-    if (startsBlock(item, block, previousAt)) {
+    if (item.run) {
+      // Tagged activity groups exactly by run id, whatever order it arrives in.
+      const tagged = blocks.find((run) => run.runId === item.run?.id);
+      block = tagged ?? newBlock(item);
+      if (!tagged) blocks.push(block);
+    } else if (block?.runId || startsBlock(item, block, previousAt)) {
+      // Untagged activity (outside agents) never joins a tagged run.
       block = newBlock(item);
       blocks.push(block);
     }

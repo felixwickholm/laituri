@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from "node:async_hooks";
 import { newId } from "@/lib/offers/assemble";
 import { agentActor } from "@/lib/orders/summaries";
 import type { Activity } from "@/lib/store/types";
@@ -19,11 +20,27 @@ export interface Recorder {
   reset(): void;
 }
 
+export type RunTag = NonNullable<Activity["run"]>;
+
+const holder = globalThis as typeof globalThis & { __laituriRunContext?: AsyncLocalStorage<RunTag> };
+const runContext = (holder.__laituriRunContext ??= new AsyncLocalStorage<RunTag>());
+
+/** Tags every activity record made while `work` runs, including the gateway's own tool calls. */
+export function inRun<T>(run: RunTag, work: () => Promise<T>): Promise<T> {
+  return runContext.run(run, work);
+}
+
+/** The run the current call belongs to, if a scripted run started it. */
+export function currentRun(): RunTag | undefined {
+  return runContext.getStore();
+}
+
 export function createRecorder(deps: Pick<Deps, "store" | "audit" | "now">): Recorder {
   let known: Set<string> | undefined;
 
   async function append(activity: Omit<Activity, "id" | "at">): Promise<void> {
-    await deps.store.activity.append({ id: newId("act_"), at: deps.now().toISOString(), ...activity });
+    const run = currentRun();
+    await deps.store.activity.append({ id: newId("act_"), at: deps.now().toISOString(), ...activity, ...(run ? { run } : {}) });
   }
 
   async function connect(agent: AgentRef): Promise<void> {

@@ -35,6 +35,7 @@ function capitalise(text: string): string {
 
 /** The block title: the buyer's request in their own words when it is known. */
 export function runTitle(run: RunBlock, ctx: RunContext): string {
+  if (run.title) return run.title;
   if (run.kind === "attempts") return "Try to break the mandate, four ways";
   const intent = lastOrder(run, ctx.orders)?.offer.intent?.trim();
   if (intent) return capitalise(intent);

@@ -5,14 +5,22 @@ import { shortDay } from "./dates";
 import { findCandidates } from "./find";
 import { parseRequest } from "./parse-request";
 import { selectOffer } from "./select-offer";
-import type { AgentHooks, AgentTransport, NoteStatus, PurchaseResult, PurchaseStatus, PurchaseStep } from "./types";
-import { amount, euro, personName, quantityText } from "./words";
+import type {
+  AgentHooks,
+  AgentTransport,
+  NoteStatus,
+  PurchaseOptions,
+  PurchaseResult,
+  PurchaseStatus,
+  PurchaseStep,
+} from "./types";
+import { amount, displayName, euro, personName, quantityText } from "./words";
 
 /** "1,000 x Valio Eila 1 l" or "51 x A and 149 x B". */
 export function offerSubject(offer: Offer): string {
   return offer.lines
     .filter((line) => line.quantity > 0)
-    .map((line) => `${amount(line.quantity)} x ${line.name}`)
+    .map((line) => `${amount(line.quantity)} x ${displayName(line.name)}`)
     .join(" and ");
 }
 
@@ -47,7 +55,12 @@ function outcome(order: Order, mandate: Mandate): { status: PurchaseStatus; note
  * The buyer's purchasing agent: read the request, find the cheapest product that covers it, get a signed
  * offer, and place one order under the mandate. It never retries after a block or while waiting for a person.
  */
-export async function runPurchase(requestText: string, transport: AgentTransport, hooks: AgentHooks): Promise<PurchaseResult> {
+export async function runPurchase(
+  requestText: string,
+  transport: AgentTransport,
+  hooks: AgentHooks,
+  options: PurchaseOptions = {},
+): Promise<PurchaseResult> {
   const steps: PurchaseStep[] = [];
   const say = async (text: string, status: NoteStatus = "ok") => {
     steps.push({ text, status });
@@ -59,7 +72,8 @@ export async function runPurchase(requestText: string, transport: AgentTransport
   };
 
   try {
-    const parsed = parseRequest(requestText, now());
+    const read = parseRequest(requestText, now());
+    const parsed = options.productId ? { ...read, productId: options.productId } : read;
     const what = parsed.phrase || (parsed.productId ? `product ${parsed.productId}` : "the product");
     if (!parsed.quantity) return finish("needs_input", `I need a quantity. How much ${what} do you need?`, {}, "waiting");
     const quantity = parsed.quantity;

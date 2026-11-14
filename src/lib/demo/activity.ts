@@ -2,6 +2,7 @@ import type { AgentHooks, NoteStatus } from "@/lib/agent";
 import { appendAudit } from "@/lib/audit";
 import { now } from "@/lib/clock";
 import type { AgentRef } from "@/lib/gateway";
+import { currentRun } from "@/lib/gateway/recorder";
 import { newId } from "@/lib/offers/assemble";
 import { agentActor } from "@/lib/orders/summaries";
 import { store } from "@/lib/store";
@@ -20,7 +21,8 @@ export function stepMs(): number {
 }
 
 export async function appendNote(agent: AgentRef, title: string, status: NoteStatus = "ok"): Promise<void> {
-  await store().activity.append({ id: newId("act_"), at: now().toISOString(), agent, kind: "note", title, status });
+  const run = currentRun();
+  await store().activity.append({ id: newId("act_"), at: now().toISOString(), agent, kind: "note", title, status, ...(run ? { run } : {}) });
 }
 
 /**
