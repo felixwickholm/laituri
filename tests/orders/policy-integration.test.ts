@@ -3,7 +3,7 @@ import type { QuoteRequest } from "@/lib/contracts";
 import { quote } from "@/lib/offers";
 import { placeOrder } from "@/lib/orders";
 import { evaluate } from "@/lib/policy/evaluate";
-import { AGENT } from "../support/deps";
+import { AGENT, QUOTE_CONTEXT } from "../support/deps";
 import { DELIVER_BY, NOW } from "../support/products";
 import { setup } from "./helpers";
 
@@ -39,7 +39,7 @@ describe("placeOrder with the real policy", () => {
     const limits = { perOrder: { amount: total * 2, currency: "EUR" as const }, perWeek: { amount: total * 1.5, currency: "EUR" as const } };
     const { jws: mandateJws } = await env.deps.mandates.update({ limits });
     const request: QuoteRequest = { lines: [{ productId: "464306", quantity: { amount: 1000, unit: "l" } }], deliverBy: DELIVER_BY };
-    const offers = await Promise.all([1, 2, 3].map(() => quote(request, { customerNumber: "123" }, env.deps)));
+    const offers = await Promise.all([1, 2, 3].map(() => quote(request, QUOTE_CONTEXT, env.deps)));
     const place = (offerJws: string, key: string) => placeOrder({ offerJws, mandateJws, idempotencyKey: key }, env.deps, AGENT);
 
     const orders = await Promise.all(offers.map((o, i) => place(o.primary.jws, `same-time-${i}`)));

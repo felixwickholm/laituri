@@ -41,6 +41,12 @@ export const mandateValidity: Rule = {
         limit: mandate.agent.id,
       });
     }
+    if (offer && offer.buyer.id !== mandate.buyer.id) {
+      return check("mandate.validity", "block", `The offer was made for ${offer.buyer.name}, not ${mandate.buyer.name}.`, {
+        observed: offer.buyer.id,
+        limit: mandate.buyer.id,
+      });
+    }
     if (offer && offer.customerNumber !== mandate.buyer.customerNumber) {
       return check("mandate.validity", "block", `The offer is for customer ${offer.customerNumber}, not ${mandate.buyer.customerNumber}.`, {
         observed: offer.customerNumber,

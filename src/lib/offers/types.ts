@@ -10,10 +10,14 @@ export interface OfferDeps {
   trust: Signer;
   store: Pick<Store, "offers">;
   now: () => Date;
+  /** How long a new offer holds its price, in milliseconds; 15 minutes when absent or undefined. */
+  offerValidityMs?: () => number | undefined;
 }
 
 export interface QuoteContext {
   customerNumber: string;
+  /** The buyer the offer is made for, from the calling agent's mandate. */
+  buyer: { id: string; name: string };
 }
 
 /** Live wholesaler answers for every product considered in one quote. */

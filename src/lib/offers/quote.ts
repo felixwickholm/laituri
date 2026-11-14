@@ -1,6 +1,6 @@
 import type { Alternative, Product, QuoteRequest, QuoteResponse } from "@/lib/contracts";
 import { UpstreamError, errorMessage } from "@/lib/gateway/errors";
-import { planAlternatives, type Need } from "./alternatives";
+import { TIER_MEANING, planAlternatives, type Need } from "./alternatives";
 import { assembleOffer, issueOffer } from "./assemble";
 import { quoteLine } from "./lines";
 import type { Market, OfferDeps, QuoteContext } from "./types";
@@ -48,7 +48,7 @@ export async function quote(request: QuoteRequest, ctx: QuoteContext, deps: Offe
     candidates: product ? candidates.get(product.id) ?? [] : [],
   }));
 
-  const base = { request, customerNumber: ctx.customerNumber, now: market.now };
+  const base = { request, customerNumber: ctx.customerNumber, buyer: ctx.buyer, now: market.now, validityMs: deps.offerValidityMs?.() };
   const primaryOffer = assembleOffer({ ...base, lines: needs.map((need) => need.primary) });
   const primary = await issueOffer(primaryOffer, deps);
   if (primaryOffer.fulfilment === "full") return { primary, alternatives: [] };
@@ -56,7 +56,7 @@ export async function quote(request: QuoteRequest, ctx: QuoteContext, deps: Offe
   const alternatives: Alternative[] = [];
   for (const plan of planAlternatives(needs, market)) {
     const signed = await issueOffer(assembleOffer({ ...base, lines: plan.lines }), deps);
-    alternatives.push({ tier: plan.tier, tradeoff: plan.tradeoff, signed });
+    alternatives.push({ tier: plan.tier, meaning: TIER_MEANING[plan.tier], tradeoff: plan.tradeoff, signed });
   }
   return { primary, alternatives };
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ValidationError } from "@/lib/gateway/errors";
 import { createGateway } from "@/lib/gateway/gateway";
-import { AGENT, makeDeps } from "../support/deps";
+import { AGENT, BUYER, makeDeps } from "../support/deps";
 import { DELIVER_BY } from "../support/products";
 
 describe("gateway", () => {
@@ -85,4 +85,27 @@ describe("gateway", () => {
     await gateway.getProduct(AGENT, "464306");
     expect((await gateway.auditLog()).map((e) => e.event)).toEqual(["agent.connected"]);
   });
+
+  it("logs each search and quote as demand, with the caller's buyer and client application", async () => {
+    const env = makeDeps();
+    const gateway = createGateway(env.deps);
+    const agent = { ...AGENT, buyer: BUYER, client: "Claude Code" };
+
+    await gateway.searchCatalog(agent, { query: "Eila", need: { amount: 1000, unit: "l" } });
+    await gateway.requestQuote(agent, {
+      lines: [{ productId: "464306", quantity: { amount: 1000, unit: "l" } }],
+      deliverBy: DELIVER_BY,
+      intent: "1,000 litres of Eila by Monday",
+    });
+    await gateway.searchCatalog(AGENT, { query: "nothing like this" });
+
+    const [search, quote, unknown] = await env.store.requests.list();
+    expect(search).toMatchObject({ kind: "search", buyer: BUYER, client: "Claude Code", words: "Eila", outcome: "met_in_full" });
+    expect(quote).toMatchObject({ kind: "quote", requestId: search.requestId, words: "1,000 litres of Eila by Monday", outcome: "met_in_full" });
+    expect(quote.offerId).toBeDefined();
+    expect(unknown).toMatchObject({ client: "Unknown client", outcome: "not_found" });
+    expect(unknown.buyer).toBeUndefined();
+    expect((await gateway.activity()).find((a) => a.tool === "request_quote")).toMatchObject({ buyer: BUYER, client: "Claude Code" });
+  });
 });
+

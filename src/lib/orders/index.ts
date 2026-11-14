@@ -17,10 +17,11 @@ export async function getOrder(id: string, deps: Pick<OrderDeps, "store">): Prom
   return order;
 }
 
-export async function listOrders(deps: Pick<OrderDeps, "store">): Promise<Order[]> {
-  return newestFirst(await deps.store.orders.list());
+/** One buyer's orders, newest first. */
+export async function listOrders(buyerId: string, deps: Pick<OrderDeps, "store">): Promise<Order[]> {
+  return newestFirst((await deps.store.orders.list()).filter((order) => order.buyer.id === buyerId));
 }
 
-export async function pendingApprovals(deps: Pick<OrderDeps, "store">): Promise<Order[]> {
-  return (await listOrders(deps)).filter((order) => order.status === "pending_approval");
+export async function pendingApprovals(buyerId: string, deps: Pick<OrderDeps, "store">): Promise<Order[]> {
+  return (await listOrders(buyerId, deps)).filter((order) => order.status === "pending_approval");
 }

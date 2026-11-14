@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 
 const StartRunBody = z
   .object({
-    scenario: z.enum(["milk", "over-limit", "break-mandate"]).optional(),
+    scenario: z.enum(["milk", "over-limit", "break-mandate", "two-kitchens"]).optional(),
     request: z.string().trim().min(1).max(300).optional(),
   })
   .refine((body) => (body.scenario === undefined) !== (body.request === undefined), {

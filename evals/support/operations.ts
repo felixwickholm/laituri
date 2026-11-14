@@ -18,6 +18,8 @@ interface Recipe {
   params?: Record<string, string>;
   query?: string;
   body?: unknown;
+  /** The answer documented for this environment, when it is not the success status. */
+  expect?: number;
 }
 
 /** A well-formed request for every registered operation. */
@@ -37,8 +39,14 @@ const RECIPES: Record<string, (ctx: Context) => Recipe> = {
   verifyAudit: () => ({}),
   getAuditCheckpoint: () => ({}),
   listActivity: () => ({}),
+  getSupplierOverview: () => ({}),
+  // Resuming an agent that is not suspended changes nothing, so the calls after this one are still served.
+  setAgentSuspension: () => ({ params: { agentId: "agent:harbour-purchasing" }, body: { suspended: false } }),
   resetDemo: () => ({}),
   getHealth: () => ({}),
+  getVoice: () => ({}),
+  // The evals run without an ElevenLabs key, so the documented answer is 404 voice_not_configured.
+  speakText: () => ({ body: { text: "Order confirmed." }, expect: 404 }),
 };
 
 async function context(): Promise<Context> {
@@ -79,7 +87,7 @@ export async function callEveryOperation(): Promise<OperationResult[]> {
     }
     const path = operation.path.replace(/\{(\w+)\}/g, (_, name: string) => encodeURIComponent(recipe.params?.[name] ?? ""));
     const reply = await call(operation.method, path + (recipe.query ?? ""), { body: recipe.body, headers: headersFor(operation, ctx) });
-    const documented = operation.status ?? 200;
+    const documented = recipe.expect ?? operation.status ?? 200;
     const problem = reply.status === documented ? undefined : `${reply.status}, documented ${documented}: ${(reply.body as { detail?: string })?.detail ?? ""}`.trim();
     results.push({ operation, status: reply.status, problem });
   }

@@ -19,7 +19,8 @@ export const endpoints = (origin: string) => ({
 const bearerScheme = {
   type: "http",
   scheme: "bearer",
-  description: "Demo token: demo-agent-token. Production: OAuth 2.1 with scopes catalog:read, quote:create, order:place.",
+  description:
+    "Demo tokens, one per buyer: demo-agent-token, demo-kaisla-token, demo-laine-token. Production: OAuth 2.1 with scopes catalog:read, quote:create, order:place.",
 };
 
 /** A2A v1-style agent card. */
@@ -98,6 +99,6 @@ export function protectedResource(origin: string) {
     bearer_methods_supported: ["header"],
     resource_name: SERVICE_NAME,
     resource_documentation: endpoints(origin).llms,
-    note: "This demo uses static bearer tokens (demo-agent-token). Production uses OAuth 2.1 with these scopes.",
+    note: "This demo uses static bearer tokens, one per buyer (demo-agent-token, demo-kaisla-token, demo-laine-token). Production uses OAuth 2.1 with these scopes.",
   };
 }

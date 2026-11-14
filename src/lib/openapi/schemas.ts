@@ -13,7 +13,11 @@ import {
   SearchRequest,
   SearchResponse,
   SignedOffer,
+  SupplierOverview,
+  SuspensionRequest,
+  SuspensionState,
 } from "@/lib/contracts";
+import { MAX_SPEECH_CHARS } from "@/lib/voice/server";
 
 /** Schemas the front door adds around the frozen contracts (wrappers, health, problems). */
 
@@ -72,6 +76,8 @@ export const ActivityItem = z.object({
   id: z.string(),
   at: z.string(),
   agent: z.object({ id: z.string(), name: z.string() }),
+  buyer: z.object({ id: z.string(), name: z.string() }).optional().describe("The buyer whose token the agent holds"),
+  client: z.string().optional().describe("The client application that made the call, for example Claude Code or curl"),
   kind: z.enum(["tool", "note"]),
   tool: z.string().optional(),
   title: z.string(),
@@ -79,6 +85,7 @@ export const ActivityItem = z.object({
   status: z.enum(["ok", "waiting", "blocked", "error"]),
   refs: z.object({ offerId: z.string().optional(), orderId: z.string().optional() }).optional(),
   durationMs: z.number().optional(),
+  seeded: z.literal(true).optional().describe("Demo history written at start-up"),
 });
 
 export const ActivityList = z.object({ activity: z.array(ActivityItem) });
@@ -88,10 +95,34 @@ export const Health = z.object({
   mode: z.enum(["live", "recorded"]).describe("live calls the wholesaler API; recorded replays saved responses"),
   upstream: z.object({ ok: z.boolean(), latencyMs: z.number().optional(), error: z.string().optional() }),
   catalog: z.object({ ready: z.boolean(), size: z.number().int() }),
+  seed: z
+    .object({
+      state: z.enum(["seeded", "skipped", "failed", "off"])
+        .describe("seeded: history was written; skipped: the state already held orders or audit entries; failed: writing it failed; off: LAITURI_SEED=off"),
+      at: z.string().optional().describe("When the history was written; set when seeded"),
+      requests: z.number().int().optional().describe("Buyer requests written; set when seeded"),
+      orders: z.number().int().optional().describe("Orders among them; set when seeded"),
+      reason: z.string().optional().describe("Why nothing was written; set when skipped or failed"),
+    })
+    .describe("Whether demo history was written at start-up (LAITURI_SEED)"),
+  agent: z
+    .object({
+      engine: z.enum(["claude", "gemini", "scripted"]).describe("scripted needs no model key"),
+      model: z.string().optional().describe("The model name; set for claude and gemini"),
+    })
+    .describe("Which engine runs free-text requests from the console (LAITURI_AGENT_ENGINE and the model keys)"),
   time: z.string(),
 });
 
-export const ResetResult = z.object({ ok: z.literal(true), detail: z.string() });
+export const VoiceSettings = z.object({
+  tts: z.enum(["elevenlabs", "browser"]).describe("elevenlabs: POST /api/v1/voice/speech speaks; browser: use the browser's own voices"),
+});
+
+export const SpeechRequest = z.object({ text: z.string().trim().min(1).max(MAX_SPEECH_CHARS).describe("The text to read aloud") });
+
+export const SpeechAudio = z.string().describe("MP3 audio of the text");
+
+export const ResetResult = z.object({ ok: z.literal(true), detail: z.string(), seed: Health.shape.seed.optional() });
 
 /** Every named schema, keyed by its component name. Operations and tools refer to these names. */
 export const SCHEMAS = {
@@ -119,6 +150,12 @@ export const SCHEMAS = {
   ActivityList,
   Health,
   ResetResult,
+  SupplierOverview,
+  SuspensionRequest,
+  SuspensionState,
+  VoiceSettings,
+  SpeechRequest,
+  SpeechAudio,
   Problem: ProblemSchema,
 } satisfies Record<string, z.ZodType>;
 

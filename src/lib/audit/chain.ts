@@ -1,5 +1,6 @@
 import type { Actor, AuditEntry, AuditEvent } from "@/lib/contracts";
 import { now } from "@/lib/clock";
+import { seededMark } from "@/lib/provenance";
 import { store } from "@/lib/store";
 import { trust } from "@/lib/trust";
 import { rememberHead } from "./head";
@@ -34,6 +35,7 @@ async function write(input: AuditInput): Promise<AuditEntry> {
     summary: input.summary,
     refs: plainJson(input.refs ?? {}),
     data: plainJson(input.data ?? {}),
+    ...seededMark(),
     prevHash: last ? last.hash : GENESIS_HASH,
     hash: "",
     signature: "",

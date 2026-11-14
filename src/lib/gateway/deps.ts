@@ -27,9 +27,9 @@ export function realDeps(): Deps {
     policy: { evaluate },
     mandates: {
       read: readMandate,
-      current: currentMandate,
+      current: (buyerId) => currentMandate(buyerId),
       // The engine's patch type is a looser deep partial; updateMandate validates the merged result.
-      update: (patch) => updateMandate(patch as MandatePatch),
+      update: (patch, buyerId) => updateMandate(patch as MandatePatch, buyerId),
     },
     hash: sha256Hex,
     now,

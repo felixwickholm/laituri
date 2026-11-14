@@ -1,4 +1,5 @@
 import type { Product, ProductFilters, SearchHit, SearchRequest, SearchResponse } from "@/lib/contracts";
+import { productFacts } from "./facts";
 import { parseQuery, type ParsedQuery } from "./query";
 import { rank, wordMatch, type Entry } from "./rank";
 import { productText, words } from "./text";
@@ -83,7 +84,11 @@ export function search(all: Entry[], request: SearchRequest): SearchResponse {
   const outcome = parsed.concept ? byConcept(all, parsed, accept, request.query) : byName(all, parsed, accept, request.query);
   const concept = outcome.conceptUsed ? parsed.concept : undefined;
   const hits: SearchHit[] = outcome.entries
-    .map((entry) => ({ product: entry.product, ...rank(entry, { ...parsed, claims }, concept) }))
+    .map((entry) => ({
+      product: entry.product,
+      ...rank(entry, { ...parsed, claims }, concept),
+      facts: productFacts(entry.product),
+    }))
     .sort((a, b) => b.score - a.score || a.product.id.localeCompare(b.product.id))
     .slice(0, request.limit ?? 10);
   return {

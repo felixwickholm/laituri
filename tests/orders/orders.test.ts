@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 import { ConflictError, NotFoundError, StateError, ValidationError } from "@/lib/gateway/errors";
 import { decideApproval, getOrder, pendingApprovals, placeOrder } from "@/lib/orders";
 import type { ReceiptPayload } from "@/lib/orders";
-import { AGENT } from "../support/deps";
+import { AGENT, BUYER } from "../support/deps";
 import { setup } from "./helpers";
 
 const KEY = "order-key-0001";
+const DECIDER = { buyerId: BUYER.id };
+const OTHER_AGENT = { id: "agent:kaisla-menu-planner", name: "Kaisla menu planner", buyer: { id: "buyer:kaisla", name: "Kaisla School Kitchens" } };
 
 describe("placeOrder", () => {
   it("confirms an order inside the mandate with a receipt that verifies", async () => {
@@ -43,6 +45,22 @@ describe("placeOrder", () => {
 
     const other = await setup();
     await expect(placeOrder({ ...body, offerJws: other.offerJws }, env.deps, AGENT)).rejects.toBeInstanceOf(ConflictError);
+  });
+
+  it("never hands one agent's order to another agent that reuses its key", async () => {
+    const env = await setup();
+    const body = { offerJws: env.offerJws, mandateJws: env.mandateJws, idempotencyKey: KEY };
+    await placeOrder(body, env.deps, AGENT);
+    await expect(placeOrder(body, env.deps, OTHER_AGENT)).rejects.toBeInstanceOf(ConflictError);
+  });
+
+  it("files an agent's order under its own buyer, even with another buyer's mandate, and blocks it", async () => {
+    const env = await setup();
+    const order = await placeOrder({ offerJws: env.offerJws, mandateJws: env.mandateJws, idempotencyKey: KEY }, env.deps, OTHER_AGENT);
+    expect(order.buyer).toEqual(OTHER_AGENT.buyer);
+    expect(order.agent).toEqual({ id: OTHER_AGENT.id, name: OTHER_AGENT.name });
+    expect(env.policy.calls[0].agentId).toBe(OTHER_AGENT.id);
+    expect(env.audit.entries[0].refs.buyerId).toBe(OTHER_AGENT.buyer.id);
   });
 
   it("records a tampered offer as a blocked order", async () => {
@@ -83,23 +101,23 @@ describe("approvals", () => {
 
   it("confirms an approved order with a signed approval and receipt", async () => {
     const { env, order } = await pending();
-    expect(await pendingApprovals(env.deps)).toHaveLength(1);
+    expect(await pendingApprovals(BUYER.id, env.deps)).toHaveLength(1);
     expect(env.audit.entries.at(-1)?.event).toBe("approval.requested");
 
-    const approved = await decideApproval(order.id, { decision: "approved", note: "Fine for the weekend." }, env.deps);
+    const approved = await decideApproval(order.id, { decision: "approved", note: "Fine for the weekend." }, env.deps, DECIDER);
     expect(approved.status).toBe("confirmed");
     expect(approved.approval).toMatchObject({ decision: "approved", decidedBy: { name: "Maria Lind" } });
     const signed = await env.trust.verify<{ orderId: string; decision: string }>("approver", approved.approval!.jws);
     expect(signed.payload).toMatchObject({ orderId: order.id, decision: "approved" });
     expect((await env.trust.verify("supplier", approved.receiptJws!)).valid).toBe(true);
     expect(env.audit.entries.slice(-2).map((e) => e.event)).toEqual(["approval.granted", "order.confirmed"]);
-    expect(await pendingApprovals(env.deps)).toHaveLength(0);
-    await expect(decideApproval(order.id, { decision: "approved" }, env.deps)).rejects.toBeInstanceOf(StateError);
+    expect(await pendingApprovals(BUYER.id, env.deps)).toHaveLength(0);
+    await expect(decideApproval(order.id, { decision: "approved" }, env.deps, DECIDER)).rejects.toBeInstanceOf(StateError);
   });
 
   it("rejects an order", async () => {
     const { env, order } = await pending();
-    const rejected = await decideApproval(order.id, { decision: "rejected", note: "Too much." }, env.deps);
+    const rejected = await decideApproval(order.id, { decision: "rejected", note: "Too much." }, env.deps, DECIDER);
     expect(rejected.status).toBe("rejected");
     expect(rejected.receiptJws).toBeUndefined();
     expect((await getOrder(order.id, env.deps)).status).toBe("rejected");
@@ -109,7 +127,7 @@ describe("approvals", () => {
   it("rejects an order whose offer expired while waiting", async () => {
     const { env, order } = await pending();
     env.clock.current = new Date(Date.parse(order.offer.expiresAt) + 1000);
-    const decided = await decideApproval(order.id, { decision: "approved" }, env.deps);
+    const decided = await decideApproval(order.id, { decision: "approved" }, env.deps, DECIDER);
     expect(decided.status).toBe("rejected");
     expect(decided.decision).toEqual(order.decision);
     expect(env.audit.entries.at(-1)?.data).toMatchObject({ reason: "offer_expired" });
@@ -117,6 +135,19 @@ describe("approvals", () => {
 
   it("reports unknown orders", async () => {
     const env = await setup();
-    await expect(decideApproval("ord_missing", { decision: "approved" }, env.deps)).rejects.toBeInstanceOf(NotFoundError);
+    await expect(decideApproval("ord_missing", { decision: "approved" }, env.deps, DECIDER)).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  it("hides an order from another buyer's approver", async () => {
+    const { env, order } = await pending();
+    await expect(decideApproval(order.id, { decision: "approved" }, env.deps, { buyerId: "buyer:kaisla" })).rejects.toBeInstanceOf(NotFoundError);
+    expect(await pendingApprovals("buyer:kaisla", env.deps)).toHaveLength(0);
+    expect((await getOrder(order.id, env.deps)).status).toBe("pending_approval");
+  });
+
+  it("says in the audit entry when the decision came through demo access", async () => {
+    const { env, order } = await pending();
+    await decideApproval(order.id, { decision: "rejected" }, env.deps, { ...DECIDER, via: "demo access" });
+    expect(env.audit.entries.at(-1)?.data).toMatchObject({ via: "demo access" });
   });
 });

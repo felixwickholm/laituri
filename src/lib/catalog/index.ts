@@ -1,5 +1,5 @@
 import type { Product, SearchRequest, SearchResponse } from "@/lib/contracts";
-import { loadProducts } from "./load";
+import { fixtureCatalogPath, loadProducts, readProductFile } from "./load";
 import type { Entry } from "./rank";
 import { search, toEntry } from "./search";
 import { substitutesFor } from "./substitutes";
@@ -28,4 +28,9 @@ export function catalog(): Catalog {
   const products = loadProducts();
   if (instance?.products !== products) instance = { products, catalog: createCatalog(products) };
   return instance.catalog;
+}
+
+/** The committed fixture catalogue: exactly the products the recorded wholesaler answers cover. */
+export function fixtureCatalog(): Catalog {
+  return createCatalog(readProductFile(fixtureCatalogPath()));
 }

@@ -8,6 +8,11 @@ export function agentActor(agent: { id: string; name: string }): Actor {
   return { type: "agent", id: agent.id, name: agent.name };
 }
 
+/** Audit refs of an order, naming the buyer so each buyer's entries can be told apart. */
+export function orderRefs(order: Order) {
+  return { orderId: order.id, offerId: order.offer.id, mandateId: order.mandateId, buyerId: order.buyer.id };
+}
+
 function what(order: Order): string {
   return `${offerSubject(order.offer)} for ${eur(order.offer.totals.net.amount)}`;
 }

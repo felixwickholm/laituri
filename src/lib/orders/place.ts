@@ -1,11 +1,12 @@
 import type { Order, PlaceOrderRequest } from "@/lib/contracts";
 import { ConflictError } from "@/lib/gateway/errors";
 import { newId } from "@/lib/offers/assemble";
+import { seededMark } from "@/lib/provenance";
 import { confirmOrder } from "./confirm";
 import { serial } from "./lock";
 import { orderedProductIds, productsFor, weekSpendNet } from "./context";
 import { decodeUnverified, readOffer } from "./read-offer";
-import { SUPPLIER_ACTOR, agentActor, nonPassing, summaries } from "./summaries";
+import { SUPPLIER_ACTOR, agentActor, nonPassing, orderRefs, summaries } from "./summaries";
 import type { Caller, MandateRead, OfferRead, OrderDeps, StoredOrder } from "./types";
 
 export const UNKNOWN_AGENT = { id: "unknown", name: "Unknown agent" };
@@ -20,10 +21,11 @@ function claimedOfferId(jws: string): string | undefined {
   return payload && typeof payload === "object" && "id" in payload ? String(payload.id) : undefined;
 }
 
-async function existingOrder(request: PlaceOrderRequest, deps: OrderDeps): Promise<Order | undefined> {
+async function existingOrder(request: PlaceOrderRequest, deps: OrderDeps, caller?: Caller): Promise<Order | undefined> {
   const existing = await deps.store.orders.byIdempotencyKey(request.idempotencyKey);
   if (!existing) return undefined;
-  if (claimedOfferId(request.offerJws) !== existing.offer.id) {
+  // Another agent's key must not hand back that agent's order.
+  if (claimedOfferId(request.offerJws) !== existing.offer.id || (caller && caller.id !== existing.agent.id)) {
     throw new ConflictError("This idempotency key was already used for a different offer. Use a new key.");
   }
   return existing;
@@ -34,12 +36,12 @@ async function existingOrder(request: PlaceOrderRequest, deps: OrderDeps): Promi
  * Problems with signatures or rules produce a blocked order, not an exception, so every attempt is on record.
  */
 export async function placeOrder(request: PlaceOrderRequest, deps: OrderDeps, caller?: Caller): Promise<Order> {
-  const existing = await existingOrder(request, deps);
+  const existing = await existingOrder(request, deps, caller);
   if (existing) return existing;
   const running = inFlight.get(request.idempotencyKey);
   if (running) {
     const order = await running;
-    if (claimedOfferId(request.offerJws) !== order.offer.id) {
+    if (claimedOfferId(request.offerJws) !== order.offer.id || (caller && caller.id !== order.agent.id)) {
       throw new ConflictError("This idempotency key was already used for a different offer. Use a new key.");
     }
     return order;
@@ -63,7 +65,7 @@ function singleUse<T extends OfferRead>(read: T, orders: Order[]): T {
 /** Only the mandate in force counts. An older copy stays correctly signed after the buyer tightens the limits. */
 async function currentOnly(read: MandateRead, deps: OrderDeps): Promise<MandateRead> {
   if (!read.valid || !read.mandate) return read;
-  const { mandate: current } = await deps.mandates.current();
+  const { mandate: current } = await deps.mandates.current(read.mandate.buyer.id);
   if (current.id === read.mandate.id && current.version === read.mandate.version) return read;
   return { ...read, valid: false, reason: "This mandate was replaced by a newer version. Read the current mandate and try again." };
 }
@@ -83,13 +85,14 @@ async function createOrder(request: PlaceOrderRequest, deps: OrderDeps, caller?:
     createdAt: at,
     updatedAt: at,
     mandateId: mandate?.id ?? "unknown",
-    agent: caller ?? mandate?.agent ?? UNKNOWN_AGENT,
-    buyer: mandate ? { id: mandate.buyer.id, name: mandate.buyer.name } : UNVERIFIED_BUYER,
+    agent: caller ? { id: caller.id, name: caller.name } : mandate?.agent ?? UNKNOWN_AGENT,
+    buyer: caller?.buyer ?? (mandate ? { id: mandate.buyer.id, name: mandate.buyer.name } : UNVERIFIED_BUYER),
     offer: offerRead.offer,
     decision: { outcome: "blocked", checks: [] },
     simulated: true,
+    ...seededMark(),
   };
-  const refs = { orderId: draft.id, offerId: draft.offer.id, mandateId: draft.mandateId };
+  const refs = orderRefs(draft);
   await deps.audit.append({
     actor: agentActor(caller ?? draft.agent),
     event: "order.requested",
@@ -123,7 +126,7 @@ async function createOrder(request: PlaceOrderRequest, deps: OrderDeps, caller?:
 }
 
 async function settle(order: Order, deps: OrderDeps, approver: string): Promise<Order> {
-  const refs = { orderId: order.id, offerId: order.offer.id, mandateId: order.mandateId };
+  const refs = orderRefs(order);
   switch (order.decision.outcome) {
     case "auto_approved":
       return confirmOrder(order, summaries.confirmedAuto(order), deps);

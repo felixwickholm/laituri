@@ -16,7 +16,7 @@ export interface LogHead {
 
 export type SignatureVerifier = (jws: string) => Promise<Verified<unknown>>;
 
-/** The fields the hash covers: every field except hash and signature. */
+/** The fields the hash covers: every field except hash and signature. The seeded mark is covered only when set. */
 export function hashedPart(entry: AuditEntry): Omit<AuditEntry, "hash" | "signature"> {
   return {
     seq: entry.seq,
@@ -26,6 +26,7 @@ export function hashedPart(entry: AuditEntry): Omit<AuditEntry, "hash" | "signat
     summary: entry.summary,
     refs: entry.refs,
     data: entry.data,
+    ...(entry.seeded ? { seeded: entry.seeded } : {}),
     prevHash: entry.prevHash,
   };
 }

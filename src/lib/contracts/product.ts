@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { IsoDate, IsoDateTime, Money, Quantity } from "./common";
+import { ProductFacts, SearchPreference } from "./facts";
 import { AvailabilityStatus } from "./offer";
 
 export const Temperature = z.enum(["ambient", "chilled", "frozen"]);
@@ -59,6 +60,11 @@ export const SearchRequest = z.object({
   limit: z.number().int().min(1).max(50).default(10),
   need: Quantity.optional().describe("How much is needed. Adds pack maths and an estimated total to each hit"),
   deliverBy: IsoDate.optional().describe("Latest acceptable delivery date. Defaults to the next working day"),
+  prefer: SearchPreference.optional().describe(
+    "How to rank products that all match clearly: price (default, lowest price per litre or kilo), reliability " +
+      "(highest delivery reliability) or sustainability (certified sustainability labels, then lower category-average CO2). " +
+      "Products orderable on time stay first, and an uncertain match keeps its relevance order",
+  ),
 });
 export type SearchRequest = z.infer<typeof SearchRequest>;
 
@@ -82,6 +88,7 @@ export const SearchHit = z.object({
   product: Product,
   score: z.number(),
   matched: z.array(z.string()).describe("Why this product matched"),
+  facts: ProductFacts,
   offerPreview: OfferPreview.optional(),
 });
 export type SearchHit = z.infer<typeof SearchHit>;

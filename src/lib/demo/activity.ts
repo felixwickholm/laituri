@@ -2,9 +2,10 @@ import type { AgentHooks, NoteStatus } from "@/lib/agent";
 import { appendAudit } from "@/lib/audit";
 import { now } from "@/lib/clock";
 import type { AgentRef } from "@/lib/gateway";
-import { currentRun } from "@/lib/gateway/recorder";
+import { callerFields, currentRun } from "@/lib/gateway/recorder";
 import { newId } from "@/lib/offers/assemble";
 import { agentActor } from "@/lib/orders/summaries";
+import { seededMark } from "@/lib/provenance";
 import { store } from "@/lib/store";
 
 /** Thrown at the next step of a run that a reset cancelled. */
@@ -22,7 +23,16 @@ export function stepMs(): number {
 
 export async function appendNote(agent: AgentRef, title: string, status: NoteStatus = "ok"): Promise<void> {
   const run = currentRun();
-  await store().activity.append({ id: newId("act_"), at: now().toISOString(), agent, kind: "note", title, status, ...(run ? { run } : {}) });
+  await store().activity.append({
+    id: newId("act_"),
+    at: now().toISOString(),
+    ...callerFields(agent),
+    kind: "note",
+    title,
+    status,
+    ...(run ? { run } : {}),
+    ...seededMark(),
+  });
 }
 
 /**
@@ -36,6 +46,7 @@ export async function ensureConnected(agent: AgentRef): Promise<void> {
     actor: agentActor(agent),
     event: "agent.connected",
     summary: `${agent.name} connected for the first time.`,
+    refs: agent.buyer ? { buyerId: agent.buyer.id } : {},
     data: { agentId: agent.id },
   });
   await appendNote(agent, `${agent.name} connected`);

@@ -3,6 +3,8 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { DELETE, GET, OPTIONS, POST } from "@/app/mcp/route";
+import { gateway } from "@/lib/gateway";
+import { BUYER_IDS } from "@/lib/mandate";
 
 const PROTOCOL = "2025-06-18";
 const hasCatalog = [".data/catalog.json", "fixtures/upstream/catalog.json"].some((file) => existsSync(path.resolve(file)));
@@ -42,6 +44,14 @@ describe("MCP server", () => {
     }
   });
 
+  it("lets search_catalog rank by preference and describes the facts it returns", async () => {
+    const { body } = await rpc("tools/list");
+    type Tool = { name: string; description: string; inputSchema: { properties: Record<string, { enum?: string[] }> } };
+    const search = (body.result.tools as Tool[]).find((t) => t.name === "search_catalog")!;
+    expect(search.inputSchema.properties.prefer.enum).toEqual(["price", "reliability", "sustainability"]);
+    expect(search.description).toMatch(/categoryAverageCo2PerKg \(a category average, not a product measurement\)/);
+  });
+
   it("returns a tool error as a plain sentence", async () => {
     const { body } = await rpc("tools/call", { name: "get_order", arguments: { orderId: "ord-missing" } });
     expect(body.result.isError).toBe(true);
@@ -72,5 +82,24 @@ describe("MCP server", () => {
       POST(jsonRequest(pathname, { body: { jsonrpc: "2.0", id: nextId++, method: "tools/list", params: {} } }));
     expect((await call(`/mcp?key=${AGENT_TOKEN}`)).status).toBe(200);
     expect((await call("/mcp?key=not-a-key")).status).toBe(401);
+  });
+});
+
+describe("MCP callers", () => {
+  const send = (token: string, method: string, params: unknown, userAgent: string) =>
+    POST(jsonRequest("/mcp", {
+      body: { jsonrpc: "2.0", id: nextId++, method, params },
+      headers: { authorization: `Bearer ${token}`, "mcp-protocol-version": PROTOCOL, "user-agent": userAgent },
+    }));
+
+  it("gives each buyer's token its own mandate and names the client that initialized", async () => {
+    const userAgent = "mcp-client-runtime/1";
+    await send("demo-kaisla-token", "initialize", { protocolVersion: PROTOCOL, capabilities: {}, clientInfo: { name: "claude-code", version: "2" } }, userAgent);
+    const reply = await (await send("demo-kaisla-token", "tools/call", { name: "get_mandate", arguments: {} }, userAgent)).json();
+    expect(reply.result.structuredContent.mandate.buyer.name).toBe("Kaisla School Kitchens");
+
+    await send("demo-kaisla-token", "tools/call", { name: "get_product", arguments: { productId: "464306" } }, userAgent);
+    const lookup = (await gateway().activity(undefined, BUYER_IDS.kaisla)).findLast((item) => item.tool === "get_product");
+    expect(lookup).toMatchObject({ client: "Claude Code", buyer: { name: "Kaisla School Kitchens" } });
   });
 });

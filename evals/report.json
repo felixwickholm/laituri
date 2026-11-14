@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-14T02:04:21.938Z",
+  "generatedAt": "2026-11-14T07:00:00.000Z",
   "mode": "recorded",
   "suites": [
     {
@@ -337,8 +337,8 @@
     {
       "id": "trust",
       "name": "Trust",
-      "passed": 13,
-      "total": 13,
+      "passed": 14,
+      "total": 14,
       "bar": "100%",
       "met": true,
       "cases": [
@@ -445,6 +445,14 @@
           "evidence": "changed 6: Entry 6 was changed after it was written.",
           "expected": "the verify endpoint names the entry",
           "actual": "changed 6: Entry 6 was changed after it was written."
+        },
+        {
+          "id": "T14",
+          "name": "Origin or label changed in an offer",
+          "pass": true,
+          "evidence": "origin: signature does not match, order blocked; label: signature does not match, order blocked",
+          "expected": "detected; ordering it is blocked by the signature check",
+          "actual": "origin: signature does not match, order blocked; label: signature does not match, order blocked"
         }
       ]
     },
@@ -460,33 +468,33 @@
           "id": "O1",
           "name": "OpenAPI 3.1 document",
           "pass": true,
-          "evidence": "17 operations on 15 paths",
+          "evidence": "21 operations on 19 paths",
           "expected": "openapi 3.1.0, info, servers, every operation has responses and declares its path parameters",
-          "actual": "17 operations on 15 paths"
+          "actual": "21 operations on 19 paths"
         },
         {
           "id": "O2",
           "name": "Every operation has an operationId",
           "pass": true,
-          "evidence": "17 unique operationIds",
+          "evidence": "21 unique operationIds",
           "expected": "unique operationId on every operation",
-          "actual": "17 unique operationIds"
+          "actual": "21 unique operationIds"
         },
         {
           "id": "O3",
           "name": "Every $ref resolves",
           "pass": true,
-          "evidence": "70 refs, 23 distinct, all resolve",
+          "evidence": "93 refs, 29 distinct, all resolve",
           "expected": "no dangling $ref",
-          "actual": "70 refs, 23 distinct, all resolve"
+          "actual": "93 refs, 29 distinct, all resolve"
         },
         {
           "id": "O4",
           "name": "Every registered path answers",
           "pass": true,
-          "evidence": "17/17 operations answered as documented",
+          "evidence": "21/21 operations answered as documented",
           "expected": "documented success status for a well-formed call",
-          "actual": "17/17 operations answered as documented"
+          "actual": "21/21 operations answered as documented"
         },
         {
           "id": "O5",

@@ -1,4 +1,4 @@
-import type { AuditVerification, Offer, OfferPreview, Order, Product, QuoteResponse, SearchResponse } from "@/lib/contracts";
+import type { AuditVerification, Offer, OfferPreview, Order, Product, ProductFacts, QuoteResponse, SearchResponse } from "@/lib/contracts";
 import type { SignedMandate } from "@/lib/orders/types";
 import { eur } from "@/lib/offers/format";
 
@@ -20,11 +20,22 @@ function previewText(preview: OfferPreview | undefined): string {
   return `; indicative ${eur(preview.unitPrice.amount)} per unit${per}${need}${total}, ${status}`;
 }
 
+/** "; origin FI, labels organic, 99 % delivery reliability, category average 1.1 kg CO2-eq per kg". */
+function factsText(facts: ProductFacts): string {
+  const parts = [
+    facts.countryOfOrigin ? `origin ${facts.countryOfOrigin}` : undefined,
+    facts.labels.length ? `labels ${facts.labels.join(", ")}` : undefined,
+    facts.deliveryReliability !== undefined ? `${Math.round(facts.deliveryReliability * 100)} % delivery reliability` : undefined,
+    facts.categoryAverageCo2PerKg !== undefined ? `category average ${facts.categoryAverageCo2PerKg} kg CO2-eq per kg` : undefined,
+  ].filter(Boolean);
+  return parts.length ? `; ${parts.join(", ")}` : "";
+}
+
 export function searchText(response: SearchResponse): string {
   const { interpretation: i } = response;
   const head = `Understood as ${i.concept ?? "no single product type"}${i.claims.length ? ` with ${i.claims.join(", ")}` : ""} (confidence ${i.confidence}).`;
   const note = i.note ? ` ${i.note}` : "";
-  const hits = response.hits.map((hit, n) => `${n + 1}. ${productLine(hit.product)}${previewText(hit.offerPreview)}`);
+  const hits = response.hits.map((hit, n) => `${n + 1}. ${productLine(hit.product)}${previewText(hit.offerPreview)}${factsText(hit.facts)}`);
   if (!hits.length) return `${head}${note} No products matched.`;
   return [`${head}${note}`, ...hits, "Next: call request_quote with a productId and the quantity in l, kg or sales_unit."].join("\n");
 }
@@ -44,7 +55,7 @@ export function quoteText(response: QuoteResponse): string {
   for (const note of offer.notes) lines.push(`Note: ${note}`);
   lines.push(`Primary offer JWS: ${jws}`);
   response.alternatives.forEach((alt, n) => {
-    lines.push(`Alternative ${n + 1} (${alt.tier}) ${offerLine(alt.signed.offer)}. ${alt.tradeoff}`);
+    lines.push(`Alternative ${n + 1} (${alt.tier}: ${alt.meaning}) ${offerLine(alt.signed.offer)}. ${alt.tradeoff}`);
     lines.push(`Alternative ${n + 1} JWS: ${alt.signed.jws}`);
   });
   lines.push("Next: pass the chosen JWS unchanged as offerJws to place_order, with the mandate JWS from get_mandate.");

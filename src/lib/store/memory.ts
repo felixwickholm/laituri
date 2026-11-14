@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import type { AuditEntry, Order, SignedOffer } from "@/lib/contracts";
+import type { AgentSuspension, AuditEntry, Order, SignedOffer } from "@/lib/contracts";
+import type { DemandRecord } from "@/lib/demand/types";
 import { dataDir } from "./data-dir";
 import type { Activity, Store } from "./types";
 
@@ -9,7 +10,9 @@ interface State {
   orders: Record<string, Order>;
   audit: AuditEntry[];
   activity: Activity[];
-  mandateJws?: string;
+  requests: DemandRecord[];
+  mandates: Record<string, string>;
+  suspensions: Record<string, AgentSuspension>;
 }
 
 /** An order as kept by the store: the contract plus the key that makes retries safe. */
@@ -18,7 +21,7 @@ export type StoredOrder = Order & { idempotencyKey?: string };
 const SNAPSHOT_DELAY_MS = 250;
 
 function emptyState(): State {
-  return { offers: {}, orders: {}, audit: [], activity: [] };
+  return { offers: {}, orders: {}, audit: [], activity: [], requests: [], mandates: {}, suspensions: {} };
 }
 
 function snapshotFile(): string {
@@ -37,7 +40,9 @@ function loadState(file: string): State {
       orders: parsed.orders ?? {},
       audit: Array.isArray(parsed.audit) ? parsed.audit : [],
       activity: Array.isArray(parsed.activity) ? parsed.activity : [],
-      mandateJws: typeof parsed.mandateJws === "string" ? parsed.mandateJws : undefined,
+      requests: Array.isArray(parsed.requests) ? parsed.requests : [],
+      mandates: parsed.mandates && typeof parsed.mandates === "object" ? parsed.mandates : {},
+      suspensions: parsed.suspensions && typeof parsed.suspensions === "object" ? parsed.suspensions : {},
     };
   } catch {
     // Keep an unreadable snapshot for inspection instead of overwriting it with an empty one.
@@ -78,6 +83,9 @@ export function createMemoryStore(file: string = snapshotFile()): Store & { flus
       },
       async get(id) {
         return state.offers[id];
+      },
+      async list() {
+        return Object.values(state.offers);
       },
     },
     orders: {
@@ -125,13 +133,38 @@ export function createMemoryStore(file: string = snapshotFile()): Store & { flus
         return index === -1 ? [...state.activity] : state.activity.slice(index + 1);
       },
     },
-    mandate: {
-      async get() {
-        return state.mandateJws;
-      },
-      async put(jws) {
-        state.mandateJws = jws;
+    requests: {
+      async append(record) {
+        state.requests.push(record);
         changed();
+      },
+      async list() {
+        return [...state.requests];
+      },
+    },
+    mandates: {
+      async get(buyerId) {
+        return state.mandates[buyerId];
+      },
+      async put(buyerId, jws) {
+        state.mandates[buyerId] = jws;
+        changed();
+      },
+    },
+    suspensions: {
+      async get(agentId) {
+        return state.suspensions[agentId];
+      },
+      async put(suspension) {
+        state.suspensions[suspension.agent.id] = suspension;
+        changed();
+      },
+      async remove(agentId) {
+        delete state.suspensions[agentId];
+        changed();
+      },
+      async list() {
+        return Object.values(state.suspensions);
       },
     },
     async reset() {

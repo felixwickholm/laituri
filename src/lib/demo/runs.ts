@@ -1,10 +1,12 @@
 import { DEMO_AGENT, gatewayTransport } from "@/lib/agent";
 import { now } from "@/lib/clock";
 import { GatewayError } from "@/lib/gateway/errors";
+import { SCRIPTED_CLIENT } from "@/lib/http/client-app";
+import { buyerParty, currentMandate } from "@/lib/mandate";
 import { newId } from "@/lib/offers/assemble";
 import { RunCancelled, appendNote, demoHooks, ensureConnected } from "./activity";
 import { SCENARIOS, freeText } from "./scenarios";
-import { demoState, type DemoRun, type ScenarioId } from "./state";
+import { demoState, type DemoRun, type ScenarioAgent, type ScenarioId } from "./state";
 
 export class RunActiveError extends GatewayError {
   constructor() {
@@ -33,12 +35,25 @@ export function startRun(input: StartRun, options: { baseUrl?: string } = {}): {
   state.active = run.id;
   const generation = state.generation;
   const cancelled = () => demoState().generation !== generation;
-  const agent = DEMO_AGENT;
+  // The scenes play the primary buyer's agent, the one the demo token names, unless a scene asks for another buyer's.
+  const agent = { ...DEMO_AGENT, buyer: buyerParty(), client: SCRIPTED_CLIENT };
+  const agentOf = async (buyerId: string): Promise<ScenarioAgent> => {
+    const { mandate } = await currentMandate(buyerId);
+    const other = { ...mandate.agent, buyer: buyerParty(buyerId), client: SCRIPTED_CLIENT };
+    await ensureConnected(other);
+    return { agent: other, transport: gatewayTransport(other), hooks: demoHooks(other, cancelled) };
+  };
 
   const done = (async () => {
     try {
       await ensureConnected(agent);
-      const outcome = await scenario.run({ agent, transport: gatewayTransport(agent), hooks: demoHooks(agent, cancelled), baseUrl: options.baseUrl });
+      const outcome = await scenario.run({
+        agent,
+        transport: gatewayTransport(agent),
+        hooks: demoHooks(agent, cancelled),
+        baseUrl: options.baseUrl,
+        agentOf,
+      });
       Object.assign(run, { status: "done", summary: outcome.summary, results: outcome.results });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

@@ -1,6 +1,16 @@
 import "../store/temp-data-dir";
 import { beforeEach, describe, expect, it } from "vitest";
-import { currentMandate, defaultMandate, issueMandate, MANDATE_VCT, readMandate, toClaims, updateMandate } from "@/lib/mandate";
+import {
+  BUYER_IDS,
+  PRIMARY_BUYER_ID,
+  currentMandate,
+  defaultMandate,
+  issueMandate,
+  MANDATE_VCT,
+  readMandate,
+  toClaims,
+  updateMandate,
+} from "@/lib/mandate";
 import { store } from "@/lib/store";
 import { trust } from "@/lib/trust";
 
@@ -44,7 +54,7 @@ describe("mandate", () => {
     const first = await currentMandate();
     const second = await currentMandate();
     expect(first.jws).toBe(second.jws);
-    expect(await store().mandate.get()).toBe(first.jws);
+    expect(await store().mandates.get(PRIMARY_BUYER_ID)).toBe(first.jws);
   });
 
   it("updates, bumps the version and re-signs", async () => {
@@ -55,5 +65,34 @@ describe("mandate", () => {
     expect(after.mandate.limits.perWeek.amount).toBe(5000);
     expect((await readMandate(after.jws)).mandate).toEqual(after.mandate);
     expect((await currentMandate()).jws).toBe(after.jws);
+  });
+
+  it("keeps one signed mandate per buyer, each with its own terms", async () => {
+    const [harbour, kaisla, laine] = await Promise.all(Object.values(BUYER_IDS).map((id) => currentMandate(id)));
+    expect(harbour.mandate.buyer.id).toBe(PRIMARY_BUYER_ID);
+    expect(kaisla.mandate).toMatchObject({
+      limits: { perOrder: { amount: 800 }, perWeek: { amount: 3000 } },
+      dietary: { excludeAllergens: ["peanut", "nuts", "sesame"], blockMayContain: true },
+      substitution: { policy: "like_for_like", maxPriceIncreasePct: 5 },
+      approval: { approver: { name: "Antti Korhonen, Food Service Manager" } },
+    });
+    expect(laine.mandate).toMatchObject({
+      limits: { perOrder: { amount: 400 }, perWeek: { amount: 1200 } },
+      substitution: { policy: "none" },
+      approval: { approver: { name: "Sofia Laine, Owner" }, firstTimeProducts: true },
+    });
+    expect(await store().mandates.get(BUYER_IDS.kaisla)).toBe(kaisla.jws);
+    expect((await readMandate(laine.jws)).mandate).toEqual(laine.mandate);
+  });
+
+  it("changes one buyer's mandate without touching another's", async () => {
+    const before = await currentMandate(BUYER_IDS.nordicHarbour);
+    const after = await updateMandate({ limits: { perWeek: { amount: 2500, currency: "EUR" } } }, BUYER_IDS.kaisla);
+    expect(after.mandate).toMatchObject({ buyer: { id: BUYER_IDS.kaisla }, version: 2, limits: { perWeek: { amount: 2500 } } });
+    expect((await currentMandate(BUYER_IDS.nordicHarbour)).jws).toBe(before.jws);
+  });
+
+  it("refuses an unknown buyer", async () => {
+    await expect(currentMandate("fi:ovt:unknown")).rejects.toMatchObject({ status: 404 });
   });
 });

@@ -1,13 +1,14 @@
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { resolveAgent } from "@/lib/http/agent";
 import { errorResponse } from "@/lib/http/respond";
+import { mcpCall, mcpClient } from "./clients";
 import { createMcpServer } from "./server";
 
 export const CORS_HEADERS: Record<string, string> = {
   "access-control-allow-origin": "*",
   "access-control-allow-methods": "POST, GET, DELETE, OPTIONS",
   "access-control-allow-headers":
-    "content-type, accept, authorization, mcp-protocol-version, mcp-session-id, last-event-id, x-agent-name",
+    "content-type, accept, authorization, mcp-protocol-version, mcp-session-id, last-event-id, x-agent-name, x-agent-client",
   "access-control-expose-headers": "mcp-session-id, mcp-protocol-version",
   "access-control-max-age": "86400",
 };
@@ -38,9 +39,11 @@ function withKeyFromAddress(request: Request): Headers {
 
 /** Handles one stateless MCP POST: a fresh server and transport per request, JSON responses, no sessions. */
 export async function handleMcpPost(request: Request): Promise<Response> {
+  const body = await request.text();
+  const headers = withKeyFromAddress(request);
   let agent;
   try {
-    agent = await resolveAgent(withKeyFromAddress(request));
+    agent = await resolveAgent(headers, mcpCall(body), mcpClient(headers, body));
   } catch (error) {
     return withCors(errorResponse(error));
   }
@@ -51,7 +54,7 @@ export async function handleMcpPost(request: Request): Promise<Response> {
   });
   try {
     await server.connect(transport);
-    const response = await transport.handleRequest(withAcceptHeader(request, await request.text()));
+    const response = await transport.handleRequest(withAcceptHeader(request, body));
     return withCors(response);
   } finally {
     await transport.close();

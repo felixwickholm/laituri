@@ -1,4 +1,5 @@
-import type { AuditEntry, Order } from "@/lib/contracts";
+import type { AuditEntry, Offer, Order } from "@/lib/contracts";
+import { replacePayload } from "@/lib/demo/forge";
 import type { ReceiptPayload } from "@/lib/orders";
 import { store } from "@/lib/store";
 import { sha256Hex } from "@/lib/trust";
@@ -117,6 +118,25 @@ const CASES: EvalCase[] = [
     const verification = (await get("/api/v1/audit/verify")).body as { valid: boolean; brokenAt?: number; reason?: string };
     checks.expect(!verification.valid && verification.brokenAt === target.seq, `verify said brokenAt ${verification.brokenAt}, expected ${target.seq}`);
     return `changed ${target.seq}: ${verification.reason}`;
+  }),
+  trustCase("T14", "Origin or label changed in an offer", "detected; ordering it is blocked by the signature check", async ({ offer, jwks }, checks) => {
+    const edits: [string, (line: Offer["lines"][number]) => Offer["lines"][number]][] = [
+      ["origin", (line) => ({ ...line, facts: { labels: [], ...line.facts, countryOfOrigin: "XX" } })],
+      ["label", (line) => ({ ...line, facts: { ...line.facts, labels: [...(line.facts?.labels ?? []), "organic"] } })],
+    ];
+    const { jws: mandateJws } = await mandate();
+    const outcomes: string[] = [];
+    for (const [what, edit] of edits) {
+      const changed = replacePayload(offer.jws, (payload: Offer) => ({ ...payload, lines: payload.lines.map(edit) }));
+      const result = await verifyAs(changed, jwks, "supplier");
+      checks.expect(!result.valid, `an offer with a changed ${what} still verifies`);
+      const order = (await placeOrder(changed, mandateJws, `eval-t14-${what}`)).body as Order | undefined;
+      const check = order?.decision.checks.find((c) => c.rule === "offer.signature");
+      checks.expect(order?.status === "blocked" && check?.status === "block", `ordering the offer with a changed ${what} was not blocked by its signature`);
+      outcomes.push(`${what}: ${result.reason}, order ${order?.status}`);
+    }
+    checks.expect(offer.offer.lines.every((line) => line.facts !== undefined), "the signed offer carries no product facts");
+    return outcomes.join("; ");
   }),
 ];
 

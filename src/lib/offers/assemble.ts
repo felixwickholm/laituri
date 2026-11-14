@@ -48,22 +48,26 @@ function latest(values: (string | undefined)[], pick: (a: string, b: string) => 
 export interface OfferInput {
   request: Pick<QuoteRequest, "deliverBy" | "intent" | "matchConfidence">;
   customerNumber: string;
+  buyer: Offer["buyer"];
   lines: BuiltLine[];
   now: Date;
+  /** How long the price holds; 15 minutes when not given. Never past the order cut-off. */
+  validityMs?: number;
 }
 
 /** Turn built lines into a fixed-price offer. Dates and cut-offs only count lines that deliver something. */
-export function assembleOffer({ request, customerNumber, lines, now }: OfferInput): Offer {
+export function assembleOffer({ request, customerNumber, buyer, lines, now, validityMs = VALIDITY_MS }: OfferInput): Offer {
   const offerLines = lines.map((built) => built.line);
   const delivering = offerLines.filter((line) => line.quantity > 0);
   const orderBy = latest(delivering.map((l) => l.availability.orderBy), (a, b) => Date.parse(a) < Date.parse(b));
-  const cap = now.getTime() + VALIDITY_MS;
+  const cap = now.getTime() + validityMs;
   const expiresAt = orderBy && Date.parse(orderBy) < cap ? new Date(Date.parse(orderBy)) : new Date(cap);
   const issuedAt = now.toISOString();
   return {
     id: newId("off_"),
     issuer: ISSUER,
     customerNumber,
+    buyer: { id: buyer.id, name: buyer.name },
     issuedAt,
     expiresAt: expiresAt.toISOString(),
     intent: request.intent,

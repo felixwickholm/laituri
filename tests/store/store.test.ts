@@ -44,10 +44,10 @@ describe("store", () => {
   it("resets everything except keys", async () => {
     const before = await jwks("supplier");
     await store().orders.put(order("ord-1", "key-12345678"));
-    await store().mandate.put("a.b.c");
+    await store().mandates.put("buyer:a", "a.b.c");
     await store().reset();
     expect(await store().orders.list()).toEqual([]);
-    expect(await store().mandate.get()).toBeUndefined();
+    expect(await store().mandates.get("buyer:a")).toBeUndefined();
     expect((await jwks("supplier")).keys[0].kid).toBe(before.keys[0].kid);
     expect(existsSync(path.join(testDataDir!, "keys", "supplier.json"))).toBe(true);
   });

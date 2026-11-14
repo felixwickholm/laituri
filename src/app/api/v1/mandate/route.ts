@@ -1,5 +1,6 @@
 import { gateway } from "@/lib/gateway";
-import { guardApprover } from "@/lib/http/console-session";
+import { readerBuyer } from "@/lib/http/buyer-scope";
+import { deciderOf, guardApprover } from "@/lib/http/console-session";
 import { readBody, route } from "@/lib/http/handler";
 import { json } from "@/lib/http/respond";
 import type { MandatePatch } from "@/lib/orders/types";
@@ -8,10 +9,10 @@ import { MandatePatchBody } from "@/lib/openapi/schemas";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-export const GET = route(async () => json(await gateway().getMandate()));
+export const GET = route(async (request) => json(await gateway().getMandate(await readerBuyer(request))));
 
 export const PUT = route(async (request) => {
-  await guardApprover(request.headers, "mandate");
+  const session = await guardApprover(request.headers, "mandate");
   const patch = (await readBody(request, MandatePatchBody)) as MandatePatch;
-  return json(await gateway().updateMandate(patch));
+  return json(await gateway().updateMandate(patch, deciderOf(session)));
 });

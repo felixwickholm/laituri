@@ -1,6 +1,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import { newId } from "@/lib/offers/assemble";
 import { agentActor } from "@/lib/orders/summaries";
+import { seededMark } from "@/lib/provenance";
 import type { Activity } from "@/lib/store/types";
 import { errorMessage } from "./errors";
 import type { AgentRef, Deps } from "./types";
@@ -35,12 +36,28 @@ export function currentRun(): RunTag | undefined {
   return runContext.getStore();
 }
 
+/** The agent, its buyer and its client application, as an activity record names them. */
+export function callerFields(agent: AgentRef): Pick<Activity, "agent" | "buyer" | "client"> {
+  return {
+    agent: { id: agent.id, name: agent.name },
+    ...(agent.buyer ? { buyer: { id: agent.buyer.id, name: agent.buyer.name } } : {}),
+    ...(agent.client ? { client: agent.client } : {}),
+  };
+}
+
 export function createRecorder(deps: Pick<Deps, "store" | "audit" | "now">): Recorder {
   let known: Set<string> | undefined;
 
-  async function append(activity: Omit<Activity, "id" | "at">): Promise<void> {
+  async function append(agent: AgentRef, activity: Omit<Activity, "id" | "at" | "agent" | "buyer" | "client">): Promise<void> {
     const run = currentRun();
-    await deps.store.activity.append({ id: newId("act_"), at: deps.now().toISOString(), ...activity, ...(run ? { run } : {}) });
+    await deps.store.activity.append({
+      id: newId("act_"),
+      at: deps.now().toISOString(),
+      ...callerFields(agent),
+      ...activity,
+      ...(run ? { run } : {}),
+      ...seededMark(),
+    });
   }
 
   async function connect(agent: AgentRef): Promise<void> {
@@ -51,9 +68,10 @@ export function createRecorder(deps: Pick<Deps, "store" | "audit" | "now">): Rec
       actor: agentActor(agent),
       event: "agent.connected",
       summary: `${agent.name} connected for the first time.`,
+      refs: agent.buyer ? { buyerId: agent.buyer.id } : {},
       data: { agentId: agent.id },
     });
-    await append({ agent, kind: "note", title: `${agent.name} connected`, status: "ok" });
+    await append(agent, { kind: "note", title: `${agent.name} connected`, status: "ok" });
   }
 
   return {
@@ -64,15 +82,15 @@ export function createRecorder(deps: Pick<Deps, "store" | "audit" | "now">): Rec
       try {
         const result = await run();
         const outcome = describe(result);
-        await append({ agent, kind: "tool", tool, status: "ok", ...outcome, title: outcome.title ?? title, durationMs: elapsed() });
+        await append(agent, { kind: "tool", tool, status: "ok", ...outcome, title: outcome.title ?? title, durationMs: elapsed() });
         return result;
       } catch (error) {
-        await append({ agent, kind: "tool", tool, title, status: "error", detail: errorMessage(error), durationMs: elapsed() });
+        await append(agent, { kind: "tool", tool, title, status: "error", detail: errorMessage(error), durationMs: elapsed() });
         throw error;
       }
     },
     async note(agent, title, outcome) {
-      await append({ agent, kind: "note", title, status: "ok", ...outcome });
+      await append(agent, { kind: "note", title, status: "ok", ...outcome });
     },
     reset() {
       known = undefined;

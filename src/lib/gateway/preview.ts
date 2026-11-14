@@ -3,6 +3,7 @@ import { helsinkiDate, nextWorkingDay } from "@/lib/agent/dates";
 import { buildLine, isOnTime, quoteLine } from "@/lib/offers/lines";
 import { contentPerUnit } from "@/lib/offers/packs";
 import type { Market } from "@/lib/offers/types";
+import { bestBuyFirst } from "./ranking";
 import type { Deps } from "./types";
 
 function preview(hit: SearchHit, request: SearchRequest, market: Market): OfferPreview | undefined {
@@ -32,42 +33,44 @@ function preview(hit: SearchHit, request: SearchRequest, market: Market): OfferP
   };
 }
 
-/** When every hit is the product asked for, the first hit is the one to buy: orderable on time, then cheapest per litre or kilo. */
-function bestBuyFirst(hits: SearchHit[]): SearchHit[] {
-  const rank = (hit: SearchHit) => (hit.offerPreview?.orderable ? 0 : 1);
-  const price = (hit: SearchHit) => hit.offerPreview?.comparisonPrice?.amount ?? Number.POSITIVE_INFINITY;
-  return hits
-    .map((hit, index) => ({ hit, index }))
-    .sort((a, b) => rank(a.hit) - rank(b.hit) || price(a.hit) - price(b.hit) || a.index - b.index)
-    .map(({ hit }) => hit);
-}
-
-/**
- * Adds indicative live price and availability to search hits, with one price call and one availability call.
- * A wholesaler outage leaves the hits without previews rather than failing the search.
- */
-export async function withPreviews(
-  response: SearchResponse,
+async function previewed(
+  hits: SearchHit[],
   request: SearchRequest,
   deps: Pick<Deps, "upstream" | "mandates" | "now">,
-): Promise<SearchResponse> {
-  if (response.hits.length === 0) return response;
-  const ids = response.hits.map((hit) => hit.product.id);
+  buyerId?: string,
+): Promise<SearchHit[]> {
+  const ids = hits.map((hit) => hit.product.id);
   const deliverBy = request.deliverBy ?? nextWorkingDay(helsinkiDate(deps.now()));
   try {
-    const { mandate } = await deps.mandates.current();
+    const { mandate } = await deps.mandates.current(buyerId);
     const customer = mandate.buyer.customerNumber;
     const [prices, availability] = await Promise.all([
       deps.upstream.price(ids, deliverBy, customer),
       deps.upstream.availability(ids, deliverBy, customer),
     ]);
     const market: Market = { prices, availability, now: deps.now(), deliverBy };
-    const hits = response.hits.map((hit) => {
+    return hits.map((hit) => {
       const offerPreview = preview(hit, request, market);
       return offerPreview ? { ...hit, offerPreview } : hit;
     });
-    return { ...response, hits: response.interpretation.confidence === "high" ? bestBuyFirst(hits) : hits };
   } catch {
-    return response;
+    return hits;
   }
+}
+
+/**
+ * Adds indicative live price and availability to search hits, with one price call and one availability call,
+ * at the prices of the given buyer (the primary buyer when none is given).
+ * A wholesaler outage leaves the hits without previews rather than failing the search.
+ * Only a clear match is reordered by the buyer's preference; an uncertain one keeps its relevance order.
+ */
+export async function withPreviews(
+  response: SearchResponse,
+  request: SearchRequest,
+  deps: Pick<Deps, "upstream" | "mandates" | "now">,
+  buyerId?: string,
+): Promise<SearchResponse> {
+  if (response.hits.length === 0) return response;
+  const hits = await previewed(response.hits, request, deps, buyerId);
+  return { ...response, hits: response.interpretation.confidence === "high" ? bestBuyFirst(hits, request.prefer) : hits };
 }

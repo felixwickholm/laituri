@@ -1,7 +1,9 @@
 import { CompactSign, compactVerify, exportJWK, generateKeyPair, type CryptoKey } from "jose";
 import { createHash } from "node:crypto";
-import type { AuditEntry, Order, Product, SearchRequest, SearchResponse, SignedOffer } from "@/lib/contracts";
+import type { AgentSuspension, AuditEntry, Order, Product, SearchRequest, SearchResponse, SignedOffer } from "@/lib/contracts";
+import { productFacts } from "@/lib/catalog/facts";
 import type { Catalog } from "@/lib/catalog/types";
+import type { DemandRecord } from "@/lib/demand/types";
 import type { Activity, Store } from "@/lib/store/types";
 import type { SignerRole, Verified } from "@/lib/trust/types";
 import type { UpstreamAvailability, UpstreamClient, UpstreamPrice } from "@/lib/valio/types";
@@ -18,7 +20,7 @@ export function fakeCatalog(products: Product[] = PRODUCTS): Catalog {
       const hits = products
         .filter((product) => words.some((word) => product.name.en.toLowerCase().includes(word)))
         .slice(0, request.limit ?? 10)
-        .map((product) => ({ product, score: 1, matched: ["name"] }));
+        .map((product) => ({ product, score: 1, matched: ["name"], facts: productFacts(product) }));
       return { query: request.query, interpretation: { claims: [], confidence: "high" }, hits };
     },
     substitutesFor(id, limit = 12) {
@@ -88,11 +90,13 @@ export function memoryStore(): Store {
   let orders = new Map<string, StoredOrder>();
   let audit: AuditEntry[] = [];
   let activity: Activity[] = [];
-  let mandate: string | undefined;
+  let requests: DemandRecord[] = [];
+  let mandates = new Map<string, string>();
+  let suspensions = new Map<string, AgentSuspension>();
   const after = <T extends { id: string }>(items: T[], id?: string) =>
     id ? items.slice(items.findIndex((item) => item.id === id) + 1) : [...items];
   return {
-    offers: { put: async (o) => void offers.set(o.offer.id, o), get: async (id) => offers.get(id) },
+    offers: { put: async (o) => void offers.set(o.offer.id, o), get: async (id) => offers.get(id), list: async () => [...offers.values()] },
     orders: {
       put: async (o) => void orders.set(o.id, o),
       get: async (id) => orders.get(id),
@@ -106,13 +110,22 @@ export function memoryStore(): Store {
       replace: async (seq, e) => void (audit = audit.map((x) => (x.seq === seq ? e : x))),
     },
     activity: { append: async (a) => void activity.push(a), list: async (id) => after(activity, id) },
-    mandate: { get: async () => mandate, put: async (jws) => void (mandate = jws) },
+    requests: { append: async (r) => void requests.push(r), list: async () => [...requests] },
+    mandates: { get: async (buyerId) => mandates.get(buyerId), put: async (buyerId, jws) => void mandates.set(buyerId, jws) },
+    suspensions: {
+      get: async (agentId) => suspensions.get(agentId),
+      put: async (s) => void suspensions.set(s.agent.id, s),
+      remove: async (agentId) => void suspensions.delete(agentId),
+      list: async () => [...suspensions.values()],
+    },
     reset: async () => {
       offers = new Map();
       orders = new Map();
       audit = [];
       activity = [];
-      mandate = undefined;
+      requests = [];
+      mandates = new Map();
+      suspensions = new Map();
     },
   };
 }

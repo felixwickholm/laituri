@@ -4,7 +4,7 @@
  */
 import { rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { prepareEnvironment, runSuite, suiteTable, summaryLine, type Mode, type Report, type Suite } from "./harness";
+import { PINNED_NOW, prepareEnvironment, runSuite, suiteTable, summaryLine, type Mode, type Report, type Suite } from "./harness";
 
 interface Options {
   mode: Mode;
@@ -50,7 +50,9 @@ async function main(): Promise<number> {
     if (selected.length === 0) throw new Error(`No suite called ${options.suite}. Suites: ${suites.map((s) => s.id).join(", ")}.`);
     if (options.mode === "live") selected.splice(0, selected.length, ...selected.filter((s) => s.liveAll || s.cases.some((c) => c.live)));
 
-    const report: Report = { generatedAt: new Date().toISOString(), mode: options.mode, suites: [] };
+    // A recorded run reads the pinned clock, so an unchanged result writes an unchanged report.
+    const generatedAt = options.mode === "recorded" ? new Date(PINNED_NOW).toISOString() : new Date().toISOString();
+    const report: Report = { generatedAt, mode: options.mode, suites: [] };
     for (const suite of selected) report.suites.push(await runSuite(suite, options.mode, reset));
 
     // A filtered run is a partial picture, so only a full run replaces the committed report.

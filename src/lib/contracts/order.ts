@@ -35,6 +35,7 @@ export const Order = z.object({
   approval: Approval.optional(),
   receiptJws: Jws.optional().describe("Wholesaler-signed order confirmation; present when confirmed"),
   simulated: z.literal(true).describe("The challenge environment has no order endpoint; commitment is simulated here"),
+  seeded: z.literal(true).optional().describe("Demo history written at start-up through the real order path, not live use"),
 });
 export type Order = z.infer<typeof Order>;
 

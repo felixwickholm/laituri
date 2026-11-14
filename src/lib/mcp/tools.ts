@@ -40,6 +40,8 @@ export const TOOLS: ToolDefinition[] = [
       "and an interpretation with a confidence. If confidence is low or a note is set, ask the human to clarify. " +
       "Hits carry offerPreview when the wholesaler has a price: indicative live net price, stock, delivery date and order cut-off, and whether it is orderable. " +
       "Pass need ({amount, unit}) and deliverBy to get pack maths (sales units needed, estimated net) for that need. " +
+      "Every hit has facts the wholesaler vouches for: countryOfOrigin, labels, deliveryReliability and categoryAverageCo2PerKg (a category average, not a product measurement). " +
+      "When the match is clear, prefer ranks the hits: price (default), reliability or sustainability; it never lifts a product that cannot be delivered on time. " +
       "Only a signed offer fixes the price. Next: request_quote with the chosen productId.",
     operationId: "searchCatalog",
     input: SearchRequest,
@@ -63,7 +65,8 @@ export const TOOLS: ToolDefinition[] = [
     description:
       "Use after search to price a need for a delivery date. Give quantities in l or kg and the wholesaler converts to whole sales units. " +
       "Returns a wholesaler-signed offer (valid 15 minutes) with live price and availability, plus signed alternatives " +
-      "when the request cannot be met in full and on time. Pass the chosen offer's jws unchanged to place_order. " +
+      "when the request cannot be met in full and on time. Every offer line carries the signed facts (origin, labels, delivery reliability, category-average CO2). " +
+      "Each alternative has a tier (good, better or best), the one-sentence meaning of that tier and its tradeoff. Pass the chosen offer's jws unchanged to place_order. " +
       "Pass matchConfidence from the search interpretation.",
     operationId: "requestQuote",
     input: QuoteRequest,
@@ -80,7 +83,7 @@ export const TOOLS: ToolDefinition[] = [
     operationId: "getMandate",
     input: NoInput,
     output: "SignedMandate",
-    run: () => gateway().getMandate(),
+    run: (agent) => gateway().getMandate(agent.buyer?.id),
     summarize: mandateText,
   }),
   define({

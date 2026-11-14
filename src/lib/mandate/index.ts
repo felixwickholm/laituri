@@ -1,10 +1,11 @@
 import { Mandate } from "@/lib/contracts";
+import { NotFoundError } from "@/lib/gateway/errors";
 import { store } from "@/lib/store";
 import { trust } from "@/lib/trust";
 import { fromClaims, toClaims } from "./claims";
-import { defaultMandate } from "./defaults";
+import { PRIMARY_BUYER_ID, defaultMandate, isKnownBuyer } from "./defaults";
 
-export { defaultMandate } from "./defaults";
+export { BUYER_IDS, PRIMARY_BUYER_ID, buyerIds, buyerParty, defaultMandate, isKnownBuyer } from "./defaults";
 export { MANDATE_VCT, MandateClaims, fromClaims, toClaims } from "./claims";
 
 export interface MandateReading {
@@ -34,22 +35,26 @@ export async function readMandate(jws: string): Promise<MandateReading> {
   return mandate ? { valid: true, mandate } : { valid: false, reason };
 }
 
-/** The stored mandate. Issues and stores the default when none is stored or the stored one no longer verifies. */
-export async function currentMandate(): Promise<{ mandate: Mandate; jws: string }> {
-  const stored = await store().mandate.get();
+/**
+ * A buyer's stored mandate, the primary buyer's when none is named. Issues and stores the default
+ * when none is stored or the stored one no longer verifies.
+ */
+export async function currentMandate(buyerId: string = PRIMARY_BUYER_ID): Promise<{ mandate: Mandate; jws: string }> {
+  if (!isKnownBuyer(buyerId)) throw new NotFoundError(`No buyer with the id ${buyerId} is known.`);
+  const stored = await store().mandates.get(buyerId);
   if (stored) {
     const reading = await readMandate(stored);
-    if (reading.valid && reading.mandate) return { mandate: reading.mandate, jws: stored };
+    if (reading.valid && reading.mandate?.buyer.id === buyerId) return { mandate: reading.mandate, jws: stored };
   }
-  const mandate = defaultMandate();
+  const mandate = defaultMandate(buyerId);
   const jws = await issueMandate(mandate);
-  await store().mandate.put(jws);
+  await store().mandates.put(buyerId, jws);
   return { mandate, jws };
 }
 
-/** Applies a change, bumps the version, re-signs and stores the result. Nested objects merge one level deep. */
-export async function updateMandate(patch: MandatePatch): Promise<{ mandate: Mandate; jws: string }> {
-  const { mandate: current } = await currentMandate();
+/** Applies a change to one buyer's mandate, bumps the version, re-signs and stores it. Nested objects merge one level deep. */
+export async function updateMandate(patch: MandatePatch, buyerId: string = PRIMARY_BUYER_ID): Promise<{ mandate: Mandate; jws: string }> {
+  const { mandate: current } = await currentMandate(buyerId);
   const merged: Record<string, unknown> = { ...current };
   for (const [key, value] of Object.entries(patch)) {
     if (value === undefined) continue;
@@ -57,9 +62,10 @@ export async function updateMandate(patch: MandatePatch): Promise<{ mandate: Man
     merged[key] =
       isPlainObject(base) && isPlainObject(value) ? { ...base, ...value } : value;
   }
-  const next = Mandate.parse({ ...merged, id: current.id, version: current.version + 1 });
+  // The buyer and its agent are who the mandate is between; a change of limits cannot move it to someone else.
+  const next = Mandate.parse({ ...merged, id: current.id, version: current.version + 1, buyer: current.buyer, agent: current.agent });
   const jws = await issueMandate(next);
-  await store().mandate.put(jws);
+  await store().mandates.put(buyerId, jws);
   return { mandate: next, jws };
 }
 

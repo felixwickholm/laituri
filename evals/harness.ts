@@ -65,13 +65,17 @@ export function prepareEnvironment(mode: Mode): string {
   const dataDir = mkdtempSync(path.join(tmpdir(), "laituri-eval-"));
   process.env.LAITURI_DATA_DIR = dataDir;
   process.env.LAITURI_DEMO_STEP_MS = "0";
+  process.env.LAITURI_SEED = "off";
   if (mode === "recorded") {
+    // Evals never call paid services: the speech route answers voice_not_configured, as documented.
+    delete process.env.ELEVENLABS_API_KEY;
     process.env.VALIO_MODE = "recorded";
     process.env.LAITURI_NOW = PINNED_NOW;
     process.env.LAITURI_CATALOG = path.resolve("fixtures", "upstream", "catalog.json");
     return dataDir;
   }
   if (existsSync(".env")) process.loadEnvFile(".env");
+  delete process.env.ELEVENLABS_API_KEY;
   process.env.VALIO_MODE = "live";
   delete process.env.LAITURI_NOW;
   delete process.env.LAITURI_CATALOG;

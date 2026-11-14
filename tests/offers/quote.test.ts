@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 import type { QuoteRequest } from "@/lib/contracts";
 import { UpstreamError } from "@/lib/gateway/errors";
 import { quote } from "@/lib/offers";
-import { makeDeps } from "../support/deps";
+import { QUOTE_CONTEXT, makeDeps } from "../support/deps";
 import { DELIVER_BY } from "../support/products";
 
-const ctx = { customerNumber: "123" };
+const ctx = QUOTE_CONTEXT;
 
 function request(productId: string, amount = 1000, unit: "l" | "kg" | "sales_unit" = "l"): QuoteRequest {
   return { lines: [{ productId, quantity: { amount, unit } }], deliverBy: DELIVER_BY };

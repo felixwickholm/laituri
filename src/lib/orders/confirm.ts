@@ -1,6 +1,6 @@
 import type { Order } from "@/lib/contracts";
 import { responseCode, signReceipt } from "./receipt";
-import { SUPPLIER_ACTOR } from "./summaries";
+import { SUPPLIER_ACTOR, orderRefs } from "./summaries";
 import type { OrderDeps } from "./types";
 
 /** Record the confirmation, then sign the receipt that points at that audit entry. */
@@ -10,7 +10,7 @@ export async function confirmOrder(order: Order, summary: string, deps: OrderDep
     actor: SUPPLIER_ACTOR,
     event: "order.confirmed",
     summary,
-    refs: { orderId: order.id, offerId: order.offer.id, mandateId: order.mandateId },
+    refs: orderRefs(order),
     data: {
       responseCode: responseCode(confirmed),
       totals: confirmed.offer.totals,

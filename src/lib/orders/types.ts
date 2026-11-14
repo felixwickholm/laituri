@@ -48,10 +48,11 @@ export interface SignedMandate {
   mandate: Mandate;
 }
 
+/** Signed mandates, one per buyer. A call that names no buyer means the primary buyer. */
 export interface MandateService {
   read(jws: string): Promise<MandateRead>;
-  current(): Promise<SignedMandate>;
-  update(patch: MandatePatch): Promise<SignedMandate>;
+  current(buyerId?: string): Promise<SignedMandate>;
+  update(patch: MandatePatch, buyerId?: string): Promise<SignedMandate>;
 }
 
 export interface AuditInput {
@@ -91,4 +92,13 @@ export interface Signer {
 export interface Caller {
   id: string;
   name: string;
+  /** The buyer the calling agent works for. Its orders belong to that buyer whatever mandate it presents. */
+  buyer?: { id: string; name: string };
+}
+
+/** Who decides an approval or changes a mandate: the signed-in approver of one buyer. */
+export interface Decider {
+  buyerId: string;
+  /** How the person signed in, when the audit entry must say so, for example "demo access". */
+  via?: string;
 }

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { IsoDate, IsoDateTime, Jws, Money, Quantity } from "./common";
+import { ProductFacts } from "./facts";
 
 export const QuoteLineRequest = z.object({
   productId: z.string(),
@@ -40,6 +41,8 @@ export const OfferLine = z.object({
     orderBy: IsoDateTime.optional().describe("Order cut-off for that delivery date"),
     logisticModel: z.enum(["Stock", "Terminal"]).optional(),
   }),
+  facts: ProductFacts.optional()
+    .describe("What the wholesaler vouches for about this product, signed with the offer. Absent only on offers signed before these facts were added"),
   substituteFor: z.object({
     productId: z.string(),
     name: z.string(),
@@ -58,6 +61,7 @@ export const Offer = z.object({
   id: z.string(),
   issuer: z.string(),
   customerNumber: z.string(),
+  buyer: z.object({ id: z.string(), name: z.string() }).describe("The buyer the offer was made for; only that buyer's mandate can order it"),
   issuedAt: IsoDateTime,
   expiresAt: IsoDateTime,
   intent: z.string().optional(),
@@ -81,6 +85,7 @@ export type SignedOffer = z.infer<typeof SignedOffer>;
 
 export const Alternative = z.object({
   tier: SubstitutionTier,
+  meaning: z.string().describe("One sentence: what this tier stands for, the same for every alternative of the tier"),
   tradeoff: z.string().describe("One sentence: what changes compared with the request"),
   signed: SignedOffer,
 });

@@ -44,6 +44,13 @@ export class AuditBrokenError extends GatewayError {
   }
 }
 
+/** The wholesaler has suspended the calling agent, so it refuses every call until the agent is resumed. */
+export class AgentSuspendedError extends GatewayError {
+  constructor(message: string) {
+    super(message, 403, "agent_suspended");
+  }
+}
+
 export class UpstreamError extends GatewayError {
   constructor(message: string, details?: unknown) {
     super(message, 502, "upstream_unavailable", details);

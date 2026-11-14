@@ -43,6 +43,7 @@ export function offer(patch: Partial<Offer> = {}, lines: OfferLine[] = [line()])
     id: "offer-1",
     issuer: "Valio Aimo",
     customerNumber: "123",
+    buyer: { id: "fi:ovt:003712345678", name: "Nordic Harbour Hotels" },
     issuedAt: "2026-11-14T06:55:00.000Z",
     expiresAt: "2026-11-14T07:10:00.000Z",
     matchConfidence: "high",

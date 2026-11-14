@@ -60,4 +60,20 @@ describe("OpenAPI document", async () => {
     expect(Object.keys(responses["400"] as Json)).toContain("content");
     expect(JSON.stringify(responses["400"])).toContain("application/problem+json");
   });
+
+  it("documents the wholesaler's suspension control, the voice routes and every health field", () => {
+    const paths = doc.paths as Record<string, Record<string, Json>>;
+    const suspend = paths["/api/v1/supplier/agents/{agentId}/suspension"].post;
+    expect(suspend.operationId).toBe("setAgentSuspension");
+    expect(suspend.description).toMatch(/agent_suspended[\s\S]*refuses agent credentials[\s\S]*own sign-in/);
+    expect(Object.keys(paths["/api/v1/voice"].get.responses as Json)).toEqual(["200", "403"]);
+    expect(Object.keys((paths["/api/v1/voice/speech"].post.responses as Record<string, Json>)["200"].content as Json)).toEqual(["audio/mpeg"]);
+
+    const schemas = (doc.components as { schemas: Record<string, { properties: Record<string, Json> }> }).schemas;
+    expect(Object.keys(schemas.Health.properties)).toEqual(expect.arrayContaining(["seed", "agent"]));
+    expect(schemas.SuspensionState.properties.suspended).toBeDefined();
+    expect(JSON.stringify(schemas.SearchResponse)).toContain("categoryAverageCo2PerKg");
+    expect(JSON.stringify(schemas.QuoteResponse)).toContain("meaning");
+    expect(JSON.stringify(schemas.SearchRequest)).toContain("sustainability");
+  });
 });

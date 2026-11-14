@@ -60,7 +60,7 @@ flowchart LR
 ```
 
 1. **Search.** The catalogue turns "lactose-free milk" into a concept plus claims, ranks products, does the pack maths (1,000 l = 1,000 x 1 l) and states an honest match confidence.
-2. **Quote.** Live price and availability become an offer signed by the wholesaler key, valid 15 minutes. When the request cannot be met in full and on time, signed alternatives come with it: a like-for-like substitute, a split, or a premium option.
+2. **Quote.** Live price and availability become an offer signed by the wholesaler key, valid 15 minutes. Each line also carries what the wholesaler vouches for: country of origin, labels, delivery reliability and the category-average carbon figure. When the request cannot be met in full and on time, signed alternatives come with it: a like-for-like substitute, a split, or a premium option.
 3. **Order.** The agent sends the offer and its mandate, both unchanged. 15 rules run. Every rule is listed on the order with its result.
 4. **Approve.** Anything in the "ask" tier waits in the approval inbox. The approval is signed with the approver key.
 5. **Prove.** Each step appends a signed entry to a hash chain. The console re-checks the whole chain in the browser with the public keys.
@@ -129,6 +129,8 @@ In this demo one server holds all three private keys (in `.data/keys`), so one d
 - The agent may state how sure it is of a match, but the wholesaler checks the buyer's words against its own catalogue and never reports a higher confidence than it finds.
 - An approver can approve several waiting orders that together pass the weekly limit. That is the approver's decision; each order shows the limit it passed.
 - The demo controls (start a scene, alter one log entry to show detection) are open to visitors and refuse agent credentials. Reset needs the approver. A production deployment has none of them.
+- The wholesaler can suspend an agent (`POST /api/v1/supplier/agents/{agentId}/suspension`). While suspended, every REST and MCP call by that agent is refused with `agent_suspended`, and the suspension, each refusal and the resumption are signed audit entries. In the demo this control is open to console visitors like the others; production puts it behind the wholesaler's own sign-in.
+- The carbon figure on products and offers is the average for the product's category (`categoryAverageCo2PerKg`), not a measurement of the product.
 - While the log does not verify, approvals are paused. The altered entry in the demo is put back after five minutes.
 - State is kept in memory with a JSON snapshot. One process serialises order decisions so two orders cannot pass a limit together.
 - Audit verification proves that entries were not changed, reordered or removed from the middle. That the newest entries are still there is checked against the last head the verifier saw.

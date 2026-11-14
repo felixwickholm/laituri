@@ -14,6 +14,10 @@ export function fixtureCatalogPath(): string {
 
 let cached: { file: string; products: Product[] } | undefined;
 
+export function readProductFile(file: string): Product[] {
+  return JSON.parse(readFileSync(file, "utf8")) as Product[];
+}
+
 /**
  * Reads the product index once. In recorded mode without a built index, the committed fixture index is used,
  * so tests and demos work on a fresh checkout.
@@ -27,7 +31,7 @@ export function loadProducts(): Product[] {
   if (!existsSync(file)) {
     throw new Error(`The product catalog is missing at ${file}. Run: npm run setup`);
   }
-  const products = JSON.parse(readFileSync(file, "utf8")) as Product[];
+  const products = readProductFile(file);
   cached = { file, products };
   return products;
 }

@@ -18,7 +18,7 @@ function operationObject(op: Operation) {
   const responses: Record<string, unknown> = {
     [String(op.status ?? 200)]: {
       description: op.summary,
-      content: { "application/json": { schema: ref(op.response), ...example(op.example?.response) } },
+      content: { [op.responseType ?? "application/json"]: { schema: ref(op.response), ...example(op.example?.response) } },
     },
   };
   for (const status of op.errors) {
@@ -79,7 +79,7 @@ export function openApiDocument(origin: string) {
         "Every step is written to a signed, hash-chained audit log. MCP is available at /mcp.",
     },
     servers: [{ url: origin }],
-    tags: ["Catalogue", "Ordering", "Approvals", "Mandate", "Audit", "System"].map((name) => ({ name })),
+    tags: ["Catalogue", "Ordering", "Approvals", "Mandate", "Audit", "Supplier", "System"].map((name) => ({ name })),
     paths,
     components: {
       schemas: componentSchemas(),
@@ -88,7 +88,7 @@ export function openApiDocument(origin: string) {
           type: "http",
           scheme: "bearer",
           description:
-            "Demo: static token demo-agent-token. Production: OAuth 2.1 access tokens with scopes catalog:read, quote:create, order:place.",
+            "Demo: static tokens, one per buyer: demo-agent-token (Nordic Harbour Hotels), demo-kaisla-token (Kaisla School Kitchens), demo-laine-token (Ravintola Laine). Production: OAuth 2.1 access tokens with scopes catalog:read, quote:create, order:place.",
         },
       },
     },

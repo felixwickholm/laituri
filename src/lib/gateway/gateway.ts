@@ -4,20 +4,25 @@ import {
   PlaceOrderRequest,
   QuoteRequest,
   SearchRequest,
+  SuspensionRequest,
   type Actor,
 } from "@/lib/contracts";
+import { supplierOverview } from "@/lib/insights";
 import { quote } from "@/lib/offers";
 import { offerSubject, productName } from "@/lib/offers/format";
 import * as orders from "@/lib/orders";
 import { SUPPLIER_ACTOR, agentActor } from "@/lib/orders/summaries";
 import { matchConfidence } from "./confidence";
+import { recordQuote, recordSearch } from "./demand";
 import { AuditBrokenError, NotFoundError, ValidationError } from "./errors";
 import { offerSummary, orderDetail, orderStatus, orderTitle, quoteDetail, quoteTitle, searchDetail } from "./describe";
 import { withPreviews } from "./preview";
 import { createRecorder } from "./recorder";
+import { createSuspensions } from "./suspension";
 import type { AgentRef, Deps, Gateway } from "./types";
 
-const Agent = z.object({ id: z.string().min(1), name: z.string().min(1) });
+const Party = z.object({ id: z.string().min(1), name: z.string().min(1) });
+const Agent = Party.extend({ buyer: Party.optional(), client: z.string().min(1).max(80).optional() });
 
 function validate<T>(schema: z.ZodType<T>, input: unknown, what: string): T {
   const parsed = schema.safeParse(input);
@@ -29,18 +34,36 @@ function validate<T>(schema: z.ZodType<T>, input: unknown, what: string): T {
 
 export function createGateway(deps: Deps): Gateway {
   const recorder = createRecorder(deps);
-  const caller = (agent: AgentRef) => validate(Agent, agent, "agent");
+  const suspensions = createSuspensions(deps, recorder);
+  /** A validated caller that the wholesaler has not suspended. */
+  async function caller(agentInput: AgentRef, call: string): Promise<AgentRef> {
+    const agent = validate(Agent, agentInput, "agent");
+    await suspensions.admit(agent, call);
+    return agent;
+  }
+
+  /** The buyer an agent works for. An agent without a token acts in the primary buyer's context. */
+  async function buyerOf(agent: AgentRef): Promise<{ id: string; name: string; customerNumber: string }> {
+    const { mandate } = await deps.mandates.current(agent.buyer?.id);
+    return mandate.buyer;
+  }
+
+  /** The buyer a console call means: the one named, else the primary buyer, whose mandate the service gives by default. */
+  async function buyerId(named?: string): Promise<string> {
+    return named ?? (await deps.mandates.current()).mandate.buyer.id;
+  }
 
   return {
     async searchCatalog(agentInput, input) {
-      const agent = caller(agentInput);
+      const agent = await caller(agentInput, "search_catalog");
       const request = validate(SearchRequest, input, "search request");
       return recorder.track(agent, "search_catalog", `Searched the catalogue for '${request.query}'`, async () => {
-        const response = await withPreviews(deps.catalog.search(request), request, deps);
+        const response = await withPreviews(deps.catalog.search(request), request, deps, agent.buyer?.id);
         await deps.audit.append({
           actor: agentActor(agent),
           event: "catalog.searched",
           summary: `${agent.name} searched the catalogue for '${request.query}' and found ${response.hits.length} products.`,
+          refs: agent.buyer ? { buyerId: agent.buyer.id } : {},
           data: {
             query: request.query,
             filters: request.filters ?? {},
@@ -50,12 +73,13 @@ export function createGateway(deps: Deps): Gateway {
             previews: response.hits.filter((hit) => hit.offerPreview).length,
           },
         });
+        await recordSearch(agent, request, response, deps);
         return response;
       }, (response) => ({ detail: searchDetail(response) }));
     },
 
     async getProduct(agentInput, id) {
-      const agent = caller(agentInput);
+      const agent = await caller(agentInput, "get_product");
       return recorder.track(agent, "get_product", `Looked up product ${id}`, async () => {
         const product = deps.catalog.get(id);
         if (!product) throw new NotFoundError(`Product ${id} is not in the catalogue.`);
@@ -64,18 +88,18 @@ export function createGateway(deps: Deps): Gateway {
     },
 
     async requestQuote(agentInput, input) {
-      const agent = caller(agentInput);
+      const agent = await caller(agentInput, "request_quote");
       const request = validate(QuoteRequest, input, "quote request");
       return recorder.track(agent, "request_quote", quoteTitle(request, deps.catalog), async () => {
-        const { mandate } = await deps.mandates.current();
+        const { customerNumber, ...buyer } = await buyerOf(agent);
         const checked = { ...request, matchConfidence: matchConfidence(request, deps.catalog) };
-        const response = await quote(checked, { customerNumber: mandate.buyer.customerNumber }, deps);
+        const response = await quote(checked, { customerNumber, buyer }, deps);
         const { offer } = response.primary;
         await deps.audit.append({
           actor: SUPPLIER_ACTOR,
           event: "offer.issued",
           summary: offerSummary(offer, response.alternatives.length),
-          refs: { offerId: offer.id },
+          refs: { offerId: offer.id, buyerId: buyer.id },
           data: {
             totals: offer.totals,
             fulfilment: offer.fulfilment,
@@ -85,12 +109,13 @@ export function createGateway(deps: Deps): Gateway {
             alternativeOfferIds: response.alternatives.map((alt) => alt.signed.offer.id),
           },
         });
+        await recordQuote(agent, checked, response, deps);
         return response;
       }, (response) => ({ detail: quoteDetail(response), refs: { offerId: response.primary.offer.id } }));
     },
 
     async placeOrder(agentInput, input) {
-      const agent = caller(agentInput);
+      const agent = await caller(agentInput, "place_order");
       const request = validate(PlaceOrderRequest, input, "order request");
       return recorder.track(agent, "place_order", "Placed an order", () => orders.placeOrder(request, deps, agent), (order) => ({
         title: orderTitle(order),
@@ -101,27 +126,33 @@ export function createGateway(deps: Deps): Gateway {
     },
 
     async getOrder(agentInput, id) {
-      const agent = caller(agentInput);
-      return recorder.track(agent, "get_order", `Checked order ${id}`, () => orders.getOrder(id, deps), (order) => ({
+      const agent = await caller(agentInput, "get_order");
+      return recorder.track(agent, "get_order", `Checked order ${id}`, async () => {
+        const order = await orders.getOrder(id, deps);
+        // For an agent holding a buyer's token, another buyer's order does not exist.
+        if (agent.buyer && order.buyer.id !== agent.buyer.id) throw new NotFoundError(`Order ${id} was not found.`);
+        return order;
+      }, (order) => ({
         detail: orderDetail(order),
         refs: { orderId: order.id, offerId: order.offer.id },
       }));
     },
 
-    listOrders: () => orders.listOrders(deps),
-    pendingApprovals: () => orders.pendingApprovals(deps),
+    listOrders: async (named) => orders.listOrders(await buyerId(named), deps),
+    pendingApprovals: async (named) => orders.pendingApprovals(await buyerId(named), deps),
 
-    async decideApproval(orderId, input) {
+    async decideApproval(orderId, input, named) {
+      const decider = { ...named, buyerId: await buyerId(named?.buyerId) };
       const body = validate(ApprovalDecisionRequest, input, "approval decision");
       if (body.decision === "approved") {
         const log = await deps.audit.verify();
         if (!log.valid) throw new AuditBrokenError(`Approvals are paused. ${log.reason ?? "The audit log does not verify."}`);
       }
-      const order = await orders.decideApproval(orderId, body, deps);
+      const order = await orders.decideApproval(orderId, body, deps, decider);
       const title = order.approval
         ? `${order.approval.decidedBy.name} ${order.approval.decision} the order for ${offerSubject(order.offer)}`
         : "The offer expired before approval";
-      await recorder.note(order.agent, title, {
+      await recorder.note({ ...order.agent, buyer: order.buyer }, title, {
         detail: orderDetail(order),
         status: orderStatus(order),
         refs: { orderId: order.id, offerId: order.offer.id },
@@ -129,10 +160,10 @@ export function createGateway(deps: Deps): Gateway {
       return order;
     },
 
-    getMandate: () => deps.mandates.current(),
+    getMandate: (named) => deps.mandates.current(named),
 
-    async updateMandate(patch) {
-      const updated = await deps.mandates.update(patch).catch((error: unknown) => {
+    async updateMandate(patch, decider) {
+      const updated = await deps.mandates.update(patch, decider?.buyerId).catch((error: unknown) => {
         if (error instanceof z.ZodError) throw new ValidationError("The mandate change is not valid.", error.issues);
         throw error;
       });
@@ -142,15 +173,38 @@ export function createGateway(deps: Deps): Gateway {
         actor: buyer,
         event: "mandate.updated",
         summary: `${mandate.buyer.name} updated the mandate to version ${mandate.version}.`,
-        refs: { mandateId: mandate.id },
-        data: { version: mandate.version, changed: Object.keys(patch), patch },
+        refs: { mandateId: mandate.id, buyerId: mandate.buyer.id },
+        data: { version: mandate.version, changed: Object.keys(patch), patch, ...(decider?.via ? { via: decider.via } : {}) },
       });
       return updated;
     },
 
     auditLog: (afterSeq) => deps.store.audit.list(afterSeq),
     verifyAudit: () => deps.audit.verify(),
-    activity: (afterId) => deps.store.activity.list(afterId),
+
+    async activity(afterId, named) {
+      const id = await buyerId(named);
+      return (await deps.store.activity.list(afterId)).filter((item) => !item.buyer || item.buyer.id === id);
+    },
+
+    async supplierOverview() {
+      const [orderList, offers, requests, activity, suspended] = await Promise.all([
+        deps.store.orders.list(),
+        deps.store.offers.list(),
+        deps.store.requests.list(),
+        deps.store.activity.list(),
+        deps.store.suspensions.list(),
+      ]);
+      return supplierOverview({ now: deps.now(), orders: orderList, offers, requests, activity, suspensions: suspended });
+    },
+
+    async admitAgent(agentInput, call) {
+      await caller(agentInput, call);
+    },
+
+    async setAgentSuspension(agentId, input) {
+      return suspensions.set(agentId, validate(SuspensionRequest, input, "suspension request"));
+    },
 
     async reset() {
       await deps.store.reset();

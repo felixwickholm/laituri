@@ -3,6 +3,8 @@ import { IsoDateTime, Jws } from "./common";
 
 export const AuditEvent = z.enum([
   "agent.connected",
+  "agent.suspended",
+  "agent.resumed",
   "catalog.searched",
   "offer.issued",
   "order.requested",
@@ -35,8 +37,10 @@ export const AuditEntry = z.object({
     offerId: z.string().optional(),
     orderId: z.string().optional(),
     mandateId: z.string().optional(),
+    buyerId: z.string().optional(),
   }),
   data: z.record(z.string(), z.unknown()).describe("Structured evidence for this step"),
+  seeded: z.literal(true).optional().describe("Demo history written at start-up; covered by the hash like every other field"),
   prevHash: z.string(),
   hash: z.string().describe("SHA-256 over the canonical JSON of this entry without hash and signature"),
   signature: Jws.describe("Wholesaler signature over hash"),

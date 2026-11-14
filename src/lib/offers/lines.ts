@@ -1,4 +1,5 @@
 import type { AvailabilityStatus, OfferLine, Product, Quantity } from "@/lib/contracts";
+import { productFacts } from "@/lib/catalog/facts";
 import { count, dateTime, day, productName } from "./format";
 import { contentPerUnit, lineContent, roundDownToLot, unitsFor } from "./packs";
 import type { BuiltLine, Market } from "./types";
@@ -77,6 +78,7 @@ export function buildLine(productId: string, product: Product | undefined, units
       orderBy: availability?.orderBy,
       logisticModel: availability?.logisticModel,
     },
+    facts: productFacts(product),
   };
   const notes = note ? [note] : [];
   if (deliveryDate && deliveryDate > market.deliverBy) {

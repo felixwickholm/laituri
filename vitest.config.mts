@@ -8,5 +8,7 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["tests/**/*.test.ts"],
+    // Demo history is written only where a test asks for it, and tests never call a model provider.
+    env: { LAITURI_SEED: "off", LAITURI_AGENT_ENGINE: "scripted" },
   },
 });

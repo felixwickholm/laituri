@@ -7,6 +7,13 @@ import type { BuiltLine, Market } from "./types";
 
 export type Tier = "good" | "better" | "best";
 
+/** What each tier stands for, as the pickers below choose it. Returned with every alternative of the tier. */
+export const TIER_MEANING: Record<Tier, string> = {
+  good: "The cheapest like-for-like product that covers the whole need on time.",
+  better: "Keeps what is in stock of the product asked for and fills the rest like for like, or else the most reliable like-for-like product.",
+  best: "An organic or Finnish-label like-for-like product, the one closest in price to the product asked for.",
+};
+
 /** One requested line and how the primary offer answered it. */
 export interface Need {
   original?: Product;

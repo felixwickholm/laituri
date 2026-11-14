@@ -2,12 +2,18 @@ import type { AuditEntry } from "@/lib/contracts";
 import type { AgentHooks, AgentTransport, PurchaseResult } from "@/lib/agent";
 import type { AgentRef } from "@/lib/gateway";
 
-export interface ScenarioContext {
+/** One buyer's agent as a scene plays it: who it is, how it calls the gateway, and where its notes go. */
+export interface ScenarioAgent {
   agent: AgentRef;
   transport: AgentTransport;
   hooks: AgentHooks;
+}
+
+export interface ScenarioContext extends ScenarioAgent {
   /** The server's own address, when known, so refusals can be shown over the public interface. */
   baseUrl?: string;
+  /** Another demo buyer's agent in the same scene, connected and with its own notes. */
+  agentOf(buyerId: string): Promise<ScenarioAgent>;
 }
 
 export interface ScenarioOutcome {
@@ -15,7 +21,7 @@ export interface ScenarioOutcome {
   results: PurchaseResult[];
 }
 
-export type ScenarioId = "milk" | "over-limit" | "break-mandate";
+export type ScenarioId = "milk" | "over-limit" | "break-mandate" | "two-kitchens";
 
 export interface DemoRun {
   id: string;

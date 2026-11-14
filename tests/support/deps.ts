@@ -5,12 +5,15 @@ import { FakeTrust, FakeUpstream, fakeAudit, fakeCatalog, memoryStore, sha256 } 
 import { NOW } from "./products";
 
 export const AGENT = { id: "agent:harbour-purchasing", name: "Harbour purchasing agent" };
+export const BUYER = { id: "buyer:harbour", name: "Nordic Harbour Hotels" };
+/** The quote context of the test mandate's buyer. */
+export const QUOTE_CONTEXT = { customerNumber: "123", buyer: BUYER };
 
 export function testMandate(): Mandate {
   return {
     id: "mandate:test",
     version: 1,
-    buyer: { id: "buyer:harbour", name: "Nordic Harbour Hotels", customerNumber: "123" },
+    buyer: { ...BUYER, customerNumber: "123" },
     agent: AGENT,
     supplier: "Valio Aimo",
     validFrom: "2026-11-01T00:00:00+02:00",

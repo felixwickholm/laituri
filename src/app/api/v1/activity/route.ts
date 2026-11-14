@@ -1,4 +1,5 @@
 import { gateway } from "@/lib/gateway";
+import { readerBuyer } from "@/lib/http/buyer-scope";
 import { route } from "@/lib/http/handler";
 import { json } from "@/lib/http/respond";
 
@@ -7,5 +8,5 @@ export const runtime = "nodejs";
 
 export const GET = route(async (request) => {
   const after = new URL(request.url).searchParams.get("after") || undefined;
-  return json({ activity: await gateway().activity(after) });
+  return json({ activity: await gateway().activity(after, await readerBuyer(request)) });
 });
