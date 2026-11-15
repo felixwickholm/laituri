@@ -27,6 +27,7 @@ export function PlanScreen() {
   const [editing, setEditing] = useState(false);
   const [openId, setOpenId] = useState<string>();
   const [guests, setGuests] = useState<number>();
+  const [guestsValid, setGuestsValid] = useState(true);
   const [orderingId, setOrderingId] = useState<string>();
   const [ordered, setOrdered] = useState<{ basketId: string; title: string }>();
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -73,6 +74,11 @@ export function PlanScreen() {
 
   async function order(option: MenuOption, choices: Record<string, SwapChoice>): Promise<void> {
     if (!plan) return;
+    // A guest count typed out of range: the menus on screen are for another count, so nothing is ordered yet.
+    if (!guestsValid) {
+      toast("Fix the guest count first: 1 to 2,000.", "danger");
+      return;
+    }
     const lines = basketLines(option, choices);
     if (lines.length === 0) {
       toast("Your kitchen has everything already.", "neutral");
@@ -123,7 +129,7 @@ export function PlanScreen() {
           <button type="button" className="btn btn-secondary big" onClick={() => setEditing(true)}>
             Edit
           </button>
-          {shownGuests && !ordered ? <Stepper label="Guests" value={shownGuests} onChange={changeGuests} unit="guests" /> : null}
+          {shownGuests && !ordered ? <Stepper label="Guests" value={shownGuests} onChange={changeGuests} unit="guests" onValidity={setGuestsValid} /> : null}
         </div>
         {plan.notes.length ? (
           <details className="plan-notes">
@@ -135,6 +141,11 @@ export function PlanScreen() {
             </ul>
           </details>
         ) : null}
+        {guestsValid ? null : (
+          <p className="save-problem" role="alert">
+            Enter a guest count from 1 to 2,000. Nothing is ordered until it is fixed.
+          </p>
+        )}
         <p className="plan-status" role="status">
           {rescaling ? `Planning for ${shownGuests} guests…` : ""}
         </p>
