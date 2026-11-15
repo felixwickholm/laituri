@@ -107,9 +107,9 @@ describe("the fallbacks", () => {
     }
   });
 
-  it("runs the event step on the recipes when they exist, else on the planner", () => {
-    expect(routeOf(step("plan"), {})).toBe("/buyer/plan/recipes");
-    expect(routeOf(step("plan"), { plan: "/buyer/plan" })).toBe("/buyer/plan");
+  it("runs the event step on the planner with the wedding example", () => {
+    expect(routeOf(step("plan"), {})).toBe("/buyer/plan");
+    expect(step("plan").query).toBe("words=A%20wedding%20for%2080%20guests%20on%20Saturday");
   });
 
   it("falls back to the step's first card when a number is not known", () => {

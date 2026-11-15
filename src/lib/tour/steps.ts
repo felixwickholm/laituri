@@ -21,6 +21,8 @@ export const MAIN_TARGET = "main#main";
 export interface TourStep extends PlanStep {
   /** The first of these pages that exists in this build is the step's page. */
   routes: readonly string[];
+  /** Search parameters the page opens with, for example the planner's example words. */
+  query?: string;
   /** Spotlight: the first visible match of `target`, and of `also` at the same time; the main region when none is. */
   target: readonly string[];
   also?: readonly string[];
@@ -232,16 +234,17 @@ export const STEPS: readonly TourStep[] = [
   },
   {
     id: "plan",
-    routes: ["/buyer/plan/recipes", "/buyer/plan"],
-    target: [".recipe-grid > li:nth-child(1)", '[data-tour="recipes"]', '[data-tour="plan-event"]'],
-    more: [".recipe-grid > li:nth-child(2)", ".recipe-grid > li:nth-child(3)"],
+    routes: ["/buyer/plan"],
+    // The planner runs the example from the video: three menus from Valio recipes appear under the words.
+    query: `words=${encodeURIComponent("A wedding for 80 guests on Saturday")}`,
+    target: ['[data-tour="menu-options"]', '[data-tour="plan-event"]'],
     view: "spotlight",
     until: "now",
     timeoutMs: 5_000,
     words: {
       shown: {
         title: "Plan an event with Valio recipes.",
-        detail: "Tell the assistant about the event. It suggests menus from Valio’s recipes and a list to order. Today offers ideas on its own.",
+        detail: "The assistant reads the event in plain words, here a wedding, and suggests menus from Valio’s recipes, checked against the customer’s rules, ready to order.",
       },
     },
     pick: () => "shown",

@@ -114,7 +114,7 @@ describe("planning a menu: need -> recipe -> order", () => {
         const all = [...product.allergens.contains, ...product.allergens.mayContain];
         expect(all.filter((a) => ["sesame", "peanut", "nuts", "almond"].includes(a)), product.name.en).toEqual([]);
       }
-      expect(menu.fits).toContainEqual({ ok: true, sentence: "Every product meets your allergen rules." });
+      expect(menu.fits).toContainEqual({ ok: true, sentence: menu.unpriced ? "Every matched product meets your allergen rules." : "Every product meets your allergen rules." });
       for (const { recipe } of menu.courses) expect(recipe.id).not.toBe("goat-cheese-crostini");
     }
   });
@@ -123,7 +123,7 @@ describe("planning a menu: need -> recipe -> order", () => {
     const result = await plan({ guests: 30, date: "2026-11-20", dietary: ["vegan"] });
     for (const menu of result.menus) {
       for (const { recipe } of menu.courses) expect(recipe.labels).toContain("vegan");
-      expect(menu.fits[0]).toEqual({ ok: true, sentence: "Every dish is vegan." });
+      expect(menu.fits).toContainEqual({ ok: true, sentence: "Every dish is vegan." });
     }
   });
 
@@ -296,6 +296,19 @@ describe("planner logic", () => {
       const sides = result.menus.flatMap((menu) => menu.courses.filter((course) => course.course === "side").map((course) => course.recipe.id));
       expect(new Set(sides).size, `${words}: ${sides.join(", ")}`).toBeGreaterThan(1);
       expect(sides).not.toContain("valio-blinipannari");
+    }
+  });
+});
+
+describe("menu checks with ingredients still open", () => {
+  it("lists the open ingredients first and speaks only for the matched products", async () => {
+    const result = await plan({ guests: 80, date: "2026-11-20" });
+    const open = result.menus.filter((menu) => menu.unpriced);
+    for (const menu of open) {
+      expect(menu.fits[0].ok).toBe(false);
+      expect(menu.fits[0].sentence).toMatch(/no matching product yet/);
+      expect(menu.fits.map((fit) => fit.sentence)).not.toContain("The total is inside your weekly limit.");
+      expect(menu.fits.some((fit) => fit.sentence.startsWith("Everything can arrive"))).toBe(false);
     }
   });
 });

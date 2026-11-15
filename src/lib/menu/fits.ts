@@ -34,6 +34,8 @@ export interface FitInput {
   deliverBy: string;
   budgetPerGuest?: number;
   costPerGuest: number;
+  /** Recipe lines with no product here at all (bought separately): they are not in `lines` but still open. */
+  separate?: number;
 }
 
 function bought(input: FitInput): Product[] {
@@ -55,7 +57,7 @@ function mandateFit(input: FitInput): Fit | undefined {
   if (input.mandate.dietary.excludeAllergens.length === 0) return undefined;
   const safe = bought(input).every((product) => productSafe(product.allergens, input.rules));
   return safe
-    ? { ok: true, sentence: "Every product meets your allergen rules." }
+    ? { ok: true, sentence: unresolved(input) > 0 ? "Every matched product meets your allergen rules." : "Every product meets your allergen rules." }
     : { ok: false, sentence: "A product breaks your allergen rules. A person must check." };
 }
 
@@ -81,7 +83,7 @@ function claimsFit(input: FitInput): Fit | undefined {
 
 /** Lines that need a product but have none matched or priced yet: the menu's totals leave them out. */
 function unresolved(input: FitInput): number {
-  return input.lines.filter(({ picked, unpriced, line }) => (!picked || unpriced) && line.toOrder.amount > 0).length;
+  return input.lines.filter(({ picked, unpriced, line }) => (!picked || unpriced) && line.toOrder.amount > 0).length + (input.separate ?? 0);
 }
 
 /** A missing ingredient is never hidden behind green checks: it is its own open item, and the totals say they are partial. */

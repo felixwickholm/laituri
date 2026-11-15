@@ -53,7 +53,9 @@ describe("menu routes", () => {
 
   it("plans under the school kitchen's own mandate for its key", async () => {
     const body = MenuPlan.parse(await (await planAs(kaisla, { guests: 120, date: "2026-11-19", occasion: "school lunch" })).json());
-    for (const menu of body.menus) expect(menu.fits).toContainEqual({ ok: true, sentence: "Every product meets your allergen rules." });
+    for (const menu of body.menus) {
+      expect(menu.fits).toContainEqual({ ok: true, sentence: menu.unpriced ? "Every matched product meets your allergen rules." : "Every product meets your allergen rules." });
+    }
   });
 
   it("answers 401 without a credential and 400 for a request it cannot read", async () => {

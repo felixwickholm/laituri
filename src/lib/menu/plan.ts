@@ -209,6 +209,7 @@ function buildOption(kind: MenuKind, chosen: CostedDish[], ctx: OptionContext): 
     deliverBy: ctx.deliverBy,
     budgetPerGuest: ctx.event.budgetPerGuest,
     costPerGuest,
+    separate: separateNames(chosen).length,
   });
   if (!dishes.some((dish) => dish.def.course === "main")) fits.unshift({ ok: false, sentence: NO_MAIN });
   const unpriced = unpricedCount(chosen, lines);
