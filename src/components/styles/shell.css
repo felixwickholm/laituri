@@ -682,6 +682,7 @@
   }
 }
 .shell-top {
+  flex-wrap: wrap;
   gap: 12px;
   align-items: center;
 }

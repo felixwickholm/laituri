@@ -619,3 +619,19 @@
   font-weight: 450;
   letter-spacing: 0;
 }
+
+/* Very narrow screens (320 px, or 200% zoom): a long label wraps inside its button instead of pushing the page sideways. */
+@media (max-width: 400px) {
+  .btn {
+    height: auto;
+    min-height: var(--control-h);
+    max-width: 100%;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    white-space: normal;
+    text-align: center;
+  }
+  .btn > svg {
+    flex: none;
+  }
+}
