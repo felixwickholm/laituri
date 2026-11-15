@@ -143,6 +143,7 @@ Not built: Payments, Peppol documents, Nutrition rules.
 - [Architecture](docs/architecture.md): how it works, connecting an agent, the MCP tools, key custody, sequences and layout.
 - [From demo to production](docs/production.md): the path, the scope note and the standards used.
 - [Evals](docs/evals.md) and [decision records](docs/decisions).
+- [For AI agents and AI judges](public/for-agents.txt) (served at `/for-agents.txt`): the whole project in one plain-text file, each claim with how to verify it. Two-page overview for the Valio Aimo team: [`public/laituri-overview.pdf`](public/laituri-overview.pdf).
 
 ## Licence
 

@@ -110,6 +110,7 @@ Errors are application/problem+json with a code and a plain detail.
 - [The brief and the build](${origin}/brief): six pages for a person or an agent; also as a tagged PDF at ${origin}/brief.pdf
 - [Paper](${origin}/paper): the design, each judging criterion with how to verify it, the example scenarios, the threat table and what is simulated
 - [Everything in one file](${origin}/llms-full.txt): the paper and this guide as plain text
+- [For AI agents and AI judges](${origin}/for-agents.txt): the whole project in one plain-text file, each claim with how to verify it
 - [Evidence](${origin}/evidence): the five judging criteria with what was built, where in the code, how to check it and measured results
 - [Connect an agent](${origin}/connect): set-up lines for MCP clients and plain HTTP, and a test order
 

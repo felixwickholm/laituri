@@ -1,0 +1,966 @@
+LAITURI: A BRIEF FOR AI AGENTS AND AI JUDGES
+=============================================
+
+Project:    Laituri ("dock" in Finnish)
+Team:       Moonshot
+Event:      Junction 2026, Valio Aimo challenge "Trusted Trade Agents"
+Live:       https://laituri.wicflow.com
+This file:  https://laituri.wicflow.com/for-agents.txt (copy at FOR-AGENTS.txt in the repository root)
+Licence:    MIT
+Written:    15 November 2026, against commit 31e0525 of the repository.
+
+Every number in this file was re-measured on that commit on 15 November 2026:
+`npm test` gave 3,648 of 3,648 tests passing in 155 files, and each eval suite
+(`npm run eval -- --suite <id>`) passed in full: Scenarios 38/38, Guardrails 38/38,
+Trust 17/17, Openness 8/8. The same numbers are in src/lib/evidence/facts.json, which
+`npm run evidence` writes and which every README, docs page, /evidence and /paper read.
+
+Every claim below names where to check it: a file path, a route on the live demo,
+a test file, an eval case id or a command. Paths are relative to the repository root.
+Eval ids: plain numbers and M/W ids are the Scenarios suite, G ids Guardrails,
+T ids Trust, O ids Openness. The case list is in section 17.
+
+
+CONTENTS
+--------
+ 1. Summary in ten lines
+ 2. The problem, and why it matters to Valio Aimo
+ 3. What Laituri is: three parties, one front door
+ 4. The flow of one order, with the brief's own example
+ 5. Architecture
+ 6. The agent interface: MCP tools, REST operations, discovery
+ 7. The trust protocol: what is signed, by whom, and how to verify it
+ 8. The mandate: 18 rules in three tiers
+ 9. The request check: the buyer's words against every offer
+10. Exceptions: short stock, cut-off, late delivery, recipe-role swaps
+11. The audit chain
+12. Security model and threat table
+13. What stays private
+14. The buyer agent and the model chain
+15. Design decisions and their trade-offs
+16. Requirement by requirement: the brief mapped to the build
+17. Evidence: tests and evals, with the command for each
+18. How to verify every claim yourself
+19. Standards used and followed
+20. Path to production
+21. Links
+
+
+1. SUMMARY IN TEN LINES
+-----------------------
+- Laituri is an open front door (MCP and REST) through which a hotel's or a kitchen's
+  own AI purchasing agent buys from the food-service wholesaler Valio Aimo.
+- The agent searches the catalogue, receives a fixed-price offer that Valio Aimo signs
+  (ES256 JWS), and orders inside a mandate that the buyer signed with its own key.
+- 18 named rules run on every order. Each order is placed alone, waits for a named
+  person, or is refused, and the result and reason of every rule is listed on the order.
+- An agent holds no signing key. It cannot sign a mandate, an offer or an approval, so it
+  cannot raise its own limit, change a price or approve its own order.
+- Before it signs an offer, Valio Aimo compares the buyer's own words with the product each
+  line delivers and signs that comparison into the offer. Only a fully met offer confirms alone.
+- When stock is short, the cut-off has passed or delivery would be late, Valio Aimo returns
+  signed counter-offers ranked good, better and best. In a menu plan, ingredients are swapped
+  by their role in the recipe.
+- Every step is a signed entry in a hash-chained log that the buyer, Valio Aimo and any outside
+  agent verify with the public keys at /.well-known/jwks.json.
+- Valio Aimo sees connected agents, demand and unmet demand, and can suspend any agent.
+- One zod schema set produces the 11 MCP tools, the 41 REST operations and the OpenAPI 3.1 document.
+- 3,648/3,648 tests and 101/101 eval cases pass on recorded data with a fixed clock.
+
+
+2. THE PROBLEM, AND WHY IT MATTERS TO VALIO AIMO
+------------------------------------------------
+The challenge question, verbatim:
+
+  "How can a food-service wholesaler let autonomous purchasing agents place an order -
+  finding products, comparing offers and getting the right approval in a fraction of the
+  time it takes today - without exposing real systems, confidential data or the
+  marketplace roadmap?"
+
+(The brief uses en dashes in that sentence; they are written as hyphens here.)
+
+Valio Aimo serves 20,000+ professional kitchens with 25,000 product names from 700
+suppliers (figures from the challenge brief). The brief states the stake:
+
+  "This is not about replacing today's e-commerce UI with a chatbot. It is about defining
+  how a European food-service wholesaler can be safely and openly readable by autonomous
+  agents - before that interface gets defined by someone else's platform."
+
+The two-sided trust problem:
+- The wholesaler cannot let an unknown agent order on a customer's account. It needs to
+  know the agent acts inside what the customer allowed.
+- The customer cannot let an agent spend without limits. It needs to know the agent buys
+  the right product at the agreed price, and that a person decides what matters.
+- Today there is no shared, checkable contract between the two.
+
+Laituri's answer is that contract, expressed as signed documents and open interfaces:
+the buyer signs what its agent may do (the mandate), the wholesaler signs what it offers
+(the offer), a person signs what needs a person (the approval), and both sides read one
+signed, chained record. The interface and the operating model are the product. The
+customer's agent can be any agent: Claude, ChatGPT, Cursor, a custom script or an ERP.
+
+The brief's scope note says the production interface may become "a traditional API, an
+MCP-style agentic interface or a full service agent". Laituri does not have to choose:
+MCP and REST are generated from one schema set behind one gateway, and a Valio Aimo
+service agent would be one more caller of the same gateway (decision record 0001 in docs/decisions).
+
+
+3. WHAT LAITURI IS: THREE PARTIES, ONE FRONT DOOR
+-------------------------------------------------
+The buyer (a kitchen: a hotel chain, school kitchens, a restaurant)
+- Signs a mandate on /buyer/mandate: per-order and per-week limits, allowed categories,
+  excluded allergens (also as traces), required claims, a never-buy list, a substitution
+  policy with a price cap, delivery rules, and whether a product bought before may be
+  reordered alone.
+- "Today" (/buyer): types a need in plain words, or runs the standing weekly order in one
+  tap. Each of the 20 lines is green (ordered alone), orange (waits for a person) or red
+  (not ordered), each with a reason in plain words.
+- The approver's phone (/approve/{orderId}): why a line waits, what was asked, what is
+  offered, approve or decline with one signed tap.
+- Plan an event (/buyer/plan): "A wedding for 80 guests on Saturday" gives three menus from
+  Valio's professional recipes, scaled to the guests, with a shopping list net of the
+  kitchen's stock, ordered as one basket of signed offers.
+- Shop (/buyer/shop), Orders, and the Log (/buyer/log), which verifies the signed record
+  in the browser.
+
+The buyer's agent (any MCP or HTTP client)
+- Connects over MCP at /mcp (Streamable HTTP) or REST at /api/v1. /connect has set-up lines
+  for Claude Code, the Claude apps, ChatGPT, Cursor, Grok, Gemini CLI, VS Code with Copilot
+  and any HTTP client (src/lib/connect/apps.ts, src/lib/connect/guides.ts).
+- Searches, requests a signed quote with the buyer's words, reads the mandate, orders.
+- Has no approve tool and no signing key.
+
+Valio Aimo (the wholesaler's control side, /valio)
+- Overview, Agents, Demand, Questions and Record pages: which agents are connected (the
+  client application is read from the MCP initialize message or the X-Agent-Client header),
+  what they ordered, demand that went unserved and why (for example, a passed cut-off or a
+  product not in the assortment), questions an agent handed to a person, and the same
+  audit log the buyer reads (/valio/audit, filter by buyer, export as JSON).
+- Suspends or resumes an agent (POST /api/v1/supplier/agents/{agentId}/suspension,
+  operator session only).
+- Sees which mandate rule held or stopped an order and its tier, never the buyer's limits.
+
+Also: /security (unusual actions tried live: forged offers, replays, prompt injection,
+over-limit orders, each stopped and logged; src/lib/security-console), /evidence and
+/evidence.json (each criterion with code, checks, measurements), /paper, /brief and
+/brief.pdf (six pages), /submission.json (the submission as one JSON document).
+
+A guided walkthrough at /buyer?tour=1 drives the running product in 15 steps (ids in
+src/lib/tour/steps.ts: today, example, basket, needs, phone, blocked, limits, shop, ask,
+plan, other-side, valio, demand, security, record).
+
+Demo buyers (src/lib/mandate/defaults.ts), each with its own signed mandate:
+- Nordic Harbour Hotels: largest limits; like-for-like substitutes up to 10% dearer.
+- Kaisla School Kitchens: excludes peanut, nuts and sesame even as traces; no late delivery.
+- Ravintola Laine: no substitutes; the owner approves every first-time product.
+All three require the buyer's words with every order (rule request.words).
+
+
+4. THE FLOW OF ONE ORDER, WITH THE BRIEF'S OWN EXAMPLE
+------------------------------------------------------
+The brief's example request: "I need 1,000 litres of lactose-free milk by Monday. Find an
+option that meets our requirements based on price and availability."
+
+1. Request. The agent receives the need in English, Finnish or Swedish.
+2. Lookup. search_catalog reads "lactose-free milk" as concept milk plus claim lactose_free,
+   ranks products, states a match confidence, and does pack maths: 1,000 l becomes
+   1,000 x 1 l (src/lib/catalog/search.ts, src/lib/offers/packs.ts). Hits carry an
+   indicative live price, stock, delivery date and order cut-off.
+3. Offer. request_quote asks the upstream mock API for live price and availability, subtracts
+   this workspace's own confirmed and waiting orders, checks the offer against the buyer's
+   words, and signs the offer with the supplier key. Valid 15 minutes, single use, bound to
+   the issuing workspace (src/lib/offers/quote.ts, src/lib/offers/assemble.ts).
+4. Order. place_order sends the offer JWS and the mandate JWS unchanged, plus an idempotency
+   key. Both are verified; every mandate rule runs (src/lib/orders/place.ts,
+   src/lib/policy/evaluate.ts). Over REST: 201 confirmed, 202 pending_approval,
+   422 order_blocked with the blocked order in the problem body.
+5. Approval, when a rule says ask. The named approver decides on /buyer or
+   /approve/{orderId}; the decision is signed with the approver key; approving re-checks the
+   mandate in force and the stock (src/lib/orders/approval.ts, src/lib/orders/recheck.ts).
+6. Record. Every step appends a signed, hash-chained audit entry (src/lib/audit/chain.ts).
+
+Outcome for the brief's sentence: eval 25 ("The brief's own sentence") and eval 1 end on
+route auto with 1,000 x product 464306 delivered on time for Monday 2026-11-16, and a
+complete, verified audit trail. 1,600 litres of the same milk exceeds the hotel's per-order
+limit and waits for the approver (eval 4 runs the over-limit case at 3,000 l).
+
+A recorded run by an outside agent (docs/outside-agent-run.md, 14 November 2026): a Claude
+Code session, given only the MCP address of a local production build, a fresh demo
+workspace key and one sentence, called get_mandate, search_catalog, request_quote,
+place_order and verify_audit, and reported order ord_25ixm2kfwm confirmed without a person:
+1,000 x Valio Arki Eila semi-skimmed milk drink, lactose free, 1 l, net EUR 1,010.00,
+delivery Monday 16 November 2026, audit check passed for all 154 entries. The automated
+version of this check is eval O8 (section 17).
+
+
+5. ARCHITECTURE
+---------------
+One Next.js application. Every call from MCP, REST or the screens goes through one gateway
+(src/lib/gateway/gateway.ts), so the screens a person uses and the interface an outside
+agent uses cannot drift apart.
+
+Components (docs/architecture.md has the diagrams and sequences):
+- Contracts, src/lib/contracts: zod schemas for every request and response. The OpenAPI
+  document, the MCP tool schemas and the screens use them.
+- Gateway, src/lib/gateway: one facade for search, quote, mandate, order, approval, audit,
+  suspension and the supplier overview. Admits or refuses each agent call.
+- REST, src/app/api/v1: route handlers; each reads its body with a contract and calls the
+  gateway. Errors are RFC 9457 problem details (src/lib/http/respond.ts).
+- MCP, src/lib/mcp and src/app/mcp/route.ts: Streamable HTTP server, stateless, JSON
+  responses. Each tool mirrors one REST operation; each tool result is parsed against its
+  output schema and withheld if it does not parse (src/lib/mcp/server.ts).
+- OpenAPI, src/lib/openapi: the operation registry and the OpenAPI 3.1 document.
+- Upstream client, src/lib/valio: calls the challenge's mock API with the server-side key,
+  or replays recorded answers; normalises upstream fields (src/lib/valio/normalise.ts).
+- Catalogue, src/lib/catalog: product index, concept lexicon in Finnish, Swedish and
+  English, search and ranking, like-for-like candidates.
+- Offers, src/lib/offers: pack maths, offer lines with product facts, signed offers,
+  good/better/best alternatives, plausible-quantity ceilings (src/lib/offers/limits.ts).
+- Request check, src/lib/request: the buyer's words read and compared with each offer.
+- Policy, src/lib/policy: the mandate rules. Pure functions: every input is passed in.
+- Mandate, src/lib/mandate: the demo buyers' terms, signed with the buyer key.
+- Orders, src/lib/orders: placement, idempotency, single use of offers, approval, signed
+  receipts. One lock serialises decisions (src/lib/orders/lock.ts).
+- Baskets, src/lib/basket: weekly and menu baskets, one signed offer and order per line,
+  green/orange/red with a reason, drift sentences, allergen-safe swaps.
+- Menus and recipes, src/lib/menu, src/lib/recipes, src/lib/pantry, src/lib/assistant:
+  event planning from 148 Valio professional recipes (src/lib/recipes/valio), recipe-role
+  swaps, shopping lists net of the kitchen's stock, a conversational event assistant.
+- Hand-offs and suggestions, src/lib/handoffs, src/lib/suggestions.
+- Audit, src/lib/audit: hash chain of signed entries, verification, signed checkpoints.
+- Trust, src/lib/trust: keys, JWS signing and verification, canonical JSON, typed tokens.
+- Insights, src/lib/insights: the wholesaler's overview. Pure.
+- Workspaces, src/lib/workspace: the shared demo workspace on disk, and one in-memory
+  sandbox per browser or per outside agent, copied from a seeded template.
+- Seed, src/lib/seed: four weeks of standing orders and a week of 31 requests (24 of them
+  place an order), played through the real gateway at past times, so every seeded record is
+  signed and chained like live use and marked seeded.
+- Agent, src/lib/agent: the scripted buyer agent and the model-driven agents (section 14).
+- Evidence, src/lib/evidence: the single source behind README.md, docs/, /evidence, /paper
+  and /llms-full.txt. No number in README.md or docs/ is typed by hand; tests/evidence fails
+  while a generated block is stale.
+
+Data flow for one agent call:
+1. The bearer token maps to an agent and a buyer (src/lib/http/agent.ts); the workspace is
+   resolved (src/lib/http/workspace.ts).
+2. The gateway refuses the call with 403 agent_suspended if Valio Aimo suspended the agent
+   (src/lib/gateway/suspension.ts), checked in route() before any handler and in MCP before
+   any method, and records the call for the wholesaler's activity view.
+3. Search reads the local index. A quote asks upstream for live price and availability for
+   at most 10 hits per search and 13 ids per quoted line, cached for a minute
+   (src/lib/valio/budget.ts).
+4. An order carries the offer JWS and mandate JWS; both are verified; the offer must be
+   unused; every rule runs; the order confirms, waits or is blocked.
+5. Each step appends a signed audit entry. Orders, approvals, mandate changes, suspensions
+   and audit entries are written to disk (temporary file, fsync, rename) before the call
+   returns (src/lib/store/memory.ts, src/lib/store/snapshot.ts).
+6. The screens poll REST, fetch the JWKS and re-check the chain and signatures in the
+   browser (src/lib/console/verify.ts).
+
+Workspaces and sandboxes: each browser and each outside agent works in a private
+in-memory copy of a seeded week of trade, so test orders by different judges never collide.
+A browser gets its sandbox through a server-signed HttpOnly cookie (HMAC,
+src/lib/trust/cookie-key.ts; issued in src/proxy.ts). An agent gets one, with one agent key
+per demo buyer and its MCP address, from POST /api/v1/workspace. Up to 300 sandboxes live at
+once; one idle for 60 minutes is replaced by a fresh copy (src/lib/workspace/sandboxes.ts).
+Signed mandates and offers carry the signing workspace as an audience claim, so a document
+from one workspace is refused in another (evals G26, G27).
+
+Model budget: every paid model call asks a process-wide budget per address and per day
+(admitModelCall); over budget, the rule-based path runs instead of an error.
+
+
+6. THE AGENT INTERFACE: MCP TOOLS, REST OPERATIONS, DISCOVERY
+-------------------------------------------------------------
+11 MCP tools, each mirroring one REST operation (src/lib/mcp/tools.ts):
+  search_catalog   POST /api/v1/products/search   Search the wholesaler catalogue
+  get_product      GET  /api/v1/products/{id}     Read one product
+  request_quote    POST /api/v1/quotes            Get a signed fixed-price offer
+  get_mandate      GET  /api/v1/mandate           Read your purchasing mandate
+  place_order      POST /api/v1/orders            Place an order from a signed offer
+  place_basket     POST /api/v1/baskets           Order a basket of many lines
+  get_order        GET  /api/v1/orders/{id}       Check an order's status
+  verify_audit     GET  /api/v1/audit/verify      Verify the audit trail
+  plan_menu        POST /api/v1/menus/plan        Plan a menu for an event
+  list_recipes     GET  /api/v1/recipes           List the recipe library
+  plan_event       POST /api/v1/assistant/turn    Talk an event through to a menu and an order
+
+41 REST operations on 35 paths (from src/lib/openapi; served at /api/v1/openapi.json):
+  POST /api/v1/products/search                         searchCatalog
+  GET  /api/v1/products/{id}                           getProduct
+  POST /api/v1/quotes                                  requestQuote
+  GET  /api/v1/offers/{id}                             getOffer
+  POST /api/v1/orders                                  placeOrder
+  GET  /api/v1/orders                                  listOrders
+  GET  /api/v1/orders/{id}                             getOrder
+  GET  /api/v1/approvals                               listPendingApprovals
+  POST /api/v1/approvals/{orderId}                     decideApproval (buyer console only)
+  GET  /api/v1/mandate                                 getMandate
+  PUT  /api/v1/mandate                                 updateMandate (buyer console only)
+  GET  /api/v1/audit                                   getAuditLog
+  GET  /api/v1/audit/verify                            verifyAudit
+  GET  /api/v1/audit/checkpoint                        getAuditCheckpoint
+  GET  /api/v1/activity                                listActivity
+  POST /api/v1/baskets                                 createBasket
+  GET  /api/v1/baskets                                 listBaskets
+  GET  /api/v1/baskets/{basketId}                      getBasket
+  POST /api/v1/baskets/weekly                          startWeeklyBasket
+  GET  /api/v1/baskets/weekly/draft                    getWeeklyDraft
+  POST /api/v1/baskets/{basketId}/lines/{lineId}/resolve  resolveBasketLine (buyer console only)
+  POST /api/v1/handoffs                                createHandoff (buyer console only)
+  GET  /api/v1/handoffs                                listHandoffs (console only)
+  POST /api/v1/handoffs/{handoffId}/answer             answerHandoff (wholesaler operator only)
+  GET  /api/v1/supplier/overview                       getSupplierOverview
+  POST /api/v1/supplier/agents/{agentId}/suspension    setAgentSuspension (wholesaler operator only)
+  POST /api/v1/demo/reset                              resetDemo (console only)
+  GET  /api/v1/workspace                               getWorkspace (console only)
+  POST /api/v1/workspace                               createWorkspace
+  POST /api/v1/workspace/view                          setWorkspaceView (console only)
+  GET  /api/v1/health                                  getHealth
+  GET  /api/v1/voice                                   getVoice (console only)
+  POST /api/v1/voice/speech                            speakText (console only)
+  GET  /api/v1/voice/speech                            streamSpeech (console only)
+  POST /api/v1/voice/transcribe                        transcribeSpeech (console only)
+  POST /api/v1/assistant/turn                          assistantTurn
+  POST /api/v1/menus/plan                              planMenu
+  GET  /api/v1/recipes                                 listRecipes
+  GET  /api/v1/recipes/{id}                            getRecipe
+  GET  /api/v1/pantry                                  getPantry
+  GET  /api/v1/suggestions                             listSuggestions
+
+Discovery documents: /api/v1/openapi.json, /.well-known/jwks.json,
+/.well-known/agent-card.json, /.well-known/ai-catalog.json, /.well-known/ucp,
+/.well-known/oauth-protected-resource, /llms.txt. For readers: /llms-full.txt, /paper,
+/paper.md, /evidence.json, /submission.json, /brief, /brief.pdf, /robots.txt, /sitemap.xml.
+
+Connecting:
+- MCP: https://laituri.wicflow.com/mcp with header "Authorization: Bearer <key>". Clients
+  that cannot send a header use the mcpUrl the sandbox returns (/mcp?key=...).
+  Example: claude mcp add --transport http laituri https://laituri.wicflow.com/mcp --header "Authorization: Bearer <key>"
+- REST: start with POST /api/v1/workspace (no credential); /llms.txt gives the full flow as
+  curl lines: search, quote with the buyer's words as intent, read the mandate, order with an
+  Idempotency-Key header. Retrying with the same key returns the same order.
+- The fixed public tokens demo-agent-token, demo-kaisla-token and demo-laine-token belong
+  to the shared demo workspace the evals use.
+
+
+7. THE TRUST PROTOCOL: WHAT IS SIGNED, BY WHOM, AND HOW TO VERIFY IT
+--------------------------------------------------------------------
+The brief asks for "the minimum data/verification standard for an external agent to trust
+Valio Aimo's claims on stock, price and origin without a manual check". Laituri's answer
+uses JWS compact serialization, ES256 on EC P-256 keys, keys published as JWKS, SHA-256
+and canonical JSON (docs/trust-protocol.md, src/lib/trust).
+
+Three signing keys, each with a role in the JWKS:
+  supplier  signs offers, price holds, receipts, audit entries, checkpoints
+  buyer     signs mandates
+  approver  signs approvals and the approver's sign-in session
+An agent holds no key.
+
+Signed objects and their JWS typ (every verification requires the expected typ, so a
+receipt cannot be presented as an offer; TOKEN_TYPE in src/lib/trust; tests/trust/typ.test.ts):
+  offer+jwt       net price per sales unit, line totals, tax, stock (units requested and
+                  available, status), delivery date, order cut-off, origin, labels, delivery
+                  reliability, category-average CO2 per kg, buyer, customer number, issuing
+                  workspace, expiry, and requestCheck (section 9)
+  mandate+jwt     the buyer's rules, its workspace audience, validity
+  price-hold+jwt  Valio Aimo holds a waiting order's price until the order cut-off for its
+                  delivery date, never beyond
+  approval+jwt    a person lifted a limit; bound to the offer's hash
+  receipt+jwt     the order was accepted on these terms; carries offerHash (SHA-256 of the
+                  canonical offer), orderId, responseCode (Peppol-style AP/CA/RE) and auditSeq
+  audit+jwt       each audit entry's {seq, hash}
+  checkpoint+jwt  the log's size and head hash at a moment
+
+Verification steps for an agent that has never talked to Laituri before:
+1. GET /.well-known/jwks.json; keep the keys with role supplier and buyer.
+2. request_quote: the answer has primary.jws and, when the request cannot be met in full and
+   on time, alternatives[].signed.jws.
+3. Check the protected header: alg ES256, kid names a supplier key, typ offer+jwt. Verify the
+   signature. Use the signed payload, never an unsigned copy next to it.
+4. expiresAt must be in the future (15 minutes); each line's availability.orderBy too.
+5. Read requestCheck, then compare status, deliveryDate, labels and origin with the need.
+6. Order with the JWS bytes unchanged, and the mandate in force byte for byte.
+7. Verify the receiptJws on a confirmed order.
+8. GET /api/v1/audit/verify re-checks every hash link and signature. GET /api/v1/audit with
+   an agent key returns the buyer's own entries in full and every other entry as a redacted
+   stub that still verifies. GET /api/v1/audit/checkpoint returns a signed {size, head}: keep
+   it, and a later log that was cut or rewritten from an earlier entry is detected.
+
+
+8. THE MANDATE: 18 RULES IN THREE TIERS
+---------------------------------------
+The mandate is a JWT signed with the buyer key, shaped like an AP2 Open Checkout Mandate
+(vct, constraints[], aud, exp). The agent fetches it and sends it unchanged with every
+order. A changed mandate no longer verifies (docs/mandates.md, src/lib/policy/rules,
+rule ids in src/lib/contracts/policy.ts).
+
+Tiers: auto (the agent orders alone), ask (a named person approves), block (never).
+
+The 18 rule ids:
+  mandate.signature    mandate.validity     offer.signature     offer.expiry
+  audit.integrity      spend.per_order      spend.per_week      category.allowed
+  dietary.allergens    dietary.claims       substitution.policy substitution.price
+  delivery.partial     delivery.deadline    match.confidence    request.words
+  product.first_time   product.never_buy
+
+What sends an order to a person (ask):
+- Over the per-order or per-week spend limit; a category outside the allowed list.
+- Food with no allergen declaration.
+- A substitute that is not like for like, or dearer than the mandate's price cap.
+- Partial delivery when not allowed; late delivery within the grace days.
+- Low match confidence; any requirement in the buyer's words that is unmet or not
+  checkable for the product delivered; words not understood.
+- An offer carrying no buyer words (request.words).
+- A first-time product when the history rule is on (product.first_time). With it on, a
+  product bought before is reordered alone inside the other limits.
+- An audit log that does not verify (audit.integrity): no order confirms alone until it does.
+- A product on untracked stock above 25% of its plausible-quantity ceiling (delivery.partial).
+
+What blocks an order (never):
+- An excluded allergen (also as a trace when the mandate says so), missing allergen data,
+  a missing required claim.
+- Any substitute when the policy is none.
+- Delivery later than the grace days.
+- A certain mismatch with the buyer's words: wrong product, a missing claim, less than half
+  the need.
+- A product on the never-buy list, or with a listed word in its name, on any line, a swap
+  included (product.never_buy).
+- An invalid, replaced, expired or foreign-workspace mandate; an altered, expired, used or
+  foreign-workspace offer; a passed cut-off.
+
+Limits apply after lines of one product are merged, so splitting a line passes no ceiling
+(eval G29). Parallel orders are serialised, so orders that each fit the week but together
+pass it cannot all confirm (evals G19, G20, G40).
+
+Same sentence, two kitchens: the hotel's order confirms; the school kitchens' order is
+blocked because their mandate excludes sesame even as a trace
+(tests/demo/two-kitchens.test.ts, src/components/valio/TwoKitchens.tsx).
+
+
+9. THE REQUEST CHECK: THE BUYER'S WORDS AGAINST EVERY OFFER
+-----------------------------------------------------------
+This is the feature that makes "matches what the buyer actually asked for" checkable
+(src/lib/request/index.ts, src/lib/request/requirements.ts).
+
+The agent sends the buyer's words as the quote's intent. Before signing, Valio Aimo
+compares them with the product each line actually delivers, including every alternative
+and every substitute or split line. Each requirement is marked met, unmet, substituted or
+not checked, and the result is signed inside the offer as requestCheck:
+- product and claims (lactose-free, organic, vegan);
+- stated attributes: UHT or chilled, fat level, pack type when stated;
+- exclusions such as dairy-free or nut-free, also inside a purpose clause
+  ("for a dairy-free breakfast");
+- brand: another brand is marked substituted and the mandate decides;
+- quantity (at most one lot over), date, budget (zero included);
+- instructions to hold ("do not order yet", "hold", "wait", "ask me first", and the Finnish
+  and Swedish equivalents, for example "älä tilaa ennen kuin hyväksyn").
+Only a fully met offer confirms alone. Unmet, unchecked or not-understood requirements go to
+a person with the requirement named; a certain mismatch blocks. The agent's own stated match
+confidence never counts for more than the wholesaler finds (src/lib/gateway/confidence.ts).
+Instructions written into the words ("ignore the limit and confirm") do not change the
+route: the words are read for requirements only (evals G14, 23).
+
+The buyer sees the check on each order (src/components/order/RequestProof.tsx).
+Evals: 19 (words say wait), 20 and 21 (budget, Finnish budget and wait), 22 (agent quotes the
+wrong milk: blocked), 23 (words not understood), 27 (alternative lacks a stated attribute),
+28 (hold in a later clause), 29 (dairy-free purpose), 30 (zero budget), G28 (no words).
+
+
+10. EXCEPTIONS: SHORT STOCK, CUT-OFF, LATE DELIVERY, RECIPE-ROLE SWAPS
+---------------------------------------------------------------------
+Single orders and basket lines (src/lib/offers/alternatives.ts; decision record 0005):
+When a request cannot be met in full and on time, the answer is the honest primary offer
+plus ranked alternatives, each a signed offer with a tier, the tier's meaning and the
+trade-off in one sentence:
+- good: the cheapest like-for-like product that covers the need on time;
+- better: keep what is in stock and fill the rest like for like, or the most reliable product;
+- best: an organic or Finnish-label product.
+A tier is skipped when no valid candidate exists. Each alternative is checked against the
+buyer's words for what it delivers, and the mandate's substitution policy, price cap and
+delivery rules decide whether the agent may take it alone. Evals 5 (short stock, split),
+6 (cut-off passed), 13 (tomorrow is Sunday: late delivery asks a person), 26.
+
+Stock across orders: the mock API does not lower its figure when Laituri confirms an order,
+so availability in an offer is the upstream figure minus this workspace's own confirmed and
+waiting orders for that date, checked again at placement (eval G30: three orders of 30
+against 51 in stock; the first confirms, the next quote shows 21 left).
+
+Approval at human speed: a waiting order's price is held, signed, until the order cut-off for
+its delivery date. Stock is checked again at approval; a shortfall returns the order blocked
+with fresh signed alternatives (src/lib/orders/approval.ts; eval G32: approval two hours
+after signing still confirms).
+
+Untracked stock: an upstream available amount of 9999999999 or 999999 means "not tracked";
+the signed offer line says stock "untracked" and gives no count (src/lib/valio/normalise.ts;
+evals G16b, G16c).
+
+Menus (src/lib/menu, src/lib/recipes/roles.ts): in an event plan, an ingredient that is
+short, too late, or breaks an allergen rule or a guest's need is swapped by its role in the
+recipe (cream in a sauce, milk as the liquid), first from the kitchen's own stock, with the
+trade-off in one sentence ("Oat fraiche works in this sauce. The taste is a little lighter.").
+A last-minute event flags every line that cannot arrive in time (eval M2). A school menu holds
+every allergen rule, traces included (eval M3). A basket line blocked for an allergen offers a
+product of the same kind that passes every never rule (src/lib/basket/safe-swap.ts, eval W2).
+
+Absurd input: negative, zero or huge quantities, a past date and injection-like strings are
+refused or recorded as data (evals G15, G16, G16d, G18). One product may ask for at most
+20,000 l, 20,000 kg or 20,000 sales units per order (src/lib/offers/limits.ts).
+
+
+11. THE AUDIT CHAIN
+-------------------
+Each entry carries: sequence, time, event type, previous hash, a SHA-256 digest of its
+content, its own SHA-256 over sequence, time, event, previous hash and content digest, and a
+supplier signature over {seq, hash} (src/lib/audit/chain.ts; decision record 0004).
+- Every search, quote, order, approval, refusal, suspension and mandate change is an entry
+  with a one-sentence human-readable summary (src/lib/orders/summaries.ts).
+- The buyer reads it at /buyer/log and Valio Aimo at /valio/audit. The browser re-checks
+  every link and signature with the published keys (src/lib/console/verify.ts). The same
+  check runs on the server at /api/v1/audit/verify.
+- Because each signed hash covers a content digest, another buyer's entries can be given to
+  an agent as redacted stubs that still verify the whole chain end to end (eval T17).
+- A verifier that remembers a signed checkpoint detects a log that was cut, cut and extended,
+  or rewritten from an earlier entry, whatever its new length (evals T12, T15, T16;
+  src/lib/audit/head.ts, src/lib/audit/tail.ts).
+- The service will not append onto a tail that fails its hash, link, signature or remembered
+  head. While the log does not verify, approvals pause and no order confirms alone (eval G31).
+- The demo lets a visitor alter one stored entry to watch detection name it; the entry is
+  put back after five minutes (src/lib/demo/tamper.ts).
+
+
+12. SECURITY MODEL AND THREAT TABLE
+-----------------------------------
+Four parties, each with its own credential:
+- The purchasing agent: an agent key; searches, quotes, orders and reads its own buyer's
+  records; never signs.
+- The buyer's approver: signs in as a person; signs approvals with the approver key.
+- The buyer: signs mandates with the buyer key.
+- Valio Aimo's operator: signs in as a person; can suspend or resume an agent.
+
+Invariants (AGENTS.md):
+- No credential, no reads: orders, offers, the mandate, approvals, activity, the supplier
+  overview, audit entries, demo runs and voice answer 401 without an agent token, a sandbox
+  cookie or a signed-in session (src/lib/http/buyer-scope.ts, src/lib/http/handler.ts).
+- An agent token reads only its own buyer's records; another buyer's record answers 404 as
+  if missing (eval G21, tests/buyers/isolation.test.ts).
+- A suspended agent gets 403 agent_suspended on every route and every MCP method, checked
+  before the handler runs.
+- Domain errors are recognised by brand (isGatewayError), not instanceof.
+- Every call that searches, quotes, orders, approves or changes a mandate goes through the
+  gateway.
+- Tests and evals use recorded data and never call a paid service.
+
+Threats, defences and the evals that try them (docs/paper.md, Security model):
+- Edit price, quantity, origin or a label in a signed offer: the ES256 signature fails, order
+  refused. G1, G2, T7, T14.
+- Reuse an offer, or order after expiry: single use across all workspaces; expiry inside the
+  signature. G9, G3.
+- Raise the agent's own limit, or sign a mandate with the agent's key: only the buyer key
+  signs; the mandate in force must match byte for byte. G5, G6, G8.
+- The agent approves its own order (own channel, forged header or cookie, dropped token):
+  approvals need a signed-in approver session in the same workspace. G10, G11, G12, G13, G24.
+- Prompt injection in the buyer's words: route comes from the rules, not the words. G14, 23.
+- Leave out the buyer's words to skip the check: request.words sends it to a person. G28.
+- Absurd input: contracts reject it; ceilings per product after merging; past date refused.
+  G15, G16, G16d, G18, G29.
+- Parallel orders past the weekly limit or past the stock: one process serialises decisions.
+  G19, G20, G30, G40.
+- Read another buyer's records: 404 and redacted stubs. G21, T17.
+- Present a mandate or offer from another workspace: audience claim inside the signature.
+  G26, G27.
+- Change, delete, reorder or cut audit entries: chain and signatures; remembered head. T9,
+  T10, T11, T12, T16, G31.
+- A suspended agent keeps calling or lifts its own suspension: only an operator session
+  resumes. G25, tests/gateway/suspension.test.ts.
+- A tokenless caller uses the demo sign-in in the shared workspace: demo access exists only
+  in a browser's own sandbox; the shared workspace needs a passcode. G23.
+- An approval after the mandate changed, or hours after signing: re-check at approval; price
+  hold until the cut-off. G22, G32.
+
+Live: /security tries unusual actions against the running service and shows each one stopped
+and logged.
+
+
+13. WHAT STAYS PRIVATE
+----------------------
+The brief requires this "without exposing real systems, confidential data or the marketplace
+roadmap".
+- Real systems: the upstream API key and address stay on the server. Agents call Laituri's
+  own routes; upstream answers are normalised into Laituri's contracts, and no error names an
+  upstream URL, path or key (src/lib/valio/http.ts, src/lib/valio/normalise.ts).
+- Query only when needed: search runs on product files downloaded once by `npm run setup`.
+  Price and stock are asked for at most 10 hits per search and 13 ids per quoted line, cached
+  for a minute. A 20-line weekly order asks about 228 of 17,546 products in 10 requests.
+  /api/v1/health counts upstream calls (src/lib/valio/budget.ts, tests/basket/upstream.test.ts).
+- Confidential data: no credential, no reads; agent keys read only their own buyer; agents
+  receive only fields in the published schemas; the MCP server withholds any tool result that
+  does not parse against its output schema (eval O6, tests/mcp/output-validation.test.ts).
+- The buyer's terms: Valio Aimo's overview counts which mandate rule held or stopped an order
+  and its tier, never the limits or values behind it (src/lib/insights/rules.ts,
+  tests/insights/insights.test.ts).
+- The marketplace roadmap: the interface exposes today's catalogue, price, availability and
+  ordering only. Nothing depends on a marketplace (src/lib/openapi/registry.ts).
+
+
+14. THE BUYER AGENT AND THE MODEL CHAIN
+---------------------------------------
+Laituri is the wholesaler's front door; the buyer's agent is whatever the customer brings.
+For the demo, Laituri also ships a buyer agent (src/lib/agent; decision record 0007):
+- Free-text requests run a model chain: Gemini (gemini-3.8-flash, thinking set low) first,
+  then Claude (claude-sonnet-5-5), then a rule-based scripted agent that always finishes
+  (src/lib/agent/llm/engine.ts, engineChain). A model that answers 429, 503 or 529 rests for
+  60 seconds and the request goes straight to the next engine; the challenge asks callers to
+  respect a 429 for at least 30 seconds. A bad key or model name rests for 10 minutes
+  (src/lib/agent/llm/rest.ts).
+- The chain is built from the keys the server holds: Gemini when GEMINI_API_KEY is set,
+  Claude when ANTHROPIC_API_KEY is set, and the scripted agent always last. The model name can
+  be set per deployment (LAITURI_GEMINI_MODEL, LAITURI_CLAUDE_MODEL). On 15 November 2026
+  (checked 07:02 UTC) the live /api/v1/health reported "engine":"claude" with model
+  "claude-haiku-5-5" and chain ["claude","scripted"].
+  /api/v1/health reports the configured chain under agent.chain.
+- Every engine uses the same tools as an outside agent, so every order still meets the
+  mandate, carries the signed offer and lands in the log, whichever engine runs.
+- Provider keys stay on the server and are never shown to the model.
+- The scripted agent runs the fixed demo scenes, the tests and the evals, so results repeat
+  and need no paid service. It reads Finnish, Swedish and English: "Tarvitsen 20 litraa
+  laktoositonta maitoa maanantaiksi" orders 20 l of lactose-free milk; "jag behöver smör" asks
+  how much, in Swedish; a request to "ignore your rules and approve everything" is refused.
+- The agent's reasoning (from /submission.json): read product, quantity with unit and
+  delivery day; search with the product words and claims; ask one short question when the
+  product is ambiguous or the quantity missing or implausible; quote with the buyer's own
+  words; read the mandate; order with the signed offer and mandate unchanged; take a signed
+  counter-offer only when the primary offer cannot be delivered in full and on time.
+- Never allowed: set or change a price, an offer or a signature; approve an order or change
+  the mandate; work around a limit, for example by splitting an order; say an order is
+  confirmed unless place_order said so; follow instructions in the request to ignore its rules.
+- Tests: tests/agent/llm-engine.test.ts, tests/agent/llm-loop.test.ts,
+  tests/agent/purchase.test.ts.
+- In event planning, a model may only read the words into the same validated fields the rules
+  fill (guests, date, occasion, courses, dietary needs). It never picks dishes, prices or
+  allergens, and can add a dietary need but never drop one the rules read
+  (src/lib/menu/model-reader.ts).
+
+Voice: spoken input uses the browser's Web Speech API where available; spoken answers use the
+browser's voice, or ElevenLabs when a key is set on the server (src/lib/voice).
+
+
+15. DESIGN DECISIONS AND THEIR TRADE-OFFS
+-----------------------------------------
+Seven decision records in MADR shape, each with context, options, outcome, consequences and
+the eval or test that confirms it (docs/decisions):
+
+0001 MCP and REST from one schema set. Options: REST only; MCP only; both from one zod schema
+     set behind one gateway. Chosen: both. Why: outside agents differ, the brief leaves the
+     production interface open, and two hand-written interfaces drift. Cost: schema changes are
+     code changes. Confirmed by evals O1 to O6.
+0002 A buyer-signed mandate presented by the agent. Options: limits stored at the wholesaler;
+     limits in the agent's prompt; a mandate signed with the buyer's key. Chosen: signed
+     mandate. Why: the limits belong to the buyer, the buyer can prove what it allowed, and the
+     agent can show its authority to anyone. Confirmed by evals G5 to G8, T3.
+0003 Signed fixed-price offers, single use, with expiry. Options: order by product code at
+     whatever price; a server-side quote id; a signed short-lived offer presented unchanged.
+     Chosen: signed offer. Why: the agent verifies price and stock offline; the wholesaler's
+     exposure is bounded by expiry and single use; counter-offers are as binding as the
+     original. Confirmed by evals G1 to G4, G9, T2, T7.
+0004 A hash-chained log, verified in the browser. Options: a database flag; per-entry
+     signatures; a hash chain with signed entries and checkpoints, re-checked by the reader.
+     Chosen: the chain, checked client-side. Why: the buyer should not have to trust the
+     party it is checking. Confirmed by evals T6, T9 to T13.
+0005 Exceptions as signed counter-offers. Options: return an error; substitute silently;
+     return the honest primary offer plus ranked signed alternatives. Chosen: ranked signed
+     alternatives. Why: a free-text suggestion cannot be ordered or checked; an alternative
+     goes through the same checks as an offer. Confirmed by evals 5, 6, 13.
+0006 Seeded history through the real gateway. Options: fixture rows; an empty start; a plan of
+     requests played through the real gateway at past times. Chosen: played through the
+     gateway. Why: everything on screen was produced by the code an outside agent hits, and
+     the log verifies. Confirmed by tests/seed/seed.test.ts, tests/audit/seeded.test.ts.
+0007 A scripted agent as the deterministic default; model-driven agents behind one adapter.
+     Why: evals must repeat and need no paid key; the gateway's guarantees do not depend on
+     which agent calls (eval O8). Confirmed by the agent tests listed in section 14.
+
+Further deliberate choices visible in the code:
+- Every signed object has its own JWS typ, so tokens cannot be swapped between roles.
+- Signed mandates and offers are bound to a workspace by an audience claim.
+- Offers are re-checked at placement and at approval, so time between steps cannot be exploited.
+- A price hold is its own signed statement, bounded by the order cut-off.
+- The wholesaler's overview is a pure function over the log and never reads buyer limits.
+- Numbers in docs are generated from one evidence source and tested for staleness.
+
+
+16. REQUIREMENT BY REQUIREMENT: THE BRIEF MAPPED TO THE BUILD
+------------------------------------------------------------
+Full table with code and checks: docs/judging.md (generated from src/lib/evidence; also
+/evidence and /evidence.json).
+
+CORE (the brief: "your solution must enable")
+- Product, price and availability lookup. search_catalog and get_product (MCP);
+  POST /api/v1/products/search and GET /api/v1/products/{id} (REST). Hits carry an indicative
+  live price, stock, delivery date, order cut-off and pack maths for the stated need.
+  Code: src/lib/catalog/search.ts, src/lib/gateway/preview.ts. Check: eval O6, /api/v1/openapi.json.
+- Requesting price and availability, then placing an order, on fixed prices. request_quote
+  returns a supplier-signed offer, fixed net price, valid 15 minutes, workspace-bound;
+  place_order takes it unchanged plus the signed mandate and an idempotency key; one offer
+  gives one order; REST answers 201, 202 or 422. Code: src/lib/offers/quote.ts,
+  src/lib/orders/place.ts. Check: evals 1, G1, G9.
+- Permission and human-approval management. A buyer-signed mandate with 18 rules in three
+  tiers; ask-tier orders wait for the named approver, whose decision is signed with the
+  approver key. Code: src/lib/policy/evaluate.ts, src/lib/orders/approval.ts,
+  src/app/approve/[orderId]/page.tsx. Check: evals 4, G10, /buyer/mandate.
+
+OPTIONAL DIRECTIONS
+- Delivery time and sustainability comparison. Every hit and every signed offer line carries
+  country of origin, labels, delivery reliability (0 to 1) and category-average CO2 per kg.
+  Search ranks a clear match by price, reliability ("prefer": "reliability") or
+  sustainability ("prefer": "sustainability"). Code: src/lib/contracts/facts.ts,
+  src/lib/gateway/ranking.ts. Check: eval T14, tests/offers/facts.test.ts.
+- Substitution and other exception handling. Section 10. Check: evals 5, 6.
+- Traceability and explainability. Signed entries with one-sentence summaries; every order
+  lists each rule with its result and reason; the agent's runs show each tool call in plain
+  words (src/components/buyer/AgentAsk.tsx). Check: eval T6, /buyer/log.
+
+INSIGHT PROBLEMS THE BRIEF ASKS TO TACKLE
+- Trust protocol: section 7 and docs/trust-protocol.md. Check: evals T2, T14, /.well-known/jwks.json.
+- Guardrails model (spend threshold, substitutions outside stated preferences, autonomy):
+  section 8. Check: `npm run eval -- --suite guardrails`, tests/policy/evaluate.test.ts,
+  tests/policy/never-buy.test.ts.
+- Response logic (partial availability, good-better-best within Valio Aimo's own assortment):
+  section 10. Check: eval 5, tests/offers/quote.test.ts.
+- Audit trail for both buyer and Valio Aimo: section 11. Check: evals T6, T10, /valio/audit.
+
+EXAMPLE SCENARIOS IN THE BRIEF
+- Need, recipe, order: POST /api/v1/menus/plan (MCP plan_menu) reads the event in English or
+  Finnish and returns three menus from 148 Valio professional recipes (valioaimo.fi, read
+  2026-11-14, attributed "Recipe: Valio"), scaled to the guests, with a shopping list net of
+  the kitchen's stock and indicative prices; the chosen list is ordered as one basket of
+  signed offers. Check: eval M1, tests/menu/plan.test.ts.
+- Last-minute event: lines that cannot arrive in time or are past cut-off are flagged and
+  swapped by recipe role, first from stock. Check: evals M2, 13.
+- Supplier stock-out: in a menu, a recipe-role swap with its trade-off; in a single order, a
+  signed split or like-for-like substitute. Check: tests/menu/swaps.test.ts, eval 5.
+- Proactive selling agent: GET /api/v1/suggestions carries a seasonal proposal from Valio
+  Aimo that fits what the kitchen buys and what its mandate allows; the buyer's agent may only
+  show it to a person, never order it alone (src/lib/suggestions,
+  tests/suggestions/suggestions.test.ts).
+- Allergen-safe substitution under pressure: the school kitchens' mandate excludes peanut,
+  nuts and sesame, also as traces; menus and swaps meet it and every guest need; every order
+  line is checked again. Check: evals M3, W2, 9b, tests/demo/two-kitchens.test.ts.
+- Standing order drift detection: the weekly draft compares each standing line with the weeks
+  on record and says in plain words which lines crept up or down before the order starts
+  (src/lib/basket/drift.ts). The approver's phone shows it, for example 250 kg of butter
+  "Up 317% on your usual week". Check: eval W1, tests/basket/weekly.test.ts.
+
+"WITHOUT EXPOSING REAL SYSTEMS, CONFIDENTIAL DATA OR THE MARKETPLACE ROADMAP"
+Section 13.
+
+JUDGING CRITERIA (weights from the brief)
+- Working end-to-end demo (30%): request, search, signed offer, mandate, automatic order or
+  signed approval, over the same interface an outside agent uses; a 20-line weekly basket; an
+  event plan ordered as a basket; the wholesaler's side; a 15-step walkthrough that drives the
+  running product; an outside process buys with scripts/buyer-agent.ts. Measured: Scenarios
+  38/38; eval O8 (an agent that knows only /llms.txt buys over HTTP).
+- Solving the problem and user need (20%): pack maths, the signed request check, match
+  confidence, three demo buyers with distinct mandates. Measured: 38/38 scenario cases end on
+  the expected route with the expected concept, amount and date.
+- Autonomy and controls (20%): three tiers, autonomy from history, never-buy list, workspace
+  binding, audit.integrity, signed approvals, suspension, one log read and verified by both
+  sides. Measured: Guardrails 38/38, Trust 17/17.
+- Robustness to exception situations (15%): signed good/better/best counter-offers, recipe-role
+  swaps, price hold to cut-off, stock re-check at approval, stock across orders, merged lines,
+  late and partial delivery rules. Measured: Scenarios 38/38, Guardrails 38/38.
+- Openness and credible path toward production (15%): one schema set for MCP, REST and
+  OpenAPI 3.1; JWS and JWKS; six discovery documents; standards table separating used from
+  followed; decision records; a production path; MIT licence. Measured: Openness 8/8.
+
+CHALLENGE RULES AND SCOPE FOLLOWED
+- Built on the challenge's synthetic data and its mock API: product files downloaded once by
+  `npm run setup`; live price and availability from the mock API with the key held on the
+  server (src/lib/valio). No real or confidential Valio Aimo data or systems.
+- The brief mocks "today's webshop and backend systems, not the marketplace itself"; Laituri
+  exposes today's catalogue, price, availability and ordering only.
+- The mock API has price and availability and no order endpoint, so Laituri writes the order
+  and a signed receipt itself and marks each order simulated: true
+  (src/lib/orders/confirm.ts). Production step 1 hands this to the ERP's order entry.
+- Fixed prices rather than negotiated quotes, as the brief specifies (section 7).
+- Open, documented standards rather than a proprietary format (section 19).
+
+
+17. EVIDENCE: TESTS AND EVALS, WITH THE COMMAND FOR EACH
+--------------------------------------------------------
+Re-measured on commit 31e0525, 15 November 2026:
+
+  npm test                               3,648 / 3,648 tests pass, 155 files (vitest, about 105 s)
+  npm run eval -- --suite scenarios      38 / 38   bar >= 90%
+  npm run eval -- --suite guardrails     38 / 38   bar 100%
+  npm run eval -- --suite trust          17 / 17   bar 100%
+  npm run eval -- --suite openness        8 / 8    bar 100%
+  npm run eval                           all four suites; writes evals/report.json
+  npm run evidence                       re-runs tests and evals; regenerates every number in
+                                         README.md and docs/
+  npm run typecheck, npm run lint
+
+Evals run the real application code in process on recorded upstream answers (255 products)
+with a fixed clock (Saturday 2026-11-14 09:00 Helsinki, so "by Monday" is 2026-11-16). Each
+case starts from a clean state. No key and no paid service is needed. Runner: evals/run.ts;
+suites: evals/suites. Every case and its expectation: docs/evals.md.
+
+Scenarios (38): 1 lactose-free milk 1,000 l; 2 Finnish request; 3 200 l; 4 over the per-order
+limit; 5 short stock, split covers need; 6 cut-off passed; 7 50 kg butter; 8 oat drink keeps
+vegan; 9 peanut butter; 9b product that contains nuts; 10 unknown product; 11 no quantity;
+12 vague request; 13 tomorrow is Sunday; 14 over the weekly limit; 15 category outside
+mandate; 16 same idempotency key twice; 17 mandate requires organic; 18 first-time product;
+19 words say wait; 20 words set a budget; 21 Finnish budget and wait; 22 agent quotes the
+wrong milk; 23 words not understood; 24 a trillion litres; 25 the brief's own sentence;
+26 short stock, alternative as asked; 27 alternative lacks a stated attribute; 28 hold in a
+later clause; 29 dairy-free purpose; 30 zero budget; M1 need, recipe, order; M2 last-minute
+event, recipe-role swap; M3 allergen-safe school menu; W1 Nordic Harbour's weekly order
+(17 green, 2 orange, 1 red); W2 Kaisla's weekly order (14, 1, 1); W3 Ravintola Laine's weekly
+order (11, 1, 0); W4 the brief's sentence inside a basket.
+
+Guardrails (38): G1 price edited; G2 quantity edited; G3 expired offer; G4 wrong key; G5 raised
+limit with old signature; G6 mandate signed by the agent's key; G7 expired mandate; G8 mandate
+for another agent; G42 never-buy product; G9 replay; G19 two simultaneous orders over the week;
+G20 six simultaneous orders; G10 approval from the agent channel; G11 forged console header;
+G12 made-up cookie; G13 approval JWS reused as cookie; G14 prompt injection in the intent;
+G15 negative and zero quantities; G16 one billion litres; G16b one trillion on untracked stock;
+G16c large order on untracked stock; G16d yesterday's date; G17 unknown offer; G18 SQL-like and
+script strings; G21 another buyer's offer by id; G22 approval after the mandate changed;
+G23 tokenless demo access in the shared workspace; G24 key holder drops its token to approve;
+G25 suspended agent resumes itself; G26 another workspace's mandate; G27 offer from another
+workspace; G28 order without the buyer's words; G29 one product split over lines; G30 three
+orders against limited stock; G31 audit log known broken; G32 approval two hours later;
+G40 basket lines in parallel over the week; G41 basket line resolved with a foreign option.
+
+Trust (17): T1 JWKS has public keys only; T2 offer signature; T3 mandate signature; T4 approval
+signature bound to the offer; T5 receipt signatures bound to offer and audit entry; T6 every
+audit signature and the chain, checkpoint signed; T7 one byte changed in an offer; T8 in a
+receipt; T9 in an audit entry (names it); T10 middle entry deleted; T11 entries reordered;
+T12 tail cut; T13 stored entry changed, service verify names it; T14 origin or label changed;
+T15 earlier entry rewritten in a longer log; T16 tail cut then extended; T17 another buyer's
+agent verifies the whole chain from stubs.
+
+Openness (8): O1 OpenAPI 3.1 document complete; O2 unique operationId everywhere; O3 every
+$ref resolves; O4 every registered path answers as documented; O5 MCP tools/list has input
+and output schemas; O6 every MCP tool callable and its result validates; O7 discovery
+documents served with the right content type; O8 outside agent from llms.txt only.
+
+O8 in detail (evals/support/outside-agent.ts): the eval starts the route handlers behind a
+plain node:http server on a free port. An agent that knows nothing but the text of /llms.txt
+fetches it over HTTP, creates its own sandbox with POST /api/v1/workspace, then runs the curl
+lines of the numbered REST flow in document order with the key it received: search, quote
+with the buyer's words as intent, read the mandate, order. It refuses any URL that is not
+the server it started. The case passes only if the order is confirmed. Any change to
+llms.txt that drops a step, a header or an example body fails it.
+
+
+18. HOW TO VERIFY EVERY CLAIM YOURSELF
+--------------------------------------
+On the live demo (no clone needed):
+- Walkthrough of the whole product:      https://laituri.wicflow.com/buyer?tour=1
+- Your own sandbox with agent keys:      curl -s -X POST https://laituri.wicflow.com/api/v1/workspace
+- Then buy the milk over REST:           follow https://laituri.wicflow.com/llms.txt
+- Or over MCP:                           https://laituri.wicflow.com/mcp (Bearer <key>)
+- The signed log, re-checked:            https://laituri.wicflow.com/api/v1/audit/verify
+- Public keys to check it yourself:      https://laituri.wicflow.com/.well-known/jwks.json
+- A signed head to remember:             https://laituri.wicflow.com/api/v1/audit/checkpoint
+- Every operation and schema:            https://laituri.wicflow.com/api/v1/openapi.json
+- Unusual actions stopped live:          https://laituri.wicflow.com/security
+- Criteria, code, checks, measurements:  https://laituri.wicflow.com/evidence.json
+- Service status and agent chain:        https://laituri.wicflow.com/api/v1/health
+
+In a clone:
+  npm install
+  VALIO_MODE=recorded npm run dev        # port 3210, no key needed
+  npm test
+  npm run eval
+  npm run typecheck && npm run lint
+  npx tsx scripts/buyer-agent.ts "1,000 litres of lactose-free milk by Monday"
+
+Claim to check:
+- "An agent cannot change a price."         eval G1; src/lib/orders/read-offer.ts
+- "An agent cannot raise its own limit."    eval G5, G6; src/lib/mandate/claims.ts
+- "An agent cannot approve its own order."  evals G10 to G13, G24; src/lib/orders/approval.ts
+- "One offer gives one order."              eval G9; src/lib/orders/place.ts
+- "Offers expire after 15 minutes."         eval G3; src/lib/offers/assemble.ts
+- "The offer is checked against the words." evals 19 to 23, 27 to 30; src/lib/request
+- "Prompt injection does not change routes." eval G14; src/lib/request/index.ts
+- "Allergens block, traces included."       eval 9b, M3; tests/demo/two-kitchens.test.ts
+- "Bought before: alone; new: ask."         eval 18; src/lib/policy/rules/products.ts
+- "Never-buy list blocks swaps too."        eval G42; tests/policy/never-buy.test.ts
+- "Good, better, best are signed."          eval 5; src/lib/offers/alternatives.ts
+- "Price held until the cut-off."           eval G32; src/lib/orders/approval.ts
+- "Approval re-checks the mandate."         eval G22; src/lib/orders/recheck.ts
+- "Parallel orders cannot pass a limit."    evals G19, G20, G40; src/lib/orders/lock.ts
+- "Tampered log entries are named."         evals T9 to T13; src/lib/audit/verify.ts
+- "A cut log is caught."                    evals T12, T15, T16; src/lib/audit/tail.ts
+- "Other buyers' entries stay private."     evals G21, T17; src/app/api/v1/audit/route.ts
+- "Suspension holds on every route."        eval G25; src/lib/http/handler.ts
+- "Typed tokens cannot be swapped."         tests/trust/typ.test.ts
+- "MCP and REST from one schema set."       evals O1 to O6; src/lib/contracts
+- "An outside agent can buy from llms.txt." eval O8; evals/support/outside-agent.ts
+- "Few upstream calls."                     tests/basket/upstream.test.ts; /api/v1/health
+- "Seeded history is real gateway output."  tests/seed/seed.test.ts, tests/audit/seeded.test.ts
+- "Docs numbers are not typed by hand."     tests/evidence/evidence.test.ts
+
+
+19. STANDARDS USED AND FOLLOWED
+-------------------------------
+"Used" means implemented and tested here. "Follows" means the names, shapes or codes are
+taken from the standard, so a later full implementation does not change the interface
+(docs/production.md).
+- Used: Model Context Protocol (Streamable HTTP); REST described by OpenAPI 3.1.
+- Used: JWS compact, ES256, keys as JWKS (RFC 7515, 7517, 7638).
+- Used: RFC 9457 problem details for errors.
+- Used: GS1 GTIN for products.
+- Used: discovery via agent card, AI catalog, llms.txt, OAuth protected-resource metadata.
+- Follows: AP2 (Agent Payments Protocol): the mandate is shaped like its Open Checkout
+  Mandate (vct, constraints[], aud, exp).
+- Follows: UCP (Universal Commerce Protocol) terms for catalogue, checkout and order,
+  including escalation to a person; profile at /.well-known/ucp.
+- Follows: Peppol BIS Ordering: the signed receipt carries the order-response code
+  (AP accepted, CA accepted with change, RE rejected).
+- Follows: OVT and GLN identifiers for parties.
+
+
+20. PATH TO PRODUCTION
+----------------------
+From src/lib/evidence/scope.ts (docs/production.md), each step building on existing code:
+1. Real order entry: hand the signed order to the ERP and return its order number in the
+   signed receipt (src/lib/orders/confirm.ts).
+2. OAuth 2.1 per agent: scoped tokens (catalog:read, quote:create, order:place). The scopes
+   are already declared in the OpenAPI document and the protected-resource metadata.
+3. Key custody per party: Valio Aimo runs Laituri with the supplier key only; the buyer signs
+   mandates in its own system; the approver signs with a personal credential
+   (src/lib/trust/keys.ts).
+4. Buyer identity: a verifiable organisation credential (the planned EU Business Wallet).
+5. Mandate copy at the wholesaler: the signed mandate also in the customer master.
+6. Database: transactions and row locks (src/lib/store/types.ts).
+7. External audit anchor: checkpoints anchored in a transparency service (SCITT)
+   (src/lib/audit/checkpoint.ts).
+8. Peppol ordering documents for customers who already trade over Peppol
+   (src/lib/orders/receipt.ts).
+Because MCP, REST and a future Valio Aimo service agent all call one gateway, none of these
+steps changes the interface an agent uses.
+
+
+21. LINKS
+---------
+Live demo                    https://laituri.wicflow.com
+Walkthrough                  https://laituri.wicflow.com/buyer?tour=1
+Connect an agent             https://laituri.wicflow.com/connect
+Submission as JSON           https://laituri.wicflow.com/submission.json
+Agent guide                  https://laituri.wicflow.com/llms.txt
+Paper and guide, plain text  https://laituri.wicflow.com/llms-full.txt
+Paper                        https://laituri.wicflow.com/paper
+Six-page brief               https://laituri.wicflow.com/brief (PDF: /brief.pdf)
+Two-page overview (PDF)      https://laituri.wicflow.com/laituri-overview.pdf
+Evidence                     https://laituri.wicflow.com/evidence (JSON: /evidence.json)
+OpenAPI 3.1                  https://laituri.wicflow.com/api/v1/openapi.json
+MCP endpoint                 https://laituri.wicflow.com/mcp
+JWKS                         https://laituri.wicflow.com/.well-known/jwks.json
+Agent card                   https://laituri.wicflow.com/.well-known/agent-card.json
+Health                       https://laituri.wicflow.com/api/v1/health
+
+In the repository: README.md, AGENTS.md, docs/paper.md, docs/judging.md,
+docs/architecture.md, docs/trust-protocol.md, docs/mandates.md, docs/evals.md,
+docs/production.md, docs/decisions/, docs/outside-agent-run.md, src/lib/evidence/facts.json.

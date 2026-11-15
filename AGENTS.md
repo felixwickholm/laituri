@@ -4,7 +4,7 @@ Laituri is the agent front door for a food-service wholesaler: a customer's own 
 
 Built by team Moonshot for the Valio Aimo challenge "Trusted Trade Agents" at Junction 2026, on the challenge's synthetic data; orders are simulated. Live: https://laituri.wicflow.com.
 
-To understand the project in one pass: `/submission.json` (problem, solution, views, agent chain, controls, evidence, links, limits; built by `src/lib/discovery/submission.ts`), the six-page brief at `/brief` and `/brief.pdf` (source `docs/brief/brief.html`, built by `scripts/brief.ts`), then `docs/paper.md`.
+To understand the project in one pass: `/submission.json` (problem, solution, views, agent chain, controls, evidence, links, limits; built by `src/lib/discovery/submission.ts`), the six-page brief at `/brief` and `/brief.pdf` (source `docs/brief/brief.html`, built by `scripts/brief.ts`), then `docs/paper.md`. For an AI agent or AI judge: `public/for-agents.txt` (served at `/for-agents.txt`, copy at `FOR-AGENTS.txt`), every claim with the file, route, test or command that checks it.
 
 ## Run, test, evaluate
 
