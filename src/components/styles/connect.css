@@ -20,54 +20,6 @@
   --cx-code-line: rgba(255, 255, 255, 0.07);
 }
 
-/* Top bar: plain, wordmark, two links, the theme switch. */
-.cx-top {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  height: var(--topbar);
-  padding: 0 var(--gutter);
-  border-bottom: 1px solid var(--line);
-  background: var(--bg);
-}
-.cx-home {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--text-1);
-  text-decoration: none;
-  border-radius: var(--r-sm);
-}
-.cx-tagline {
-  color: var(--text-3);
-  font-size: var(--fs-sm);
-  white-space: nowrap;
-}
-.cx-nav {
-  display: flex;
-  gap: 4px;
-  margin-left: auto;
-}
-.cx-nav a {
-  display: inline-flex;
-  align-items: center;
-  height: 32px;
-  padding: 0 10px;
-  border-radius: var(--r-control);
-  color: var(--text-2);
-  font-size: var(--fs-sm);
-  font-weight: 500;
-  text-decoration: none;
-  white-space: nowrap;
-  transition:
-    background-color var(--d-hover) var(--ease-hover),
-    color var(--d-hover) var(--ease-hover),
-    transform var(--d-press) var(--ease-out);
-}
-.cx-nav a:active {
-  transform: var(--press);
-}
-
 .cx-main {
   max-width: calc(var(--content) + 2 * var(--gutter));
   margin: 0 auto;
@@ -830,10 +782,6 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .cx-nav a:hover {
-    background: var(--surface-3);
-    color: var(--text-1);
-  }
   .cx-app:hover:not([aria-selected="true"]) {
     background: var(--surface-3);
     color: var(--text-1);
@@ -844,12 +792,6 @@
   .cx-code .icon-btn:hover {
     background: rgba(255, 255, 255, 0.08);
     color: var(--cx-code-text);
-  }
-}
-
-@media (max-width: 1023px) {
-  .cx-tagline {
-    display: none;
   }
 }
 /* With the sidebar, a laptop leaves too little room for two columns: the setup and the test order stack. */
@@ -878,12 +820,6 @@
   }
   .cx-term {
     min-height: 120px;
-  }
-  .cx-top {
-    gap: 8px;
-  }
-  .cx-nav a {
-    padding: 0 8px;
   }
   .cx-table thead {
     display: none;

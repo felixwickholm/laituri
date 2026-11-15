@@ -484,9 +484,6 @@
   display: grid;
   gap: 10px;
 }
-.log-list > .history-note {
-  margin: 0;
-}
 @media (max-width: 760px) {
   .log-filter {
     grid-template-columns: minmax(0, 1fr);

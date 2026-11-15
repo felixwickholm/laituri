@@ -204,20 +204,6 @@
   }
 }
 
-.demo-tag {
-  display: inline-flex;
-  align-items: center;
-  flex: none;
-  height: 20px;
-  padding: 0 7px;
-  border-radius: var(--r-xs);
-  border: 1px dashed var(--line-strong);
-  color: var(--text-3);
-  font-size: var(--fs-xs);
-  font-weight: 500;
-  white-space: nowrap;
-}
-
 .tone-waiting {
   color: var(--warn);
 }
@@ -544,12 +530,6 @@
   .live-dot {
     animation: none;
   }
-}
-
-/* One quiet line above a list that holds seeded rows. */
-.history-note {
-  color: var(--text-3);
-  font-size: var(--fs-xs);
 }
 
 /* Technical details: closed by default, the summary is one quiet line. */

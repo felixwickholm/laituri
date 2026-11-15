@@ -116,11 +116,6 @@
   padding: 0;
   overflow: hidden;
 }
-.list-card > .history-note {
-  margin: 0;
-  padding: 10px 20px 12px;
-  border-top: 1px solid var(--line);
-}
 
 .card-note {
   margin: 14px 0 0;
@@ -168,7 +163,6 @@
 .status-mark[data-tone="danger"] .status-dot {
   background: var(--danger);
 }
-
 
 /* Legend swatches are the marks they explain, scaled down. */
 .tier-key {
@@ -623,9 +617,6 @@
 }
 .live-foot:empty {
   display: none;
-}
-.live-foot .history-note {
-  margin: 0;
 }
 
 /* ---------- Connected agents (overview) ---------- */

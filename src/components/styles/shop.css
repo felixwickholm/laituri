@@ -200,16 +200,6 @@
   margin: 0;
   padding: 0;
 }
-.store-glyph {
-  display: grid;
-  place-items: center;
-  color: var(--accent);
-}
-.store-glyph svg {
-  width: 32px;
-  height: 32px;
-  stroke-width: 1.5;
-}
 .store-tags {
   display: flex;
   flex-wrap: wrap;
