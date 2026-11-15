@@ -83,6 +83,14 @@ describe("claudeProvider", () => {
 });
 
 describe("geminiProvider", () => {
+  it("thinks at a level that stays fast: a level on Gemini 3, a small budget on 2.5", async () => {
+    const { thinkingConfig } = await import("@/lib/agent/llm/gemini");
+    expect(thinkingConfig("gemini-3.8-flash")).toEqual({ thinkingLevel: "low" });
+    expect(thinkingConfig("gemini-3.8-flash", "high")).toEqual({ thinkingLevel: "high" });
+    expect(thinkingConfig("gemini-3.8-flash", "silly")).toEqual({ thinkingLevel: "low" });
+    expect(thinkingConfig("gemini-2.5-flash")).toEqual({ thinkingBudget: 1024 });
+  });
+
   it("turns function calls into calls and keeps the model's parts for the next turn", async () => {
     const callPart = { functionCall: { name: "search_catalog", args: { query: "milk" } }, thoughtSignature: "opaque" };
     const { fetch, sent } = fakeFetch([
@@ -96,6 +104,7 @@ describe("geminiProvider", () => {
     expect(sent[0].url).toBe("https://generativelanguage.googleapis.com/v1beta/models/gemini-test:generateContent");
     expect(sent[0].headers.get("x-goog-api-key")).toBe("g-key");
     expect(sent[0].body.tools).toEqual([{ functionDeclarations: [{ name: "search_catalog", description: "Search.", parametersJsonSchema: TOOLS[0].parameters }] }]);
+    expect(sent[0].body.generationConfig).toMatchObject({ thinkingConfig: { thinkingLevel: "low" } });
 
     await conversation.next([{ callId: "call_1_1", name: "search_catalog", content: "No hits.", isError: false }], signal);
     expect(sent[1].body.contents).toEqual([
