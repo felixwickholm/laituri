@@ -64,26 +64,32 @@ export function languageOf(text: string): Lang {
   return "en";
 }
 
-const ASK: Record<Lang, { which: string; offTask: string; howMuch: (what: string) => string; tooSmall: (what: string) => string }> = {
+const ASK: Record<Lang, { which: string; oneAtATime: (what: string) => string; offTask: string; howMuch: (what: string) => string; tooSmall: (what: string) => string }> = {
   en: {
     which: "Which product do you need?",
+    oneAtATime: (what) => `I order one product per request. Which first, and how much: ${what}?`,
     offTask: "I can only search, get signed prices and order products for your kitchen. A person approves orders and sets the limits.",
     howMuch: (what) => `How much ${what} do you need, and by which day?`,
     tooSmall: (what) => `That amount is too small to order. How much ${what} do you need?`,
   },
   fi: {
     which: "Mitä tuotetta tarvitset?",
+    oneAtATime: (what) => `Tilaan yhden tuotteen kerrallaan. Kumpi ensin, ja kuinka paljon: ${what}?`,
     offTask: "Voin vain hakea tuotteita, pyytää allekirjoitetun hinnan ja tilata keittiöllesi. Ihminen hyväksyy tilaukset ja asettaa rajat.",
     howMuch: (what) => `Kuinka paljon tarvitset (${what}), ja mihin päivään mennessä?`,
     tooSmall: (what) => `Määrä on liian pieni tilattavaksi. Kuinka paljon tarvitset (${what})?`,
   },
   sv: {
     which: "Vilken produkt behöver du?",
+    oneAtATime: (what) => `Jag beställer en produkt åt gången. Vilken först, och hur mycket: ${what}?`,
     offTask: "Jag kan bara söka produkter, få ett signerat pris och beställa till ert kök. En person godkänner beställningar och sätter gränserna.",
     howMuch: (what) => `Hur mycket ${what} behöver du, och till vilken dag?`,
     tooSmall: (what) => `Mängden är för liten att beställa. Hur mycket ${what} behöver du?`,
   },
 };
+
+/** A phrase joining two product words: "butter and cream", "voita ja kermaa", "smör och grädde". */
+const TWO_PRODUCTS = /\s\p{L}{2,}\s+(and|och|ja|sekä|samt|&)\s+\p{L}{2,}/iu;
 
 /** Words that ask the agent to do what only a person may: approve, change limits, ignore the rules. */
 const OFF_TASK = /\b(approve (it|all|everything|the order|orders) (yourself|now|for me)|approve everything|ignore (your|the|all|my) (rules|instructions|limits|mandate)|bypass|override (the|your) (rules|limits?)|raise (my|the|your) limits?|change (my|the|your) (limits?|mandate)|ohita säännöt|nosta rajaa?|hyväksy kaikki|ignorera reglerna|godkänn allt)\b/iu;
@@ -116,6 +122,8 @@ export async function runPurchase(
     const lang = languageOf(requestText);
     if (OFF_TASK.test(requestText)) return finish("needs_input", ASK[lang].offTask, {}, "waiting");
     if (!parsed.phrase && !parsed.productId) return finish("needs_input", ASK[lang].which, {}, "waiting");
+    // "smör och grädde": two products in one phrase would be searched as one. Ask which first instead of guessing.
+    if (TWO_PRODUCTS.test(` ${parsed.phrase} `)) return finish("needs_input", ASK[lang].oneAtATime(parsed.phrase), {}, "waiting");
     if (!parsed.quantity) return finish("needs_input", ASK[lang].howMuch(what), {}, "waiting");
     if (parsed.quantity.amount <= 0) return finish("needs_input", ASK[lang].tooSmall(what), {}, "waiting");
     const quantity = parsed.quantity;
