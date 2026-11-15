@@ -17,6 +17,7 @@ const DIETARY = [
 /** The quiet structured way in: guests, day, dietary needs and a budget per guest. */
 export function DetailsForm({ initial, onPlan }: { initial?: PlanDetails; onPlan: (details: PlanDetails) => void }) {
   const [guests, setGuests] = useState(initial?.guests ?? 80);
+  const [guestsValid, setGuestsValid] = useState(true);
   const [date, setDate] = useState(() => initial?.date ?? addDays(isoDay(Date.now()), 7));
   const now = useNow(60_000);
   const [dietary, setDietary] = useState<string[]>(initial?.dietary ?? []);
@@ -28,6 +29,7 @@ export function DetailsForm({ initial, onPlan }: { initial?: PlanDetails; onPlan
 
   function submit(event: FormEvent): void {
     event.preventDefault();
+    if (!guestsValid) return;
     const details: PlanDetails = { guests, date, dietary };
     const perGuest = Number(budget.replace(",", "."));
     if (budget && Number.isFinite(perGuest) && perGuest > 0) details.budgetPerGuest = perGuest;
@@ -40,8 +42,13 @@ export function DetailsForm({ initial, onPlan }: { initial?: PlanDetails; onPlan
         <span className="details-label">
           Guests
         </span>
-        <Stepper label="Guests" value={guests} onChange={setGuests} step={5} unit="guests" />
+        <Stepper label="Guests" value={guests} onChange={setGuests} step={5} unit="guests" onValidity={setGuestsValid} />
       </div>
+      {guestsValid ? null : (
+        <p className="save-problem" role="alert">
+          Enter a guest count from 1 to 2,000.
+        </p>
+      )}
       <label className="details-row">
         <span className="details-label">Day</span>
         <input className="text-field details-date" type="date" value={date} min={isoDay(now)} onChange={(event) => setDate(event.target.value)} required />
@@ -63,7 +70,7 @@ export function DetailsForm({ initial, onPlan }: { initial?: PlanDetails; onPlan
           <input className="text-field" inputMode="decimal" value={budget} onChange={(event) => setBudget(event.target.value)} placeholder="Any" />
         </span>
       </label>
-      <button type="submit" className="btn btn-primary big">
+      <button type="submit" className="btn btn-primary big" disabled={!guestsValid}>
         Plan the menu
       </button>
     </form>

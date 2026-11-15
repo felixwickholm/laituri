@@ -49,6 +49,8 @@ export interface ParsedRequest {
   budget?: number;
   /** The buyer asked a person to approve before anything is ordered ("ask me first"). */
   waitForPerson: boolean;
+  /** The amount was given in boxes or cases ("kaks laatikkoa"), whose size the agent does not know. */
+  packageWord?: string;
 }
 
 export interface PurchaseOptions {

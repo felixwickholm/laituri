@@ -5,12 +5,16 @@ import type { ParsedRequest } from "./types";
 
 type Unit = Quantity["unit"];
 
+/** Boxes and cases: a count, but of a size only the buyer knows, so the agent asks before it orders. */
+const PACKAGE = /^(?:cases?|boxes|box|crates?|laatikk\p{L}*|lådor|låda|lådan)$/u;
+
 const UNITS: [RegExp, Unit, number][] = [
   [/^(?:litres?|liters?|litraa?|ltr|l)$/, "l", 1],
   [/^(?:kilograms?|kilos?|kiloa|kg)$/, "kg", 1],
   [/^(?:grams?|grammaa?|g)$/, "kg", 0.001],
   [/^(?:dl|desilitraa?|deciliters?|decilitres?)$/, "l", 0.1],
-  [/^(?:pieces?|pcs|pc|units?|kpl|st|styck|packs?|cases?|bottles?|boxes|box|crates?|laatikk\p{L}*|pullo\p{L}*|paketti\p{L}*|pakettia|pkt|lådor|låda|flaskor|flaska|paket)$/u, "sales_unit", 1],
+  [/^(?:pieces?|pcs|pc|units?|kpl|st|styck|packs?|bottles?|pullo\p{L}*|paketti\p{L}*|pakettia|pkt|flaskor|flaska|paket)$/u, "sales_unit", 1],
+  [PACKAGE, "sales_unit", 1],
 ];
 
 const WEEKDAYS: [RegExp, number][] = [
@@ -125,7 +129,7 @@ function findDate(tokens: Token[], today: string): string | undefined {
 }
 
 /** The quantity, and the clause it is in. */
-function findQuantity(tokens: Token[]): { quantity?: Quantity; clause?: number } {
+function findQuantity(tokens: Token[]): { quantity?: Quantity; clause?: number; packageWord?: string } {
   const numberAt = (i: number): number | undefined => {
     const word = tokens[i]?.text;
     if (!word || tokens[i].used) return undefined;
@@ -140,7 +144,8 @@ function findQuantity(tokens: Token[]): { quantity?: Quantity; clause?: number }
     if (amount === undefined || !unit || amount <= 0) continue;
     tokens[i].used = true;
     if (!glued) tokens[i + 1].used = true;
-    return { quantity: { amount: round(amount * unit[1]), unit: unit[0] }, clause: tokens[i].clause };
+    const unitWord = glued ? glued[2] : tokens[i + 1].text;
+    return { quantity: { amount: round(amount * unit[1]), unit: unit[0] }, clause: tokens[i].clause, ...(PACKAGE.test(unitWord) ? { packageWord: unitWord } : {}) };
   }
   for (let i = 0; i < tokens.length; i++) {
     const amount = numberAt(i);
@@ -192,7 +197,7 @@ export function parseRequest(text: string, now: Date): ParsedRequest {
   const instructions = readInstructions(text);
   const tokens = tokenize(instructions.rest);
   const stated = findDate(tokens, today);
-  const { quantity, clause = 0 } = findQuantity(tokens);
+  const { quantity, clause = 0, packageWord } = findQuantity(tokens);
   const productId = findProductCode(tokens);
   const { order, others } = splitClauses(tokens, clause);
   return {
@@ -205,5 +210,6 @@ export function parseRequest(text: string, now: Date): ParsedRequest {
     deliverByStated: stated !== undefined,
     ...(instructions.budget !== undefined ? { budget: instructions.budget } : {}),
     waitForPerson: instructions.waitForPerson,
+    ...(packageWord ? { packageWord } : {}),
   };
 }

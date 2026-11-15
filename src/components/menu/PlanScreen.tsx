@@ -174,18 +174,24 @@ const GUESTS_TO_START = 50;
 /** The words gave no guest count: ask for it, keeping the day, occasion and dietary needs already read. */
 function AskGuests({ plan, onPlan }: { plan: MenuPlan; onPlan: (request: PlanRequest) => void }) {
   const [guests, setGuests] = useState(GUESTS_TO_START);
+  const [valid, setValid] = useState(true);
   const { date, occasion, dietary } = plan.event;
   return (
     <form
       className="plan-options"
       onSubmit={(event) => {
         event.preventDefault();
-        onPlan({ guests, date, ...(occasion ? { occasion } : {}), dietary });
+        if (valid) onPlan({ guests, date, ...(occasion ? { occasion } : {}), dietary });
       }}
     >
       <h2 className="plan-options-title">{plan.question ?? "How many guests?"}</h2>
-      <Stepper label="Guests" value={guests} onChange={setGuests} unit="guests" />
-      <button type="submit" className="btn btn-primary big">
+      <Stepper label="Guests" value={guests} onChange={setGuests} unit="guests" onValidity={setValid} />
+      {valid ? null : (
+        <p className="save-problem" role="alert">
+          Enter a guest count from 1 to 2,000.
+        </p>
+      )}
+      <button type="submit" className="btn btn-primary big" disabled={!valid}>
         Plan the menu
       </button>
     </form>

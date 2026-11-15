@@ -64,9 +64,10 @@ export function languageOf(text: string): Lang {
   return "en";
 }
 
-const ASK: Record<Lang, { which: string; oneAtATime: (what: string) => string; offTask: string; howMuch: (what: string) => string; tooSmall: (what: string) => string }> = {
+const ASK: Record<Lang, { which: string; packSize: (amount: number, word: string, what: string) => string; oneAtATime: (what: string) => string; offTask: string; howMuch: (what: string) => string; tooSmall: (what: string) => string }> = {
   en: {
     which: "Which product do you need?",
+    packSize: (amount, word, what) => `How big is one ${word.replace(/es$|s$/, "")}? Say the ${what} in litres or kilograms, for example "${amount * 10} l", or name the pack size.`,
     oneAtATime: (what) => `I order one product per request. Which first, and how much: ${what}?`,
     offTask: "I can only search, get signed prices and order products for your kitchen. A person approves orders and sets the limits.",
     howMuch: (what) => `How much ${what} do you need, and by which day?`,
@@ -74,6 +75,7 @@ const ASK: Record<Lang, { which: string; oneAtATime: (what: string) => string; o
   },
   fi: {
     which: "Mitä tuotetta tarvitset?",
+    packSize: (amount, _word, what) => `En tiedä laatikon kokoa. Kerro määrä litroina tai kiloina (${what}), esimerkiksi "${amount * 10} l", tai pakkauskoko.`,
     oneAtATime: (what) => `Tilaan yhden tuotteen kerrallaan. Kumpi ensin, ja kuinka paljon: ${what}?`,
     offTask: "Voin vain hakea tuotteita, pyytää allekirjoitetun hinnan ja tilata keittiöllesi. Ihminen hyväksyy tilaukset ja asettaa rajat.",
     howMuch: (what) => `Kuinka paljon tarvitset (${what}), ja mihin päivään mennessä?`,
@@ -81,6 +83,7 @@ const ASK: Record<Lang, { which: string; oneAtATime: (what: string) => string; o
   },
   sv: {
     which: "Vilken produkt behöver du?",
+    packSize: (amount, _word, what) => `Jag vet inte hur stor lådan är. Säg mängden ${what} i liter eller kilo, till exempel "${amount * 10} l", eller förpackningsstorleken.`,
     oneAtATime: (what) => `Jag beställer en produkt åt gången. Vilken först, och hur mycket: ${what}?`,
     offTask: "Jag kan bara söka produkter, få ett signerat pris och beställa till ert kök. En person godkänner beställningar och sätter gränserna.",
     howMuch: (what) => `Hur mycket ${what} behöver du, och till vilken dag?`,
@@ -126,6 +129,8 @@ export async function runPurchase(
     if (TWO_PRODUCTS.test(` ${parsed.phrase} `)) return finish("needs_input", ASK[lang].oneAtATime(parsed.phrase), {}, "waiting");
     if (!parsed.quantity) return finish("needs_input", ASK[lang].howMuch(what), {}, "waiting");
     if (parsed.quantity.amount <= 0) return finish("needs_input", ASK[lang].tooSmall(what), {}, "waiting");
+    // "Two boxes of cream": a box could be a 250 g spray or a 20 l bag. Ask instead of picking the cheapest pack.
+    if (parsed.packageWord) return finish("needs_input", ASK[lang].packSize(parsed.quantity.amount, parsed.packageWord, what), {}, "waiting");
     const quantity = parsed.quantity;
     const by = `by ${shortDay(parsed.deliverBy)}${parsed.deliverByStated ? "" : " (next working day)"}`;
     await say(`Looking for ${what}, ${quantityText(quantity)}, ${by}.`);
