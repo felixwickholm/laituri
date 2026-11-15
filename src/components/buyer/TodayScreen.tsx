@@ -72,7 +72,7 @@ export function TodayScreen({ basketId }: { basketId?: string }) {
             <ShoppingBasket aria-hidden="true" />
             Order directly
           </h2>
-          <QuickSearch value={query} onChange={setQuery} onEnter={submitWords} placeholder="Milk, butter… or say it in your own words" />
+          <QuickSearch value={query} onChange={setQuery} onEnter={submitWords} placeholder="Search, or ask your agent" />
           <AgentAsk query={query} onSent={() => setQuery("")} />
           <MilkExample />
         </section>

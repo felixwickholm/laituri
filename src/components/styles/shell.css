@@ -720,8 +720,16 @@
   }
 }
 @media (max-width: 1023px) {
-  .shell-tour {
+  .shell-tour,
+  :root[data-theme="dark"] .shell-tour {
+    background: var(--cta);
+    color: var(--on-cta);
     animation: tour-glow 5s ease-out infinite;
+  }
+}
+@media (max-width: 1023px) and (hover: hover) and (pointer: fine) {
+  .shell-tour:hover {
+    background: var(--cta-hover);
   }
 }
 @media (prefers-reduced-motion: reduce) {
