@@ -52,6 +52,8 @@ describe("the log", () => {
   it("groups events for the filter", () => {
     expect(eventGroup("approval.granted")).toBe("approvals");
     expect(eventGroup("access.refused")).toBe("refused");
+    expect(eventGroup("order.blocked")).toBe("refused");
+    expect(eventGroup("approval.rejected")).toBe("refused");
   });
 });
 
