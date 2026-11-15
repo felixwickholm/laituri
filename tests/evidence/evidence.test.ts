@@ -170,15 +170,15 @@ describe("Markdown kept in sync", () => {
 describe("README.md stays short and leads with what matters", () => {
   const readme = read("README.md");
 
-  it("stays under 15,000 bytes; the detail lives in docs/", () => {
-    expect(Buffer.byteLength(readme)).toBeLessThan(15_000);
+  it("stays under 17,000 bytes; the detail lives in docs/", () => {
+    expect(Buffer.byteLength(readme)).toBeLessThan(17_000);
   });
 
   it("holds the agreed sections in order", () => {
     const headings = [...readme.matchAll(/^## (.+)$/gm)].map((match) => match[1]);
     expect(headings).toEqual([
-      "Demo walkthrough",
       "How each judging criterion is met",
+      "Demo walkthrough",
       "What makes it different",
       "What stays private",
       "Quickstart",

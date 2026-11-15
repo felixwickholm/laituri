@@ -2,10 +2,15 @@
 
 Laituri is the agent front door for a food-service wholesaler: a customer's own purchasing agent searches, gets a wholesaler-signed fixed-price offer and orders over MCP or REST, inside a mandate the buyer signed. Larger or unusual orders wait for a named person, the wholesaler can watch and suspend agents, and every step lands in a signed hash chain anyone can verify.
 
+Built by team Moonshot for the Valio Aimo challenge "Trusted Trade Agents" at Junction 2026, on the challenge's synthetic data; orders are simulated. Live: https://laituri.wicflow.com.
+
+To understand the project in one pass: `/submission.json` (problem, solution, views, agent chain, controls, evidence, links, limits; built by `src/lib/discovery/submission.ts`), the six-page brief at `/brief` and `/brief.pdf` (source `docs/brief/brief.html`, built by `scripts/brief.ts`), then `docs/paper.md`.
+
 ## Run, test, evaluate
 
 - `npm install`, then `VALIO_MODE=recorded npm run dev` (no key needed) or `npm run setup && npm run dev` with `VALIO_API_KEY` in `.env`. Port 3210.
 - `npm test` (vitest), `npm run eval` (four suites, recorded data, fixed clock), `npm run typecheck`, `npm run lint`.
+- `npx tsx scripts/brief.ts` rebuilds `public/brief.html` and the tagged `public/brief.pdf` from `docs/brief/brief.html` with numbers from the evidence source; run it after `npm run evidence`. `npx tsx scripts/screens.ts [baseUrl]` recaptures `docs/images` from a running app. Both need Google Chrome.
 - `npm run evidence` re-measures tests and evals and regenerates the numbered blocks in README.md and docs/. Run it after changing tests, evals, tools, routes, rules, buyers or the seed plan; `tests/evidence` fails while a block is stale.
 
 ## Where things live
@@ -23,7 +28,7 @@ Laituri is the agent front door for a food-service wholesaler: a customer's own 
 - Who may act as a person: `src/lib/http/sign-in.ts`, `console-session.ts` (approver), `operator-session.ts` (wholesaler operator).
 - Demo history: `src/lib/seed`. Buyer agents (scripted and model-driven): `src/lib/agent`.
 - Screens: `/` opens `/buyer` (Today), `/about`, `/buyer/plan`, `/buyer/shop`, `/buyer/mandate`, `/valio`, `/security` (`src/lib/security-console`, `src/components/security`), `/connect`, `/approve/[orderId]`, `/evidence`, `/paper`; walkthrough in `src/lib/tour` and `src/components/tour`.
-- Discovery for agents: `src/lib/discovery` (`/llms.txt`, `/llms-full.txt`, `/.well-known/*`), `src/app/robots.ts`, `src/app/sitemap.ts`.
+- Discovery for agents: `src/lib/discovery` (`/llms.txt`, `/llms-full.txt`, `/submission.json`, `/.well-known/*`; `/brief` serves `public/brief.html`), `src/app/robots.ts`, `src/app/sitemap.ts`.
 - What the docs, `/evidence`, `/paper` and `llms-full.txt` claim: `src/lib/evidence` (one source; threats and reviewer questions included). Mocks and assumptions are listed there under `simulated`. The paper's prose is `docs/paper.md`; its numbers are generated blocks.
 
 ## Invariants

@@ -2,17 +2,14 @@
 
 An open MCP and REST front door that lets a customer's own AI purchasing agent buy from Valio Aimo at a signed fixed price, inside limits a person signed, with a log anyone can verify.
 
-![Laituri: the buyer side with an order waiting for approval, and the wholesaler side with connected agents](docs/images/hero.png)
+**Junction 2026 · Valio Aimo challenge "Trusted Trade Agents" · team Moonshot.** Live: **https://laituri.wicflow.com**
 
-Live: https://laituri.wicflow.com · Paper: [docs/paper.md](docs/paper.md) (also at `/paper`; for an AI in one fetch: `/llms-full.txt`)
+- **The brief:** let customers' own AI agents order from the wholesaler, so Valio Aimo can trust the agent and the customer can trust what it buys, without exposing real systems, confidential data or the marketplace roadmap.
+- **What we built:** one agent front door with three controls: a **mandate** the customer signs (what the agent may do alone, what waits for a person, what is never allowed), a **fixed-price offer** Valio Aimo signs, and a **signed, hash-chained log** both sides verify. Each order is placed alone, waits for a named person, or is refused, with the reason shown. An agent can never approve, sign or change a price.
+- **Check it in two minutes:** open [`/buyer?tour=1`](https://laituri.wicflow.com/buyer?tour=1) (the walkthrough drives the running product), or run `curl -X POST https://laituri.wicflow.com/api/v1/workspace` for a private sandbox with agent keys, then follow [`/llms.txt`](https://laituri.wicflow.com/llms.txt). Re-measure every number below with `npm run evidence`.
+- **Read in one pass:** [the brief and the build](https://laituri.wicflow.com/brief) (6 pages, [PDF](https://laituri.wicflow.com/brief.pdf), source [`docs/brief`](docs/brief)) · [`/submission.json`](https://laituri.wicflow.com/submission.json) (machine-readable) · [`/evidence`](https://laituri.wicflow.com/evidence) · [paper](docs/paper.md) · [`/llms-full.txt`](https://laituri.wicflow.com/llms-full.txt) · [AGENTS.md](AGENTS.md).
 
-Built for the Valio Aimo challenge "Trusted Trade Agents" at Junction 2026, on the challenge's synthetic data. Orders are simulated; see [Simulated, assumed and not built](#simulated-assumed-and-not-built).
-
-## Demo walkthrough
-
-- **Walkthrough.** "Demo walkthrough" opens by itself on arrival, or open `/buyer?tour=1`. It drives the running product: the brief's milk order, a weekly basket with the reason for every orange and red line, a phone approval, the customer's limits, the shop, Valio recipes, Valio Aimo's view, security and the record.
-- **Three clicks.** `/buyer` (run the weekly order), `/buyer/plan` (plan an event), `/security` (see unusual actions stopped).
-- **One curl.** `curl -X POST https://laituri.wicflow.com/api/v1/workspace` gives you a private sandbox with agent keys; `/llms.txt` takes it from there.
+Built on the challenge's synthetic data. Prices and stock are live from the challenge's mock API; orders are simulated (see [Simulated, assumed and not built](#simulated-assumed-and-not-built)).
 
 ## How each judging criterion is met
 
@@ -34,6 +31,18 @@ Measured by `npm run evidence` (numbers in [`src/lib/evidence/facts.json`](src/l
 | **Robustness to exception situations** (15%) | When a request cannot be met in full and on time, the wholesaler returns signed counter-offers ranked good, better and best, and the buyer's mandate decides whether the agent may take one alone.<br>• Short stock: a split (keep what is in stock, fill the rest like for like) or a full substitute, each signed and each checked against the buyer's words for what it delivers. | Scenarios eval suite: 38/38 cases pass (bar >=90%)<br>Check: eval 5; eval 6 | A single order or basket line gets like-for-like substitutes within the wholesaler's own concept and category; swaps by recipe role run only inside a menu plan. Nothing watches stock between orders, so a swap comes when the kitchen plans or orders. |
 | **Openness and credible path toward production** (15%) | One set of zod schemas produces the MCP tools, the REST routes and the OpenAPI 3.1 document; signatures are JWS with keys published as JWKS; assumptions, decisions and next steps are written down.<br>• 11 MCP tools and 41 REST operations on 35 paths, from one schema set. | Openness eval suite: 8/8 cases pass (bar 100%)<br>Check: `npm run eval -- --suite openness`; `/api/v1/openapi.json` on the live demo | Agents use demo bearer tokens, not OAuth 2.1. AP2, UCP and Peppol are followed in names and shapes; no Peppol UBL document is produced. |
 <!-- END:evidence:criteria -->
+
+![Today after the weekly order: 17 lines ordered alone, 2 wait for a person, 1 blocked](docs/images/weekly-order.jpg)
+
+| Approver's phone | Event menus | Valio Aimo |
+|---|---|---|
+| ![Approver's phone](docs/images/phone-approval.jpg) | ![Event menus](docs/images/event-menus.jpg) | ![Valio Aimo overview](docs/images/valio.jpg) |
+
+## Demo walkthrough
+
+- **Walkthrough.** Opens by itself on arrival, or `/buyer?tour=1`: fifteen steps through the brief's milk order, the weekly order, a phone approval, the limits, the shop, an event plan, Valio Aimo's view, security and the record.
+- **Your own agent.** `POST /api/v1/workspace` gives a sandbox with agent keys; MCP at `/mcp`, set-up lines at `/connect`, the REST flow in `/llms.txt`.
+- **The agent.** Gemini, then Claude, then a scripted agent, all on the same tools; `/api/v1/health` shows the live chain.
 
 ## What makes it different
 
@@ -126,6 +135,7 @@ Not built: Payments, Peppol documents, Nutrition rules.
 
 ## Read more
 
+- [The brief](docs/brief/brief.html): rebuild with `npx tsx scripts/brief.ts`, screenshots with `npx tsx scripts/screens.ts`.
 - [Paper](docs/paper.md): the design, each criterion with how to verify it, the scenarios, the threat table, the limits and a five-minute evaluation.
 - [Judging map](docs/judging.md): every criterion in full, the brief's requirements, scenario coverage and every assumption.
 - [Trust protocol](docs/trust-protocol.md): what is signed, how an agent verifies it, and the failure cases.
