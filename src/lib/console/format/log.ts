@@ -3,6 +3,7 @@ import { helsinkiDate } from "./week";
 
 export type EventGroup = "orders" | "approvals" | "agent" | "mandate" | "refused";
 
+/** "Refused" holds everything stopped: a blocked order, a rejected approval, a refused credential. */
 const GROUP_OF: Record<AuditEvent, EventGroup> = {
   "agent.connected": "agent",
   "agent.suspended": "agent",
@@ -12,10 +13,10 @@ const GROUP_OF: Record<AuditEvent, EventGroup> = {
   "order.requested": "orders",
   "policy.evaluated": "orders",
   "order.confirmed": "orders",
-  "order.blocked": "orders",
+  "order.blocked": "refused",
   "approval.requested": "approvals",
   "approval.granted": "approvals",
-  "approval.rejected": "approvals",
+  "approval.rejected": "refused",
   "mandate.updated": "mandate",
   "access.refused": "refused",
   "basket.started": "orders",
