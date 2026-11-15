@@ -18,7 +18,7 @@ export default function NotFound() {
         <p className="nf-line">The link may be old.</p>
         <nav className="nf-links" aria-label="Ways back">
           <Link href="/buyer" className="btn big btn-primary">
-            Kitchen
+            Customer
           </Link>
           <Link href="/valio" className="btn big btn-secondary">
             Valio Aimo
