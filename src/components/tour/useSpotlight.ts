@@ -57,9 +57,10 @@ function firstVisible(selectors: readonly string[]): Element | null {
 }
 
 /** Less than half of the target is on screen, so the page moved under it after it was scrolled to. */
-function offScreen(box: Box, view: { w: number; h: number }): boolean {
-  const shown = Math.min(view.h, box.y + box.h) - Math.max(0, box.y);
-  return shown < Math.min(box.h, view.h) / 2;
+/** Less than half of the target is in the open part of the screen: below a phone's sticky top bar, above the bottom. */
+function offScreen(box: Box, view: { w: number; h: number }, top = 0): boolean {
+  const shown = Math.min(view.h, box.y + box.h) - Math.max(top, box.y);
+  return shown < Math.min(box.h, view.h - top) / 2;
 }
 
 function boxOf(element: Element): Box {
@@ -127,7 +128,7 @@ export function useSpotlight(groups: readonly (readonly string[])[] | null, { di
       const boxes = targets.filter((element): element is Element => element !== null).map(boxOf);
       const all = union(boxes);
       const moved = all !== undefined && Math.abs(all.y + window.scrollY - anchorY) > MOVED_PX;
-      const drifted = all !== undefined && (now - targetSince < SETTLE_MS || moved) && now - scrolledAt > RESCROLL_MS && offScreen(all, view);
+      const drifted = all !== undefined && (now - targetSince < SETTLE_MS || moved) && now - scrolledAt > RESCROLL_MS && offScreen(all, view, sheet ? phoneBar() : 0);
       if (all && (targetSince > scrolledAt || drifted)) {
         scrolledAt = now;
         anchorY = all.y + window.scrollY;

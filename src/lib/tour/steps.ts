@@ -201,7 +201,8 @@ export const STEPS: readonly TourStep[] = [
     id: "limits",
     routes: ["/buyer/mandate"],
     target: ['[data-tour="limits"]', ".mandate-verdict"],
-    also: ['section[aria-labelledby="allergies-title"]', ".mandate-page > .count-tiles"],
+    // The limits and the allergies only: with the count tiles too, the card had no room and covered the allergies.
+    also: ['section[aria-labelledby="allergies-title"]'],
     view: "spotlight",
     until: "now",
     timeoutMs: 4_000,
