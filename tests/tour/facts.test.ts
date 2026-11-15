@@ -107,9 +107,11 @@ describe("the fallbacks", () => {
     }
   });
 
-  it("runs the event step on the planner with the wedding example", () => {
+  it("types the wedding example to the assistant, then shows the menus, on the planner", () => {
+    expect(routeOf(step("ask"), {})).toBe("/buyer/plan");
+    expect(step("ask").enter).toBe("typeEvent");
     expect(routeOf(step("plan"), {})).toBe("/buyer/plan");
-    expect(step("plan").query).toBe("words=A%20wedding%20for%2080%20guests%20on%20Saturday");
+    expect(step("plan").enter).toBe("planEvent");
   });
 
   it("falls back to the step's first card when a number is not known", () => {

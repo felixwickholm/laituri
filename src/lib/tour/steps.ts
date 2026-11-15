@@ -4,7 +4,7 @@ import { lineWhy, type ConditionId, type TourFacts } from "./facts";
 import type { PlanStep } from "./machine";
 
 /** What the tour does in the product itself. The runner in the browser carries each one out. */
-export type ActionId = "pressExample" | "startWeekly" | "resolveOnPhone";
+export type ActionId = "pressExample" | "startWeekly" | "resolveOnPhone" | "typeEvent" | "planEvent";
 
 /** Valio Aimo's challenge sheet names the flow in four words; the card shows where the story is. */
 export type FlowStage = "request" | "lookup" | "order" | "approval";
@@ -21,8 +21,6 @@ export const MAIN_TARGET = "main#main";
 export interface TourStep extends PlanStep {
   /** The first of these pages that exists in this build is the step's page. */
   routes: readonly string[];
-  /** Search parameters the page opens with, for example the planner's example words. */
-  query?: string;
   /** Spotlight: the first visible match of `target`, and of `also` at the same time; the main region when none is. */
   target: readonly string[];
   also?: readonly string[];
@@ -234,18 +232,52 @@ export const STEPS: readonly TourStep[] = [
     late: SLOW,
   },
   {
+    id: "ask",
+    routes: ["/buyer/plan"],
+    target: ['[data-tour="plan-event"]'],
+    view: "spotlight",
+    // The example is typed into the field in front of the viewer; the next step sends it.
+    enter: "typeEvent",
+    until: "now",
+    timeoutMs: 4_000,
+    words: {
+      shown: {
+        title: "Tell the assistant about the event.",
+        detail: "In plain words, Finnish or English. Here: a wedding on Saturday. The assistant reads guests, day and diets, and asks when something is missing.",
+      },
+    },
+    pick: () => "shown",
+    late: SLOW,
+  },
+  {
     id: "plan",
     routes: ["/buyer/plan"],
-    // The planner runs the example from the video: three menus from Valio recipes appear under the words.
-    query: `words=${encodeURIComponent("A wedding for 80 guests on Saturday")}`,
+    // The words go to the assistant; three menus from Valio recipes appear in their place.
+    enter: "planEvent",
     target: ['[data-tour="menu-options"]', '[data-tour="plan-event"]'],
     view: "spotlight",
     until: "now",
     timeoutMs: 5_000,
     words: {
       shown: {
-        title: "Plan an event with Valio recipes.",
-        detail: "The assistant reads the event in plain words, here a wedding, and suggests menus from Valio’s recipes, checked against the customer’s rules, ready to order.",
+        title: "Menus from Valio recipes.",
+        detail: "The assistant suggests menus from Valio’s recipes, checked against the customer’s rules. Anything it could not match stays open for a person.",
+      },
+    },
+    pick: () => "shown",
+    late: SLOW,
+  },
+  {
+    id: "other-side",
+    routes: ["/valio"],
+    target: [".sidebar .side-switch", ".phone-bar .side-switch"],
+    view: "spotlight",
+    until: "now",
+    timeoutMs: 3_000,
+    words: {
+      shown: {
+        title: "Now the other side: Valio Aimo.",
+        detail: "So far, the customer and its agent. Next, the wholesaler: every customer’s agent, what it bought, and what it could not get.",
       },
     },
     pick: () => "shown",
@@ -261,7 +293,7 @@ export const STEPS: readonly TourStep[] = [
     timeoutMs: 4_000,
     words: {
       shown: {
-        title: "This is what Valio Aimo sees.",
+        title: "Valio Aimo’s overview.",
         detail: "Its customers’ agents and their orders, as they happen. Valio Aimo can pause any agent.",
       },
     },

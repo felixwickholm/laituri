@@ -46,10 +46,10 @@ describe("the walkthrough's words", () => {
     }
   });
 
-  it("has 10 to 13 steps that cover every part, in order, and three ways on at the end", () => {
+  it("has 10 to 15 steps that cover every part, in order, and three ways on at the end", () => {
     expect(STEPS.length).toBeGreaterThanOrEqual(10);
-    expect(STEPS.length).toBeLessThanOrEqual(13);
-    expect(STEPS.map((step) => step.id)).toEqual(["today", "example", "basket", "needs", "phone", "blocked", "limits", "shop", "plan", "valio", "demand", "security", "record"]);
+    expect(STEPS.length).toBeLessThanOrEqual(15);
+    expect(STEPS.map((step) => step.id)).toEqual(["today", "example", "basket", "needs", "phone", "blocked", "limits", "shop", "ask", "plan", "other-side", "valio", "demand", "security", "record"]);
     expect(END.choices.map((choice) => choice.label)).toEqual(["Try it yourself", "Plan an event", "Connect your own agent"]);
   });
 

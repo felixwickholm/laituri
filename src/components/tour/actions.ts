@@ -95,7 +95,43 @@ async function pressExample(): Promise<void> {
   find()?.click();
 }
 
-export const ACTIONS: Record<ActionId, () => Promise<void>> = { pressExample, startWeekly, resolveOnPhone };
+/** The planner's example, the same words as the video. */
+const EVENT_WORDS = "A wedding for 80 guests on Saturday";
+const TYPE_MS = 35;
+
+function eventField(): HTMLInputElement | null {
+  return document.querySelector<HTMLInputElement>("#ask-words");
+}
+
+/** Sets a React-controlled field the way typing does, so the page's own state follows. */
+function setField(field: HTMLInputElement, value: string): void {
+  Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(field, value);
+  field.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+/** Types the example event into the planner's field, letter by letter, as a person would. */
+async function typeEvent(): Promise<void> {
+  if (!(await until(() => eventField() !== null, EXAMPLE_MS))) return;
+  const field = eventField() as HTMLInputElement;
+  if (field.value.trim()) return;
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  for (let end = reduced ? EVENT_WORDS.length : 1; end <= EVENT_WORDS.length; end++) {
+    if (!document.contains(field)) return;
+    setField(field, EVENT_WORDS.slice(0, end));
+    if (!reduced) await sleep(TYPE_MS);
+  }
+}
+
+/** Sends the event to the assistant with the page's own button; types the example first when the field is empty. */
+async function planEvent(): Promise<void> {
+  if (!(await until(() => eventField() !== null, EXAMPLE_MS))) return;
+  const field = eventField() as HTMLInputElement;
+  if (!field.value.trim()) setField(field, EVENT_WORDS);
+  await sleep(50);
+  field.form?.requestSubmit();
+}
+
+export const ACTIONS: Record<ActionId, () => Promise<void>> = { pressExample, startWeekly, resolveOnPhone, typeEvent, planEvent };
 
 /** Resets this browser's own sandbox, so the story always runs from the same state. Nobody else's copy changes. */
 export async function prepareDemo(): Promise<void> {

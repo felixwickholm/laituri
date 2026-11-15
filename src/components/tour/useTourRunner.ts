@@ -76,7 +76,7 @@ export function useTourRunner(state: TourState): void {
   }, [state.status]);
 
   useEffect(() => {
-    if (step && route && !onRoute) router.push(`${route}?${step.query ? `${step.query}&` : ""}tour=${step.id}`);
+    if (step && route && !onRoute) router.push(`${route}?tour=${step.id}`);
   }, [step, route, onRoute, router]);
 
   useEffect(() => {
