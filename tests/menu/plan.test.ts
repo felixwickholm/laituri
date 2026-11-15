@@ -36,7 +36,7 @@ describe("planning a menu: need -> recipe -> order", () => {
     for (const menu of result.menus) {
       expect(menu.costPerGuest).toBeGreaterThan(0);
       expect(menu.shoppingList.length).toBeGreaterThan(0);
-      expect(menu.fits).toContainEqual({ ok: true, sentence: "No nuts in any dish." });
+      expect(menu.fits).toContainEqual(menu.unpriced ? { ok: false, sentence: "No nuts in any dish so far. Check the open ingredients." } : { ok: true, sentence: "No nuts in any dish." });
     }
     expect(result.notes).toContain("Prices are indicative net prices. You get signed prices when you order.");
   });
@@ -61,7 +61,9 @@ describe("planning a menu: need -> recipe -> order", () => {
       for (const product of productsOf(menu)) {
         expect([...product.allergens.contains, ...product.allergens.mayContain].filter((a) => GLUTEN.includes(a))).toEqual([]);
       }
-      expect(menu.fits).toContainEqual({ ok: true, sentence: "Every dish is gluten-free." });
+      expect(menu.fits).toContainEqual(
+        menu.unpriced ? { ok: false, sentence: "Every dish is gluten-free so far. Check the open ingredients." } : { ok: true, sentence: "Every dish is gluten-free." },
+      );
     }
     const swaps = result.menus.flatMap((menu) => menu.shoppingList.flatMap((line) => (line.swap ? [line.swap] : [])));
     for (const swap of swaps) expect(swap.reason.length).toBeGreaterThan(10);
@@ -114,7 +116,11 @@ describe("planning a menu: need -> recipe -> order", () => {
         const all = [...product.allergens.contains, ...product.allergens.mayContain];
         expect(all.filter((a) => ["sesame", "peanut", "nuts", "almond"].includes(a)), product.name.en).toEqual([]);
       }
-      expect(menu.fits).toContainEqual({ ok: true, sentence: menu.unpriced ? "Every matched product meets your allergen rules." : "Every product meets your allergen rules." });
+      expect(menu.fits).toContainEqual(
+        menu.unpriced
+          ? { ok: false, sentence: "Every matched product meets your allergen rules. Check the open ingredients." }
+          : { ok: true, sentence: "Every product meets your allergen rules." },
+      );
       for (const { recipe } of menu.courses) expect(recipe.id).not.toBe("goat-cheese-crostini");
     }
   });
@@ -123,7 +129,7 @@ describe("planning a menu: need -> recipe -> order", () => {
     const result = await plan({ guests: 30, date: "2026-11-20", dietary: ["vegan"] });
     for (const menu of result.menus) {
       for (const { recipe } of menu.courses) expect(recipe.labels).toContain("vegan");
-      expect(menu.fits).toContainEqual({ ok: true, sentence: "Every dish is vegan." });
+      expect(menu.fits).toContainEqual(menu.unpriced ? { ok: false, sentence: "Every dish is vegan so far. Check the open ingredients." } : { ok: true, sentence: "Every dish is vegan." });
     }
   });
 

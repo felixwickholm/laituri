@@ -60,7 +60,10 @@ async function begin(request: CreateBasketRequest, agent: BasketAgent): Promise<
   };
   const { mandate } = await currentMandate(agent.buyer.id);
   const prefetch = () => prefetchMarket(basket, mandate.buyer.customerNumber);
-  const done = runBasket(basket, { agent, transport: gatewayTransport(agent), pause, prefetch }).catch(() => undefined);
+  // A reset bumps the generation; a sandbox restore may also swap the state object itself. Either ends the run.
+  const state = demoState();
+  const alive = () => demoState() === state && state.generation === generation;
+  const done = runBasket(basket, { agent, transport: gatewayTransport(agent), pause, prefetch, alive }).catch(() => undefined);
   return { basket, done };
 }
 

@@ -59,12 +59,12 @@ function ShoppingRow({ line, choice, onChoose }: { line: ShoppingLine; choice?: 
         {line.inPantry && line.inPantry.amount > 0 ? (
           <>
             <span className="shop-need">The menu needs {amountText(line.quantity)}</span>
-            <span className="shop-have">You have {amountText(line.inPantry)}</span>
+            <span className="shop-have">From your stock (demo): {amountText(line.inPantry)}</span>
           </>
         ) : null}
       </div>
       <div className="shop-order">
-        <span className="shop-amount">{nothing ? "You have enough" : `Order ${amountText(line.toOrder)}`}</span>
+        <span className="shop-amount">{nothing ? "Covered by your stock" : `Order ${amountText(line.toOrder)}`}</span>
         {!nothing && line.estNet !== undefined ? <span className="shop-net">about {money(line.estNet)}</span> : null}
       </div>
       <div className="shop-meta">

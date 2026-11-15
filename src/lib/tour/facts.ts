@@ -70,15 +70,18 @@ export function tourBasket(baskets: readonly Basket[], basketId: string | undefi
 export function tourFacts(basket: Basket | undefined, recordBroken: boolean, example?: ExampleState): TourFacts {
   if (!basket) return { done: false, neededLines: [], recordBroken, example };
   const { totals, lines } = basket;
-  const answered = (line: BasketLine) => line.resolved !== undefined && line.state !== "red";
+  // A person's answer counts whatever it was: "Leave it out" turns the line red, but a person decided it.
+  const answered = (line: BasketLine) => line.resolved !== undefined;
   const neededLines = lines.filter((line) => line.state === "orange" || answered(line));
-  const redLine = lines.find((line) => line.state === "red");
+  // The blocked story is about what the rules stopped, never a line a person left out.
+  const blocked = lines.filter((line) => line.state === "red" && !answered(line));
+  const redLine = blocked[0];
   return {
     basket,
     lines: totals.lines,
     alone: lines.filter((line) => line.state === "green" && !line.resolved).length,
     needed: neededLines.length,
-    red: totals.red,
+    red: blocked.length,
     done: basket.status === "done",
     orangeLine: lines.find((line) => line.state === "orange" && !line.resolved),
     answeredLine: lines.find(answered),

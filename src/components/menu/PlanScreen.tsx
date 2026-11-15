@@ -136,7 +136,7 @@ export function PlanScreen() {
           </details>
         ) : null}
         <p className="plan-status" role="status">
-          {rescaling ? `Planning for ${shownGuests} guests…` : planner.status === "error" ? planner.error : ""}
+          {rescaling ? `Planning for ${shownGuests} guests…` : ""}
         </p>
       </section>
 
@@ -144,6 +144,9 @@ export function PlanScreen() {
         <OrderedMenu basketId={ordered.basketId} title={ordered.title} onNew={startOver} />
       ) : plan.needs?.includes("guests") ? (
         <AskGuests plan={plan} onPlan={ask} />
+      ) : planner.status === "error" ? (
+        // The last request failed: the menus on screen would answer an older event, so none is offered to order.
+        <p className="plan-empty">{planner.error ?? "That did not work."} Change a detail and try again.</p>
       ) : plan.menus.length === 0 ? (
         <p className="plan-empty">No menu fits this event yet. Change a detail and try again.</p>
       ) : (

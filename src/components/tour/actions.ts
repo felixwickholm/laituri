@@ -69,7 +69,7 @@ async function resolveOnPhone(): Promise<void> {
   const basket = currentBasket();
   const line = basket?.lines.find((item) => item.state === "orange" && !item.resolved);
   // The visitor tapped already: one answer is the story, the other line keeps waiting for them.
-  if (!basket || !line || basket.lines.some((item) => item.resolved !== undefined && item.state !== "red")) return;
+  if (!basket || !line || basket.lines.some((item) => item.resolved !== undefined)) return;
   const frame = document.querySelector<HTMLIFrameElement>("[data-tour-phone] iframe");
   const button = frame?.contentDocument?.querySelector<HTMLButtonElement>('[data-tour="resolve"]');
   if (button && !button.disabled) {

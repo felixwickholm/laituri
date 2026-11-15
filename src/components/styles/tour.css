@@ -532,3 +532,29 @@ body:has(.tour-resume[data-dock="phone"]) main#main::after {
     transition: none;
   }
 }
+
+/* Phones: a compact sheet, so the lit part of the page and the phone's Approve stay in view above it. */
+@media (max-width: 719px) {
+  .tour-float .tour-card {
+    padding: 12px 16px max(12px, env(safe-area-inset-bottom));
+  }
+  .tour-float .tour-title {
+    margin-top: 6px;
+    font-size: 22px;
+  }
+  .tour-float .tour-title-big {
+    font-size: 28px;
+  }
+  .tour-float .tour-detail {
+    font-size: 16px;
+    line-height: 1.4;
+  }
+  .tour-float .tour-actions {
+    margin-top: 10px;
+  }
+}
+@media (max-width: 719px) and (max-height: 760px) {
+  .tour-float .tour-flow {
+    display: none;
+  }
+}

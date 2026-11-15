@@ -33,10 +33,11 @@ export interface NavItem {
 /** The places people go on each side, and nothing else. */
 export const NAV: Record<Side, NavItem[]> = {
   buyer: [
-    { href: "/buyer", label: "Today", icon: CalendarDays, signal: "needsYou", tab: true },
+    { href: "/buyer", label: "Today", icon: CalendarDays, tab: true },
     { href: "/buyer/plan", label: "Plan an event", short: "Event", icon: UtensilsCrossed, tab: true },
     { href: "/buyer/shop", label: "Shop", icon: ShoppingBasket, tab: true },
-    { href: "/buyer/orders", label: "Orders", icon: ReceiptText, tab: true },
+    // The count of what waits for a person sits where every waiting line and order is listed.
+    { href: "/buyer/orders", label: "Orders", icon: ReceiptText, signal: "needsYou", tab: true },
     { href: "/buyer/mandate", label: "Your limits", icon: SlidersHorizontal },
     { href: "/buyer/log", label: "The record", icon: ScrollText, signal: "record" },
   ],

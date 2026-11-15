@@ -32,7 +32,7 @@ export function CartContents({ cart, onSet, onOrder, ordering, error, placedId, 
         <div className="store-placed">
           <p>Sent. Each line is checked against your limits now.</p>
           <BasketCard basketId={placedId} />
-          <Link href="/buyer" className="text-link">
+          <Link href={`/buyer?basket=${encodeURIComponent(placedId)}`} className="text-link">
             Open in Today
             <ChevronRight aria-hidden="true" />
           </Link>

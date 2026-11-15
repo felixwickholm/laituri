@@ -96,9 +96,10 @@ async function schoolAllergenSafe(): Promise<Verdict> {
     }
     for (const { recipe } of menu.courses) checks.expect(!recipe.allergens.includes("egg"), `${recipe.name} has egg`);
     // With ingredients still open the fit speaks only for the matched products, and says so.
-    const mandateFit = menu.unpriced ? "Every matched product meets your allergen rules." : "Every product meets your allergen rules.";
-    checks.expect(menu.fits.some((fit) => fit.ok && fit.sentence === mandateFit), `${menu.name}: mandate fit missing`);
-    checks.expect(menu.fits.some((fit) => fit.ok && fit.sentence === "No egg in any dish."), `${menu.name}: egg fit missing`);
+    const mandateFit = menu.unpriced ? "Every matched product meets your allergen rules. Check the open ingredients." : "Every product meets your allergen rules.";
+    checks.expect(menu.fits.some((fit) => fit.ok === !menu.unpriced && fit.sentence === mandateFit), `${menu.name}: mandate fit missing`);
+    const eggFit = menu.unpriced ? "No egg in any dish so far. Check the open ingredients." : "No egg in any dish.";
+    checks.expect(menu.fits.some((fit) => fit.ok === !menu.unpriced && fit.sentence === eggFit), `${menu.name}: egg fit missing`);
   }
   const dishes = plan.menus.flatMap((menu) => menu.courses.map((course) => course.recipe.name));
   checks.note(`dishes: ${[...new Set(dishes)].join(", ")}`);

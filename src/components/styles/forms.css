@@ -466,3 +466,9 @@
   font-size: var(--fs-sm);
   font-weight: 600;
 }
+
+/* A number out of range stays as typed, marked, until it is fixed. */
+.stepper-value input[aria-invalid="true"] {
+  color: var(--danger);
+  text-decoration: underline wavy var(--danger);
+}

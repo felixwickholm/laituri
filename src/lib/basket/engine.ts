@@ -26,6 +26,8 @@ export interface BasketRun {
   concurrency?: number;
   /** Asks the wholesaler about every line's candidates in one batch before the lines start. */
   prefetch?: () => Promise<unknown>;
+  /** False once the visitor reset the demo: the run then writes nothing more into the fresh copy. */
+  alive?: () => boolean;
 }
 
 const DEFAULT_TITLES = { weekly: "Weekly order", menu: "Menu order", manual: "Order", agent: "Order from your agent" } as const;
@@ -103,12 +105,15 @@ export async function runBasket(basket: StoredBasket, run: BasketRun): Promise<S
     // A failed batch only means each line asks for itself.
     await run.prefetch?.().catch(() => undefined);
     await pool(basket.lines, run.concurrency ?? BASKET_CONCURRENCY, async (line) => {
-      apply(line, await workLine(line, basket, ctx));
+      const result = await workLine(line, basket, ctx);
+      if (run.alive && !run.alive()) return;
+      apply(line, result);
       await store().baskets.put(basket);
       const status = line.state === "green" ? "ok" : line.state === "orange" ? "waiting" : "blocked";
       await appendNote(run.agent, `${line.words}: ${line.reason}`, status);
     });
   }));
+  if (run.alive && !run.alive()) return basket;
   basket.status = "done";
   basket.finishedAt = now().toISOString();
   await store().baskets.put(basket);

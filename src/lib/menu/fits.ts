@@ -50,14 +50,18 @@ function needFit(need: DietaryNeed, input: FitInput): Fit {
   const productsOk = bought(input).every(
     (product) => !product.allergens.contains.some((a) => allergens.includes(a)) && !product.allergens.mayContain.some((a) => allergens.includes(a)),
   );
-  return kindsOk && dishesOk && productsOk ? { ok: true, sentence: ok } : { ok: false, sentence: `Not met: ${ok.toLowerCase()} A person must check.` };
+  if (!(kindsOk && dishesOk && productsOk)) return { ok: false, sentence: `Not met: ${ok.toLowerCase()} A person must check.` };
+  // With ingredients still open nobody can say it for the whole menu yet.
+  return unresolved(input) > 0 ? { ok: false, sentence: `${ok.replace(/\.$/, "")} so far. Check the open ingredients.` } : { ok: true, sentence: ok };
 }
 
 function mandateFit(input: FitInput): Fit | undefined {
   if (input.mandate.dietary.excludeAllergens.length === 0) return undefined;
   const safe = bought(input).every((product) => productSafe(product.allergens, input.rules));
   return safe
-    ? { ok: true, sentence: unresolved(input) > 0 ? "Every matched product meets your allergen rules." : "Every product meets your allergen rules." }
+    ? unresolved(input) > 0
+      ? { ok: false, sentence: "Every matched product meets your allergen rules. Check the open ingredients." }
+      : { ok: true, sentence: "Every product meets your allergen rules." }
     : { ok: false, sentence: "A product breaks your allergen rules. A person must check." };
 }
 
