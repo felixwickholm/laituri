@@ -37,5 +37,5 @@ export function proxy(request: NextRequest): NextResponse {
 
 /** Pages only: agents, API calls, documents for machines and static files never get a sandbox cookie from here. */
 export const config = {
-  matcher: ["/((?!api/|mcp|_next/|\\.well-known/|llms\\.txt|evidence\\.json|icon\\.svg|favicon\\.ico).*)"],
+  matcher: ["/((?!api/|mcp|_next/|\\.well-known/|llms\\.txt|evidence\\.json|submission\\.json|brief|icon\\.svg|favicon\\.ico).*)"],
 };

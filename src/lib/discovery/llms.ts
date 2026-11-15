@@ -13,6 +13,9 @@ export function llmsText(origin: string): string {
 > Prices and stock are live from the challenge's mock API. Offers are signed by the wholesaler. Orders are simulated (simulated: true).
 > The agent orders alone only inside a buyer-signed mandate; larger or unusual orders wait for a named person. Every step is in a signed, hash-chained log.
 
+Built by team Moonshot for the Valio Aimo challenge "Trusted Trade Agents" at Junction 2026, on the challenge's synthetic data.
+The submission in one JSON document (problem, solution, views, agent chain, controls, evidence numbers, links, limits): ${origin}/submission.json.
+The brief and the build in six pages: ${origin}/brief (PDF: ${origin}/brief.pdf).
 Read first: the paper at ${origin}/paper explains the design, maps each judging criterion to code, checks and measured results,
 and lists every limit. The whole picture in one fetch, as plain text: ${origin}/llms-full.txt.
 
@@ -103,6 +106,8 @@ Errors are application/problem+json with a code and a plain detail.
 
 ## Docs
 
+- [Submission](${origin}/submission.json): the Junction submission as JSON: problem, solution, views, agent chain, controls, evidence, links, limits
+- [The brief and the build](${origin}/brief): six pages for a person or an agent; also as a tagged PDF at ${origin}/brief.pdf
 - [Paper](${origin}/paper): the design, each judging criterion with how to verify it, the example scenarios, the threat table and what is simulated
 - [Everything in one file](${origin}/llms-full.txt): the paper and this guide as plain text
 - [Evidence](${origin}/evidence): the five judging criteria with what was built, where in the code, how to check it and measured results

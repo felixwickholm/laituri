@@ -1,5 +1,7 @@
 /** The public pages and the documents written for agents, most useful to a reader first. Listed in /sitemap.xml. */
 export const PUBLIC_PATHS = [
+  "/brief",
+  "/brief.pdf",
   "/paper",
   "/evidence",
   "/about",
@@ -14,5 +16,6 @@ export const PUBLIC_PATHS = [
   "/llms-full.txt",
   "/paper.md",
   "/evidence.json",
+  "/submission.json",
   "/api/v1/openapi.json",
 ] as const;

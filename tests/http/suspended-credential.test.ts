@@ -71,6 +71,8 @@ const ROUTES: Record<string, { url: string; params?: Record<string, string> }> =
   ".well-known/oauth-protected-resource": { url: "/.well-known/oauth-protected-resource" },
   ".well-known/ucp": { url: "/.well-known/ucp" },
   "evidence.json": { url: "/evidence.json" },
+  "submission.json": { url: "/submission.json" },
+  brief: { url: "/brief" },
   "llms.txt": { url: "/llms.txt" },
   mcp: { url: "/mcp" },
 };
@@ -90,6 +92,8 @@ const PUBLIC_DOCUMENTS = [
   ".well-known/oauth-protected-resource",
   ".well-known/ucp",
   "evidence.json",
+  "submission.json",
+  "brief",
   "llms.txt",
   "api/v1/recipes",
   "api/v1/recipes/[id]",
