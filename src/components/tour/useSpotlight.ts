@@ -59,6 +59,8 @@ function firstVisible(selectors: readonly string[]): Element | null {
 /** Less than half of the target is on screen, so the page moved under it after it was scrolled to. */
 /** Less than half of the target is in the open part of the screen: below a phone's sticky top bar, above the bottom. */
 function offScreen(box: Box, view: { w: number; h: number }, top = 0): boolean {
+  // On a phone the start of the target matters most: its first line under the sticky bar counts as hidden.
+  if (top > 0 && box.y < top - 4 && box.h < view.h - top) return true;
   const shown = Math.min(view.h, box.y + box.h) - Math.max(top, box.y);
   return shown < Math.min(box.h, view.h - top) / 2;
 }
