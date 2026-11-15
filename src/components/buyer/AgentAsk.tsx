@@ -16,6 +16,18 @@ export function looksLikeRequest(words: string): boolean {
   return text.split(/\s+/).length >= 3 || (/\d/.test(text) && /\p{L}{2,}/u.test(text));
 }
 
+/** The first request of a conversation, without earlier answers stacked on it. */
+function originalOf(words: string): string {
+  const at = words.indexOf("\nEarlier: ");
+  return at >= 0 ? words.slice(at + "\nEarlier: ".length) : words;
+}
+
+/** What the buyer said last: the answer, when the words carry an earlier request. */
+function shownWords(words: string): string {
+  const at = words.indexOf("\nEarlier: ");
+  return at >= 0 ? words.slice(0, at) : words;
+}
+
 interface RunResult {
   status?: string;
   orderId?: string;
@@ -69,7 +81,8 @@ export function AgentAsk({ query, onSent }: { query: string; onSent: () => void 
     event.preventDefault();
     const text = answer.trim();
     if (!text || working) return;
-    void send(`${asked} (${text})`);
+    // The answer first, then the request it answers: the agent reads the answer and fills gaps from the request.
+    void send(`${text}\nEarlier: ${originalOf(asked)}`);
   }
 
   const showChip = looksLikeRequest(query) && !working;
@@ -91,7 +104,7 @@ export function AgentAsk({ query, onSent }: { query: string; onSent: () => void 
         </p>
       ) : steps && order ? (
         <div className="milk-result" aria-live="polite">
-          <p className="agent-ask-words">“{asked}”</p>
+          <p className="agent-ask-words">“{shownWords(asked)}”</p>
           <FlowSteps steps={steps.map((step) => (step.name === "Approval" ? approvalInWords(order, step) : step))} />
           <button type="button" className="text-link milk-open" onClick={() => ui.openOrder(order.id)}>
             Open the order
@@ -100,7 +113,7 @@ export function AgentAsk({ query, onSent }: { query: string; onSent: () => void 
         </div>
       ) : question ? (
         <form className="milk-result agent-ask-question" onSubmit={reply} aria-live="polite">
-          <p className="agent-ask-words">“{asked}”</p>
+          <p className="agent-ask-words">“{shownWords(asked)}”</p>
           <p className="agent-ask-reply">{question}</p>
           <div className="agent-ask-field">
             <label htmlFor="agent-ask-answer" className="sr-only">
@@ -114,7 +127,7 @@ export function AgentAsk({ query, onSent }: { query: string; onSent: () => void 
         </form>
       ) : run && run.status !== "running" ? (
         <div className="milk-result" aria-live="polite">
-          <p className="agent-ask-words">“{asked}”</p>
+          <p className="agent-ask-words">“{shownWords(asked)}”</p>
           <p className="milk-failed">{run.summary ?? "No order was placed."}</p>
         </div>
       ) : null}

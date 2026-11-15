@@ -66,3 +66,17 @@ describe("parseRequest", () => {
     expect(parseNumber(raw)).toBe(value);
   });
 });
+
+describe("an answer to the agent's question", () => {
+  const at = new Date("2026-11-15T00:30:00Z");
+  it("reads the answer first and takes only what it leaves out from the earlier request", () => {
+    const butter = parseRequest("10 kg smör\nEarlier: jag behöver smör och grädde till fredag, minst 10 kg smör", at);
+    expect(butter).toMatchObject({ phrase: "smör", quantity: { amount: 10, unit: "kg" }, deliverBy: "2026-11-20", deliverByStated: true });
+    expect(butter.text).toBe("10 kg smör, by 2026-11-20");
+    const cream = parseRequest("20 l\nEarlier: kaks laatikkoa kermaa huomiseksi", at);
+    expect(cream).toMatchObject({ phrase: "kermaa", quantity: { amount: 20, unit: "l" }, deliverBy: "2026-11-16" });
+    expect(cream.packageWord).toBeUndefined();
+    const milk = parseRequest("lactose-free milk for Tuesday\nEarlier: 20 litres", at);
+    expect(milk).toMatchObject({ phrase: "lactose-free milk", quantity: { amount: 20, unit: "l" }, deliverBy: "2026-11-17", text: "lactose-free milk for Tuesday, 20 l" });
+  });
+});

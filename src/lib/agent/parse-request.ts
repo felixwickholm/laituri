@@ -202,8 +202,38 @@ function splitClauses(tokens: Token[], main: number): { order: Token[]; others: 
   return { order: tokens.filter((t) => t.clause === main), others: [...others.values()].map((words) => words.join(" ")) };
 }
 
+/** How a follow-up answer travels: the answer first, then this marker and the request it answers. */
+export const EARLIER = "\nEarlier: ";
+
+/**
+ * An answer to the agent's question, read against the request it answers: the answer's own product, amount and day
+ * win; what it leaves out (the product after "20 l", the day after "10 kg smör") comes from the earlier request.
+ */
+function parseAnswer(answer: string, earlier: string, now: Date): ParsedRequest {
+  const first = parseRequest(earlier, now);
+  const reply = parseRequest(answer, now);
+  if (reply.phrase || reply.productId) {
+    return {
+      ...reply,
+      ...(reply.quantity ? {} : first.quantity ? { quantity: first.quantity, ...(first.packageWord ? { packageWord: first.packageWord } : {}) } : {}),
+      ...(reply.deliverByStated ? {} : { deliverBy: first.deliverBy, deliverByStated: first.deliverByStated }),
+      // The words the wholesaler checks the offer against: the answer, plus the amount and day it took from the request.
+      text: [
+        answer,
+        ...(!reply.quantity && first.quantity && !first.packageWord ? [`${first.quantity.amount} ${first.quantity.unit === "sales_unit" ? "pcs" : first.quantity.unit}`] : []),
+        ...(!reply.deliverByStated && first.deliverByStated ? [`by ${first.deliverBy}`] : []),
+      ].join(", "),
+      waitForPerson: reply.waitForPerson || first.waitForPerson,
+    };
+  }
+  // A bare amount or day ("20 l", "Friday"): the earlier request with the answer added, read as one.
+  return parseRequest(`${earlier} (${answer})`, now);
+}
+
 /** Reads quantity, product, delivery date, a spending ceiling and an order to wait, in English or Finnish. */
 export function parseRequest(text: string, now: Date): ParsedRequest {
+  const marker = text.indexOf(EARLIER);
+  if (marker >= 0) return parseAnswer(text.slice(0, marker).trim(), text.slice(marker + EARLIER.length).trim(), now);
   const today = helsinkiDate(now);
   const instructions = readInstructions(text);
   const tokens = tokenize(instructions.rest);
