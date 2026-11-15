@@ -49,7 +49,7 @@ export function blockedReasons(order: unknown): string[] {
 }
 
 const ORDER_WORDS: Record<string, Answer> = {
-  confirmed: { tone: "ok", summary: "Ordered inside your limits. Valio Aimo signed the receipt." },
+  confirmed: { tone: "ok", summary: "Ordered inside your limits, with a signed receipt. Orders are simulated in this demo." },
   pending_approval: { tone: "waiting", summary: "Needs you. A person approves it before it is ordered." },
   rejected: { tone: "blocked", summary: "A person rejected this order. Nothing was ordered." },
 };

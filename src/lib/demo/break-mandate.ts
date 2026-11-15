@@ -41,9 +41,16 @@ async function quoteFirst(ctx: ScenarioContext, query: string, accept: (p: Produ
   return last;
 }
 
+const NUT_QUERIES = ["almond drink", "peanut butter", "hazelnut", "cashew"];
+
 async function nuts(ctx: ScenarioContext, say: Say): Promise<Order | undefined> {
   await say("Attempt 1 of 5: ordering a product that contains nuts.");
-  const quoted = await quoteFirst(ctx, "peanut butter", (p) => p.allergens.contains.some((a) => NUT_ALLERGENS.includes(a)), 5);
+  // The almond drink from the weekly order first: every catalogue mode has it. Then other nut products.
+  let quoted: Awaited<ReturnType<typeof quoteFirst>>;
+  for (const query of NUT_QUERIES) {
+    quoted = await quoteFirst(ctx, query, (p) => p.allergens.contains.some((a) => NUT_ALLERGENS.includes(a)), 5);
+    if (quoted) break;
+  }
   if (!quoted) return void (await say("Found no product with nuts to try.", "error"));
   const allergens = quoted.product.allergens.contains.filter((a) => NUT_ALLERGENS.includes(a)).join(" and ");
   await say(`Trying to order ${quoted.product.name.en || quoted.product.name.fi}. It contains ${allergens}.`);

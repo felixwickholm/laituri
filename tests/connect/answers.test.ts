@@ -17,7 +17,7 @@ describe("order answers", () => {
   it("reads 201 as confirmed and 202 as waiting for a person", () => {
     expect(readOrderAnswer(201, { id: "ord_1", status: "confirmed" })).toEqual({
       tone: "ok",
-      summary: "Ordered inside your limits. Valio Aimo signed the receipt. Order ord_1.",
+      summary: "Ordered inside your limits, with a signed receipt. Orders are simulated in this demo. Order ord_1.",
     });
     expect(readOrderAnswer(202, { id: "ord_2", status: "pending_approval" })).toEqual({
       tone: "waiting",
