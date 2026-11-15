@@ -14,6 +14,7 @@ import * as overview from "@/app/api/v1/supplier/overview/route";
 import * as suggestionsRoute from "@/app/api/v1/suggestions/route";
 import type { Basket, BasketLine, Handoff, Order, Suggestion, SupplierOverview } from "@/lib/contracts";
 import { catalog } from "@/lib/catalog";
+import { catalogPath } from "@/lib/catalog/load";
 import { BUYER_IDS } from "@/lib/mandate";
 import { toBasketRequest } from "@/lib/shop-console/cart";
 import { Browser } from "../http/browser";
@@ -197,7 +198,8 @@ describe.skipIf(!hasFixtures)("basket logic", { timeout: 60_000 }, () => {
     expect(after.totals.netOrdered).toBe(after.lines[0].net);
   });
 
-  it("never picks a product the school kitchens' mandate rules out, and still offers a safe swap of the same kind", async () => {
+  // Needs the full catalogue from `npm run setup`: the committed fixture catalogue has only the sesame-trace ciabatta.
+  it.skipIf(!existsSync(catalogPath()))("never picks a product the school kitchens' mandate rules out, and still offers a safe swap of the same kind", async () => {
     const browser = await signedIn();
     const query = `?buyer=${BUYER_IDS.kaisla}`;
     // The recorded stock has only the sesame-trace ciabatta; live, the search finds a sesame-free one in stock.
