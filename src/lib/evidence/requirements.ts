@@ -49,7 +49,7 @@ export function optional(): Requirement[] {
       quote: "Traceability and explainability: a human-readable record of what the agent did and why.",
       status: "covered",
       answer: "Each step appends a signed entry with a one-sentence summary to a hash chain. Each order lists every rule with its result and reason. The agent's runs show each tool call in plain words.",
-      where: ["src/lib/audit/chain.ts", "src/lib/orders/summaries.ts", "src/components/agent/RunBlock.tsx", "src/app/buyer/log/page.tsx"],
+      where: ["src/lib/audit/chain.ts", "src/lib/orders/summaries.ts", "src/components/buyer/AgentAsk.tsx", "src/app/buyer/log/page.tsx"],
       check: [{ kind: "eval", value: "T6" }, { kind: "url", value: "/buyer/log" }],
     },
   ];
