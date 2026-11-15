@@ -87,7 +87,7 @@ describe("a wedding from Valio's recipes", () => {
         expect(recipe.source?.name, recipe.id).toBe("Valio");
         expect(recipe.allergens).not.toContain("nuts");
       }
-      expect(menu.fits).toContainEqual({ ok: true, sentence: "No nuts in any dish." });
+      expect(menu.fits).toContainEqual(menu.unpriced ? { ok: false, sentence: "No nuts in any dish so far. Check the open ingredients." } : { ok: true, sentence: "No nuts in any dish." });
     }
     expect(result.notes.some((note) => note.startsWith("Recipes: Valio"))).toBe(true);
   });
