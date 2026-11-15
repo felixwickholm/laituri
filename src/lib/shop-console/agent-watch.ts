@@ -14,12 +14,14 @@ export interface AgentStep {
   sentence: string;
   /** What the agent searched for, so the shop can show the same list. */
   query?: string;
+  /** The step left an order waiting for a person: the strip links to Orders, where it is decided. */
+  waiting?: boolean;
 }
 
 const QUOTED = /'([^']+)'/;
 
 /** One agent call in plain words, said after "Your agent is shopping." */
-export function stepSentence(record: Pick<Activity, "tool" | "title" | "status">): { sentence: string; query?: string } {
+export function stepSentence(record: Pick<Activity, "tool" | "title" | "status">): { sentence: string; query?: string; waiting?: boolean } {
   switch (record.tool) {
     case "search_catalog": {
       const query = record.title.match(QUOTED)?.[1];
@@ -30,7 +32,7 @@ export function stepSentence(record: Pick<Activity, "tool" | "title" | "status">
     case "request_quote":
       return { sentence: "Asked for a fixed price." };
     case "place_order":
-      if (record.status === "waiting") return { sentence: "Placed an order. It needs you." };
+      if (record.status === "waiting") return { sentence: "Placed an order. It needs you.", waiting: true };
       if (record.status === "blocked") return { sentence: "Tried to order. It was blocked." };
       return { sentence: "Placed an order." };
     case "place_basket":

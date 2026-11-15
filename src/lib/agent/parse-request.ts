@@ -136,16 +136,27 @@ function findQuantity(tokens: Token[]): { quantity?: Quantity; clause?: number; 
     if (NUMBER_WORDS[word]) return NUMBER_WORDS[word];
     return /^\d[\d.,]*$/.test(word) && !/^\d{6}$/.test(word) ? parseNumber(word) : undefined;
   };
-  // A number followed by a unit wins: "200 units of Valio milk 1 l" is 200 units.
+  // A number followed by a unit wins: "200 units of Valio milk 1 l" is 200 units. A box count gives way to litres or
+  // kilos given in the same request ("two boxes of cream (20 l)"); its words are still read, so they leave the phrase.
+  type Found = { quantity: Quantity; clause: number; at: number[]; packageWord?: string };
+  const found: Found[] = [];
   for (let i = 0; i < tokens.length; i++) {
     const glued = tokens[i].text.match(/^(\d[\d.,]*)(\p{L}+)$/u);
     const amount = glued ? parseNumber(glued[1]) : numberAt(i);
     const unit = unitOf(glued ? glued[2] : tokens[i + 1]?.text ?? "");
     if (amount === undefined || !unit || amount <= 0) continue;
-    tokens[i].used = true;
-    if (!glued) tokens[i + 1].used = true;
     const unitWord = glued ? glued[2] : tokens[i + 1].text;
-    return { quantity: { amount: round(amount * unit[1]), unit: unit[0] }, clause: tokens[i].clause, ...(PACKAGE.test(unitWord) ? { packageWord: unitWord } : {}) };
+    found.push({
+      quantity: { amount: round(amount * unit[1]), unit: unit[0] },
+      clause: tokens[i].clause,
+      at: glued ? [i] : [i, i + 1],
+      ...(PACKAGE.test(unitWord) ? { packageWord: unitWord } : {}),
+    });
+  }
+  const chosen = found.find((item) => !item.packageWord) ?? found[0];
+  if (chosen) {
+    for (const item of found) if (item === chosen || item.packageWord) for (const at of item.at) tokens[at].used = true;
+    return { quantity: chosen.quantity, clause: chosen.clause, ...(chosen.packageWord ? { packageWord: chosen.packageWord } : {}) };
   }
   for (let i = 0; i < tokens.length; i++) {
     const amount = numberAt(i);

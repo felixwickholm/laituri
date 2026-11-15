@@ -20,10 +20,17 @@ export function AgentStrip({ step, onShow }: { step: AgentStep; onShow: (query: 
             Show what it found
           </button>
         ) : null}
-        <Link href="/buyer" className="text-link">
-          Today
-          <ChevronRight aria-hidden="true" />
-        </Link>
+        {step.waiting ? (
+          <Link href="/buyer/orders" className="text-link">
+            Decide in Orders
+            <ChevronRight aria-hidden="true" />
+          </Link>
+        ) : (
+          <Link href="/buyer" className="text-link">
+            Today
+            <ChevronRight aria-hidden="true" />
+          </Link>
+        )}
       </div>
     </div>
   );

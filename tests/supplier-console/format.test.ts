@@ -231,7 +231,7 @@ describe("audit", () => {
     const entries = [entry(1, "order.confirmed", HOTEL.id), entry(2, "approval.granted", SCHOOL.id), entry(3, "order.blocked", SCHOOL.id)];
     expect(filterAudit(entries, { buyer: "all", group: "all" }).map((item) => item.seq)).toEqual([3, 2, 1]);
     expect(filterAudit(entries, { buyer: SCHOOL.id, group: "all" }).map((item) => item.seq)).toEqual([3, 2]);
-    expect(filterAudit(entries, { buyer: SCHOOL.id, group: "orders" }).map((item) => item.seq)).toEqual([3]);
+    expect(filterAudit(entries, { buyer: SCHOOL.id, group: "refused" }).map((item) => item.seq)).toEqual([3]);
   });
 
   it("names the export after the day and the buyer", () => {
