@@ -23,7 +23,7 @@ export function DemandScreen() {
 
   return (
     <div className="page control-page">
-      <ValioHead title="Demand" date={overview ? `${count(overview.demand.requests)} requests` : undefined} />
+      <ValioHead title="Demand" date={overview ? `${count(overview.demand.requests)} requests, all time` : undefined} />
       {overview ? (
         <>
           <section className="glass pad week-card" id="unserved" aria-labelledby="unmet-title">

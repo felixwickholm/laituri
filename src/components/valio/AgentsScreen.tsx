@@ -77,7 +77,7 @@ export function AgentsScreen({ initialAgent }: { initialAgent?: string }) {
                   <span className="count-tile-number" data-long>
                     {eur(bought)}
                   </span>
-                  <span className="count-tile-word">bought, net</span>
+                  <span className="count-tile-word">bought, net, all time</span>
                 </li>
               </ul>
             </section>
