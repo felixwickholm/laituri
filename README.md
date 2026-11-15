@@ -19,7 +19,7 @@ Built for the Valio Aimo challenge "Trusted Trade Agents" at Junction 2026, on t
 <!-- BEGIN:evidence:numbers -->
 Measured by `npm run evidence` (numbers in [`src/lib/evidence/facts.json`](src/lib/evidence/facts.json)):
 
-- Unit and integration tests: 3645/3645 pass in 155 files.
+- Unit and integration tests: 3646/3646 pass in 155 files.
 - Eval suites (`npm run eval`, recorded data, fixed clock): Scenarios 38/38, Guardrails 38/38, Trust 17/17, Openness 8/8; 101/101 cases in all.
 - 18 mandate rules, 11 MCP tools, 41 REST operations on 35 paths, 6 discovery documents, 3 signing keys.
 - 3 demo buyers; 31 seeded requests (24 of them place an order); recorded answers for 255 products.
@@ -79,7 +79,7 @@ No key? `VALIO_MODE=recorded npm run dev` replays recorded answers. Then `npm te
 | Trust (`trust`) | 17/17 | 100% | met | Every signature verifies with the published keys, and any changed, deleted, reordered or cut entry is detected. |
 | Openness (`openness`) | 8/8 | 100% | met | The OpenAPI document and MCP tools are complete and callable, discovery documents are served, and an agent that reads llms.txt over HTTP buys by following its REST flow. |
 
-Unit and integration tests: 3645/3645 pass in 155 files (`npm test`).
+Unit and integration tests: 3646/3646 pass in 155 files (`npm test`).
 <!-- END:evidence:evals -->
 
 Every case and what it proves: [docs/evals.md](docs/evals.md).
@@ -112,14 +112,14 @@ Simulated or assumed (each in full, with the code behind it, in [docs/judging.md
 - **Audit log reads:** other buyers' entries reach an agent only as verifiable stubs.
 - **Workspace binding:** mandates and offers are bound to the workspace that signed them.
 - **Stock across orders:** upstream stock minus this workspace's own orders.
-- **Buyer agent:** a scripted agent for scenes, tests and evals; Claude or Gemini for free text.
+- **Buyer agent:** a scripted agent for scenes, tests and evals; free text tries Gemini, then Claude, then the scripted agent.
 - **Recipes:** Valio's professional recipes (valioaimo.fi, read 2026-11-14), ours as a fallback.
 - **Menu prices:** indicative until ordered.
 - **Reading an event:** rules; a model only reads the words.
 - **Kitchen stock:** demo stock lists.
 - **Event calendar:** one demo booking per kitchen.
 - **Seasonal proposals:** our own season list.
-- **Voice:** browser speech, ElevenLabs when a key is set.
+- **Voice:** browser speech where supported, 'Voice coming soon' elsewhere; ElevenLabs when a key is set.
 
 Not built: Payments, Peppol documents, Nutrition rules.
 <!-- END:evidence:simulated -->
