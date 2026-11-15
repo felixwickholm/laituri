@@ -19,7 +19,7 @@ Built for the Valio Aimo challenge "Trusted Trade Agents" at Junction 2026, on t
 <!-- BEGIN:evidence:numbers -->
 Measured by `npm run evidence` (numbers in [`src/lib/evidence/facts.json`](src/lib/evidence/facts.json)):
 
-- Unit and integration tests: 3646/3646 pass in 155 files.
+- Unit and integration tests: 3647/3647 pass in 155 files.
 - Eval suites (`npm run eval`, recorded data, fixed clock): Scenarios 38/38, Guardrails 38/38, Trust 17/17, Openness 8/8; 101/101 cases in all.
 - 18 mandate rules, 11 MCP tools, 41 REST operations on 35 paths, 6 discovery documents, 3 signing keys.
 - 3 demo buyers; 31 seeded requests (24 of them place an order); recorded answers for 255 products.
@@ -79,7 +79,7 @@ No key? `VALIO_MODE=recorded npm run dev` replays recorded answers. Then `npm te
 | Trust (`trust`) | 17/17 | 100% | met | Every signature verifies with the published keys, and any changed, deleted, reordered or cut entry is detected. |
 | Openness (`openness`) | 8/8 | 100% | met | The OpenAPI document and MCP tools are complete and callable, discovery documents are served, and an agent that reads llms.txt over HTTP buys by following its REST flow. |
 
-Unit and integration tests: 3646/3646 pass in 155 files (`npm test`).
+Unit and integration tests: 3647/3647 pass in 155 files (`npm test`).
 <!-- END:evidence:evals -->
 
 Every case and what it proves: [docs/evals.md](docs/evals.md).
