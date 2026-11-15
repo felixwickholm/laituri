@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { isBusyStatus, restEngine } from "./rest";
+import { REST_AFTER_BROKEN_MS, isBrokenStatus, isBusyStatus, restEngine } from "./rest";
 import { ProviderError, type ModelProvider, type ModelReply, type ToolOutcome, type ToolSpec } from "./types";
 
 const MAX_TOKENS = 16_000;
@@ -54,6 +54,7 @@ function readable(error: unknown): unknown {
   if (error instanceof Anthropic.APIConnectionError) return new ProviderError("Claude could not be reached.");
   if (error instanceof Anthropic.APIError) {
     if (typeof error.status === "number" && isBusyStatus(error.status)) restEngine("claude");
+    else if (typeof error.status === "number" && isBrokenStatus(error.status)) restEngine("claude", Date.now(), REST_AFTER_BROKEN_MS);
     return new ProviderError(`Claude answered with status ${error.status}.`);
   }
   return error;

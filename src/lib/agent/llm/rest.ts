@@ -10,6 +10,14 @@ export const REST_AFTER_REFUSAL_MS = 60_000;
 const holder = globalThis as typeof globalThis & { __laituriEngineRest?: Map<ModelEngine, number> };
 const resting = (holder.__laituriEngineRest ??= new Map<ModelEngine, number>());
 
+/** A key or request the model refuses (bad key, unknown model): no point asking again soon. */
+export const REST_AFTER_BROKEN_MS = 10 * 60_000;
+
+/** Statuses that say the key, the model name or the request is wrong; they will not change by asking again. */
+export function isBrokenStatus(status: number): boolean {
+  return status === 400 || status === 401 || status === 403 || status === 404;
+}
+
 /** Statuses that mean: not now, try later. */
 export function isBusyStatus(status: number): boolean {
   return status === 429 || status === 503 || status === 529;

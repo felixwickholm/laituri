@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { isBusyStatus, restEngine } from "./rest";
+import { REST_AFTER_BROKEN_MS, isBrokenStatus, isBusyStatus, restEngine } from "./rest";
 import { ProviderError, type ModelProvider, type ModelReply, type ToolCall, type ToolOutcome, type ToolSpec } from "./types";
 
 const API_ROOT = "https://generativelanguage.googleapis.com/v1beta/models";
@@ -61,6 +61,7 @@ async function post(options: GeminiOptions, body: unknown, signal: AbortSignal):
   }
   if (!response.ok) {
     if (isBusyStatus(response.status)) restEngine("gemini");
+    else if (isBrokenStatus(response.status)) restEngine("gemini", Date.now(), REST_AFTER_BROKEN_MS);
     throw new ProviderError(`Gemini answered with status ${response.status}.`);
   }
   try {
