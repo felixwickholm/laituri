@@ -61,7 +61,7 @@ export function toolsTable(): string {
   return ["| Tool (MCP) | REST | Purpose |", "|---|---|---|", ...rows].join("\n");
 }
 
-const SUITE_PROVES: Record<string, string> = {
+export const SUITE_PROVES: Record<string, string> = {
   scenarios: "Plain-language requests end on the right route (auto, approval, blocked, no order) with the right product, amount and date, and a verified audit trail.",
   guardrails: "Edited, expired, replayed or wrongly signed inputs, forged approvals, injected instructions and races never get past the mandate.",
   trust: "Every signature verifies with the published keys, and any changed, deleted, reordered or cut entry is detected.",
