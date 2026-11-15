@@ -26,7 +26,7 @@ Generated from [`evals/report.json`](../evals/report.json) and [`src/lib/evidenc
 | Trust (`trust`) | 17/17 | 100% | met | Every signature verifies with the published keys, and any changed, deleted, reordered or cut entry is detected. |
 | Openness (`openness`) | 8/8 | 100% | met | The OpenAPI document and MCP tools are complete and callable, discovery documents are served, and an agent that reads llms.txt over HTTP buys by following its REST flow. |
 
-Unit and integration tests: 3647/3647 pass in 155 files (`npm test`).
+Unit and integration tests: 3648/3648 pass in 155 files (`npm test`).
 <!-- END:evidence:evals -->
 
 ## What each suite proves
