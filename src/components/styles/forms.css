@@ -458,3 +458,11 @@
     max-width: 100%;
   }
 }
+
+/* Your limits: why Save is off. */
+.save-problem {
+  margin: 0;
+  color: var(--danger);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}

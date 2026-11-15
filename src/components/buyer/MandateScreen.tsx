@@ -67,6 +67,13 @@ export function MandateScreen() {
   const now = useNow(60_000);
   const draft = base ? { ...base, ...edits } : undefined;
   const changes = base && draft ? changedFields(base, draft) : [];
+  /** A limit pair that cannot be meant: nothing is signed until it is fixed. */
+  const limitProblem =
+    draft && draft.perOrder > draft.perWeek
+      ? "The per-order limit is above the weekly limit. Lower it, or raise the weekly limit."
+      : draft && (draft.perOrder <= 0 || draft.perWeek <= 0)
+        ? "Limits must be above zero."
+        : undefined;
 
   function set<K extends keyof MandateDraft>(key: K, value: MandateDraft[K]) {
     setEdits((current) => ({ ...current, [key]: value }));
@@ -188,6 +195,11 @@ export function MandateScreen() {
               <strong>{changes.length === 0 ? "No changes" : changes.length === 1 ? "1 change" : `${changes.length} changes`}</strong>
               <span>{changes.length > 0 ? `Signed as version ${m.version + 1}` : `Version ${m.version}, valid until ${day(m.validUntil)}`}</span>
             </p>
+            {limitProblem ? (
+              <p className="save-problem" role="alert">
+                {limitProblem}
+              </p>
+            ) : null}
             <div className="save-actions">
               {changes.length > 0 ? (
                 <button type="button" className="btn btn-secondary" disabled={saving} onClick={() => setEdits({})}>
@@ -197,7 +209,7 @@ export function MandateScreen() {
               <button
                 type="button"
                 className={changes.length > 0 ? "btn btn-primary" : "btn btn-secondary"}
-                disabled={changes.length === 0 || saving}
+                disabled={changes.length === 0 || saving || limitProblem !== undefined}
                 onClick={(event) => save(event.currentTarget)}
               >
                 {saving ? "Saving…" : "Save and sign"}
