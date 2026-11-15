@@ -41,8 +41,9 @@ describe("selectEngine", () => {
   });
 
   it("reports the active engine for health without the reason", () => {
-    expect(activeEngine({ LAITURI_AGENT_ENGINE: "claude" })).toEqual({ engine: "scripted" });
-    expect(activeEngine({ GEMINI_API_KEY: "g" })).toEqual({ engine: "gemini", model: DEFAULT_GEMINI_MODEL });
+    expect(activeEngine({ LAITURI_AGENT_ENGINE: "claude" })).toEqual({ engine: "scripted", chain: ["scripted"] });
+    expect(activeEngine({ GEMINI_API_KEY: "g" })).toEqual({ engine: "gemini", model: DEFAULT_GEMINI_MODEL, chain: ["gemini", "scripted"] });
+    expect(activeEngine(BOTH).chain).toEqual(["gemini", "claude", "scripted"]);
   });
 });
 

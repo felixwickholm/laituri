@@ -6,10 +6,11 @@ import { runModelPurchase } from "./loop";
 import { engineResting } from "./rest";
 import type { AgentEngine, ModelProvider } from "./types";
 
-/** What health reports: the engine that runs free-text requests now, and its model. */
-export function activeEngine(env: Record<string, string | undefined> = process.env): { engine: AgentEngine; model?: string } {
+/** What health reports: the engine that runs free-text requests now, its model, and the order engines are tried in. */
+export function activeEngine(env: Record<string, string | undefined> = process.env): { engine: AgentEngine; model?: string; chain: AgentEngine[] } {
   const { engine, model } = selectEngine(env);
-  return model ? { engine, model } : { engine };
+  const chain: AgentEngine[] = [...engineChain(env).map((choice) => choice.engine).filter((item) => item !== "scripted"), "scripted"];
+  return model ? { engine, model, chain } : { engine, chain };
 }
 
 const ENGINE_NAMES = { claude: "The Claude agent", gemini: "The Gemini agent" } as const;
